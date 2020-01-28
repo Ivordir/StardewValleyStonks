@@ -6,28 +6,33 @@ namespace StardewValleyBestCropPlanFinder.Client
     public class Crop
     {
         public string Name { get; }
+        public CropType Type { get; }
         public Product CurrentProduct { get; }
         public int CurrentSeedPrice { get; }
-        public CropType Type { get; }
+
         public Season SelectedSeasons { get; }
-        public Season AllowedSeasons { get; } //spring, summer, fall, winter
+        public Season AllowedSeasons { get; }
         public ReplantMethods AllowedReplantMethods { get; }
         public ReplantMethods SelectedReplantMethods { get; }
-        public Dictionary<Source, int> PriceFrom { get; }
+        public Dictionary<Sources, int> PriceFrom { get; }
 
-        private readonly int GrowthTime;
         private readonly double AvgExtraCrops, Profit;
-        private readonly int[] GrowthStages; //base, 10%, 20%, 25%, 35%
-
-        public Crop(string name, int basePrice, int seedPrice, Season seasons, int[] growthStages, CropType cropType = CropType.Tiller, List<Product> altProducts = null, double extraCropChance = 0)
+        private readonly int GrowthTime;
+        private readonly int[] GrowthStagesOriginal;
+        private int[] GrowthStages;
+        
+        public Crop(string name, int basePrice, Season seasons, int[] growthStages, Dictionary<Sources, int> priceFrom, CropType cropType = CropType.Tiller, List<Product> altProducts = null, double extraCropChance = 0)
         {
             Name = name;
             SeedPrice = seedPrice;
             Seasons = seasons;
-            GrowthStages = growthStages;
-            for (int i = 0; i < GrowthStages.Count; i++)
+            GrowthStagesOriginal = growthStages;
+            GrowthStages = new int[growthStages.Length]; 
+            ResetGrowthStages();
+            PriceFrom = priceFrom;
+            for (int i = 0; i < GrowthStages.Length; i++)
             {
-                GrowthTime += GrowthStages[i];
+                GrowthTime += growthStages[i];
             }
             AvgExtraCrops = 1.0 / (1 - extraCropChance);
             if (!cropType.HasFlag(CropType.ScytheFlag)) //crops harvested with scythe have no double crop chance (i.e. Amaranth, Kale, Wheat, Rice)
@@ -147,28 +152,34 @@ namespace StardewValleyBestCropPlanFinder.Client
         {
             speedMultiplier += 0.25;
         }
-        int[] growthStagesCopy = Array.Copy(GrowthStages);
-        int numDaysReduced = (int)Math.Ceiling(GrowthDays * speedMultiplier);
-        int speedGrowthTime = GrowthTime;
-        for (int passes = 0; numDaysReduced > 0 && passes < 3; passes++)
+        int maxReduction = (int) Math.Ceiling(GrowthDays * speedMultiplier);
+        int daysReduced = 0;
+        for (int passes = 0; maxReduction > daysReduced && passes < 3; passes++)
         {
             for (int stage = 0; stage < GrowthStages; stage++)
             {
-                if (stage > 0 || GrowthStagesCopy[stage] > 1)
+                if (stage > 0 || growthStagesCopy[stage] > 1)
                 {
                     growthStagesCopy[stage]--;
-                    speedGrowthTime--;
-                    numDaysReduced--;
-                    if (numDaysReduced <= 0)
+                    daysReduced++;
+                    if (maxReduction == daysReduced)
                     {
                         break;
                     }
                 }
             }
         }
-        return speedGrowthTime;
+        return GrowthTime - daysReduced;
     }
 
+    private void ResetGrowthStages()
+    {
+        for (int i = 0; i < GrowthStagesOriginal.Length; i++)
+        {
+            GrowthStages[i] = GrowthStagesOriginial[i];    
+        }
+    }
+    
     [Flags]
     public enum CropType : byte //what bonuses do/do not apply to this crop and what products can this crop sell as unless overridden
     {
