@@ -1,143 +1,142 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace StardewValleyBestCropPlanFinder.Client
+public class Crop
 {
-    public class Crop
+    public string Name { get; }
+    public CropType Type { get; }
+    public Product SelectedProduct { get; }
+    public int SelectedSeedPrice { get; }
+
+    public Season SelectedSeasons { get; set;}
+    public Season AllowedSeasons { get; }
+    public ReplantMethods SelectedReplantMethods { get; set; }
+    public ReplantMethods AllowedReplantMethods { get; }
+    public Dictionary<Sources, int> PriceFrom { get; }
+
+    private readonly double AvgExtraCrops, Profit;
+    private readonly int GrowthTime;
+    private readonly int[] GrowthStagesOriginal;
+    private int[] GrowthStages;
+
+    public Crop(string name, int basePrice, Season seasons, int[] growthStages, Dictionary<Sources, int> priceFrom, CropType cropType = CropType.Tiller, List<Product> altProducts = null, double extraCropChance = 0)
     {
-        public string Name { get; }
-        public CropType Type { get; }
-        public Product CurrentProduct { get; }
-        public int CurrentSeedPrice { get; }
-
-        public Season SelectedSeasons { get; }
-        public Season AllowedSeasons { get; }
-        public ReplantMethods AllowedReplantMethods { get; }
-        public ReplantMethods SelectedReplantMethods { get; }
-        public Dictionary<Sources, int> PriceFrom { get; }
-
-        private readonly double AvgExtraCrops, Profit;
-        private readonly int GrowthTime;
-        private readonly int[] GrowthStagesOriginal;
-        private int[] GrowthStages;
+        Name = name;
+        SeedPrice = seedPrice;
+        AllowedSeasons = seasons;
+        SelectedSeasons = seasons;
         
-        public Crop(string name, int basePrice, Season seasons, int[] growthStages, Dictionary<Sources, int> priceFrom, CropType cropType = CropType.Tiller, List<Product> altProducts = null, double extraCropChance = 0)
+        GrowthStagesOriginal = growthStages;
+        GrowthStages = new int[growthStages.Length]; 
+        ResetGrowthStages();
+        PriceFrom = priceFrom;
+        for (int i = 0; i < GrowthStages.Length; i++)
         {
-            Name = name;
-            SeedPrice = seedPrice;
-            Seasons = seasons;
-            GrowthStagesOriginal = growthStages;
-            GrowthStages = new int[growthStages.Length]; 
-            ResetGrowthStages();
-            PriceFrom = priceFrom;
-            for (int i = 0; i < GrowthStages.Length; i++)
-            {
-                GrowthTime += growthStages[i];
-            }
-            AvgExtraCrops = 1.0 / (1 - extraCropChance);
-            if (!cropType.HasFlag(CropType.ScytheFlag)) //crops harvested with scythe have no double crop chance (i.e. Amaranth, Kale, Wheat, Rice)
-            {
-                AvgExtraCrops = AvgExtraCrops * DoubleCropChance + AvgExtraCrops;
-            }
-            AvgExtraCrops--;
+            GrowthTime += growthStages[i];
+        }
+        AvgExtraCrops = 1.0 / (1 - extraCropChance);
+        if (!cropType.HasFlag(CropType.ScytheFlag)) //crops harvested with scythe have no double crop chance (i.e. Amaranth, Kale, Wheat, Rice)
+        {
+            AvgExtraCrops = AvgExtraCrops * DoubleCropChance + AvgExtraCrops;
+        }
+        AvgExtraCrops--;
 
-            ProductType products = ProductType.Crop;
-            if (cropType.HasFlag(CropType.FruitFlag) || cropType.HasFlag(CropType.VegeFlag))
+        ProductType products = ProductType.Crop;
+        if (cropType.HasFlag(CropType.FruitFlag) || cropType.HasFlag(CropType.VegeFlag))
+        {
+            products |= ProductType.Jar | ProductType.Keg;
+        }
+        if (altProducts != null)
+        {
+            foreach (Product product in altProducts)
             {
-                products |= ProductType.Jar | ProductType.Keg;
+                products |= product.Type;
             }
-            if (altProducts != null)
+        }
+        //determine most profitable product to sell
+        SellPrice = 0;
+        SellName = "";
+        if (SellCrop && products.HasFlag(ProductType.Crop))
+        {
+            if (cropType.HasFlag(CropType.Tiller))
             {
-                foreach (Product product in altProducts)
-                {
-                    products |= product.Type;
-                }
-            }
-            //determine most profitable product to sell
-            SellPrice = 0;
-            SellName = "";
-            if (SellCrop && products.HasFlag(ProductType.Crop))
-            {
-                if (cropType.HasFlag(CropType.Tiller))
-                {
-                    CompareProduct((int)(basePrice * CropMultiplier), "Crops");
-                }
-                else
-                {
-                    CompareProduct(basePrice, "Crops");
-                }
-            }
-            if (Keg && products.HasFlag(ProductType.Keg))
-            {
-                if (altKegPrice != -1)
-                {
-                    CompareProduct(altKegMultiplier ? (int)(altKegPrice * ArtisanMultiplier) : altKegPrice, altKegName);
-                }
-                else if (cropType.HasFlag(CropType.FruitFlag))
-                {
-                    CompareProduct((int)(3 * basePrice * ArtisanMultiplier), "Wine");
-                }
-                else if (cropType.HasFlag(CropType.VegeFlag))
-                {
-                    CompareProduct((int)((int)(2.25 * basePrice) * ArtisanMultiplier), "Juice");
-                }
-            }
-            if (Jar && products.HasFlag(ProductType.Jar))
-            {
-                if (cropType.HasFlag(CropType.FruitFlag))
-                {
-                    CompareProduct((int)((2 * basePrice + 50) * ArtisanMultiplier), "Jelly");
-                }
-                else if (cropType.HasFlag(CropType.VegeFlag))
-                {
-                    CompareProduct((int)((2 * basePrice + 50) * ArtisanMultiplier), "Pickles");
-                }
-            }
-            if (OilMaker && products.HasFlag(ProductType.Oil))
-            {
-                CompareProduct(OilPrice, "Oil");
-            }
-            if (Mill && products.HasFlag(ProductType.Mill))
-            {
-
-            }
-
-            //determine most profitable replant method?
-            if (Name == "Sunflower")
-            {
-                switch (SunflowerChoice)
-                {
-                    case 3:
-                        //replant
-                        break;
-                    case 2:
-                        //oil
-                        break;
-                    case 1:
-                        Profit += SunflowerSeedPrice;
-                        break;
-                    case 0: //nothing
-                        break;
-                }
+                CompareProduct((int)(basePrice * CropMultiplier), "Crops");
             }
             else
             {
-                if (replant.HasFlag(ReplantMethod.Replant))
-                {
+                CompareProduct(basePrice, "Crops");
+            }
+        }
+        if (Keg && products.HasFlag(ProductType.Keg))
+        {
+            if (altKegPrice != -1)
+            {
+                CompareProduct(altKegMultiplier ? (int)(altKegPrice * ArtisanMultiplier) : altKegPrice, altKegName);
+            }
+            else if (cropType.HasFlag(CropType.FruitFlag))
+            {
+                CompareProduct((int)(3 * basePrice * ArtisanMultiplier), "Wine");
+            }
+            else if (cropType.HasFlag(CropType.VegeFlag))
+            {
+                CompareProduct((int)((int)(2.25 * basePrice) * ArtisanMultiplier), "Juice");
+            }
+        }
+        if (Jar && products.HasFlag(ProductType.Jar))
+        {
+            if (cropType.HasFlag(CropType.FruitFlag))
+            {
+                CompareProduct((int)((2 * basePrice + 50) * ArtisanMultiplier), "Jelly");
+            }
+            else if (cropType.HasFlag(CropType.VegeFlag))
+            {
+                CompareProduct((int)((2 * basePrice + 50) * ArtisanMultiplier), "Pickles");
+            }
+        }
+        if (OilMaker && products.HasFlag(ProductType.Oil))
+        {
+            CompareProduct(OilPrice, "Oil");
+        }
+        if (Mill && products.HasFlag(ProductType.Mill))
+        {
 
-                }
-                if (replant.HasFlag(ReplantMethod.Craft))
-                {
+        }
 
-                }
-                if (replant.HasFlag(ReplantMethod.SeedMaker))
-                {
+        //determine most profitable replant method?
+        if (Name == "Sunflower")
+        {
+            switch (SunflowerChoice)
+            {
+                case 3:
+                    //replant
+                    break;
+                case 2:
+                    //oil
+                    break;
+                case 1:
+                    Profit += SunflowerSeedPrice;
+                    break;
+                case 0: //nothing
+                    break;
+            }
+        }
+        else
+        {
+            if (replant.HasFlag(ReplantMethod.Replant))
+            {
 
-                }
-                if (replant.HasFlag(ReplantMethod.BoughtSeeds))
-                {
+            }
+            if (replant.HasFlag(ReplantMethod.Craft))
+            {
 
-                }
+            }
+            if (replant.HasFlag(ReplantMethod.SeedMaker))
+            {
+
+            }
+            if (replant.HasFlag(ReplantMethod.BoughtSeeds))
+            {
+
             }
         }
     }
