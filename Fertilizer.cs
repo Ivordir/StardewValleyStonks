@@ -7,14 +7,14 @@ namespace StardewValleyBestCropPlanFinder.Client
         public string Name { get; }
         public int Quality { get; }
         public float Speed { get; }
-        public Dictionary<Sources, int> Sources { get; }
+        public Dictionary<Sources, int> PriceFrom { get; }
 
-        public Fertilizer(string name, int quality, float speed, Dictionary<Sources, int> sources)
+        public Fertilizer(string name, int quality, float speed, Dictionary<Sources, int> priceFrom)
         {
             Name = name;
             Quality = quality;
             Speed = speed;
-            Sources = sources;
+            PriceFrom = priceFrom;
         }
     }
 
