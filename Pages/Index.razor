@@ -1,0 +1,78 @@
+﻿@page "/"
+@inject NavigationManager NavigationManager
+
+	<div class="input-grid">
+		<div class="editor-tabs">
+			<button class="editor-tab" @onclick="@(() => SwitchTab(EditorTab.Crop))">
+				Crop
+			</button>
+			<button class="editor-tab" @onclick="@(() => SwitchTab(EditorTab.Fert))">
+				Fertilizer
+			</button>
+		</div>
+
+		@switch (CurrentEditorTab)
+		{
+			case EditorTab.Crop:
+				<div class="crop-editor">
+					<FilterBox></FilterBox>
+					<div class="data-table">
+
+					</div>
+				</div>
+				break;
+			case EditorTab.Fert:
+				<div class="fert-editor">
+					<div class="data-table">
+
+					</div>
+				</div>
+				break;
+		}
+		<!-- right side -->
+		<!--
+		<button class="switch-input-mode">
+		</button>
+		<button class="switch-calc-mode">
+		</button>
+		<button class="switch-view-mode">
+		</button>
+		<button class="help-button" @onclick="@(() => NavigationManager.NavigateTo("help"))">
+			Help
+		</button>
+		<button class="calc-button">
+		</button>
+		<div class="skills">
+
+		</div>
+		<div class="allowed-machines">
+
+		</div>
+		<div class="allowed-replant-methods">
+
+		</div>
+		<div class="calc-mode-dependent-settings">
+
+		</div>
+	 -->
+	</div>
+
+@code {
+	private EditorTab CurrentEditorTab { get; set; }
+
+	private enum EditorTab
+	{
+		Crop,
+		Fert
+	}
+
+	private void SwitchTab(EditorTab tab)
+	{
+		CurrentEditorTab = tab;
+	}
+
+	private void NavigateToCounterComponent()
+    {
+        NavigationManager.NavigateTo("counter");
+    }
+}

@@ -1,0 +1,68 @@
+﻿header {
+  background-color: cornsilk;
+  font-family: Stencil; }
+
+.page-title {
+  display: block;
+  font-size: 32px;
+  font-weight: bold;
+  color: #ffd400;
+  text-align: center;
+  word-spacing: 8px; }
+
+.page-subtitle {
+  font-family: 'Comic Sans MS';
+  display: block;
+  font-size: 16px;
+  color: goldenrod;
+  text-align: center; }
+
+body {
+  background-color: antiquewhite;
+  margin: 0px;
+  font-family: 'Times New Roman', Times, serif; }
+
+footer {
+  background: black; }
+
+.input-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 0.2fr) repeat(11, 0.14709fr);
+  grid-template-rows: repeat(9, 1fr);
+  grid-column-gap: 10px;
+  grid-row-gap: 10px; }
+
+.editor-tabs {
+  display: inline;
+  grid-column: 1/span 5;
+  grid-row: 1; }
+
+.editor-tab {
+  float: left; }
+
+.crop-editor {
+  background-color: red;
+  grid-column: 1/span 5;
+  grid-row: 2/span 8; }
+
+.filter-box {
+  background-color: yellow; }
+
+.fert-editor {
+  background-color: red;
+  grid-column: 1/span 5;
+  grid-row: 2/span 8; }
+
+.calc-button {
+  background-color: green;
+  grid-column: 2;
+  grid-row: 2; }
+
+.output-grid {
+  display: grid; }
+
+.calendar {
+  background-color: blue;
+  grid-column: 1;
+  grid-row-start: 1;
+  grid-row-end: 3; }

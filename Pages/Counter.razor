@@ -1,0 +1,17 @@
+﻿@page "/counter"
+
+<h1>Counter</h1>
+
+<p>Current count: @State.CurrentCount</p>
+
+<button @onclick="IncrementCount">Click me</button>
+
+@code {
+	[CascadingParameter] 
+	private StateProvider State { get; set; }
+
+	private void IncrementCount()
+	{
+		State.CurrentCount++;
+	}
+}

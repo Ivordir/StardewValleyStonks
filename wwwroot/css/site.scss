@@ -1,0 +1,98 @@
+﻿$phi: 1.6180339887498948482;
+//4 responsive layouts
+//calendar: min (2), mid (4), max (7)
+//1 col, calendar is at min
+//1 col, calendar is at max (double)
+//2 col, calendar and list box are at min
+//2 col, calendar and list box are at max
+
+
+//MainLayout
+header {
+	background-color: cornsilk;
+	font-family: Stencil;
+}
+.page-title {
+	display: block;
+	font-size: 32px;
+	font-weight: bold;
+	color: #ffd400;
+	text-align: center;
+	word-spacing: 8px;
+}
+.page-subtitle {
+	font-family: 'Comic Sans MS';
+	display: block;
+	font-size: 16px;
+	color: goldenrod;
+	text-align: center;
+}
+
+body {
+	background-color: antiquewhite;
+	margin: 0px;
+	font-family: 'Times New Roman', Times, serif;
+}
+
+footer {
+	background: black;
+}
+
+//input pages
+$numLeftInputColumns: 5;
+$numRightInputColumns: 11;
+$numInputRows: 9;
+
+.input-grid {
+	display: grid;
+	grid-template-columns: repeat($numLeftInputColumns, 1/$numLeftInputColumns*1fr) repeat($numRightInputColumns, $phi/$numRightInputColumns*1fr);
+	grid-template-rows: repeat($numInputRows, 1fr);
+	grid-column-gap: 10px;
+	grid-row-gap: 10px;
+}
+
+.editor-tabs {
+	display: inline;
+	grid-column: 1 / span $numLeftInputColumns;
+	grid-row: 1;
+}
+
+.editor-tab {
+	float: left;
+}
+
+.crop-editor {
+	background-color: red;
+	grid-column: 1 / span $numLeftInputColumns;
+	grid-row: 2 / span ($numInputRows - 1);
+}
+
+.filter-box {
+	background-color: yellow;
+}
+
+.fert-editor {
+	background-color: red;
+	grid-column: 1 / span $numLeftInputColumns;
+	grid-row: 2 / span ($numInputRows - 1);
+}
+
+.calc-button {
+	background-color: green;
+	grid-column: 2;
+	grid-row: 2;
+}
+
+//output page
+.output-grid {
+	display: grid;
+}
+
+.calendar {
+	background-color: blue;
+	grid-column: 1;
+	grid-row-start: 1;
+	grid-row-end: 3;
+}
+
+//help page
