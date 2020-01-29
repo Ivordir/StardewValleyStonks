@@ -10,15 +10,17 @@ public class Crop : ItemWithSources
     public Season AllowedSeasons { get; }
     public ReplantMethods SelectedReplantMethods { get; set; }
     public ReplantMethods AllowedReplantMethods { get; }
+    public ProductType SelectedProducts { get; set; }
+    public ProductType AllowedProducts { get; set; }
     public Dictionary<ProductType, Product> ProductFrom { get; }
     
     private readonly bool IsPaddyCrop;
-    private readonly double AvgExtraCrops, Profit;
+    private readonly double AvgCrops, AvgExtraCrops, Profit;
     private readonly int GrowthTime;
     private readonly int[] GrowthStagesOriginal;
     private int[] GrowthStages;
 
-    public Crop(string name, int price, Season seasons, int[] growthStages, Dictionary<Sources, int> priceFrom, Dictionary<ProductType, Product> productFrom = null, CropType cropType = CropType.Tiller, List<Product> altProducts = null, double extraCropChance = 0) : base(priceFrom)
+    public Crop(string name, int price, Season seasons, int[] growthStages, Dictionary<Sources, int> priceFrom, CropType cropType = CropType.Tiller, List<Product> altProducts = null, double extraCropChance = 0) : base(priceFrom)
     {
         Name = name;
         AllowedSeasons = seasons;
@@ -27,25 +29,30 @@ public class Crop : ItemWithSources
         GrowthStagesOriginal = growthStages;
         GrowthStages = new int[growthStages.Length]; 
         ResetGrowthStages();
-                
-        ProductFrom = productFrom;
+        for (int i = 0; i < GrowthStages.Length; i++)
+        {
+            GrowthTime += growthStages[i];
+        }
+        
+        ProductFrom = new Dictionary<ProductType, Product>();
         if (CropType.HasFlag(Tiller))
         {
             price = (int) (1.1 * basePrice);
         }
         ProductFrom.Add(ProductType.Crop, new Product(name, price));
-        
-        for (int i = 0; i < GrowthStages.Length; i++)
+        if (CropType.HasFlag(FruitFlag))
         {
-            GrowthTime += growthStages[i];
+            ProductFrom.Add(ProductType.Keg, 
         }
+        
+        AvgCrops = 1;
         AvgExtraCrops = 1.0 / (1 - extraCropChance);
         if (!cropType.HasFlag(CropType.ScytheFlag)) //crops harvested with scythe have no double crop chance (i.e. Amaranth, Kale, Wheat, Rice)
         {
-            AvgExtraCrops = AvgExtraCrops * DoubleCropChance + AvgExtraCrops;
+            AvgExtraCrops = AvgExtraCrops * DoubleCropChance + AvgExtraCrops; //E=P(V), = DoubleCropChance(2*crops) + (1-DoubleCropChance)(crops)
         }
         AvgExtraCrops--;
-
+        
         ProductType products = ProductType.Crop;
         if (cropType.HasFlag(CropType.FruitFlag) || cropType.HasFlag(CropType.VegeFlag))
         {
@@ -56,92 +63,6 @@ public class Crop : ItemWithSources
             foreach (Product product in altProducts)
             {
                 products |= product.Type;
-            }
-        }
-        //determine most profitable product to sell
-        SellPrice = 0;
-        SellName = "";
-        if (SellCrop && products.HasFlag(ProductType.Crop))
-        {
-            if (cropType.HasFlag(CropType.Tiller))
-            {
-                CompareProduct((int)(basePrice * CropMultiplier), "Crops");
-            }
-            else
-            {
-                CompareProduct(basePrice, "Crops");
-            }
-        }
-        if (Keg && products.HasFlag(ProductType.Keg))
-        {
-            if (altKegPrice != -1)
-            {
-                CompareProduct(altKegMultiplier ? (int)(altKegPrice * ArtisanMultiplier) : altKegPrice, altKegName);
-            }
-            else if (cropType.HasFlag(CropType.FruitFlag))
-            {
-                CompareProduct((int)(3 * basePrice * ArtisanMultiplier), "Wine");
-            }
-            else if (cropType.HasFlag(CropType.VegeFlag))
-            {
-                CompareProduct((int)((int)(2.25 * basePrice) * ArtisanMultiplier), "Juice");
-            }
-        }
-        if (Jar && products.HasFlag(ProductType.Jar))
-        {
-            if (cropType.HasFlag(CropType.FruitFlag))
-            {
-                CompareProduct((int)((2 * basePrice + 50) * ArtisanMultiplier), "Jelly");
-            }
-            else if (cropType.HasFlag(CropType.VegeFlag))
-            {
-                CompareProduct((int)((2 * basePrice + 50) * ArtisanMultiplier), "Pickles");
-            }
-        }
-        if (OilMaker && products.HasFlag(ProductType.Oil))
-        {
-            CompareProduct(OilPrice, "Oil");
-        }
-        if (Mill && products.HasFlag(ProductType.Mill))
-        {
-
-        }
-
-        //determine most profitable replant method?
-        if (Name == "Sunflower")
-        {
-            switch (SunflowerChoice)
-            {
-                case 3:
-                    //replant
-                    break;
-                case 2:
-                    //oil
-                    break;
-                case 1:
-                    Profit += SunflowerSeedPrice;
-                    break;
-                case 0: //nothing
-                    break;
-            }
-        }
-        else
-        {
-            if (replant.HasFlag(ReplantMethod.Replant))
-            {
-
-            }
-            if (replant.HasFlag(ReplantMethod.Craft))
-            {
-
-            }
-            if (replant.HasFlag(ReplantMethod.SeedMaker))
-            {
-
-            }
-            if (replant.HasFlag(ReplantMethod.BoughtSeeds))
-            {
-
             }
         }
     }
@@ -212,13 +133,15 @@ public class Crop : ItemWithSources
         Craft = 1 << 3 //tea
     }
 
+    [Flags]
     public enum ProductType : byte //as what products can this crop sell as
     {
-        Crop,
-        Keg,
-        Jar,
-        Oil,
-        Mill
+        Any = 0,
+        Crop = 1,
+        Keg = 1 << 1,
+        Jar = 1 << 2,
+        Oil = 1 << 3,
+        Mill = 1 << 4
     }
     
     public class Product
