@@ -1,31 +1,40 @@
 ﻿using System;
+using System.Collections.Generic;
 
 public class Crop : ItemWithSources
 {
     public string Name { get; }
-    public CropType Type { get; }
     public Product SelectedProduct { get; }
 
-    public Season SelectedSeasons { get; set;}
+    public Season SelectedSeasons { get; set; }
     public Season AllowedSeasons { get; }
     public ReplantMethods SelectedReplantMethods { get; set; }
     public ReplantMethods AllowedReplantMethods { get; }
+    public Dictionary<ProductType, Product> ProductFrom { get; }
     
+    private readonly bool IsPaddyCrop;
     private readonly double AvgExtraCrops, Profit;
     private readonly int GrowthTime;
     private readonly int[] GrowthStagesOriginal;
     private int[] GrowthStages;
 
-    public Crop(string name, int basePrice, Season seasons, int[] growthStages, Dictionary<Sources, int> priceFrom, CropType cropType = CropType.Tiller, List<Product> altProducts = null, double extraCropChance = 0) : base(priceFrom)
+    public Crop(string name, int price, Season seasons, int[] growthStages, Dictionary<Sources, int> priceFrom, Dictionary<ProductType, Product> productFrom = null, CropType cropType = CropType.Tiller, List<Product> altProducts = null, double extraCropChance = 0) : base(priceFrom)
     {
         Name = name;
-        SeedPrice = seedPrice;
         AllowedSeasons = seasons;
         SelectedSeasons = seasons;
         
         GrowthStagesOriginal = growthStages;
         GrowthStages = new int[growthStages.Length]; 
         ResetGrowthStages();
+                
+        ProductFrom = productFrom;
+        if (CropType.HasFlag(Tiller))
+        {
+            price = (int) (1.1 * basePrice);
+        }
+        ProductFrom.Add(ProductType.Crop, new Product(name, price));
+        
         for (int i = 0; i < GrowthStages.Length; i++)
         {
             GrowthTime += growthStages[i];
@@ -143,7 +152,7 @@ public class Crop : ItemWithSources
         {
             speedMultiplier += 0.1;    
         }
-        if (irrigated && cropFlags.HasFlag(CropType.PaddyFlag))
+        if (irrigated && IsPaddyCrop)
         {
             speedMultiplier += 0.25;
         }
@@ -203,23 +212,24 @@ public class Crop : ItemWithSources
         Craft = 1 << 3 //tea
     }
 
-    [Flags]
     public enum ProductType : byte //as what products can this crop sell as
     {
-        Any = 0, //decide based on CropType
-        Crop = 1, //always unless user says no
-        Keg = 1 << 1, //wine, juice, or other
-        Jar = 1 << 2, //jelly or pickle
-        Common = Crop | Keg | Jar,
-        Oil = 1 << 3, //oil from corn or sunflower
-        Mill = 1 << 4 //flour, sugar, rice
+        Crop,
+        Keg,
+        Jar,
+        Oil,
+        Mill
     }
     
     public class Product
     {
         public string Name { get; }
-        public ProductType Type { get; }
-        public int SellPrice { get; }
+        public int Price { get; }
 
+        public Product(string name, int price)
+        {
+            Name = name;
+            Price = price;
+        }
     }
 }
