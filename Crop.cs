@@ -184,9 +184,11 @@ public class Crop : ItemWithSources
         Fruit = FruitFlag | Tiller,
         VegeFlag = 1 << 2,
         Vege = VegeFlag | Tiller,
-        ScytheFlag = 1 << 3,
+        GiantCropFlag = 1 << 3,
+        GiantCrop = GiantCropFlag | Tiller,
+        ScytheFlag = 1 << 4,
         Scythe = ScytheFlag | Vege,
-        PaddyFlag = 1 << 4,
+        PaddyFlag = 1 << 5,
         Paddy = PaddyFlag | Scythe
     }
 
