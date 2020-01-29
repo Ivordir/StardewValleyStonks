@@ -5,14 +5,12 @@ public class Crop : ItemWithSources
     public string Name { get; }
     public CropType Type { get; }
     public Product SelectedProduct { get; }
-    public int SelectedSeedPrice { get; }
 
     public Season SelectedSeasons { get; set;}
     public Season AllowedSeasons { get; }
     public ReplantMethods SelectedReplantMethods { get; set; }
     public ReplantMethods AllowedReplantMethods { get; }
-    public Dictionary<Sources, int> PriceFrom { get; }
-
+    
     private readonly double AvgExtraCrops, Profit;
     private readonly int GrowthTime;
     private readonly int[] GrowthStagesOriginal;
@@ -28,7 +26,6 @@ public class Crop : ItemWithSources
         GrowthStagesOriginal = growthStages;
         GrowthStages = new int[growthStages.Length]; 
         ResetGrowthStages();
-        PriceFrom = priceFrom;
         for (int i = 0; i < GrowthStages.Length; i++)
         {
             GrowthTime += growthStages[i];
