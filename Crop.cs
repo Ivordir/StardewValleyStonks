@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 
-public class Crop
+public class Crop : ItemWithSources
 {
     public string Name { get; }
     public CropType Type { get; }
@@ -19,7 +18,7 @@ public class Crop
     private readonly int[] GrowthStagesOriginal;
     private int[] GrowthStages;
 
-    public Crop(string name, int basePrice, Season seasons, int[] growthStages, Dictionary<Sources, int> priceFrom, CropType cropType = CropType.Tiller, List<Product> altProducts = null, double extraCropChance = 0)
+    public Crop(string name, int basePrice, Season seasons, int[] growthStages, Dictionary<Sources, int> priceFrom, CropType cropType = CropType.Tiller, List<Product> altProducts = null, double extraCropChance = 0) : base(priceFrom)
     {
         Name = name;
         SeedPrice = seedPrice;
