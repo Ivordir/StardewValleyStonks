@@ -3,11 +3,10 @@ using System.Collections.Generic;
 public abstract class ItemWithSources
 {
 	public int Price { get; set; }
-
-	private Sources SelectedSource;
-	private readonly int CheapestPrice;
-	private readonly Sources CheapestSource;
-	private readonly Dictionary<Sources, int> PriceFrom;
+	public Sources SelectedSource { get; set; }
+	public int CheapestPrice { get; };
+	public Sources CheapestSource { get; };
+	public Dictionary<Sources, int> PriceFrom { get; };
 
 	public ItemWithSources (Dictionary<Sources, int> priceFrom)
 	{
