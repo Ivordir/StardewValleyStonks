@@ -1,5 +1,5 @@
 [Flags]
-public enum Seasons
+public enum Season
 {
   Spring = 1,
   Summer = 1 << 1,
