@@ -4,28 +4,39 @@ using System.Collections.Generic;
 public class Crop : ItemWithSources
 {
     public string Name { get; }
-    public Product SelectedProduct { get; }
 
     public Season SelectedSeasons { get; set; }
     public Season AllowedSeasons { get; }
-    public ReplantMethod SelectedReplantMethods { get; set; }
-    public ReplantMethod AllowedReplantMethods { get; }
+    public Replant SelectedReplant { get; set; }
+    public Replant AllowedReplant { get; }
     public ProductType SelectedProducts { get; set; }
-    public ProductType AllowedProducts { get; set; }
+    public ProductType AllowedProducts { get; }
     
-    private readonly bool IsPaddyCrop;
-    private readonly double AvgCrops, AvgExtraCrops, Profit;
-    private readonly int TotalGrowthTime;
+    private readonly CropType Type;
+    private readonly double AvgCrops, AvgExtraCrops;
+    private readonly int TotalGrowthTime, BasePrice;
     private readonly int[] GrowthStagesOriginal;
     private int[] GrowthStages;
     private readonly Dictionary<ProductType, Product> ProductFrom;
 
-    public Crop(string name, int price, Season seasons, int[] growthStages, Dictionary<Sources, int> priceFrom, CropType cropType = CropType.Tiller, List<Product> altProducts = null, double extraCropChance = 0) : base(priceFrom)
+    public Crop(string name, int basePrice, Season seasons, int[] growthStages, Dictionary<Sources, int> priceFrom, double extraCropChance = 0, CropType cropType = CropType.Tiller, Replant replant = Replant.Common, Dictionary<ProductType, Product> productFrom = null) : base(priceFrom)
     {
         Name = name;
+                
         AllowedSeasons = seasons;
-        SelectedSeasons = seasons;
+        SelectedSeasons = AllowedSeasons;
+        AllowedReplant = replant;
+        SelectedReplant = AllowedReplant;
+        ProductFrom = productFrom != null ? productFrom : new Dictionary<ProductType, Product>();
+        AllowedProducts |= CropType.Crop;
+        if (Type.HasFlag(CropType.FruitFlag) || Type.HasFlag(CropType.VegeFlag))
+        {
+            AllowedProducts |= CropType.Keg | CropType.Jar;
+        } 
+        SelectedProducts = AllowedProducts;
         
+        Type = cropType;
+        BasePrice = basePrice;
         GrowthStagesOriginal = growthStages;
         GrowthStages = new int[growthStages.Length]; 
         ResetGrowthStages();
@@ -34,30 +45,14 @@ public class Crop : ItemWithSources
             TotalGrowthTime += growthStages[i];
         }
         
-        ProductFrom = new Dictionary<ProductType, Product>();
-        if (cropType.HasFlag(CropType.Tiller))
-        {
-            price = (int) (1.1 * price);
-        }
-        ProductFrom.Add(ProductType.Crop, new Product(name, price));
-        if (cropType.HasFlag(CropType.FruitFlag))
-        {
-            ProductFrom.Add(ProductType.Keg, 
-        }
-        
         AvgCrops = 1;
         AvgExtraCrops = 1.0 / (1 - extraCropChance);
-        if (!cropType.HasFlag(CropType.ScytheFlag)) //crops harvested with scythe have no double crop chance (i.e. Amaranth, Kale, Wheat, Rice)
+        if (!Type.HasFlag(CropType.ScytheFlag)) //crops harvested with scythe have no double crop chance (i.e. Amaranth, Kale, Wheat, Rice)
         {
             AvgExtraCrops = AvgExtraCrops * DoubleCropChance + AvgExtraCrops; //E=P(V), = DoubleCropChance(2*crops) + (1-DoubleCropChance)(crops)
         }
         AvgExtraCrops--;
-        
-        ProductType products = ProductType.Crop;
-        if (cropType.HasFlag(CropType.FruitFlag) || cropType.HasFlag(CropType.VegeFlag))
-        {
-            products |= ProductType.Jar | ProductType.Keg;
-        }
+
         if (altProducts != null)
         {
             foreach (Product product in altProducts)
@@ -124,7 +119,7 @@ public class Crop : ItemWithSources
     }
 
     [Flags]
-    public enum ReplantMethod : byte //in what ways can this crop be planted
+    public enum Replant : byte //in what ways can this crop be planted
     {
         None = 0, //why?
         BoughtSeeds = 1, //always an option unless user says no
@@ -149,11 +144,13 @@ public class Crop : ItemWithSources
     {
         public string Name { get; }
         public int Price { get; }
+        public bool UsesMultiplier { get; }
 
-        public Product(string name, int price)
+        public Product(string name, int price, bool usesMultiplier)
         {
             Name = name;
             Price = price;
+            UsesMultiplier = usesMultiplier;
         }
     }
 }
