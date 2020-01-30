@@ -8,17 +8,17 @@ public class Crop : ItemWithSources
 
     public Season SelectedSeasons { get; set; }
     public Season AllowedSeasons { get; }
-    public ReplantMethods SelectedReplantMethods { get; set; }
-    public ReplantMethods AllowedReplantMethods { get; }
+    public ReplantMethod SelectedReplantMethods { get; set; }
+    public ReplantMethod AllowedReplantMethods { get; }
     public ProductType SelectedProducts { get; set; }
     public ProductType AllowedProducts { get; set; }
-    public Dictionary<ProductType, Product> ProductFrom { get; }
     
     private readonly bool IsPaddyCrop;
     private readonly double AvgCrops, AvgExtraCrops, Profit;
-    private readonly int GrowthTime;
+    private readonly int TotalGrowthTime;
     private readonly int[] GrowthStagesOriginal;
     private int[] GrowthStages;
+    private readonly Dictionary<ProductType, Product> ProductFrom;
 
     public Crop(string name, int price, Season seasons, int[] growthStages, Dictionary<Sources, int> priceFrom, CropType cropType = CropType.Tiller, List<Product> altProducts = null, double extraCropChance = 0) : base(priceFrom)
     {
@@ -31,16 +31,16 @@ public class Crop : ItemWithSources
         ResetGrowthStages();
         for (int i = 0; i < GrowthStages.Length; i++)
         {
-            GrowthTime += growthStages[i];
+            TotalGrowthTime += growthStages[i];
         }
         
         ProductFrom = new Dictionary<ProductType, Product>();
-        if (CropType.HasFlag(Tiller))
+        if (cropType.HasFlag(CropType.Tiller))
         {
-            price = (int) (1.1 * basePrice);
+            price = (int) (1.1 * price);
         }
         ProductFrom.Add(ProductType.Crop, new Product(name, price));
-        if (CropType.HasFlag(FruitFlag))
+        if (cropType.HasFlag(CropType.FruitFlag))
         {
             ProductFrom.Add(ProductType.Keg, 
         }
@@ -77,15 +77,15 @@ public class Crop : ItemWithSources
         {
             speedMultiplier += 0.25;
         }
-        int maxReduction = (int) Math.Ceiling(GrowthDays * speedMultiplier);
+        int maxReduction = (int) Math.Ceiling(TotalGrowthTime * speedMultiplier);
         int daysReduced = 0;
         for (int passes = 0; maxReduction > daysReduced && passes < 3; passes++)
         {
-            for (int stage = 0; stage < GrowthStages; stage++)
+            for (int stage = 0; stage < GrowthStages.Length; stage++)
             {
-                if (stage > 0 || growthStagesCopy[stage] > 1)
+                if (stage > 0 || GrowthStages[stage] > 1)
                 {
-                    growthStagesCopy[stage]--;
+                    GrowthStages[stage]--;
                     daysReduced++;
                     if (maxReduction == daysReduced)
                     {
@@ -94,14 +94,15 @@ public class Crop : ItemWithSources
                 }
             }
         }
-        return GrowthTime - daysReduced;
+        ResetGrowthStages();
+        return TotalGrowthTime - daysReduced;
     }
 
     private void ResetGrowthStages()
     {
         for (int i = 0; i < GrowthStagesOriginal.Length; i++)
         {
-            GrowthStages[i] = GrowthStagesOriginial[i];    
+            GrowthStages[i] = GrowthStagesOriginal[i];    
         }
     }
     
