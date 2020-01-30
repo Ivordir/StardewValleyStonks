@@ -68,7 +68,7 @@ public class Crop : ItemWithSources
         {
             speedMultiplier += 0.1;    
         }
-        if (irrigated && IsPaddyCrop)
+        if (irrigated && Type.HasFlag(PaddyFlag))
         {
             speedMultiplier += 0.25;
         }
@@ -144,13 +144,13 @@ public class Crop : ItemWithSources
     {
         public string Name { get; }
         public int Price { get; }
-        public bool UsesMultiplier { get; }
+        public bool ArtisanMulti { get; }
 
-        public Product(string name, int price, bool usesMultiplier)
+        public Product(string name, int price, bool artisanMulti = false)
         {
             Name = name;
             Price = price;
-            UsesMultiplier = usesMultiplier;
+            ArtisanMult = artisanMulti;
         }
     }
 }
