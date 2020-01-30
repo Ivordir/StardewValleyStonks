@@ -4,13 +4,14 @@ using System.Collections.Generic;
 public class Crop : ItemWithSources
 {
     public string Name { get; }
+    public Product Product { get; }
 
-    public Season SelectedSeasons { get; set; }
     public Season AllowedSeasons { get; }
-    public Replant SelectedReplant { get; set; }
+    public Season SelectedSeasons { get; set; }
     public Replant AllowedReplant { get; }
-    public ProductType SelectedProducts { get; set; }
+    public Replant SelectedReplant { get; set; }
     public ProductType AllowedProducts { get; }
+    public ProductType SelectedProducts { get; set; }
     
     private readonly CropType Type;
     private readonly double AvgCrops, AvgExtraCrops;
@@ -19,7 +20,7 @@ public class Crop : ItemWithSources
     private int[] GrowthStages;
     private readonly Dictionary<ProductType, Product> ProductFrom;
 
-    public Crop(string name, int basePrice, Season seasons, int[] growthStages, Dictionary<Sources, int> priceFrom, double extraCropChance = 0, CropType cropType = CropType.Tiller, Replant replant = Replant.Common, Dictionary<ProductType, Product> productFrom = null) : base(priceFrom)
+    public Crop(string name, int basePrice, Dictionary<Sources, int> priceFrom, Season seasons, int[] growthStages, int regrowTime = -1, double extraCropChance = 0, CropType cropType = CropType.Tiller, Replant replant = Replant.Common, Dictionary<ProductType, Product> productFrom = null) : base(priceFrom)
     {
         Name = name;
                 
@@ -27,12 +28,23 @@ public class Crop : ItemWithSources
         SelectedSeasons = AllowedSeasons;
         AllowedReplant = replant;
         SelectedReplant = AllowedReplant;
-        ProductFrom = productFrom != null ? productFrom : new Dictionary<ProductType, Product>();
+        if (productFrom == null)
+        {
+            ProductFrom = new Dictionary<ProductType, Product>();
+        }
+        else
+        {
+            ProductFrom = productFrom;
+            foreach (ProductType key in ProductFrom.Keys)
+		    {
+                AllowedProducts |= key;
+            }
+        }
         AllowedProducts |= CropType.Crop;
         if (Type.HasFlag(CropType.FruitFlag) || Type.HasFlag(CropType.VegeFlag))
         {
             AllowedProducts |= CropType.Keg | CropType.Jar;
-        } 
+        }
         SelectedProducts = AllowedProducts;
         
         Type = cropType;
@@ -42,7 +54,7 @@ public class Crop : ItemWithSources
         ResetGrowthStages();
         for (int i = 0; i < GrowthStages.Length; i++)
         {
-            TotalGrowthTime += growthStages[i];
+            TotalGrowthTime += GrowthStages[i];
         }
         
         AvgCrops = 1;
@@ -92,6 +104,36 @@ public class Crop : ItemWithSources
         ResetGrowthStages();
         return TotalGrowthTime - daysReduced;
     }
+    
+    private void SetBestProduct()
+    {
+        List<Product> products = new List<Product>();
+        
+        if(SelectedProducts.HasFlag(Crop))
+        {
+            int price = basePrice;
+            if(tiller && Type.HasFlag(Tiller))
+            {
+                price = (int) (price * 1.1); 
+            }
+            products.Add(new Product(name, price));
+        }
+        if(SelectedProducts.HasFlag(Jar))
+        {
+            if(ProductFrom.HasFlag(ProductType.Jar))
+            {
+                
+            }
+            else if (Type.HasFlag(VegeFlag))
+            {
+                
+            }
+            else if (Type.hasFlag(FruitFlag))
+            {
+            
+            }
+        }
+    }
 
     private void ResetGrowthStages()
     {
@@ -134,8 +176,8 @@ public class Crop : ItemWithSources
     {
         Any = 0,
         Crop = 1,
-        Keg = 1 << 1,
-        Jar = 1 << 2,
+        Jar = 1 << 1,
+        Keg = 1 << 2,
         Oil = 1 << 3,
         Mill = 1 << 4
     }
