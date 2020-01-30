@@ -122,8 +122,16 @@ public class Crop : ItemWithSources
         {
             if(ProductFrom.HasFlag(ProductType.Jar))
             {
-                
-            }
+                Product product = ProductFrom[ProductType.Jar];
+		if (product.ArtisanMulti && artisan)
+		{
+		    products.Add(product.ApplyArtisan);
+		}
+		else
+		{
+		    products.Add(product);
+		}
+            }   
             else if (Type.HasFlag(VegeFlag))
             {
                 
@@ -185,14 +193,20 @@ public class Crop : ItemWithSources
     public class Product
     {
         public string Name { get; }
-        public int Price { get; }
-        public bool ArtisanMulti { get; }
+	
+        private readonly int BasePrice;
+        private readonly bool UsesArtisan;
 
-        public Product(string name, int price, bool artisanMulti = false)
+        public Product(string name, int price, bool usesArtisan = false)
         {
             Name = name;
-            Price = price;
-            ArtisanMult = artisanMulti;
+            BasePrice = price;
+            UsesArtisan = usesArtisan;
         }
+	
+	public int Price()
+	{
+	    return new Product(Name, (int)
+	}
     }
 }
