@@ -109,38 +109,56 @@ public class Crop : ItemWithSources
     {
         List<Product> products = new List<Product>();
         
-        if(SelectedProducts.HasFlag(Crop))
+        if(SelectedProducts.HasFlag(ProductType.Crop))
         {
             products.Add(new Product(name, tiller && Type.HasFlag(Tiller) ? (int) (BasePrice * 1.1) : BasePrice));
         }
-        if(SelectedProducts.HasFlag(Jar))
+        if(SelectedProducts.HasFlag(ProductType.Jar))
         {
-            if(ProductFrom.HasFlag(ProductType.Jar))
+            if(ProductFrom.ContainsKey(ProductType.Jar))
             {
                 products.Add(ProductFrom[ProductType.Jar]);
             }   
-            else if (Type.HasFlag(VegeFlag))
+            else if (Type.HasFlag(CropType.VegeFlag))
             {
                 products.Add(new Product("Pickle", 2 * BasePrice + 50, true);
             }
-            else if (Type.hasFlag(FruitFlag))
+            else if (Type.HasFlag(CropType.FruitFlag))
             {
-            	products.Add(new Product("Jame", 2 * BasePrice + 50, true);
+            	products.Add(new Product("Jam", 2 * BasePrice + 50, true);
             }
         }
-	if(SelectedProducts.HasFlag(Oil))
-	{
-	    if(ProductFrom.HasFlag(ProductType.Oil))
-	    {
-		products.Add(ProductFrom[ProductType.Oil]);
-	    }
-	    products.Add(Product.Oil);
+		if(SelectedProducts.HasFlag(ProductType.Key)
+		{
+			if(ProductFrom.ContainsKey(ProductType.Keg))
+            {
+                products.Add(ProductFrom[ProductType.Keg]);
+            }   
+            else if (Type.HasFlag(CropType.VegeFlag))
+            {
+                products.Add(new Product("Juice", (int) (2.25 * BasePrice), true);
+            }
+            else if (Type.HasFlag(CropType.FruitFlag))
+            {
+            	products.Add(new Product("Wine", 3 * BasePrice, true);
+            }
+		}
+		if(SelectedProducts.HasFlag(ProductType.Oil))
+		{
+			if(ProductFrom.ContainsKey(ProductType.Oil))
+			{
+				products.Add(ProductFrom[ProductType.Oil]);
+			}
+			else
+			{
+				products.Add(Product.Oil);
+			}
+		}
+		if(SelectedProducts.HasFlag(ProductType.Mill))
+		{
+			products.Add(ProductFrom[ProductType.Mill]);
+		}
 	}
-	if(SelectedProducts.HasFlag(Mill))
-	{
-	    products.Add(ProductFrom[ProductType.Mill]);
-	}
-    }
 
     private void ResetGrowthStages()
     {
@@ -153,7 +171,6 @@ public class Crop : ItemWithSources
     [Flags]
     public enum CropType : byte //what bonuses do/do not apply to this crop and what products can this crop sell as unless overridden
     {
-        Basic = 0,
         Tiller = 1,
         FruitFlag = 1 << 1,
         Fruit = FruitFlag | Tiller,
@@ -170,18 +187,15 @@ public class Crop : ItemWithSources
     [Flags]
     public enum Replant : byte //in what ways can this crop be planted
     {
-        None = 0, //why?
         BoughtSeeds = 1, //always an option unless user says no
         SeedMaker = 1 << 1, //always unless tea, coffee, no seedmaker, or user says no. seed chance = 0.975 unless ancient fruit where seed chance = 0.98
         Common = BoughtSeeds | SeedMaker,
         Replant = 1 << 2, //coffee and sunflower
-        Craft = 1 << 3 //tea
     }
 
     [Flags]
     public enum ProductType : byte //as what products can this crop sell as
     {
-        Any = 0,
         Crop = 1,
         Jar = 1 << 1,
         Keg = 1 << 2,
@@ -193,10 +207,10 @@ public class Crop : ItemWithSources
     {
     	public static Product Oil;
 	
-	static Product
-	{
-	    Oil = new Products("Oil", 100);
-	}
+		static Product()
+		{
+			Oil = new Product("Oil", 100);
+		}
     	
         public string Name { get; }
 	
