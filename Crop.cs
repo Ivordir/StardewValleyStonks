@@ -61,17 +61,20 @@ public class Crop : ItemWithSources
         
 		if(Type.HasFlag(CropType.GiantCrop))
 		{
-			
+			//GiantCropChecksPerTile = 9;
+        	//GiantCropProb = (1 - Math.Pow(0.99, GiantCropChecksPerTile));
+			AvgCrops = 1 - GiantCropProb;
+			//assume extraCropChance == 0
+            AvgExtraCrops = 2 * GiantCropYields;
 		}
 		else
 		{
 			AvgCrops = 1;
-			AvgExtraCrops = 1.0 / (1 - extraCropChance);
-			if (!Type.HasFlag(CropType.ScytheFlag)) //crops harvested with scythe have no double crop chance (i.e. Amaranth, Kale, Wheat, Rice)
-			{
-				AvgExtraCrops = AvgExtraCrops * DoubleCropChance + AvgExtraCrops; //E=P(V), = DoubleCropChance(2*crops) + (1-DoubleCropChance)(crops)
-			}
-			AvgExtraCrops--;
+			AvgExtraCrops = 1.0 / (1 - extraCropChance) - 1;
+		}
+		if (!Type.HasFlag(CropType.ScytheFlag)) //crops harvested with scythe have no double crop chance (i.e. Amaranth, Kale, Wheat, Rice)
+		{
+			AvgExtraCrops += AvgCrops * DoubleCropChance + AvgCrops; //E=P(V), = DoubleCropChance(2*crops) + (1-DoubleCropChance)(crops)
 		}
     }
     
