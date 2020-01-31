@@ -215,22 +215,22 @@ public class Crop : ItemWithSources
 		{
 			Oil = new Product("Oil", 100);
 		}
-    	
-        public string Name { get; }
-	
-        private readonly int Price;
-        private readonly bool UsesArtisan;
 
-        public Product(string name, int price, bool usesArtisan = false)
-        {
-            Name = name;
-            Price = price;
-            UsesArtisan = usesArtisan;
-        }
-	
-	public int Price()
-	{
-	    return artisan ? (int) (Price * 1.4) : Price;
-	}
+		public string Name { get; }
+
+		private readonly int Price;
+		private readonly bool UsesArtisan;
+
+		public Product(string name, int price, bool usesArtisan = false)
+		{
+			Name = name;
+			Price = price;
+			UsesArtisan = usesArtisan;
+		}
+
+		public int Price()
+		{
+			return artisan && usesArtisan ? (int) (Price * 1.4) : Price;
+		}
     }
 }
