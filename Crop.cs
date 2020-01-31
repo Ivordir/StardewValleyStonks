@@ -36,7 +36,7 @@ public class Crop : ItemWithSources
         {
             ProductFrom = productFrom;
             foreach (ProductType key in ProductFrom.Keys)
-		    {
+	    {
                 AllowedProducts |= key;
             }
         }
@@ -111,36 +111,35 @@ public class Crop : ItemWithSources
         
         if(SelectedProducts.HasFlag(Crop))
         {
-            int price = basePrice;
-            if(tiller && Type.HasFlag(Tiller))
-            {
-                price = (int) (price * 1.1); 
-            }
-            products.Add(new Product(name, price));
+            products.Add(new Product(name, tiller && Type.HasFlag(Tiller) ? (int) (BasePrice * 1.1) : BasePrice));
         }
         if(SelectedProducts.HasFlag(Jar))
         {
             if(ProductFrom.HasFlag(ProductType.Jar))
             {
-                Product product = ProductFrom[ProductType.Jar];
-		if (product.ArtisanMulti && artisan)
-		{
-		    products.Add(product.ApplyArtisan);
-		}
-		else
-		{
-		    products.Add(product);
-		}
+                products.Add(ProductFrom[ProductType.Jar]);
             }   
             else if (Type.HasFlag(VegeFlag))
             {
-                
+                products.Add(new Product("Pickle", 2 * BasePrice + 50, true);
             }
             else if (Type.hasFlag(FruitFlag))
             {
-            
+            	products.Add(new Product("Jame", 2 * BasePrice + 50, true);
             }
         }
+	if(SelectedProducts.HasFlag(Oil))
+	{
+	    if(ProductFrom.HasFlag(ProductType.Oil))
+	    {
+		products.Add(ProductFrom[ProductType.Oil]);
+	    }
+	    products.Add(Product.Oil);
+	}
+	if(SelectedProducts.HasFlag(Mill))
+	{
+	    products.Add(ProductFrom[ProductType.Mill]);
+	}
     }
 
     private void ResetGrowthStages()
@@ -192,21 +191,28 @@ public class Crop : ItemWithSources
     
     public class Product
     {
+    	public static Product Oil;
+	
+	static Product
+	{
+	    Oil = new Products("Oil", 100);
+	}
+    	
         public string Name { get; }
 	
-        private readonly int BasePrice;
+        private readonly int Price;
         private readonly bool UsesArtisan;
 
         public Product(string name, int price, bool usesArtisan = false)
         {
             Name = name;
-            BasePrice = price;
+            Price = price;
             UsesArtisan = usesArtisan;
         }
 	
 	public int Price()
 	{
-	    return new Product(Name, (int)
+	    return artisan ? (int) (Price * 1.4) : Price;
 	}
     }
 }
