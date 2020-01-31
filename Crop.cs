@@ -4,7 +4,7 @@ using System.Collections.Generic;
 public class Crop : ItemWithSources
 {
     public string Name { get; }
-    public Product Product { get; }
+    //public Product BestProduct { get; set; }
 
     public Season AllowedSeasons { get; }
     public Season SelectedSeasons { get; set; }
@@ -22,8 +22,7 @@ public class Crop : ItemWithSources
 
     public Crop(string name, int basePrice, Dictionary<Sources, int> priceFrom, Season seasons, int[] growthStages, int regrowTime = -1, double extraCropChance = 0, CropType cropType = CropType.Tiller, Replant replant = Replant.Common, Dictionary<ProductType, Product> productFrom = null) : base(priceFrom)
     {
-        Name = name;
-                
+        Name = name; 
         AllowedSeasons = seasons;
         SelectedSeasons = AllowedSeasons;
         AllowedReplant = replant;
@@ -35,9 +34,9 @@ public class Crop : ItemWithSources
         else
         {
             ProductFrom = productFrom;
-            foreach (ProductType key in ProductFrom.Keys)
-	    {
-                AllowedProducts |= key;
+            foreach (ProductType type in ProductFrom.Keys)
+	    	{
+                AllowedProducts |= type;
             }
         }
         AllowedProducts |= CropType.Crop;
@@ -50,28 +49,27 @@ public class Crop : ItemWithSources
         Type = cropType;
         BasePrice = basePrice;
         GrowthStagesOriginal = growthStages;
-        GrowthStages = new int[growthStages.Length]; 
+        GrowthStages = new int[GrowthStagesOriginal.Length]; 
         ResetGrowthStages();
-        for (int i = 0; i < GrowthStages.Length; i++)
+        for (int i = 0; i < GrowthStagesOriginal.Length; i++)
         {
-            TotalGrowthTime += GrowthStages[i];
+            TotalGrowthTime += GrowthStagesOriginal[i];
         }
         
-        AvgCrops = 1;
-        AvgExtraCrops = 1.0 / (1 - extraCropChance);
-        if (!Type.HasFlag(CropType.ScytheFlag)) //crops harvested with scythe have no double crop chance (i.e. Amaranth, Kale, Wheat, Rice)
-        {
-            AvgExtraCrops = AvgExtraCrops * DoubleCropChance + AvgExtraCrops; //E=P(V), = DoubleCropChance(2*crops) + (1-DoubleCropChance)(crops)
-        }
-        AvgExtraCrops--;
-
-        if (altProducts != null)
-        {
-            foreach (Product product in altProducts)
-            {
-                products |= product.Type;
-            }
-        }
+		if(Type.HasFlag(CropType.GiantCrop))
+		{
+			
+		}
+		else
+		{
+			AvgCrops = 1;
+			AvgExtraCrops = 1.0 / (1 - extraCropChance);
+			if (!Type.HasFlag(CropType.ScytheFlag)) //crops harvested with scythe have no double crop chance (i.e. Amaranth, Kale, Wheat, Rice)
+			{
+				AvgExtraCrops = AvgExtraCrops * DoubleCropChance + AvgExtraCrops; //E=P(V), = DoubleCropChance(2*crops) + (1-DoubleCropChance)(crops)
+			}
+			AvgExtraCrops--;
+		}
     }
     
     public int GrowthTime (double speedMultiplier)
