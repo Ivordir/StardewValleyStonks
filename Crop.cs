@@ -4,6 +4,7 @@ using System.Collections.Generic;
 public class Crop : ItemWithSources
 {
     public string Name { get; }
+    public int RegrowTime { get; }
     //public Product BestProduct { get; set; }
 
     public Season AllowedSeasons { get; }
@@ -23,6 +24,8 @@ public class Crop : ItemWithSources
     public Crop(string name, int basePrice, Dictionary<Sources, int> priceFrom, Season seasons, int[] growthStages, int regrowTime = -1, double extraCropChance = 0, CropType cropType = CropType.Tiller, Replant replant = Replant.Common, Dictionary<ProductType, Product> productFrom = null) : base(priceFrom)
     {
         Name = name; 
+	RegrowTime = regrowTime;
+	
         AllowedSeasons = seasons;
         SelectedSeasons = AllowedSeasons;
         AllowedReplant = replant;
