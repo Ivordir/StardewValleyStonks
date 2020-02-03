@@ -5,7 +5,7 @@ public class Crop : ItemWithSources
 {
 	public string Name { get; }
 	public int RegrowTime { get; }
-    //public Product BestProduct { get; set; }
+	public Product Product { get; set; }
 
 	public Season AllowedSeasons { get; }
 	public Season SelectedSeasons { get; set; }
@@ -58,7 +58,9 @@ public class Crop : ItemWithSources
 		{
 			TotalGrowthTime += GrowthStagesOriginal[i];
 		}
-      
+		
+      	SetBestProduct();
+		
 		if(Type.HasFlag(CropType.GiantCrop))
 		{
 			//GiantCropChecksPerTile = 9;
@@ -125,11 +127,11 @@ public class Crop : ItemWithSources
             }   
             else if (Type.HasFlag(CropType.VegeFlag))
             {
-                products.Add(new Product("Pickle", 2 * BasePrice + 50, true);
+                products.Add(new Product(Name + "Pickle", 2 * BasePrice + 50, true);
             }
             else if (Type.HasFlag(CropType.FruitFlag))
             {
-            	products.Add(new Product("Jam", 2 * BasePrice + 50, true);
+            	products.Add(new Product(Name + "Jam", 2 * BasePrice + 50, true);
             }
         }
 		if(SelectedProducts.HasFlag(ProductType.Key)
@@ -140,11 +142,11 @@ public class Crop : ItemWithSources
             }   
             else if (Type.HasFlag(CropType.VegeFlag))
             {
-                products.Add(new Product("Juice", (int) (2.25 * BasePrice), true);
+                products.Add(new Product(Name + " Juice", (int) (2.25 * BasePrice), true);
             }
             else if (Type.HasFlag(CropType.FruitFlag))
             {
-            	products.Add(new Product("Wine", 3 * BasePrice, true);
+            	products.Add(new Product(Name + " Wine", 3 * BasePrice, true);
             }
 		}
 		if(SelectedProducts.HasFlag(ProductType.Oil))
@@ -161,6 +163,14 @@ public class Crop : ItemWithSources
 		if(SelectedProducts.HasFlag(ProductType.Mill))
 		{
 			products.Add(ProductFrom[ProductType.Mill]);
+		}
+		Product = products[0];
+		for (int i = 1; i < products.Count; i++)
+		{
+			if(products[i].Price() > Product.Price())
+			{
+				Product = products[i];	
+			}
 		}
 	}
 
@@ -210,7 +220,7 @@ public class Crop : ItemWithSources
     public class Product
     {
     	public static Product Oil;
-	
+		
 		static Product()
 		{
 			Oil = new Product("Oil", 100);
