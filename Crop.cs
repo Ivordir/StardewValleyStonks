@@ -78,76 +78,75 @@ public class Crop : ItemWithSources
 		{
 			AvgExtraCrops += AvgCrops * DoubleCropChance + AvgCrops; //E=P(V), = DoubleCropChance(2*crops) + (1-DoubleCropChance)(crops)
 		}
-    }
+	}
     
-    public int GrowthTime (double speedMultiplier)
-    {
-        if (agri)
-        {
-            speedMultiplier += 0.1;    
-        }
-        if (irrigated && Type.HasFlag(PaddyFlag))
-        {
-            speedMultiplier += 0.25;
-        }
-        int maxReduction = (int) Math.Ceiling(TotalGrowthTime * speedMultiplier);
-        int daysReduced = 0;
-        for (int passes = 0; maxReduction > daysReduced && passes < 3; passes++)
-        {
-            for (int stage = 0; stage < GrowthStages.Length; stage++)
-            {
-                if (stage > 0 || GrowthStages[stage] > 1)
-                {
-                    GrowthStages[stage]--;
-                    daysReduced++;
-                    if (maxReduction == daysReduced)
-                    {
-                        break;
-                    }
-                }
-            }
-        }
-        ResetGrowthStages();
-        return TotalGrowthTime - daysReduced;
-    }
+	public int GrowthTime (double speedMultiplier)
+	{
+    		if (agri)
+		{
+			speedMultiplier += 0.1;
+	    	}
+		if (irrigated && Type.HasFlag(PaddyFlag))
+		{
+			speedMultiplier += 0.25;
+		}
+		int maxReduction = (int) Math.Ceiling(TotalGrowthTime * speedMultiplier);
+		int daysReduced = 0;
+		for (int passes = 0; maxReduction > daysReduced && passes < 3; passes++)
+		{
+			for (int stage = 0; stage < GrowthStages.Length; stage++)
+	    		{
+				if (stage > 0 || GrowthStages[stage] > 1)
+				{
+					GrowthStages[stage]--;
+		    			daysReduced++;
+		    			if (maxReduction == daysReduced)
+		    			{
+		    				break;
+					}
+		    		}
+			}
+		}
+		ResetGrowthStages();
+		return TotalGrowthTime - daysReduced;
+	}
     
-    private void CalcBestProduct()
-    {
-        List<Product> products = new List<Product>();
-        
-        if(SelectedProducts.HasFlag(ProductType.Crop))
-        {
-            products.Add(new Product(name, tiller && Type.HasFlag(Tiller) ? (int) (BasePrice * 1.1) : BasePrice));
-        }
-        if(SelectedProducts.HasFlag(ProductType.Jar))
-        {
-            if(ProductFrom.ContainsKey(ProductType.Jar))
-            {
-                products.Add(ProductFrom[ProductType.Jar]);
-            }   
-            else if (Type.HasFlag(CropType.VegeFlag))
-            {
-                products.Add(new Product(Name + "Pickle", 2 * BasePrice + 50, true);
-            }
-            else if (Type.HasFlag(CropType.FruitFlag))
-            {
-            	products.Add(new Product(Name + "Jam", 2 * BasePrice + 50, true);
-            }
-        }
+	private void CalcBestProduct()
+	{
+		List<Product> products = new List<Product>();
+        	if(SelectedProducts.HasFlag(ProductType.Crop))
+		{
+			products.Add(new Product(name, tiller && Type.HasFlag(Tiller) ? (int) (BasePrice * 1.1) : BasePrice));
+		}
+		if(SelectedProducts.HasFlag(ProductType.Jar))
+		{
+			if(ProductFrom.ContainsKey(ProductType.Jar))
+			{
+				products.Add(ProductFrom[ProductType.Jar]);
+			}
+			else if (Type.HasFlag(CropType.VegeFlag))
+			{
+				products.Add(new Product(Name + "Pickle", 2 * BasePrice + 50, true);
+			}
+			else if (Type.HasFlag(CropType.FruitFlag))
+			{
+				products.Add(new Product(Name + "Jam", 2 * BasePrice + 50, true);
+			}
+		}
 		if(SelectedProducts.HasFlag(ProductType.Key)
 		{
 			if(ProductFrom.ContainsKey(ProductType.Keg))
-            {
-                products.Add(ProductFrom[ProductType.Keg]);
-            }   
-            else if (Type.HasFlag(CropType.VegeFlag))
-            {
-                products.Add(new Product(Name + " Juice", (int) (2.25 * BasePrice), true);
-            }
-            else if (Type.HasFlag(CropType.FruitFlag))
-            {
-            	products.Add(new Product(Name + " Wine", 3 * BasePrice, true);
-            }
+			{
+				products.Add(ProductFrom[ProductType.Keg]);
+			}
+			else if (Type.HasFlag(CropType.VegeFlag))
+			{
+				products.Add(new Product(Name + " Juice", (int) (2.25 * BasePrice), true);
+			}
+			else if (Type.HasFlag(CropType.FruitFlag))
+			{
+				products.Add(new Product(Name + " Wine", 3 * BasePrice, true);
+			}
 		}
 		if(SelectedProducts.HasFlag(ProductType.Oil))
 		{
@@ -174,14 +173,14 @@ public class Crop : ItemWithSources
 		}
 	}
 
-    private void ResetGrowthStages()
-    {
-        for (int i = 0; i < GrowthStagesOriginal.Length; i++)
-        {
-            GrowthStages[i] = GrowthStagesOriginal[i];    
-        }
-    }
-    
+	private void ResetGrowthStages()
+	{
+		for (int i = 0; i < GrowthStagesOriginal.Length; i++)
+		{
+			GrowthStages[i] = GrowthStagesOriginal[i];
+		}
+	}
+
 	public string Image
 	{
 		get
@@ -190,44 +189,44 @@ public class Crop : ItemWithSources
 		};
 	}
 	
-    [Flags]
-    public enum CropType : byte //what bonuses do/do not apply to this crop and what products can this crop sell as unless overridden
-    {
-        Tiller = 1,
-        FruitFlag = 1 << 1,
-        Fruit = FruitFlag | Tiller,
-        VegeFlag = 1 << 2,
-        Vege = VegeFlag | Tiller,
-        GiantCropFlag = 1 << 3,
-        GiantCrop = GiantCropFlag | Tiller,
-        ScytheFlag = 1 << 4,
-        Scythe = ScytheFlag | Vege,
-        PaddyFlag = 1 << 5,
-        Paddy = PaddyFlag | Scythe
-    }
+	[Flags]
+	public enum CropType : byte //what bonuses do/do not apply to this crop and what products can this crop sell as unless overridden
+	{
+		Tiller = 1,
+		FruitFlag = 1 << 1,
+		Fruit = FruitFlag | Tiller,
+		VegeFlag = 1 << 2,
+		Vege = VegeFlag | Tiller,
+		GiantCropFlag = 1 << 3,
+		GiantCrop = GiantCropFlag | Tiller,
+		ScytheFlag = 1 << 4,
+		Scythe = ScytheFlag | Vege,
+		PaddyFlag = 1 << 5,
+		Paddy = PaddyFlag | Scythe
+	}
 
-    [Flags]
-    public enum Replant : byte //in what ways can this crop be planted
-    {
-        BoughtSeeds = 1, //always an option unless user says no
-        SeedMaker = 1 << 1, //always unless tea, coffee, no seedmaker, or user says no. seed chance = 0.975 unless ancient fruit where seed chance = 0.98
-        Common = BoughtSeeds | SeedMaker,
-        Replant = 1 << 2, //coffee and sunflower
-    }
+	[Flags]
+	public enum Replant : byte //in what ways can this crop be planted
+	{
+		BoughtSeeds = 1, //always an option unless user says no
+		SeedMaker = 1 << 1, //always unless tea, coffee, no seedmaker, or user says no. seed chance = 0.975 unless ancient fruit where seed chance = 0.98
+		Common = BoughtSeeds | SeedMaker,
+		Replant = 1 << 2, //coffee and sunflower
+	}
 
-    [Flags]
-    public enum ProductType : byte //as what products can this crop sell as
-    {
-        Crop = 1,
-        Jar = 1 << 1,
-        Keg = 1 << 2,
-        Oil = 1 << 3,
-        Mill = 1 << 4
-    }
+	[Flags]
+	public enum ProductType : byte //as what products can this crop sell as
+	{
+		Crop = 1,
+		Jar = 1 << 1,
+		Keg = 1 << 2,
+		Oil = 1 << 3,
+		Mill = 1 << 4
+	}
     
-    public class Product
-    {
-    	public static Product Oil;
+	public class Product
+	{
+		public static Product Oil;
 		
 		static Product()
 		{
@@ -253,5 +252,5 @@ public class Crop : ItemWithSources
 				return artisan && usesArtisan ? (int) (Price * 1.4) : Price;
 			};
 		}
-    }
+	}
 }
