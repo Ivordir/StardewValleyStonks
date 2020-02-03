@@ -59,7 +59,7 @@ public class Crop : ItemWithSources
 			TotalGrowthTime += GrowthStagesOriginal[i];
 		}
 		
-      	SetBestProduct();
+		CalcBestProduct();
 		
 		if(Type.HasFlag(CropType.GiantCrop))
 		{
@@ -111,7 +111,7 @@ public class Crop : ItemWithSources
         return TotalGrowthTime - daysReduced;
     }
     
-    private void SetBestProduct()
+    private void CalcBestProduct()
     {
         List<Product> products = new List<Product>();
         
@@ -182,6 +182,14 @@ public class Crop : ItemWithSources
         }
     }
     
+	public string Image
+	{
+		get
+		{
+			return "images/crops/" + Name + ".png";
+		};
+	}
+	
     [Flags]
     public enum CropType : byte //what bonuses do/do not apply to this crop and what products can this crop sell as unless overridden
     {
@@ -238,9 +246,12 @@ public class Crop : ItemWithSources
 			UsesArtisan = usesArtisan;
 		}
 
-		public int Price()
+		public int Price
 		{
-			return artisan && usesArtisan ? (int) (Price * 1.4) : Price;
+			get
+			{
+				return artisan && usesArtisan ? (int) (Price * 1.4) : Price;
+			};
 		}
     }
 }
