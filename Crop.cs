@@ -82,10 +82,10 @@ public class Crop : ItemWithSources
     
 	public int GrowthTime (float speedMultiplier)
 	{
-    		if (agri)
+		if (agri)
 		{
 			speedMultiplier += 0.1;
-	    	}
+		}
 		if (irrigated && Type.HasFlag(PaddyFlag))
 		{
 			speedMultiplier += 0.25;
@@ -114,7 +114,8 @@ public class Crop : ItemWithSources
 	private void CalcBestProduct()
 	{
 		List<Product> products = new List<Product>();
-        	if(SelectedProducts.HasFlag(ProductType.Crop))
+		
+		if(SelectedProducts.HasFlag(ProductType.Crop))
 		{
 			products.Add(new Product(name, tiller && Type.HasFlag(Tiller) ? (int) (BasePrice * 1.1) : BasePrice));
 		}
