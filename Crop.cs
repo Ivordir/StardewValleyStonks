@@ -3,69 +3,69 @@ using System.Collections.Generic;
 
 public class Crop : ItemWithSources
 {
-    public string Name { get; }
-    public int RegrowTime { get; }
+	public string Name { get; }
+	public int RegrowTime { get; }
     //public Product BestProduct { get; set; }
 
-    public Season AllowedSeasons { get; }
-    public Season SelectedSeasons { get; set; }
-    public Replant AllowedReplant { get; }
-    public Replant SelectedReplant { get; set; }
-    public ProductType AllowedProducts { get; }
-    public ProductType SelectedProducts { get; set; }
+	public Season AllowedSeasons { get; }
+	public Season SelectedSeasons { get; set; }
+	public Replant AllowedReplant { get; }
+	public Replant SelectedReplant { get; set; }
+	public ProductType AllowedProducts { get; }
+	public ProductType SelectedProducts { get; set; }
     
-    private readonly CropType Type;
-    private readonly double AvgCrops, AvgExtraCrops;
-    private readonly int TotalGrowthTime, BasePrice;
-    private readonly int[] GrowthStagesOriginal;
-    private int[] GrowthStages;
-    private readonly Dictionary<ProductType, Product> ProductFrom;
+	private readonly CropType Type;
+	private readonly double AvgCrops, AvgExtraCrops;
+	private readonly int TotalGrowthTime, BasePrice;
+	private readonly int[] GrowthStagesOriginal;
+	private int[] GrowthStages;
+	private readonly Dictionary<ProductType, Product> ProductFrom;
 
-    public Crop(string name, int basePrice, Dictionary<Sources, int> priceFrom, Season seasons, int[] growthStages, int regrowTime = -1, double extraCropChance = 0, CropType cropType = CropType.Tiller, Replant replant = Replant.Common, Dictionary<ProductType, Product> productFrom = null) : base(priceFrom)
-    {
-        Name = name; 
+	public Crop(string name, int basePrice, Dictionary<Sources, int> priceFrom, Season seasons, int[] growthStages, int regrowTime = -1, double extraCropChance = 0, CropType cropType = CropType.Tiller, Replant replant = Replant.Common, Dictionary<ProductType, Product> productFrom = null) : base(priceFrom)
+	{
+		Name = name;
 		RegrowTime = regrowTime;
-	
-        AllowedSeasons = seasons;
-        SelectedSeasons = AllowedSeasons;
-        AllowedReplant = replant;
-        SelectedReplant = AllowedReplant;
-        if (productFrom == null)
-        {
-            ProductFrom = new Dictionary<ProductType, Product>();
-        }
-        else
-        {
-            ProductFrom = productFrom;
-            foreach (ProductType type in ProductFrom.Keys)
-	    	{
-                AllowedProducts |= type;
-            }
-        }
-        AllowedProducts |= CropType.Crop;
-        if (Type.HasFlag(CropType.FruitFlag) || Type.HasFlag(CropType.VegeFlag))
-        {
-            AllowedProducts |= CropType.Keg | CropType.Jar;
-        }
-        SelectedProducts = AllowedProducts;
+		
+		AllowedSeasons = seasons;
+		SelectedSeasons = AllowedSeasons;
+		AllowedReplant = replant;
+		SelectedReplant = AllowedReplant;
+		if (productFrom == null)
+		{
+			ProductFrom = new Dictionary<ProductType, Product>();
+		}
+		else
+		{
+			ProductFrom = productFrom;
+			foreach (ProductType type in ProductFrom.Keys)
+			{
+				AllowedProducts |= type;
+			}
+		}
+		AllowedProducts |= CropType.Crop;
+		if (Type.HasFlag(CropType.FruitFlag) || Type.HasFlag(CropType.VegeFlag))
+		{
+			AllowedProducts |= CropType.Keg | CropType.Jar;
+		}
+		SelectedProducts = AllowedProducts;
         
-        Type = cropType;
-        BasePrice = basePrice;
-        GrowthStagesOriginal = growthStages;
-        GrowthStages = new int[GrowthStagesOriginal.Length]; 
-        ResetGrowthStages();
-        for (int i = 0; i < GrowthStagesOriginal.Length; i++)
-        {
-            TotalGrowthTime += GrowthStagesOriginal[i];
-        }
-        
+		Type = cropType;
+		BasePrice = basePrice;
+		GrowthStagesOriginal = growthStages;
+		GrowthStages = new int[GrowthStagesOriginal.Length]; 
+		ResetGrowthStages();
+		for (int i = 0; i < GrowthStagesOriginal.Length; i++)
+		{
+			TotalGrowthTime += GrowthStagesOriginal[i];
+		}
+      
 		if(Type.HasFlag(CropType.GiantCrop))
 		{
 			//GiantCropChecksPerTile = 9;
         	//GiantCropProb = (1 - Math.Pow(0.99, GiantCropChecksPerTile));
 			AvgCrops = 1 - GiantCropProb;
 			//assume extraCropChance == 0
-            AvgExtraCrops = 2 * GiantCropYields;
+			AvgExtraCrops = 2 * GiantCropYields;
 		}
 		else
 		{
