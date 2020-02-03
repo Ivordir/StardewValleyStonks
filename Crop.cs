@@ -80,7 +80,7 @@ public class Crop : ItemWithSources
 		}
 	}
     
-	public int GrowthTime (double speedMultiplier)
+	public int GrowthTime (float speedMultiplier)
 	{
     		if (agri)
 		{
@@ -99,12 +99,12 @@ public class Crop : ItemWithSources
 				if (stage > 0 || GrowthStages[stage] > 1)
 				{
 					GrowthStages[stage]--;
-		    			daysReduced++;
-		    			if (maxReduction == daysReduced)
-		    			{
-		    				break;
+					daysReduced++;
+					if (maxReduction == daysReduced)
+					{
+						break;
 					}
-		    		}
+				}
 			}
 		}
 		ResetGrowthStages();
