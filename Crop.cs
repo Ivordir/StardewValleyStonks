@@ -5,7 +5,6 @@ public class Crop : ItemWithSources
 {
 	public string Name { get; }
 	public int RegrowTime { get; }
-	public Product Product { get; set; }
 
 	public Season AllowedSeasons { get; }
 	public Season SelectedSeasons { get; set; }
@@ -13,7 +12,8 @@ public class Crop : ItemWithSources
 	public Replant SelectedReplant { get; set; }
 	public ProductType AllowedProducts { get; }
 	public ProductType SelectedProducts { get; set; }
-    
+	public Product Product { get; set; }
+    	
 	private readonly CropType Type;
 	private readonly double AvgCrops, AvgExtraCrops;
 	private readonly int TotalGrowthTime, BasePrice;
@@ -21,7 +21,7 @@ public class Crop : ItemWithSources
 	private int[] GrowthStages;
 	private readonly Dictionary<ProductType, Product> ProductFrom;
 
-	public Crop(string name, int basePrice, Dictionary<Sources, int> priceFrom, Season seasons, int[] growthStages, int regrowTime = -1, double extraCropChance = 0, CropType cropType = CropType.Tiller, Replant replant = Replant.Common, Dictionary<ProductType, Product> productFrom = null) : base(priceFrom)
+	public Crop(string name, int basePrice, Dictionary<Sources, int> priceFrom, Season seasons, int[] growthStages, CropType cropType = CropType.Tiller, int regrowTime = -1, double extraCropChance = 0, Dictionary<ProductType, Product> productFrom = null, Replant replant = Replant.Common) : base(priceFrom)
 	{
 		Name = name;
 		RegrowTime = regrowTime;
