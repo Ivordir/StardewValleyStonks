@@ -4,5 +4,6 @@ public enum Sources
   Pierre = 1,
   Jojo = 1 << 1,
   Oasis = 1 << 2,
-  Crafting = 1 << 3
+  Crafting = 1 << 3,
+  Custom = 1 << 4
 }
