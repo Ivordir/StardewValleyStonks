@@ -3,10 +3,10 @@ using System.Collections.Generic;
 public abstract class ItemWithSources
 {
 	public int Price { get; set; }
-	public Sources SelectedSource { get; set; }
+	public string SelectedSource { get; set; }
 	public int CheapestPrice { get; }
-	public Sources CheapestSource { get; }
-	public Dictionary<Sources, int> PriceFrom { get; }
+	public string CheapestSource { get; }
+	public Dictionary<string, int> PriceFrom { get; }
 
 	public ItemWithSources (Dictionary<Sources, int> priceFrom)
 	{
@@ -26,7 +26,7 @@ public abstract class ItemWithSources
 		SelectedSource = CheapestSource;
 	}
 
-	public void TrySetSource(Sources source)
+	public void TrySetSource(string source)
 	{
 		if (SelectedSource != source && PriceFrom.ContainsKey(source))
 		{
@@ -39,5 +39,15 @@ public abstract class ItemWithSources
 	{
 		Price = CheapestPrice;
 		SelectedSource = CheapestSource;
+	}
+	
+	public void AddSource(string source, int price)
+	{
+		PriceFrom.Add(source, price);	
+	}
+	
+	public void RemoveSource(string source)
+	{
+		PriceFrom.Remove(source);	
 	}
 }
