@@ -4,7 +4,7 @@ public class Fertilizer : ItemWithSources
     public int Quality { get; }
     public float Speed { get; }
 
-    public Fertilizer(string name, int quality, float speed, Dictionary<Sources, int> priceFrom) : base(priceFrom)
+    public Fertilizer(string name, int quality, float speed, Dictionary<string, int> priceFrom) : base(priceFrom)
     {
         Name = name;
         Quality = quality;
