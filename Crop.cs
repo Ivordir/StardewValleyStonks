@@ -214,8 +214,10 @@ public class Crop : ItemWithSources
 		GiantCrop = GiantCropFlag | Tiller,
 		ScytheFlag = 1 << 4,
 		Scythe = ScytheFlag | Vege,
-		PaddyFlag = 1 << 5,
-		Paddy = PaddyFlag | Scythe
+		Trelis = 1 << 5,
+		PaddyFlag = 1 << 6,
+		Paddy = PaddyFlag | Scythe,
+		IndoorOnly 1 << 7
 	}
 
 	[Flags]
