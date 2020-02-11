@@ -79,9 +79,21 @@ public class Crop : ItemWithSources
 			AvgExtraCrops += AvgCrops * DoubleCropChance + AvgCrops; //E=P(V), = DoubleCropChance(2*crops) + (1-DoubleCropChance)(crops)
 		}
 	}
-    
+	
+	public int GrowthTime
+	{
+		get
+		{
+			return TotalGrowthTime;
+		}
+	}
+    	
 	public int GrowthTime (float speedMultiplier)
 	{
+		if (speedMultiplier == 0)
+		{
+			return TotalGrowthTime;
+		}
 		if (agri)
 		{
 			speedMultiplier += 0.1;
