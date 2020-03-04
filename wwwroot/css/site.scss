@@ -1,14 +1,4 @@
-﻿$phi: 1.6180339887498948482;
-//4 responsive layouts
-//calendar: min (2), mid (4), max (7)
-//1 col, calendar is at min
-//1 col, calendar is at max (double)
-//2 col, calendar and list box are at min
-//2 col, calendar and list box are at max
-
-
-//MainLayout
-header {
+﻿header {
 	background-color: cornsilk;
 	font-family: Stencil;
 	font-size: 32px;
@@ -36,12 +26,9 @@ footer {
 	color: brown;
 }
 
-$numColumns: 10;
 .input-grid {
 	display: grid;
-	grid-template-columns: 1fr repeat($numColumns, 1fr * $phi / $numColumns);
-	grid-template-rows: 10% 90% 10%;
-	grid-row-gap: 10px;
+	grid-template-columns: 1fr repeat(4, minmax(50px, 0.4045075fr));
 }
 
 .editor-tab {
@@ -68,51 +55,58 @@ $numColumns: 10;
 	border: 1px solid black;
 }
 
-.entry-checkbox {
-	visibility: hidden;
-}
-
 .top-row {
 	grid-row: 1;
-	grid-column: 2/span 12;
+	grid-column: 2/span 5;
 }
 
 .skills {
 	grid-row: 2;
-	grid-column: 2/span 4;
+	grid-column: 2;
 }
 
 .products {
 	grid-row: 2;
-	grid-column: 4/span 6;
+	grid-column: 3;
 }
 
 .sources {
 	grid-row: 2;
-	grid-column: 6/span 8;
+	grid-column: 4;
 }
 
 .replant {
 	grid-row: 2;
-	grid-column: 8/span $numColumns;
+	grid-column: 5;
 }
 
 .non-greenhouse-settings {
-	grid-row: 2;
-	grid-column: 10/span 12;
+	grid-row: 3;
+	grid-column: 2/span 5;
 }
 
 .bottom-row {
-	grid-row: 3;
-	grid-column: 2/span 12;
+	grid-row 4;
+	grid-column: 2/span 5;
+}
+
+.entry-checkbox {
+	visibility: hidden;
+	position: absolute;
+	left: 1px;
+	top: 1px;
+	height: 25px;
+	width: 25px;
+	margin: 0px;
 }
 
 .entry-checkbox-label {
 	display: block;
 	position: relative;
-	padding-left: 45px;
-	margin-bottom: 15px;
 	cursor: pointer;
+	height: 27px;
+	width: 27px;
+	margin: auto;
 }
 
 .entry-checkbox-label:hover input ~ .entry-checkbox-background {
@@ -129,8 +123,6 @@ $numColumns: 10;
 
 .entry-checkbox-background {
 	position: absolute;
-	top: 0;
-	left: 0;
 	height: 25px;
 	width: 25px;
 	border-style: solid;
@@ -161,15 +153,22 @@ $numColumns: 10;
 
 .lock-checkbox {
 	visibility: hidden;
+	position: absolute;
+	left: 1px;
+	right: 1px;
+	height: 25px;
+	width: 25px;
+	margin: 0px;
 }
 
 .lock-checkbox-label {
 	display: block;
-	float: right;
 	position: relative;
-	padding-left: 45px;
-	margin-bottom: 15px;
 	cursor: pointer;
+	height: 27px;
+	width: 27px;
+	margin: auto;
+	float: right;
 }
 
 .lock-checkbox-label:hover input ~ .lock-checkbox-background {
@@ -186,8 +185,6 @@ $numColumns: 10;
 
 .lock-checkbox-background {
 	position: absolute;
-	top: 0;
-	left: 0;
 	height: 25px;
 	width: 25px;
 	border-style: solid;
@@ -289,15 +286,21 @@ $checkmark-total-width: ($checkmark-width + $checkmark-thickness) * 3 * 1.414213
 
 .input-checkbox {
 	visibility: hidden;
+	position: absolute;
+	left: 0px;
+	height: 25px;
+	width: 25px;
+	margin: 0px;
 }
 
 .input-checkbox-label {
 	display: block;
 	position: relative;
-	padding-left: 45px;
-	margin-bottom: 15px;
 	cursor: pointer;
-	color: brown;
+	height: 25px;
+	width: max-content;
+	padding-left: 25px;
+	margin: 1px;
 }
 
 .input-checkbox-label:hover input ~ .input-checkbox-background {
@@ -314,8 +317,8 @@ $checkmark-total-width: ($checkmark-width + $checkmark-thickness) * 3 * 1.414213
 
 .input-checkbox-background {
 	position: absolute;
-	top: 0;
-	left: 0;
+	top: -1px;
+	left: -1px;
 	height: 25px;
 	width: 25px;
 	border-style: solid;
@@ -358,6 +361,5 @@ $checkmark-total-width: ($checkmark-width + $checkmark-thickness) * 3 * 1.414213
 }
 
 .preset-option {
-	background-color: white;
+	background-color: white:
 }
-        
