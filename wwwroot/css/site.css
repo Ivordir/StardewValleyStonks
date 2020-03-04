@@ -23,9 +23,7 @@ footer {
 
 .input-grid {
   display: grid;
-  grid-template-columns: 1fr repeat(10, 0.1618fr);
-  grid-template-rows: 10% 90% 10%;
-  grid-row-gap: 10px; }
+  grid-template-columns: 1fr repeat(4, minmax(50px, 0.40451fr)); }
 
 .editor-tab {
   float: left; }
@@ -46,43 +44,50 @@ footer {
 .data-table td {
   border: 1px solid black; }
 
-.entry-checkbox {
-  visibility: hidden; }
-
 .top-row {
   grid-row: 1;
-  grid-column: 2/span 12; }
+  grid-column: 2/span 5; }
 
 .skills {
   grid-row: 2;
-  grid-column: 2/span 4; }
+  grid-column: 2; }
 
 .products {
   grid-row: 2;
-  grid-column: 4/span 6; }
+  grid-column: 3; }
 
 .sources {
   grid-row: 2;
-  grid-column: 6/span 8; }
+  grid-column: 4; }
 
 .replant {
   grid-row: 2;
-  grid-column: 8/span 10; }
+  grid-column: 5; }
 
 .non-greenhouse-settings {
-  grid-row: 2;
-  grid-column: 10/span 12; }
+  grid-row: 3;
+  grid-column: 2/span 5; }
 
 .bottom-row {
-  grid-row: 3;
-  grid-column: 2/span 12; }
+  grid-row: 4;
+  grid-column: 2/span 5; }
+
+.entry-checkbox {
+  visibility: hidden;
+  position: absolute;
+  left: 1px;
+  top: 1px;
+  height: 25px;
+  width: 25px;
+  margin: 0px; }
 
 .entry-checkbox-label {
   display: block;
   position: relative;
-  padding-left: 45px;
-  margin-bottom: 15px;
-  cursor: pointer; }
+  cursor: pointer;
+  height: 27px;
+  width: 27px;
+  margin: auto; }
 
 .entry-checkbox-label:hover input ~ .entry-checkbox-background {
   background-color: gray; }
@@ -95,8 +100,6 @@ footer {
 
 .entry-checkbox-background {
   position: absolute;
-  top: 0;
-  left: 0;
   height: 25px;
   width: 25px;
   border-style: solid;
@@ -122,15 +125,22 @@ footer {
   transform: rotate(45deg); }
 
 .lock-checkbox {
-  visibility: hidden; }
+  visibility: hidden;
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  height: 25px;
+  width: 25px;
+  margin: 0px; }
 
 .lock-checkbox-label {
   display: block;
-  float: right;
   position: relative;
-  padding-left: 45px;
-  margin-bottom: 15px;
-  cursor: pointer; }
+  cursor: pointer;
+  height: 27px;
+  width: 27px;
+  margin: auto;
+  float: right; }
 
 .lock-checkbox-label:hover input ~ .lock-checkbox-background {
   background-color: gray; }
@@ -143,8 +153,6 @@ footer {
 
 .lock-checkbox-background {
   position: absolute;
-  top: 0;
-  left: 0;
   height: 25px;
   width: 25px;
   border-style: solid;
@@ -220,15 +228,21 @@ footer {
   transform: rotate(45deg); }
 
 .input-checkbox {
-  visibility: hidden; }
+  visibility: hidden;
+  position: absolute;
+  left: 0px;
+  height: 25px;
+  width: 25px;
+  margin: 0px; }
 
 .input-checkbox-label {
   display: block;
   position: relative;
-  padding-left: 45px;
-  margin-bottom: 15px;
   cursor: pointer;
-  color: brown; }
+  height: 25px;
+  width: 25px;
+  padding-left: 25px;
+  margin: 1px; }
 
 .input-checkbox-label:hover input ~ .input-checkbox-background {
   background-color: gray; }
@@ -241,8 +255,8 @@ footer {
 
 .input-checkbox-background {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: -1px;
+  left: -1px;
   height: 25px;
   width: 25px;
   border-style: solid;
