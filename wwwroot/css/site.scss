@@ -1,4 +1,4 @@
-﻿$phi: 1.61;
+﻿$phi: 1.61803;
 
 header {
 	background-color: cornsilk;
@@ -26,6 +26,7 @@ footer {
 
 .input-label {
 	color: brown;
+	float: left;
 }
 
 .input-grid {
@@ -65,6 +66,7 @@ footer {
 .skills {
 	grid-row: 2;
 	grid-column: 2;
+	text-align: center;
 }
 
 .products {
@@ -223,7 +225,7 @@ $checkbox-total-height: $checkbox-height + 2 * $checkbox-border-width;
 $checkmark-width: 6px; //editable
 $checkmark-height: 2 * $checkmark-width;
 $checkmark-thickness: 4px; //editable
-$checkmark-total-width: ($checkmark-width + $checkmark-thickness) * 3 * 1.41421356237;
+$checkmark-total-width: ($checkmark-width + $checkmark-thickness) * 1.41421356237;
 
 .skills-checkbox {
 	visibility: hidden;
@@ -231,6 +233,8 @@ $checkmark-total-width: ($checkmark-width + $checkmark-thickness) * 3 * 1.414213
 	height: $checkbox-total-height;
 	width: $checkbox-total-width;
 	margin: 0px;
+	left: 0px;
+	top: 0px;
 }
 
 .skills-checkbox-label {
@@ -262,6 +266,8 @@ $checkmark-total-width: ($checkmark-width + $checkmark-thickness) * 3 * 1.414213
 	border-width: $checkbox-border-width;
 	background-color: white;
 	border-color: black;
+	left: 0px;
+	top: 0px;
 }
 
 .skills-checkbox-background:after {
@@ -284,8 +290,6 @@ $checkmark-total-width: ($checkmark-width + $checkmark-thickness) * 3 * 1.414213
 	transform: rotate(45deg);
 }
 
-
-
 .input-checkbox {
 	visibility: hidden;
 	position: absolute;
@@ -300,7 +304,7 @@ $checkmark-total-width: ($checkmark-width + $checkmark-thickness) * 3 * 1.414213
 	position: relative;
 	cursor: pointer;
 	height: 25px;
-	width: 25px;
+	width: auto;
 	padding-left: 25px;
 	margin: 1px;
 }
@@ -364,4 +368,8 @@ $checkmark-total-width: ($checkmark-width + $checkmark-thickness) * 3 * 1.414213
 
 .preset-option {
 	background-color: white;
+}
+
+.number-inout {
+	float: left;
 }

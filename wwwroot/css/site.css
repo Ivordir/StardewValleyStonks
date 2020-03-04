@@ -19,7 +19,8 @@ footer {
   color: blue; }
 
 .input-label {
-  color: brown; }
+  color: brown;
+  float: left; }
 
 .input-grid {
   display: grid;
@@ -50,7 +51,8 @@ footer {
 
 .skills {
   grid-row: 2;
-  grid-column: 2; }
+  grid-column: 2;
+  text-align: center; }
 
 .products {
   grid-row: 2;
@@ -182,7 +184,9 @@ footer {
   position: absolute;
   height: 27px;
   width: 52px;
-  margin: 0px; }
+  margin: 0px;
+  left: 0px;
+  top: 0px; }
 
 .skills-checkbox-label {
   display: inline-block;
@@ -208,7 +212,9 @@ footer {
   border-style: solid;
   border-width: 1px;
   background-color: white;
-  border-color: black; }
+  border-color: black;
+  left: 0px;
+  top: 0px; }
 
 .skills-checkbox-background:after {
   content: "";
@@ -219,7 +225,7 @@ footer {
   display: block; }
 
 .skills-checkbox-label .skills-checkbox-background:after {
-  left: 4.7868px;
+  left: 18.92893px;
   bottom: 13.5px;
   width: 6px;
   height: 12px;
@@ -240,7 +246,7 @@ footer {
   position: relative;
   cursor: pointer;
   height: 25px;
-  width: 25px;
+  width: auto;
   padding-left: 25px;
   margin: 1px; }
 
@@ -293,3 +299,6 @@ footer {
 
 .preset-option {
   background-color: white; }
+
+.number-inout {
+  float: left; }
