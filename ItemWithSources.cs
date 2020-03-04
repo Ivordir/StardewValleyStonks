@@ -8,12 +8,12 @@ public abstract class ItemWithSources
 	public string CheapestSource { get; }
 	public Dictionary<string, int> PriceFrom { get; }
 
-	public ItemWithSources (Dictionary<Sources, int> priceFrom)
+	public ItemWithSources (Dictionary<string, int> priceFrom)
 	{
 		PriceFrom = priceFrom;
 		CheapestPrice = int.MaxValue;
-		CheapestSource = 0;
-		foreach (KeyValuePair<Sources, int> pair in PriceFrom)
+		CheapestSource = "";
+		foreach (KeyValuePair<string, int> pair in PriceFrom)
 		{
 			if (pair.Value < CheapestPrice)
 			{

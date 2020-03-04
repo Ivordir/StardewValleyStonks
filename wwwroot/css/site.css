@@ -1,21 +1,11 @@
 ﻿header {
   background-color: cornsilk;
-  font-family: Stencil; }
-
-.page-title {
-  display: block;
+  font-family: Stencil;
   font-size: 32px;
   font-weight: bold;
   color: #ffd400;
   text-align: center;
   word-spacing: 8px; }
-
-.page-subtitle {
-  font-family: 'Comic Sans MS';
-  display: block;
-  font-size: 16px;
-  color: goldenrod;
-  text-align: center; }
 
 body {
   background-color: antiquewhite;
@@ -25,44 +15,267 @@ body {
 footer {
   background: black; }
 
+.input-header {
+  color: blue; }
+
+.input-label {
+  color: brown; }
+
 .input-grid {
   display: grid;
-  grid-template-columns: repeat(5, 0.2fr) repeat(11, 0.14709fr);
-  grid-template-rows: repeat(9, 1fr);
-  grid-column-gap: 10px;
+  grid-template-columns: 1fr repeat(10, 0.1618fr);
+  grid-template-rows: 10% 90% 10%;
   grid-row-gap: 10px; }
-
-.editor-tabs {
-  display: inline;
-  grid-column: 1/span 5;
-  grid-row: 1; }
 
 .editor-tab {
   float: left; }
 
-.crop-editor {
+.editor {
   background-color: red;
-  grid-column: 1/span 5;
-  grid-row: 2/span 8; }
-
-.filter-box {
-  background-color: yellow; }
-
-.fert-editor {
-  background-color: red;
-  grid-column: 1/span 5;
-  grid-row: 2/span 8; }
-
-.calc-button {
-  background-color: green;
-  grid-column: 2;
-  grid-row: 2; }
-
-.output-grid {
-  display: grid; }
-
-.calendar {
-  background-color: blue;
   grid-column: 1;
-  grid-row-start: 1;
-  grid-row-end: 3; }
+  grid-row: 1/span 4; }
+
+.data-table {
+  width: 100%;
+  border: 1px solid black;
+  border-collapse: collapse; }
+
+.data-table th {
+  border: 1px solid black; }
+
+.data-table td {
+  border: 1px solid black; }
+
+.entry-checkbox {
+  visibility: hidden; }
+
+.top-row {
+  grid-row: 1;
+  grid-column: 2/span 12; }
+
+.skills {
+  grid-row: 2;
+  grid-column: 2/span 4; }
+
+.products {
+  grid-row: 2;
+  grid-column: 4/span 6; }
+
+.sources {
+  grid-row: 2;
+  grid-column: 6/span 8; }
+
+.replant {
+  grid-row: 2;
+  grid-column: 8/span 10; }
+
+.non-greenhouse-settings {
+  grid-row: 2;
+  grid-column: 10/span 12; }
+
+.bottom-row {
+  grid-row: 3;
+  grid-column: 2/span 12; }
+
+.entry-checkbox-label {
+  display: block;
+  position: relative;
+  padding-left: 45px;
+  margin-bottom: 15px;
+  cursor: pointer; }
+
+.entry-checkbox-label:hover input ~ .entry-checkbox-background {
+  background-color: gray; }
+
+.entry-checkbox-label input:active ~ .entry-checkbox-background {
+  background-color: white; }
+
+.entry-checkbox-label input:checked ~ .entry-checkbox-background {
+  background-color: green; }
+
+.entry-checkbox-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 25px;
+  width: 25px;
+  border-style: solid;
+  border-width: 1px;
+  background-color: white;
+  border-color: black; }
+
+.entry-checkbox-background:after {
+  content: "";
+  position: absolute;
+  display: none; }
+
+.entry-checkbox-label input:checked ~ .entry-checkbox-background:after {
+  display: block; }
+
+.entry-checkbox-label .entry-checkbox-background:after {
+  left: 8px;
+  bottom: 5px;
+  width: 6px;
+  height: 12px;
+  border: solid white;
+  border-width: 0 4px 4px 0;
+  transform: rotate(45deg); }
+
+.lock-checkbox {
+  visibility: hidden; }
+
+.lock-checkbox-label {
+  display: block;
+  float: right;
+  position: relative;
+  padding-left: 45px;
+  margin-bottom: 15px;
+  cursor: pointer; }
+
+.lock-checkbox-label:hover input ~ .lock-checkbox-background {
+  background-color: gray; }
+
+.lock-checkbox-label input:active ~ .lock-checkbox-background {
+  background-color: white; }
+
+.lock-checkbox-label input:checked ~ .lock-checkbox-background {
+  background-color: green; }
+
+.lock-checkbox-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 25px;
+  width: 25px;
+  border-style: solid;
+  border-width: 1px;
+  background-color: white;
+  border-color: black; }
+
+.lock-checkbox-background:after {
+  content: "";
+  position: absolute;
+  display: none; }
+
+.lock-checkbox-label input:checked ~ .lock-checkbox-background:after {
+  display: block; }
+
+.lock-checkbox-label .lock-checkbox-background:after {
+  left: 8px;
+  bottom: 5px;
+  width: 6px;
+  height: 12px;
+  border: solid white;
+  border-width: 0 4px 4px 0;
+  transform: rotate(45deg); }
+
+.skills-checkbox {
+  visibility: hidden;
+  position: absolute;
+  height: 27px;
+  width: 52px;
+  margin: 0px; }
+
+.skills-checkbox-label {
+  display: inline-block;
+  position: relative;
+  cursor: pointer;
+  height: 27px;
+  width: 52px;
+  margin: auto; }
+
+.skills-checkbox-label:hover input ~ .skills-checkbox-background {
+  background-color: gray; }
+
+.skills-checkbox-label input:active ~ .skills-checkbox-background {
+  background-color: white; }
+
+.skills-checkbox-label input:checked ~ .skills-checkbox-background {
+  background-color: green; }
+
+.skills-checkbox-background {
+  position: absolute;
+  height: 25px;
+  width: 50px;
+  border-style: solid;
+  border-width: 1px;
+  background-color: white;
+  border-color: black; }
+
+.skills-checkbox-background:after {
+  content: "";
+  position: absolute;
+  display: none; }
+
+.skills-checkbox-label input:checked ~ .skills-checkbox-background:after {
+  display: block; }
+
+.skills-checkbox-label .skills-checkbox-background:after {
+  left: 4.7868px;
+  bottom: 13.5px;
+  width: 6px;
+  height: 12px;
+  border: solid white;
+  border-width: 0 4px 4px 0;
+  transform: rotate(45deg); }
+
+.input-checkbox {
+  visibility: hidden; }
+
+.input-checkbox-label {
+  display: block;
+  position: relative;
+  padding-left: 45px;
+  margin-bottom: 15px;
+  cursor: pointer;
+  color: brown; }
+
+.input-checkbox-label:hover input ~ .input-checkbox-background {
+  background-color: gray; }
+
+.input-checkbox-label input:active ~ .input-checkbox-background {
+  background-color: white; }
+
+.input-checkbox-label input:checked ~ .input-checkbox-background {
+  background-color: green; }
+
+.input-checkbox-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 25px;
+  width: 25px;
+  border-style: solid;
+  border-width: 1px;
+  background-color: white;
+  border-color: black; }
+
+.input-checkbox-background:after {
+  content: "";
+  position: absolute;
+  display: none; }
+
+.input-checkbox-label input:checked ~ .input-checkbox-background:after {
+  display: block; }
+
+.input-checkbox-label .input-checkbox-background:after {
+  left: 8px;
+  bottom: 5px;
+  width: 6px;
+  height: 12px;
+  border: solid white;
+  border-width: 0 4px 4px 0;
+  transform: rotate(45deg); }
+
+.source-selector {
+  background-color: white; }
+
+.source-option {
+  background-color: gray; }
+
+.preset-selector {
+  background-color: white;
+  float: right; }
+
+.preset-option {
+  background-color: white; }

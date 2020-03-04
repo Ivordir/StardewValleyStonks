@@ -1,3 +1,5 @@
+using System;
+
 [Flags]
 public enum Season
 {
