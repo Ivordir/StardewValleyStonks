@@ -9,14 +9,13 @@ public class Source : IComparable
 
     static Source()
     {
-        LastIndex = 0;
+        LastIndex = -1;
         None = new Source("Free", false);
-        LastIndex = 0;
-        Sources = new List<Source> { None };
+        Sources = new List<Source>();
     }
 
     public string Name { get; }
-    public bool Enabled { get; }
+    public bool Enabled { get; } //should this source be enabled by default for all items
     public int Index { get; set; }
 
     public Source (string name, bool enabled)
@@ -25,7 +24,6 @@ public class Source : IComparable
         Enabled = enabled;
         Index = LastIndex;
         LastIndex++;
-        None.Index = LastIndex;
         Sources.Add(this);
     }
 
@@ -36,7 +34,7 @@ public class Source : IComparable
 
     public override int GetHashCode()
     {
-        return Index.GetHashCode();
+        return Name.GetHashCode();
     }
 }
 
