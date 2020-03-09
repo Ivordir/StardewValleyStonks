@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-public abstract class SourcedItem
+public abstract class SourcedItem : IEquatable<SourcedItem>
 {
 	public string Name { get; }
 	public bool Enabled { get; set; }
@@ -33,7 +33,7 @@ public abstract class SourcedItem
 	{
 		get
 		{
-			return PriceFrom[Source];
+			return Source == null ? int.MaxValue : PriceFrom[Source];
 		}
 	}
 		
@@ -116,5 +116,10 @@ public abstract class SourcedItem
 		{
 			return "images/" + Name + ".png";
 		}
+	}
+	
+        public override bool Equals(object item)
+        {
+		return 
 	}
 }
