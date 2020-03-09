@@ -1,14 +1,20 @@
 using System.Collections.Generic;
 
-public class Fertilizer : ItemWithSources
+public class Fertilizer : SourcedItem
 {
-    public string Name { get; }
+    public static Fertilizer None = new Fertilizer("None", 0, 0);
+
     public int Quality { get; }
     public float Speed { get; }
 
-    public Fertilizer(string name, int quality, float speed, Dictionary<string, int> priceFrom) : base(priceFrom)
+    public Fertilizer(string name, int quality, float speed) : base(name)
     {
-        Name = name;
+        Quality = quality;
+        Speed = speed;
+    }
+
+    public Fertilizer(string name, int quality, float speed, Dictionary<string, int> priceFrom) : base(name, priceFrom)
+    {
         Quality = quality;
         Speed = speed;
     }
