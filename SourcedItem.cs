@@ -4,25 +4,16 @@ public abstract class SourcedItem
 {
 	public string Name { get; }
 	public bool Enabled { get; set; }
-	public bool Invalid
-	{
-		get
-		{
-			return Errors.Count > 0 ? true : false;
-		}
-	}
-	public List<string> Errors;
 	public Source Source { get; set; }
 	public Dictionary<Source, int> PriceFrom { get; }
 	public Dictionary<Source, bool> SourceEnabled { get; }
-
 
 	public SourcedItem(string name)
 	{
 		Name = name;
 		PriceFrom = new Dictionary<Source, int>{ { Source.None, 0 } };
 		SourceEnabled = new Dictionary<Source, bool> { { Source.None, Source.None.Enabled } };
-		Source = Source.None;
+		UpdateSource(Source.None);
 	}
 
 	public SourcedItem(string name, Dictionary<Source, int> priceFrom)
@@ -45,41 +36,60 @@ public abstract class SourcedItem
 			return PriceFrom[Source];
 		}
 	}
-
-	public void EnableSource(Source source)
+		
+	public void ToggleSource(Source source)
 	{
 		if (SourceEnabled.ContainsKey(source))
 		{
-			SourceEnabled[source] = true;
-			if (PriceFrom[Source] < Price)
-			{
-				Source = source;
-			}
+			SourceEnabled[source] = !SourceEnabled[source];
+			UpdateSource(source);
 		}
 	}
-
-	public void DisableSource(Source source)
+	
+	private void UpdateSource(Source source)
 	{
-		if (SourceEnabled.ContainsKey(source))
+		if (SourceEnabled[source])
 		{
-			SourceEnabled[source] = false;
-			if (Source == source)
-			{
-				FindBestSource();
-			}
+			SourceWasEnabled(source);
+		}
+		else
+		{
+			SourceWasDisabled(source);
+		}
+	}
+	
+	private void SourceWasEnabled(Source source)
+	{
+		if (Source == null || PriceFrom[Source] < Price)
+		{
+			Source = source;
 		}
 	}
 
-	public void FindBestSource()
+	private void SourceWasDisabled(Source source)
+	{
+		if (Source == source)
+		{
+			FindBestSource();
+		}
+	}
+
+	private void FindBestSource()
 	{
 		int cheapestPrice = int.MaxValue;
+		bool oneValidSource = false;
 		foreach (KeyValuePair<Source, int> pair in PriceFrom)
 		{
 			if (SourceEnabled[pair.Key] && pair.Value < cheapestPrice)
 			{
+				oneValidSource = true;
 				cheapestPrice = pair.Value;
 				Source = pair.Key;
 			}
+		}
+		if (!oneValidSource)
+		{
+			Source = null;
 		}
 	}
 	
@@ -87,9 +97,9 @@ public abstract class SourcedItem
 	{
 		PriceFrom.Add(source, price);
 		SourceEnabled.Add(source, source.Enabled);
-		if (price < PriceFrom[Source])
+		if (SourceEnabled[source])
 		{
-			Source = source;
+			SourceWasEnabled(source);
 		}
 	}
 	
@@ -97,24 +107,7 @@ public abstract class SourcedItem
 	{
 		PriceFrom.Remove(source);
 		SourceEnabled.Remove(source);
-		if (Source == source)
-		{
-			FindBestSource();
-		}
-	}
-	public bool OneValidSource
-	{
-		get
-		{
-			foreach (Source source in SourceEnabled.Keys)
-			{
-				if (SourceEnabled[source])
-				{
-					return true;
-				}
-			}
-			return false;
-		}
+		SourceWasDisabled(source);
 	}
 
 	public string Image
