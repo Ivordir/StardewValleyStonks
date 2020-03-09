@@ -12,7 +12,7 @@ public class Crop : SourcedItem
 	public ProductType AllowedProducts { get; }
 	public ProductType SelectedProducts { get; set; }
 	public Product BestProduct { get; set; }
-    	
+
 	private readonly CropType Type;
 	private readonly double AvgCrops, AvgExtraCrops;
 	private readonly int TotalGrowthTime, BasePrice;
@@ -191,12 +191,7 @@ public class Crop : SourcedItem
 		IndoorOnly = 1 << 7
 	}
 
-	[Flags]
-	public enum Status : byte
-	{
-		Disabled = 1,
-		NoProducts = 1 << 1,
-		NoReplant = 1 << 2,
-		NotInSeason = 1 << 3
-	}
+	//not in season
+	//no products
+	//no replant
 }

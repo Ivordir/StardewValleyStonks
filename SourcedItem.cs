@@ -3,6 +3,15 @@ using System.Collections.Generic;
 public abstract class SourcedItem
 {
 	public string Name { get; }
+	public bool Enabled { get; set; }
+	public bool Invalid
+	{
+		get
+		{
+			return Errors.Count > 0 ? true : false;
+		}
+	}
+	public List<string> Errors;
 	public Source Source { get; set; }
 	public Dictionary<Source, int> PriceFrom { get; }
 	public Dictionary<Source, bool> SourceEnabled { get; }
@@ -91,6 +100,20 @@ public abstract class SourcedItem
 		if (Source == source)
 		{
 			FindBestSource();
+		}
+	}
+	public bool OneValidSource
+	{
+		get
+		{
+			foreach (Source source in SourceEnabled.Keys)
+			{
+				if (SourceEnabled[source])
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 

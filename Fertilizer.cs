@@ -13,7 +13,7 @@ public class Fertilizer : SourcedItem
         Speed = speed;
     }
 
-    public Fertilizer(string name, int quality, float speed, Dictionary<string, int> priceFrom) : base(name, priceFrom)
+    public Fertilizer(string name, int quality, float speed, Dictionary<Source, int> priceFrom) : base(name, priceFrom)
     {
         Quality = quality;
         Speed = speed;
