@@ -13,7 +13,7 @@ public class Fertilizer : SourcedItem
 
     public int Quality { get; }
     public float Speed { get; }
-    private Fertilzer Superior; //tree where the parent node is a superior fertilizer
+    private Fertilizer Superior; //tree where the parent node is a superior fertilizer
     private List<Fertilizer> Inferiors; //immediate children
 
     public Fertilizer(string name, int quality, float speed) : base(name)
@@ -48,7 +48,7 @@ public class Fertilizer : SourcedItem
         }
     }
     
-    public Fertilizer FindSuperior()
+    public void FindSuperior()
     {
         Fertilizers.Remove(this);
         for (int i = 0; i < Fertilizers.Count; i++)
@@ -78,7 +78,7 @@ public class Fertilizer : SourcedItem
 		}
 	}
     
-    private new FindBestSource()
+    private void FindBestSource()
     {
         int cheapestPrice = int.MaxValue;
 		bool oneValidSource = false;

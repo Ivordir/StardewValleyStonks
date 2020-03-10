@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 public abstract class SourcedItem : IEquatable<SourcedItem>
@@ -117,9 +118,9 @@ public abstract class SourcedItem : IEquatable<SourcedItem>
 			return "images/" + Name + ".png";
 		}
 	}
-	
-        public override bool Equals(object item)
-        {
-		return 
+
+	public bool Equals(SourcedItem item)
+	{
+		return item.Name == Name;
 	}
 }

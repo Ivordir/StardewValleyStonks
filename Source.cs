@@ -16,7 +16,43 @@ public class Source : IComparable
 
     public string Name { get; }
     public bool Enabled { get; } //should this source be enabled by default for all items
-    public int Index { get; set; }
+    public int Index  //for consistency, what order does this source appear in a list
+    {
+        get
+        {
+            return Index;
+        }
+        set
+        {
+            if (value != Index)
+            {
+                return;
+            }
+            else if (value < Index)
+            {
+                for (int i = 0; i < Sources.Count; i++)
+                {
+                    if (Sources[i].Index < Index && Sources[i].Index >= value)
+                    {
+                        Sources[i].Index++;
+                    }
+                }
+            }
+            else //if (value > Index)
+            {
+                for (int i = 0; i < Sources.Count; i++)
+                {
+                    if (Sources[i].Index > Index && Sources[i].Index <= value)
+                    {
+                        Sources[i].Index--;
+                    }
+                }
+            }
+            Sources.RemoveAt(Index);
+            Index = value;
+            Sources.Insert(Index, this);
+        }
+    }
 
     public Source (string name, bool enabled)
     {
