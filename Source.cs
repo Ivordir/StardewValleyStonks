@@ -24,11 +24,7 @@ public class Source : IComparable
         }
         set
         {
-            if (value != Index)
-            {
-                return;
-            }
-            else if (value < Index)
+            if (value < Index)
             {
                 for (int i = 0; i < Sources.Count; i++)
                 {
@@ -38,7 +34,7 @@ public class Source : IComparable
                     }
                 }
             }
-            else //if (value > Index)
+            else if (value > Index)
             {
                 for (int i = 0; i < Sources.Count; i++)
                 {
@@ -47,6 +43,10 @@ public class Source : IComparable
                         Sources[i].Index--;
                     }
                 }
+            }
+            else //value == Index
+            {
+                return;
             }
             Sources.RemoveAt(Index);
             Index = value;
