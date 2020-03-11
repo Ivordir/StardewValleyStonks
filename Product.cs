@@ -23,7 +23,7 @@
 	{
 		get
 		{
-			return Arti && usesArtisan ? (int)(BasePrice * 1.4) : BasePrice;
+			return Arti && UsesArtisan ? (int)(BasePrice * 1.4) : BasePrice;
 		}
 	}
 }
