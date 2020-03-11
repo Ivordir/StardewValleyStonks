@@ -106,15 +106,7 @@ public class Crop : SourcedItem
 			AvgExtraCrops += AvgCrops * DoubleCropChance + AvgCrops; //E=P(V), = DoubleCropChance(2*crops) + (1-DoubleCropChance)(crops)
 		}
 	}
-	/*
-	public int GrowthTime
-	{
-		get
-		{
-			return TotalGrowthTime;
-		}
-	}
-    */	
+
 	public int GrowthTime(float speedMultiplier)
 	{
 		if (speedMultiplier == 0)
@@ -154,9 +146,8 @@ public class Crop : SourcedItem
 	{
 		List<Product> products = new List<Product>();
 		
-		
 		BestProduct = products[0];
-		for (int i = 1; i < products.Count; i++)
+		for (int i = 0; i < products.Count; i++)
 		{
 			if(products[i].Price > BestProduct.Price)
 			{
@@ -171,6 +162,35 @@ public class Crop : SourcedItem
 		{
 			GrowthStages[i] = GrowthStagesOrg[i];
 		}
+	}
+	
+	private int CropPrice
+	{
+		get
+		{
+			return Till && type.HasFlag(Tiller) ? (int)(BasePrice * 1.1) : BasePrice;
+		}
+	}
+	
+	public double GoldPerDay(Fertilizer fert)
+	{
+		return Profit(fert.Quality) / GrowthTime(fert.Speed);
+	}
+	
+	public double Profit(int quality)
+	{
+		get
+			{
+				if (BestProduct == null)
+				{
+					return Multiplier(quality, CropPrice);
+				}
+				else if (QualityProducts)
+				{
+					return 
+				}
+				return BestProduct.Price;
+			}
 	}
 	
 	[Flags]
