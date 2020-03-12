@@ -7,18 +7,19 @@ public class Crop : SourcedItem
 	public Season SelectedSeasons { get; set; }
 	public Replant AllowedReplant { get; }
 	public Replant SelectedReplant { get; set; }
+	public Replant BestReplant { get; set; }
 	public ProductType AllowedProducts { get; }
 	public ProductType SelectedProducts { get; set; }
 	public Product BestProduct { get; set; }
 
 	private readonly CropType Type;
 	private readonly double AvgExtraCrops;
-	private readonly int TotalGrowthTime, BasePrice;
+	private readonly int TotalGrowthTime, BasePrice, Yield;
 	private readonly int[] GrowthStagesOrg;
 	private int[] GrowthStages;
 	private readonly Dictionary<ProductType, Product> ProductFrom;
 
-	public Crop(string name, int basePrice, Dictionary<string, int> priceFrom, Season seasons, int[] growthStages, CropType cropType = CropType.Tiller, int regrowTime = -1, double extraCropChance = 0, Dictionary<ProductType, Product> productFrom = null, Replant replant = Replant.Common) : base(name, priceFrom)
+	public Crop(string name, int basePrice, Dictionary<string, int> priceFrom, Season seasons, int[] growthStages, CropType cropType = CropType.Tiller, int regrowTime = -1, double extraCropChance = 0, Dictionary<ProductType, Product> productFrom = null, Replant replant = Replant.Common, int yield = 1) : base(name, priceFrom)
 	{
 		Type = cropType;
 		BasePrice = basePrice;
@@ -34,7 +35,7 @@ public class Crop : SourcedItem
 
 		if (!Type.HasFlag(CropType.ScytheFlag)) //crops harvested with scythe have no double crop chance (i.e. Amaranth, Kale, Wheat, Rice)
 		{
-			AvgExtraCrops += AvgCrops * DoubleCropChance + AvgCrops; //E=P(V), = DoubleCropChance(2*crops) + (1-DoubleCropChance)(crops)
+			AvgExtraCrops += DoubleCropChance + 1; //E=P(V), = DoubleCropChance(2*crops) + (1-DoubleCropChance)(crops)
 		}
 		
 		AllowedSeasons = seasons;
@@ -207,18 +208,19 @@ public class Crop : SourcedItem
 	{
 		get
 			{
+				double profit = BestProduct.Price;
 				if (BestProduct.Name == Name || QualityProducts)
 				{
-					return Multiplier(quality, BestProduct);
+					profit = ApplyQualityMultiplier(quality) + AvgExtraCrops * ApplyQualityMultiplier(0);
 				}
-				return BestProduct.Price;
+				//subtract seed 
 			}
 	}
 	
-	private static double ApplyQualityMultiplier(int price, int quality)
+	private static double ApplyQualityMultiplier(int quality)
 	{
 		double[] dist = QualityDist(quality);
-		return (int) (1.5 * dist[0]) + (int) (1.25 * dist[1]) + dist[2];
+		return dist[2] * (int) (1.5 * BestProduct.Price) + dist[1] * (int) (1.25 * BestProduct.Price) + dist[0] * BestProduct.Price;
 	}
 	
 	private static double[] QualityDist(int quality)
