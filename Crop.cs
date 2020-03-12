@@ -3,8 +3,6 @@ using System.Collections.Generic;
 
 public class Crop : SourcedItem
 {
-	public int RegrowTime { get; }
-
 	public Season AllowedSeasons { get; }
 	public Season SelectedSeasons { get; set; }
 	public Replant AllowedReplant { get; }
@@ -26,6 +24,7 @@ public class Crop : SourcedItem
 		SelectedSeasons = AllowedSeasons;
 		AllowedReplant = replant;
 		SelectedReplant = AllowedReplant;
+		AllowedProducts = ProductType.Crop;
 		if (productFrom == null)
 		{
 			ProductFrom = new Dictionary<ProductType, Product>();
@@ -33,12 +32,12 @@ public class Crop : SourcedItem
 		else
 		{
 			ProductFrom = productFrom;
+			AllowedProducts = 0;
 			foreach (ProductType type in ProductFrom.Keys)
 			{
 				AllowedProducts |= type;
 			}
 		}
-		AllowedProducts |= ProductType.Crop;
 		if (Type.HasFlag(CropType.FruitFlag) || Type.HasFlag(CropType.VegeFlag))
 		{
 			AllowedProducts |= ProductType.Keg | ProductType.Jar;
@@ -55,9 +54,7 @@ public class Crop : SourcedItem
 			TotalGrowthTime += GrowthStagesOrg[i];
 		}
 
-		Till && Type.HasFlag(Till) ? (int)(BasePrice * 1.1) : BasePrice);
-
-		if (SelectedProducts.HasFlag(ProductType.Jar) && !ProductFrom.ContainsKey(ProductType.Jar))
+		if (AllowedProducts.HasFlag(ProductType.Jar) && !ProductFrom.ContainsKey(ProductType.Jar))
 		{
 			if (Type.HasFlag(CropType.VegeFlag))
 			{
@@ -130,14 +127,26 @@ public class Crop : SourcedItem
     
 	private void CalcBestProduct()
 	{
-		List<Product> products = new List<Product>();
-		
-		BestProduct = products[0];
-		for (int i = 0; i < products.Count; i++)
+		if (SelectedProducts == 0)
+		{	
+			BestProuct = null;
+		}
+		else
 		{
-			if(products[i].Price > BestProduct.Price)
+			List<Product> products = SelectedProducts.HasFlag(ProductType.Crop) ? new List<Product> { CropProduct } : new List<Product>();
+			foreach (ProductType type in ProductFrom.Keys)
 			{
-				BestProduct = products[i];	
+				if (SelectedProducts.HasFlag(type))
+				{
+					products.Add(ProductFrom[type]);
+				}
+			}
+			foreach (Product product in products)
+			{
+				if(product.Price > BestProduct.Price)
+				{
+					BestProduct = product;	
+				}
 			}
 		}
 	}
@@ -180,6 +189,14 @@ public class Crop : SourcedItem
 			return Till && type.HasFlag(Tiller) ? (int)(BasePrice * 1.1) : BasePrice;
 		}
 	}
+	
+	private Product CropProduct
+	{
+		get
+		{
+			return new Product(Name, CropPrice);
+		}
+	{
 	
 	public double GoldPerDay(Fertilizer fert)
 	{
