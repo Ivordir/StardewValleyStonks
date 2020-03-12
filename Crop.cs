@@ -14,7 +14,7 @@ public class Crop : SourcedItem
 	public Product BestProduct { get; set; }
 
 	private readonly CropType Type;
-	private readonly double AvgCrops, AvgExtraCrops;
+	private readonly double AvgExtraCrops;
 	private readonly int TotalGrowthTime, BasePrice;
 	private readonly int[] GrowthStagesOrg;
 	private int[] GrowthStages;
@@ -22,8 +22,6 @@ public class Crop : SourcedItem
 
 	public Crop(string name, int basePrice, Dictionary<string, int> priceFrom, Season seasons, int[] growthStages, CropType cropType = CropType.Tiller, int regrowTime = -1, double extraCropChance = 0, Dictionary<ProductType, Product> productFrom = null, Replant replant = Replant.Common) : base(name, priceFrom)
 	{
-		RegrowTime = regrowTime;
-		
 		AllowedSeasons = seasons;
 		SelectedSeasons = AllowedSeasons;
 		AllowedReplant = replant;
@@ -59,7 +57,6 @@ public class Crop : SourcedItem
 
 		Till && Type.HasFlag(Till) ? (int)(BasePrice * 1.1) : BasePrice);
 
-
 		if (SelectedProducts.HasFlag(ProductType.Jar) && !ProductFrom.ContainsKey(ProductType.Jar))
 		{
 			if (Type.HasFlag(CropType.VegeFlag))
@@ -88,19 +85,8 @@ public class Crop : SourcedItem
 		}
 		CalcBestProduct();
 		
-		if(Type.HasFlag(CropType.GiantCrop))
-		{
-			//GiantCropChecksPerTile = 9;
-        	//GiantCropProb = (1 - Math.Pow(0.99, GiantCropChecksPerTile));
-			AvgCrops = 1 - GiantCropProb;
-			//assume extraCropChance == 0
-			AvgExtraCrops = 2 * GiantCropYields;
-		}
-		else
-		{
-			AvgCrops = 1;
-			AvgExtraCrops = 1.0 / (1 - extraCropChance) - 1;
-		}
+		AvgExtraCrops = 1.0 / (1 - extraCropChance) - 1;
+
 		if (!Type.HasFlag(CropType.ScytheFlag)) //crops harvested with scythe have no double crop chance (i.e. Amaranth, Kale, Wheat, Rice)
 		{
 			AvgExtraCrops += AvgCrops * DoubleCropChance + AvgCrops; //E=P(V), = DoubleCropChance(2*crops) + (1-DoubleCropChance)(crops)
@@ -156,6 +142,29 @@ public class Crop : SourcedItem
 		}
 	}
 
+	public bool Valid 
+	{
+		get
+		{
+			if (Seasons && SelectedSeasons != 0)
+			{
+				for(Season season = StartSeason ; season <= EndSeason; season << 1)
+				{
+					
+				}
+			}
+			if (SelectedProducts == 0)
+			if (SelectedReplant > 0 && (SelectedReplant != Replant.BoughtSeeds || Source != null))
+			{
+			
+			}
+			if (!Obsolete)
+			{
+			
+			}
+		}
+	}
+
 	private void ResetGrowthStages()
 	{
 		for (int i = 0; i < GrowthStagesOrg.Length; i++)
@@ -201,14 +210,12 @@ public class Crop : SourcedItem
 		Fruit = FruitFlag | Tiller,
 		VegeFlag = 1 << 2,
 		Vege = VegeFlag | Tiller,
-		GiantCropFlag = 1 << 3,
-		GiantCrop = GiantCropFlag | Tiller,
-		ScytheFlag = 1 << 4,
+		ScytheFlag = 1 << 3,
 		Scythe = ScytheFlag | Vege,
-		Trelis = 1 << 5,
-		PaddyFlag = 1 << 6,
+		Trelis = 1 << 4,
+		PaddyFlag = 1 << 5,
 		Paddy = PaddyFlag | Scythe,
-		IndoorOnly = 1 << 7
+		IndoorOnly = 1 << 6
 	}
 
 	//not in season
