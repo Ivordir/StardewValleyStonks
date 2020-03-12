@@ -215,6 +215,21 @@ public class Crop : SourcedItem
 			}
 	}
 	
+	private static double ApplyQualityMultiplier(int price, int quality)
+	{
+		double[] dist = QualityDist(quality);
+		return (int) (1.5 * dist[0]) + (int) (1.25 * dist[1]) + dist[2];
+	}
+	
+	private static double[] QualityDist(int quality)
+	{
+		double[] dist = new double[3];
+		dist[0] = 0.01 + 0.2 * (FarmLvl / 10 + quality * (FarmLvl + 2) / 12); //check for int division
+		dist[1] = Math.Min(2 * dist[0], 0.75) * (1 - dist[0]);
+		dist[2] = 1 - dist[0] - dist[1];
+		return dist;
+	}
+	
 	[Flags]
 	public enum CropType : byte //what bonuses do/do not apply to this crop and what products can this crop sell as unless overridden
 	{
