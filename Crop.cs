@@ -20,6 +20,23 @@ public class Crop : SourcedItem
 
 	public Crop(string name, int basePrice, Dictionary<string, int> priceFrom, Season seasons, int[] growthStages, CropType cropType = CropType.Tiller, int regrowTime = -1, double extraCropChance = 0, Dictionary<ProductType, Product> productFrom = null, Replant replant = Replant.Common) : base(name, priceFrom)
 	{
+		Type = cropType;
+		BasePrice = basePrice;
+		GrowthStagesOrg = growthStages;
+		GrowthStages = new int[GrowthStagesOrg.Length]; 
+		ResetGrowthStages();
+		for (int i = 0; i < GrowthStagesOrg.Length; i++)
+		{
+			TotalGrowthTime += GrowthStagesOrg[i];
+		}
+		
+		AvgExtraCrops = 1.0 / (1 - extraCropChance) - 1;
+
+		if (!Type.HasFlag(CropType.ScytheFlag)) //crops harvested with scythe have no double crop chance (i.e. Amaranth, Kale, Wheat, Rice)
+		{
+			AvgExtraCrops += AvgCrops * DoubleCropChance + AvgCrops; //E=P(V), = DoubleCropChance(2*crops) + (1-DoubleCropChance)(crops)
+		}
+		
 		AllowedSeasons = seasons;
 		SelectedSeasons = AllowedSeasons;
 		AllowedReplant = replant;
@@ -43,16 +60,6 @@ public class Crop : SourcedItem
 			AllowedProducts |= ProductType.Keg | ProductType.Jar;
 		}
 		SelectedProducts = AllowedProducts;
-        
-		Type = cropType;
-		BasePrice = basePrice;
-		GrowthStagesOrg = growthStages;
-		GrowthStages = new int[GrowthStagesOrg.Length]; 
-		ResetGrowthStages();
-		for (int i = 0; i < GrowthStagesOrg.Length; i++)
-		{
-			TotalGrowthTime += GrowthStagesOrg[i];
-		}
 
 		if (AllowedProducts.HasFlag(ProductType.Jar) && !ProductFrom.ContainsKey(ProductType.Jar))
 		{
@@ -81,13 +88,6 @@ public class Crop : SourcedItem
 			ProductFrom.Add(ProductType.Oil, Product.Oil);
 		}
 		CalcBestProduct();
-		
-		AvgExtraCrops = 1.0 / (1 - extraCropChance) - 1;
-
-		if (!Type.HasFlag(CropType.ScytheFlag)) //crops harvested with scythe have no double crop chance (i.e. Amaranth, Kale, Wheat, Rice)
-		{
-			AvgExtraCrops += AvgCrops * DoubleCropChance + AvgCrops; //E=P(V), = DoubleCropChance(2*crops) + (1-DoubleCropChance)(crops)
-		}
 	}
 
 	public int GrowthTime(float speedMultiplier)
@@ -207,13 +207,9 @@ public class Crop : SourcedItem
 	{
 		get
 			{
-				if (BestProduct == null)
+				if (BestProduct.Name == Name || QualityProducts)
 				{
-					return Multiplier(quality, CropPrice);
-				}
-				else if (QualityProducts)
-				{
-					return 
+					return Multiplier(quality, BestProduct);
 				}
 				return BestProduct.Price;
 			}
