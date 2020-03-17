@@ -1,8 +1,10 @@
-public class RegrowCrop : SourcedItem
+using System.Collections.Generic;
+
+public class RegrowCrop : Crop
 {
 	public int RegrowTime { get; }
 
-	public RegrowCrop(string name, int basePrice, Dictionary<string, int> priceFrom, Season seasons, int[] growthStages, CropType cropType = CropType.Tiller, int regrowTime = -1, double extraCropChance = 0, Dictionary<ProductType, Product> productFrom = null, Replant replant = Replant.Common) : base(name, priceFrom)
+	public RegrowCrop(string name, int basePrice, Dictionary<Source, int> priceFrom, Season seasons, int[] growthStages, CropType cropType = CropType.Tiller, int regrowTime = -1, double extraCropChance = 0, Dictionary<ProductType, Product> productFrom = null, Replant replant = Replant.Common) : base(name, priceFrom)
 	{
 		RegrowTime = regrowTime;
 		

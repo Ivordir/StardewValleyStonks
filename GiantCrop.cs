@@ -1,18 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 
-public class GiantCrop : SourcedItem
+public class GiantCrop : Crop
 {
 	private readonly double AvgCrops;
 
 	public GiantCrop(string name, int basePrice, Dictionary<string, int> priceFrom, Season seasons, int[] growthStages, CropType cropType = CropType.Tiller, int regrowTime = -1, double extraCropChance = 0, Dictionary<ProductType, Product> productFrom = null, Replant replant = Replant.Common) : base(name, priceFrom)
 	{
-		RegrowTime = regrowTime;
-		
-		AllowedSeasons = seasons;
-		SelectedSeasons = AllowedSeasons;
-		AllowedReplant = replant;
-		SelectedReplant = AllowedReplant;
 		if (productFrom == null)
 		{
 			ProductFrom = new Dictionary<ProductType, Product>();

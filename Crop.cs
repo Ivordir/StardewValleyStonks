@@ -19,7 +19,7 @@ public class Crop : SourcedItem
 	private int[] GrowthStages;
 	private readonly Dictionary<ProductType, Product> ProductFrom;
 
-	public Crop(string name, int basePrice, Dictionary<string, int> priceFrom, Season seasons, int[] growthStages, CropType cropType = CropType.Tiller, int regrowTime = -1, double extraCropChance = 0, Dictionary<ProductType, Product> productFrom = null, Replant replant = Replant.Common, int yield = 1) : base(name, priceFrom)
+	public Crop(string name, int basePrice, Dictionary<Source, int> priceFrom, Season seasons, int[] growthStages, CropType cropType = CropType.Tiller, int regrowTime = -1, double extraCropChance = 0, Dictionary<ProductType, Product> productFrom = null, Replant replant = Replant.Common, int yield = 1) : base(name, priceFrom)
 	{
 		Type = cropType;
 		BasePrice = basePrice;

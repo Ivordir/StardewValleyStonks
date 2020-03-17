@@ -6,7 +6,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Crop.cs" />
+    <Compile Remove="Fertilizer.cs" />
+    <Compile Remove="GiantCrop.cs" />
+    <Compile Remove="PlanNode.cs" />
+    <Compile Remove="Product.cs" />
+    <Compile Remove="ProductType.cs" />
+    <Compile Remove="RegrowCrop.cs" />
+    <Compile Remove="Replant.cs" />
+    <Compile Remove="Season.cs" />
+    <Compile Remove="Source.cs" />
+    <Compile Remove="SourcedItem.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Remove="compilerconfig.json" />
+    <Content Remove="wwwroot\index.html" />
   </ItemGroup>
 
   <ItemGroup>
@@ -15,6 +30,7 @@
 
   <ItemGroup>
     <None Include="compilerconfig.json" />
+    <None Include="wwwroot\index.html" />
   </ItemGroup>
 
   <ItemGroup>
