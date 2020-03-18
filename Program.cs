@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace StardewValleyMaximizeProfit
+namespace StardewValleyStonks
 {
     public class Program
     {

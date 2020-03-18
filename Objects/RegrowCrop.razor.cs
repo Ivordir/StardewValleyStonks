@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace StardewValleyMaximizeProfit
+namespace StardewValleyStonks
 {
 	public class RegrowCrop : Crop
 	{

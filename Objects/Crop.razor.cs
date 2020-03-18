@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace StardewValleyMaximizeProfit
+namespace StardewValleyStonks
 {
 	public class Crop : SourcedItem
 	{
