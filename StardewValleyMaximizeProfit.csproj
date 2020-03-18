@@ -6,22 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Crop.cs" />
-    <Compile Remove="Fertilizer.cs" />
-    <Compile Remove="GiantCrop.cs" />
-    <Compile Remove="PlanNode.cs" />
-    <Compile Remove="Product.cs" />
-    <Compile Remove="ProductType.cs" />
-    <Compile Remove="RegrowCrop.cs" />
-    <Compile Remove="Replant.cs" />
-    <Compile Remove="Season.cs" />
-    <Compile Remove="Source.cs" />
-    <Compile Remove="SourcedItem.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Remove="compilerconfig.json" />
-    <Content Remove="wwwroot\index.html" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,14 +15,20 @@
 
   <ItemGroup>
     <None Include="compilerconfig.json" />
+    <None Include="LICENSE.md" />
+    <None Include="README.md" />
+    <None Include=".gitattributes" />
+    <None Include=".gitignore" />
+    <None Include="wwwroot\.nojekyll" />
     <None Include="wwwroot\index.html" />
+    <None Include="wwwroot\404.html" />
+    <None Include="wwwroot\config.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="3.1.0-preview4.19579.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Blazor.Build" Version="3.1.0-preview4.19579.2" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.AspNetCore.Blazor.HttpClient" Version="3.1.0-preview4.19579.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Blazor.DevServer" Version="3.1.0-preview4.19579.2" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="3.2.0-preview2.20160.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Build" Version="3.2.0-preview2.20160.5" />
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.2.0" />
   </ItemGroup>
 
 </Project>

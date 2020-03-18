@@ -1,7 +1,8 @@
+using Microsoft.AspNetCore.Components;
 using System;
 using System.Collections.Generic;
 
-public abstract class SourcedItem : IEquatable<SourcedItem>
+public abstract class SourcedItem : ComponentBase, IEquatable<SourcedItem>
 {
 	public string Name { get; }
 	public bool Enabled { get; set; }

@@ -1,5 +1,6 @@
 ﻿@page "/"
 @inject NavigationManager NavigationManager
+@inject InputState  State
 
 <div class="input-grid">
 	<div class="editor">
@@ -143,13 +144,3 @@
 		</button>
 	</div>
 </div>
-
-@code {
-	[CascadingParameter]
-	private StateProvider State { get; set; }
-
-	private void Calc()
-	{
-
-	}
-}
