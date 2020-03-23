@@ -10,7 +10,10 @@ namespace StardewValleyStonks
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("app");
-            builder.Services.AddScoped<InputState>();
+            builder.Services.AddScoped<DateState>();
+            builder.Services.AddScoped<SkillsState>();
+            builder.Services.AddScoped<SettingsState>();
+            builder.Services.AddScoped<OutputState>();
             //builder.Services.AddBaseAddressHttpClient();
             await builder.Build().RunAsync();
         }

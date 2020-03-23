@@ -6,10 +6,9 @@ public enum Season
   Fall = 1 << 2,
   Winter = 1 << 3
 }
-
+/*
 public static class Seasons
 {
-    private const int NumSeasons = 4;
-
-    public static int Count => NumSeasons;
+    public const int Count = 4;
 }
+*/

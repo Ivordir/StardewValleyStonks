@@ -1,0 +1,23 @@
+﻿<button class=@ButtonClass @onclick=@( () => Toggle() )>
+	@ChildContent
+</button>
+
+@code {
+	[Parameter]
+	public RenderFragment ChildContent { get; set; }
+
+	[Parameter]
+	public string UntoggledClass { get; set; }
+
+	[Parameter]
+	public string ToggledClass { get; set; }
+
+	private bool Toggled = false;
+
+	public void Toggle()
+	{
+		Toggled = !Toggled;
+	}
+
+	public string ButtonClass => Toggled ? ToggledClass : UntoggledClass;
+}

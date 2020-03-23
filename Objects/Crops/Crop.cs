@@ -6,6 +6,9 @@ namespace StardewValleyStonks
 {
 	public class Crop : SourcedItem
 	{
+		[Inject] private static SkillsState Skills { get; }
+		[Inject] private static SettingsState Settings { get; }
+		[Inject] private static DateState Date { get; }
 		public Season AllowedSeasons { get; }
 		public Season SelectedSeasons { get; set; }
 		public Replant AllowedReplant { get; }
@@ -15,8 +18,6 @@ namespace StardewValleyStonks
 		public ProductType SelectedProducts { get; set; }
 		public Product BestProduct { get; set; }
 
-		[Inject] protected static InputState State { get; set; }
-
 		//find what should be protected and what should be private
 		protected readonly CropType Type;
 		private readonly double AvgExtraCrops;
@@ -25,7 +26,7 @@ namespace StardewValleyStonks
 		private int[] GrowthStages;
 		protected readonly Dictionary<ProductType, Product> ProductFrom;
 
-		public Crop(string name, int basePrice, Dictionary<Source, int> priceFrom, Season seasons, int[] growthStages, CropType cropType = CropType.Tiller, int regrowTime = -1, double extraCropChance = 0, Dictionary<ProductType, Product> productFrom = null, Replant replant = Replant.Common, int yield = 1) : base(name, priceFrom)
+		public Crop(string name, int basePrice, Dictionary<Source, BoughtItem> priceFrom, Season seasons, int[] growthStages, CropType cropType = CropType.Tiller, double extraCropChance = 0, Dictionary<ProductType, Product> productFrom = null, Replant replant = Replant.Common, int yield = 1) : base(name, priceFrom)
 		{
 			Type = cropType;
 			BasePrice = basePrice;
@@ -39,9 +40,9 @@ namespace StardewValleyStonks
 
 			AvgExtraCrops = 1.0 / (1 - extraCropChance) - 1;
 
-			if (!Type.HasFlag(CropType.ScytheFlag)) //crops harvested with scythe have no double crop chance (i.e. Amaranth, Kale, Wheat, Rice)
+			if (!Type.HasFlag(CropType.Scythe)) //crops harvested with scythe have no double crop chance (i.e. Amaranth, Kale, Wheat, Rice)
 			{
-				AvgExtraCrops += DoubleCropChance + 1; //E=P(V), = DoubleCropChance(2*crops) + (1-DoubleCropChance)(crops)
+				AvgExtraCrops += Settings.DoubleCropChance + 1; //E=P(V), = DoubleCropChance(2*crops) + (1-DoubleCropChance)(crops)
 			}
 
 			AllowedSeasons = seasons;
@@ -62,7 +63,7 @@ namespace StardewValleyStonks
 					AllowedProducts |= type;
 				}
 			}
-			if (Type.HasFlag(CropType.FruitFlag) || Type.HasFlag(CropType.VegeFlag))
+			if (Type.HasFlag(CropType.Fruit) || Type.HasFlag(CropType.Vege))
 			{
 				AllowedProducts |= ProductType.Keg | ProductType.Jar;
 			}
@@ -70,24 +71,24 @@ namespace StardewValleyStonks
 
 			if (AllowedProducts.HasFlag(ProductType.Jar) && !ProductFrom.ContainsKey(ProductType.Jar))
 			{
-				if (Type.HasFlag(CropType.VegeFlag))
+				if (Type.HasFlag(CropType.Vege))
 				{
-					ProductFrom.Add(ProductType.Jar, new Product(Name + " Pickle", 2 * BasePrice + 50, true));
+					ProductFrom.Add(ProductType.Jar, new Product(Name + " Pickle", 2 * BasePrice + 50, ArtiMultiplier.Singleton));
 				}
-				else if (Type.HasFlag(CropType.FruitFlag))
+				else if (Type.HasFlag(CropType.Fruit))
 				{
-					ProductFrom.Add(ProductType.Jar, new Product(Name + "Jam", 2 * BasePrice + 50, true));
+					ProductFrom.Add(ProductType.Jar, new Product(Name + "Jam", 2 * BasePrice + 50, ArtiMultiplier.Singleton));
 				}
 			}
 			if (AllowedProducts.HasFlag(ProductType.Keg) && !ProductFrom.ContainsKey(ProductType.Keg))
 			{
-				if (Type.HasFlag(CropType.VegeFlag))
+				if (Type.HasFlag(CropType.Vege))
 				{
-					ProductFrom.Add(ProductType.Keg, new Product(Name + " Juice", (int)(2.25 * BasePrice), true));
+					ProductFrom.Add(ProductType.Keg, new Product(Name + " Juice", (int)(2.25 * BasePrice), ArtiMultiplier.Singleton));
 				}
-				else if (Type.HasFlag(CropType.FruitFlag))
+				else if (Type.HasFlag(CropType.Fruit))
 				{
-					ProductFrom.Add(ProductType.Keg, new Product(Name + " Wine", 3 * BasePrice, true));
+					ProductFrom.Add(ProductType.Keg, new Product(Name + " Wine", 3 * BasePrice, ArtiMultiplier.Singleton));
 				}
 			}
 			if (AllowedProducts.HasFlag(ProductType.Oil) && !ProductFrom.ContainsKey(ProductType.Oil))
@@ -103,11 +104,11 @@ namespace StardewValleyStonks
 			{
 				return TotalGrowthTime;
 			}
-			if (State.Agri)
+			if (Skills.Agri)
 			{
 				speedMultiplier += 0.1f;
 			}
-			if (State.Irrigated && Type.HasFlag(CropType.PaddyFlag))
+			if (Settings.Irrigated && Type.HasFlag(CropType.Paddy))
 			{
 				speedMultiplier += 0.25f;
 			}
@@ -193,7 +194,7 @@ namespace StardewValleyStonks
 		{
 			get
 			{
-				return State.Till && Type.HasFlag(CropType.Tiller) ? (int)(BasePrice * 1.1) : BasePrice;
+				return Skills.Till && Type.HasFlag(CropType.Tiller) ? (int)(BasePrice * 1.1) : BasePrice;
 			}
 		}
 
@@ -213,7 +214,7 @@ namespace StardewValleyStonks
 		public double Profit(int quality)
 		{
 			double profit = BestProduct.Price;
-			if (BestProduct.Name == Name || State.QualityProducts)
+			if (BestProduct.Name == Name || Settings.QualityProducts)
 			{
 				profit = ApplyQualityMultiplier(quality) + AvgExtraCrops * ApplyQualityMultiplier(0);
 			}
@@ -229,7 +230,7 @@ namespace StardewValleyStonks
 		private static double[] QualityDist(int quality)
 		{
 			double[] dist = new double[3];
-			dist[0] = 0.01 + 0.2 * (State.FarmLvl / 10 + quality * (State.FarmLvl + 2) / 12); //check for int division
+			dist[0] = 0.01 + 0.2 * (Skills.BuffedFarmLvl / 10 + quality * (Skills.BuffedFarmLvl + 2) / 12); //check for int division
 			dist[1] = Math.Min(2 * dist[0], 0.75) * (1 - dist[0]);
 			dist[2] = 1 - dist[0] - dist[1];
 			return dist;
