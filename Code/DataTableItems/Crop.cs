@@ -6,6 +6,13 @@ namespace StardewValleyStonks
 {
 	public class Crop : DataTableItem
 	{
+		private static readonly IPriceManager<IProductSource, IPricedItem>[] NoOtherProducts;
+
+		static Crop()
+		{
+			NoOtherProducts = new IPriceManager<IProductSource, IPricedItem>[0];
+		}
+
 		[Inject] private SkillsState Skills { get; }
 
 		public Season AllowedSeasons { get; }
@@ -14,15 +21,15 @@ namespace StardewValleyStonks
 
 		//find what should be protected and what should be private
 		List<IPenalty> Penalties { get; }
-		//private readonly double AvgCrops, AvgExtraCrops;
+
 		private readonly int[] GrowthStagesOrg;
 		private readonly int[] GrowthStages;
 		private readonly double AvgCrops, AvgExtraCrops;
 		//typeof(QualityManager), [index][quality], harvestables with quality (i.e. crops), profit determined at runtime according to fertilizer.
 		protected readonly IPriceManager<IProductSource, IPricedItem>[][] Crops;
-		//typeof(SourceManager), [index], harvestables without any quality (i.e. sunflower seeds), profit determined before runtime.
+		//typeof(PriceManager), [index], harvestables without any quality (i.e. sunflower seeds), profit determined before runtime.
 		protected readonly IPriceManager<IProductSource, IPricedItem>[] OtherProducts;
-		//typeof(MultiManager)
+		//typeof(???)
 		protected readonly IRanker<ISource, IReplant> Replant;
 
 		public Crop(
@@ -31,9 +38,9 @@ namespace StardewValleyStonks
 			int[] growthStages,
 			double avgCrops,
 			double avgExtraCrops,
-			IPriceManager<ISource, IPricedItem> priceManager,
-			IPriceManager<IProductSource, IPricedItem>[][] crops)
-			: base(name, priceManager)
+			IPriceManager<IProductSource, IPricedItem>[][] crops,
+			IPriceManager<IProductSource, IPricedItem>[] otherProducts = null)
+			: base(name)
 		{
 			GrowthStagesOrg = growthStages;
 			GrowthStages = new int[GrowthStagesOrg.Length];
@@ -47,6 +54,7 @@ namespace StardewValleyStonks
 			SelectedSeasons = AllowedSeasons;
 
 			Crops = crops;
+			OtherProducts = otherProducts ?? NoOtherProducts;
 
 			AvgCrops = avgCrops;
 			AvgExtraCrops = avgExtraCrops;

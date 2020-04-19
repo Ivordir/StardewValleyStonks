@@ -45,17 +45,26 @@ namespace StardewValleyStonks
 							}
 							else
 							{
+								bool added = false;
 								for (int rank = 0; rank < BestItems.Count; rank++)
 								{
 									int comparison = Compare(BestItems[rank][0].Value, item);
 									if (comparison == 0)  //source is equal to BestSource
 									{
 										BestItems[rank].Add(KVP(source, item));
+										added = true;
+										break;
 									}
 									else if (comparison == -1) //source is better than BestSource
 									{
 										BestItems.Insert(rank, NewRank(source, item));
+										added = true;
+										break;
 									}
+								}
+								if (!added)
+								{
+									BestItems.Add(NewRank(source, item));
 								}
 							}
 						}

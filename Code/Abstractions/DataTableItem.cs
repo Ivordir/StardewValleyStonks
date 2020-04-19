@@ -5,12 +5,10 @@ namespace StardewValleyStonks
 		public string Name { get; }
 		public bool Enabled { get; set; }
 		public abstract bool Active { get; }
-		public IManager<ISource, IPricedItem> PriceManager;
 
-		public DataTableItem(string name, IManager<ISource, IPricedItem> priceManager)
+		public DataTableItem(string name)
 		{
 			Name = name;
-			PriceManager = priceManager;
 		}
 
 		public virtual string Image

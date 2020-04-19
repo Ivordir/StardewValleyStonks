@@ -7,14 +7,15 @@ namespace StardewValleyStonks
     {
         public int Quality { get; }
         public float Speed { get; }
-        //public IPriceManager<Source, IPricedItem> PriceManager { get; }
+        public IManager<ISource, IPricedItem> PriceManager { get; }
         //private Fertilizer Superior; //tree where the parent node is a superior fertilizer
         //private List<Fertilizer> Inferiors; //immediate children
 
-        public Fertilizer(string name, int quality, float speed, IManager<ISource, IPricedItem> priceManager) : base(name, priceManager)
+        public Fertilizer(string name, int quality, float speed, IManager<ISource, IPricedItem> priceManager) : base(name)
         {
             Quality = quality;
             Speed = speed;
+            PriceManager = priceManager;
             //FindSuperior();
         }
 
@@ -37,7 +38,7 @@ namespace StardewValleyStonks
         */
         public override bool Active { get => throw new NotImplementedException(); }
 
-        public int Price => PriceManager.Price();
+        public int Price => PriceManager.NoSource ? -1 : PriceManager.ItemFrom[PriceManager.BestSources[0]].Price;
 
         /*
         public void FindSuperior()

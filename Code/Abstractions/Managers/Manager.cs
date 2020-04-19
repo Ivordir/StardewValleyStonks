@@ -93,7 +93,7 @@ namespace StardewValleyStonks
 
 		protected virtual int Compare(TSource source)
 		{
-			return ItemFrom[BestSources[0]].CompareTo(ItemFrom[source]); ;
+			return ItemFrom[BestSources[0]].CompareTo(ItemFrom[source]);
 		}
 	}
 }
