@@ -14,7 +14,8 @@ namespace StardewValleyStonks
             builder.Services.AddScoped<SkillsState>();
             builder.Services.AddScoped<SettingsState>();
             builder.Services.AddScoped<OutputState>();
-            //builder.Services.AddBaseAddressHttpClient();
+            builder.Services.AddScoped<MultiplierState>();
+            builder.Services.AddScoped<Factory>();
             await builder.Build().RunAsync();
         }
     }
