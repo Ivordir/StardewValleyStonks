@@ -1,19 +1,17 @@
-﻿using System.Collections.Generic;
-
-namespace StardewValleyStonks
+﻿namespace StardewValleyStonks
 {
     public class BoughtItem : ActiveItem, IPricedItem
     {
-        public int Price { get; }
+        public int UnitPrice { get; }
 
-        public BoughtItem(int price, bool enabled = true, List<ICondition> conditions = null) : base(enabled, conditions)
+        public BoughtItem(int price, bool enabled = true, ICondition[] conditions = null) : base(enabled, conditions)
         {
-            Price = price;
+            UnitPrice = price;
         }
 
         public int CompareTo(IPricedItem other)
         {
-            return -1 * Price.CompareTo(other.Price);
+            return -1 * UnitPrice.CompareTo(other.UnitPrice);
         }
     }
 }

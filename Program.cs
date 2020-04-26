@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace StardewValleyStonks
@@ -8,14 +9,21 @@ namespace StardewValleyStonks
     {
         public static async Task Main(string[] args)
         {
-            var builder = WebAssemblyHostBuilder.CreateDefault(args);
-            builder.RootComponents.Add<App>("app");
+            WebAssemblyHostBuilder builder = WebAssemblyHostBuilder.CreateDefault(args);
+            //builder.Configuration.AddJsonFile("appsettings.json", false, false);
+            //builder.Services.AddTransient(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
             builder.Services.AddScoped<DateState>();
             builder.Services.AddScoped<SkillsState>();
-            builder.Services.AddScoped<SettingsState>();
             builder.Services.AddScoped<OutputState>();
-            builder.Services.AddScoped<Factory>();
-            await builder.Build().RunAsync();
+            builder.RootComponents.Add<App>("app");
+
+            var host = builder.Build();
+
+            builder.Services.Configure<SettingsState>(settings =>
+                new SettingsState(host.Configuration.GetSection("test").GetValue<bool>("test"))
+            ) ;
+
+            await host.RunAsync();
         }
     }
 }

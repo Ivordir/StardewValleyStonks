@@ -1,20 +1,18 @@
-﻿using System.Collections.Generic;
-
-namespace StardewValleyStonks
+﻿namespace StardewValleyStonks
 {
-    public class ActiveItem : IActiveItem
+    public abstract class ActiveItem : IActiveItem
     {
-        private static readonly List<ICondition> NoConditions;
+        private static readonly ICondition[] NoConditions;
 
         static ActiveItem()
         {
-            NoConditions = new List<ICondition>();
+            NoConditions = new ICondition[0];
         }
 
         public bool Enabled { get; set; }
-        public List<ICondition> Conditions { get; }
+        public ICondition[] Conditions { get; }
 
-        public ActiveItem(bool enabled = true, List<ICondition> conditions = null)
+        public ActiveItem(bool enabled = true, ICondition[] conditions = null)
         {
             Enabled = enabled;
             Conditions = conditions ?? NoConditions;
@@ -24,6 +22,10 @@ namespace StardewValleyStonks
         {
             get
             {
+                if (Conditions == NoConditions)
+                {
+                    return true;
+                }
                 foreach (ICondition condition in Conditions)
                 {
                     if (!condition.IsMet)
@@ -35,7 +37,7 @@ namespace StardewValleyStonks
             }
         }
 
-        public bool Active
+        public virtual bool Active
         {
             get
             {

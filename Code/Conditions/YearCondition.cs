@@ -6,14 +6,14 @@ namespace StardewValleyStonks
     {
         [Inject] private DateState Date { get; }
 
-        public int UnlocksAtYear { get; }
+        public int Year { get; }
 
-        public YearCondition(int unlocksAtYear)
+        public YearCondition(int year)
         {
-            UnlocksAtYear = unlocksAtYear;
+            Year = year;
         }
 
-        public bool IsMet => Date.Year >= UnlocksAtYear;
-        public string WarningMessage => $"Available from year {UnlocksAtYear} and onwards.";
+        public bool IsMet => Date.Year >= Year;
+        public string WarningMessage => $"Available from year {Year} and onwards.";
     }
 }

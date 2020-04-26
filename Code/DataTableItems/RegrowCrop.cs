@@ -1,100 +1,47 @@
-using System.Collections.Generic;
-
 namespace StardewValleyStonks
 {
 	public class RegrowCrop : Crop
 	{
 		public int RegrowTime { get; }
 
-		public RegrowCrop(string name, int basePrice, Dictionary<ProductSource, int> priceFrom, Season seasons, int[] growthStages, CropFlags cropType = CropFlags.Tiller, int regrowTime = -1, double extraCropChance = 0, Dictionary<ProductType, Product> productFrom = null, Replant replant = Replant.Common) : base(name, priceFrom)
+		public RegrowCrop(
+			string name,
+			Season seasons,
+			int[] growthStages,
+			int regrowTime,
+			double avgCrops,
+			double avgExtraCrops,
+			IPriceTracker<IProductSource, IPricedItem>[] qualitites)
+			: base(name, seasons, growthStages, avgCrops, avgExtraCrops, qualitites)
 		{
 			RegrowTime = regrowTime;
 		}
 
-		public int GrowthTime(float speedMultiplier)
+		public override int HarvestsWithin(int days, double speed = 0)
 		{
-			if (speedMultiplier == 0)
+			int growthTime = GrowthTime(speed);
+			if (days < growthTime)
 			{
-				return TotalGrowthTime;
+				return 0;
 			}
-			if (State.Agri)
-			{
-				speedMultiplier += 0.1f;
-			}
-			if (Irrigated && Flags.HasFlag(PaddyFlag))
-			{
-				speedMultiplier += 0.25f;
-			}
-			int maxReduction = (int)Math.Ceiling(TotalGrowthTime * speedMultiplier);
-			int daysReduced = 0;
-			for (int passes = 0; maxReduction > daysReduced && passes < 3; passes++)
-			{
-				for (int stage = 0; stage < GrowthStages.Length; stage++)
-				{
-					if (stage > 0 || GrowthStages[stage] > 1)
-					{
-						GrowthStages[stage]--;
-						daysReduced++;
-						if (maxReduction == daysReduced)
-						{
-							break;
-						}
-					}
-				}
-			}
-			ResetGrowthStages();
-			return TotalGrowthTime - daysReduced;
+			return 1 + (days - growthTime) / RegrowTime;
 		}
 
-		private void CalcBestProduct()
+		public override int HarvestsWithin(ref int days, double speed = 0)
 		{
-			List<Product> products = new List<Product>();
-
-			BestProduct = products[0];
-			for (int i = 0; i < products.Count; i++)
+			int growthTime = GrowthTime(speed);
+			if (days < growthTime)
 			{
-				if (products[i].Price > BestProduct.Price)
-				{
-					BestProduct = products[i];
-				}
+				return 0;
 			}
+			int numHarvests = (days - growthTime) / RegrowTime;
+			days -= growthTime + numHarvests * RegrowTime;
+			return numHarvests + 1;
 		}
 
-		private void ResetGrowthStages()
+		public override double Profit(int fertQuality, int harvests = 1)
 		{
-			for (int i = 0; i < GrowthStagesOrg.Length; i++)
-			{
-				GrowthStages[i] = GrowthStagesOrg[i];
-			}
-		}
-
-		private int CropPrice
-		{
-			get
-			{
-				return Till && type.HasFlag(Tiller) ? (int)(BasePrice * 1.1) : BasePrice;
-			}
-		}
-
-		public double GoldPerDay(Fertilizer fert)
-		{
-			return Profit(fert.Quality) / GrowthTime(fert.Speed);
-		}
-
-		public double Profit(int quality)
-		{
-			get
-				{
-				if (BestProduct == null)
-				{
-					return Multiplier(quality, CropPrice);
-				}
-				else if (QualityProducts)
-				{
-					return
-				}
-				return BestProduct.Price;
-			}
+			return ProfitPerHarvest(fertQuality) * harvests - SeedPrice;
 		}
 	}
 }

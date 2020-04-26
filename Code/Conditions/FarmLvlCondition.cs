@@ -6,14 +6,14 @@ namespace StardewValleyStonks
     {
         [Inject] private SkillsState Skills { get; }
 
-        public int UnlocksAtLvl { get; }
+        public int FarmLvl { get; }
 
-        public FarmLvlCondition(int unlocksAtLvl)
+        public FarmLvlCondition(int farmLvl)
         {
-            UnlocksAtLvl = unlocksAtLvl;
+            FarmLvl = farmLvl;
         }
 
-        public bool IsMet => Skills.FarmLvl >= UnlocksAtLvl;
-        public string WarningMessage => $"Farming level too low. Unlocks at level {UnlocksAtLvl}.";
+        public bool IsMet => Skills.FarmLvl >= FarmLvl;
+        public string WarningMessage => $"Farming level too low. Unlocks at level {FarmLvl}.";
     }
 }

@@ -1,51 +1,23 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace StardewValleyStonks
 {
     public class Replant : ActiveItem, IReplant, IComparable<IReplant>
     {
-        public IInput[] Inputs { get; }
+        IInput Input { get; }
 
         public Replant(
-            IInput[] inputs,
+            IInput input,
             bool enabled = true,
-            List<ICondition> conditions = null)
+            ICondition[] conditions = null)
             : base(enabled, conditions)
         {
-            Inputs = inputs;
+            Input = input;
         }
 
-        public double Price => UnitPrice * Seeds;
-
-        public double UnitPrice
-        {
-            get
-            {
-                double sum = 0;
-                foreach (IInput input in Inputs)
-                {
-                    sum += input.Price;
-                }
-                return sum;
-            }
-        }
-
-        public double Seeds
-        {
-            get
-            {
-                double min = 0;
-                foreach (IInput input in Inputs)
-                {
-                    if (input.Output < min)
-                    {
-                        min = input.Output;
-                    }
-                }
-                return min;
-            }
-        }
+        public double Price => Input.Price;
+        public double UnitPrice => Input.UnitPrice;
+        public double Seeds => Input.Output;
 
         public int CompareTo(IReplant other)
         {

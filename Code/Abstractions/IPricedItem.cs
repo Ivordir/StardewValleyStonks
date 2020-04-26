@@ -1,9 +1,7 @@
-﻿using System;
-
-namespace StardewValleyStonks
+﻿namespace StardewValleyStonks
 {
-    public interface IPricedItem : IActiveItem, IComparable<IPricedItem>
+    public interface IPricedItem : IActiveItem
     {
-        public int Price { get; }
+        public int UnitPrice { get; }
     }
 }

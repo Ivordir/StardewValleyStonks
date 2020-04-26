@@ -7,11 +7,11 @@ namespace StardewValleyStonks
     {
         public int Quality { get; }
         public float Speed { get; }
-        public IManager<ISource, IPricedItem> PriceManager { get; }
+        public IBestItemTracker<ISource, IPricedItem> PriceManager { get; }
         //private Fertilizer Superior; //tree where the parent node is a superior fertilizer
         //private List<Fertilizer> Inferiors; //immediate children
 
-        public Fertilizer(string name, int quality, float speed, IManager<ISource, IPricedItem> priceManager) : base(name)
+        public Fertilizer(string name, int quality, float speed, IBestItemTracker<ISource, IPricedItem> priceManager) : base(name)
         {
             Quality = quality;
             Speed = speed;

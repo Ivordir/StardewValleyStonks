@@ -6,14 +6,8 @@ namespace StardewValleyStonks
 {
 	public class Crop : DataTableItem
 	{
-		private static readonly IPriceManager<IProductSource, IPricedItem>[] NoOtherProducts;
-
-		static Crop()
-		{
-			NoOtherProducts = new IPriceManager<IProductSource, IPricedItem>[0];
-		}
-
 		[Inject] private SkillsState Skills { get; }
+		[Inject] private SettingsState Settings { get; }
 
 		public Season AllowedSeasons { get; }
 		public Season SelectedSeasons { get; set; }
@@ -24,22 +18,18 @@ namespace StardewValleyStonks
 
 		private readonly int[] GrowthStagesOrg;
 		private readonly int[] GrowthStages;
-		private readonly double AvgCrops, AvgExtraCrops;
-		//typeof(QualityManager), [index][quality], harvestables with quality (i.e. crops), profit determined at runtime according to fertilizer.
-		protected readonly IPriceManager<IProductSource, IPricedItem>[][] Crops;
-		//typeof(PriceManager), [index], harvestables without any quality (i.e. sunflower seeds), profit determined before runtime.
-		protected readonly IPriceManager<IProductSource, IPricedItem>[] OtherProducts;
-		//typeof(???)
+		private readonly double ExtraCrops;
+		private readonly bool Scythe;
+		protected readonly IPriceTracker<IProductSource, IPricedItem>[] Qualities;
 		protected readonly IRanker<ISource, IReplant> Replant;
 
 		public Crop(
 			string name,
 			Season seasons,
 			int[] growthStages,
-			double avgCrops,
-			double avgExtraCrops,
-			IPriceManager<IProductSource, IPricedItem>[][] crops,
-			IPriceManager<IProductSource, IPricedItem>[] otherProducts = null)
+			double extraCrops,
+			IPriceTracker<IProductSource, IPricedItem>[] qualities,
+			IRanker<ISource, IReplant> replant)
 			: base(name)
 		{
 			GrowthStagesOrg = growthStages;
@@ -53,14 +43,13 @@ namespace StardewValleyStonks
 			AllowedSeasons = seasons;
 			SelectedSeasons = AllowedSeasons;
 
-			Crops = crops;
-			OtherProducts = otherProducts ?? NoOtherProducts;
+			Qualities = qualities;
+			Replant = replant;
 
-			AvgCrops = avgCrops;
-			AvgExtraCrops = avgExtraCrops;
+			ExtraCrops = extraCrops;
 		}
 
-		public virtual int GrowthTime(double speedMultiplier)
+		public int GrowthTime(double speedMultiplier)
 		{
 			if (speedMultiplier == 0)
 			{
@@ -92,7 +81,7 @@ namespace StardewValleyStonks
 			return days / GrowthTime(speed);
 		}
 
-		public int HarvestsWithin(ref int days, double speed = 0)
+		public virtual int HarvestsWithin(ref int days, double speed = 0)
 		{
 			int growthTime = GrowthTime(speed);
 			int numHarvests = days / growthTime;
@@ -121,41 +110,47 @@ namespace StardewValleyStonks
 			return Profit(fert.Quality) / GrowthTime(fert.Speed);
 		}
 
-		public double Profit(int fertQuality, int harvests = 1)
+		public virtual double Profit(int fertQuality, int harvests = 1)
+		{
+			return (ProfitPerHarvest(fertQuality) - SeedPrice) * harvests;
+		}
+
+		protected virtual double ProfitPerHarvest(int fertQuality)
 		{
 			double profit = 0;
 			double[] dist = Dist(fertQuality);
 			double[] extraDist = Dist(0);
-			foreach (IPriceManager<IProductSource, IPricedItem>[] crop in Crops)
+			for (int quality = 0; quality < Qualities.Length; quality++)
 			{
-				for (int quality = 0; quality < crop.Length; quality++)
-				{
-					crop[quality].Amount = dist[quality] * AvgCrops + extraDist[quality] * AvgExtraCrops;
-					profit += crop[quality].Price;
-				}
+				Qualities[quality].Amount = dist[quality] + extraDist[quality] * AvgExtraCrops;
+				profit += Qualities[quality].Price;
 			}
+			return profit;
+		}
 
-			foreach (IPriceManager<IProductSource, IPricedItem> product in OtherProducts)
-			{
-				profit += product.Price;
-			}
+		private double AvgExtraCrops => Scythe ? ExtraCrops : ExtraCrops * Settings.DoubleCropChance + ExtraCrops;
 
-			double seeds = 1;
-			foreach (List<KeyValuePair<ISource, IReplant>> rank in Replant.BestItems)
+		protected virtual double SeedPrice
+		{
+			get
 			{
-				foreach (KeyValuePair<ISource, IReplant> replant in rank)
+				double cost = 0;
+				double seeds = 1;
+				foreach (List<KeyValuePair<ISource, IReplant>> rank in Replant.BestItems)
 				{
-					if (replant.Value.Seeds >= seeds)
+					foreach (KeyValuePair<ISource, IReplant> replant in rank)
 					{
-						profit -= seeds * replant.Value.UnitPrice;
-						break;
+						if (replant.Value.Seeds >= seeds)
+						{
+							cost += seeds * replant.Value.UnitPrice;
+							break;
+						}
+						seeds -= replant.Value.Seeds;
+						cost += replant.Value.Price;
 					}
-					seeds -= replant.Value.Seeds;
-					profit -= replant.Value.Price;
 				}
+				return cost;
 			}
-
-			return profit * harvests;
 		}
 		//not in season
 		//no products

@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace StardewValleyStonks
 {
-    public interface IManager<TSource, TSourcedItem>
+    public interface IBestItemTracker<TSource, TSourcedItem>
         where TSource : IActiveItem
-        where TSourcedItem : IActiveItem, IComparable<TSourcedItem>
+        where TSourcedItem : IActiveItem
     {
         public List<TSource> BestSources { get; }
         public Dictionary<TSource, TSourcedItem> ItemFrom { get; }

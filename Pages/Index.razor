@@ -7,11 +7,6 @@
 <div class="input-grid">
 	<div class="editor">
 		<TabGroup TabClass="editor-tab" SelectedTabClass="editor-tab">
-			<select class="preset-selector">
-				<option disabled selected value="">Apply a data preset...</option>
-				<option value="Year 1" class="preset-option">Year 1</option>
-				<option value="Year 2+" class="preset-option">Year 2+</option>
-			</select>
 			<Tab Name="Crop">
 				<table class="data-table">
 					<tr>
@@ -28,7 +23,6 @@
 								<option value="Jojo" class="source-option">Jojo</option>
 								<option value="Oasis" class="source-option">Oasis</option>
 							</select>
-							<label class="lock-checkbox-label"><input type="checkbox" class="lock-checkbox"><span class="lock-checkbox-background"></span></label>
 						</td>
 					</tr>
 				</table>
@@ -59,24 +53,9 @@
 
 	<!-- right side -->
 	<div class="top-row">
-		<button class="switch-input-mode">
-			Adv. Mode
-		</button>
 		<button class="switch-calc-mode">
 			Greenhouse Mode
 		</button>
-		<select class="preset-selector">
-			<option disabled selected value="">Apply a settings preset...</option>
-			<option value="Level 0" class="preset-option">Farming Level 0</option>
-			<option value="Level 1-2" class="preset-option">Farming Level 1-2</option>
-			<option value="Level 3" class="preset-option">Farming Level 3</option>
-			<option value="Level 4" class="preset-option">Farming Level 4</option>
-			<option value="Level 5-7" class="preset-option">Farming Level 5-7 (Tiller)</option>
-			<option value="Level 8" class="preset-option">Farming Level 8</option>
-			<option value="Level 9" class="preset-option">Farming Level 9</option>
-			<option value="Level 10 Agri" class="preset-option">Farming Level 10, Agriculturist</option>
-			<option value="Level 10 Arti" class="preset-option">Farming Level 10, Artisan</option>
-		</select>
 	</div>
 	<div class="skills">
 		<span class="input-header">Skills</span>
@@ -84,10 +63,10 @@
 		<label for="farming-lvl" class="input-label">Farming Level:</label>
 		<input type="number" class="number-input" min="0" max="10" id="farming-lvl" @bind=Skills.FarmLvl>
 		<br>
-		<label class="skills-checkbox-label"><input type="checkbox" class="skills-checkbox" @bind=Skills.Till><span class="skills-checkbox-background"></span></label>
+		<label class="skills-checkbox-label"><input type="checkbox" class="skills-checkbox" @bind=Skills.Tiller.Enabled><span class="skills-checkbox-background"></span></label>
 		<br>
-		<label class="skills-checkbox-label"><input type="checkbox" class="skills-checkbox" @bind=Skills.Agri><span class="skills-checkbox-background"></span></label>
-		<label class="skills-checkbox-label"><input type="checkbox" class="skills-checkbox" @bind=Skills.Arti><span class="skills-checkbox-background"></span></label>
+		<label class="skills-checkbox-label"><input type="checkbox" class="skills-checkbox" @bind=Skills.Agriculturist.Enabled><span class="skills-checkbox-background"></span></label>
+		<label class="skills-checkbox-label"><input type="checkbox" class="skills-checkbox" @bind=Skills.Artisan.Enabled><span class="skills-checkbox-background"></span></label>
 	</div>
 	<div class="products">
 		<span class="input-header">Sell</span>
@@ -104,7 +83,6 @@
 		<label class="input-checkbox-label">Oasis<input type="checkbox" class="input-checkbox"><span class="input-checkbox-background"></span></label>
 		<label class="input-checkbox-label">Traveling Merchant<input type="checkbox" class="input-checkbox"><span class="input-checkbox-background"></span></label>
 		<label class="input-checkbox-label">Crafting<input type="checkbox" class="input-checkbox"><span class="input-checkbox-background"></span></label>
-		<label class="input-checkbox-label">Free<input type="checkbox" class="input-checkbox"><span class="input-checkbox-background"></span></label>
 	</div>
 	<div class="replant">
 		<span class="input-header">Replant</span>
@@ -116,22 +94,22 @@
 		<label class="input-header">
 			Start Date:
 			<select class="season-selector" @bind=Date.StartSeason>
-				<option selected value="1">Spring</option>
-				<option value="2">Summer</option>
-				<option value="3">Fall</option>
-				<option value="4">Winter</option>
+				@foreach (Season season in Enum.GetValues(typeof(Season)))
+				{
+					<option value=@((int)season)>@season</option>
+				}
 			</select>
-			<input type="number" min="1" max="28" id="farming-lvl" @bind=Date.StartDay>
+			<input type="number" min="1" max="28" @bind=Date.StartDay>
 		</label>
 		<label class="input-header">
 			End Date:
 			<select class="season-selector" @bind=Date.EndSeason>
-				<option value="1">Spring</option>
-				<option value="2">Summer</option>
-				<option selected value="3">Fall</option>
-				<option value="4">Winter</option>
+				@foreach (Season season in Enum.GetValues(typeof(Season)))
+				{
+					<option value=@((int)season)>@season</option>
+				}
 			</select>
-			<input type="number" min="1" max="28" id="farming-lvl" @bind=Date.EndDay>
+			<input type="number" min="1" max="28" @bind=Date.EndDay>
 		</label>
 	</div>
 	<div class="bottom-row">

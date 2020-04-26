@@ -4,14 +4,14 @@ using System.Collections.Generic;
 namespace StardewValleyStonks
 {
 	//keeps track of the best SourcedItem(s) based on which Sources and Items are active.
-	public abstract class Manager<TSource, TSourcedItem> : IManager<TSource, TSourcedItem>
+	public abstract class BestItemTracker<TSource, TSourcedItem> : IBestItemTracker<TSource, TSourcedItem>
 		where TSource : IActiveItem
-		where TSourcedItem : IActiveItem, IComparable<TSourcedItem>
+		where TSourcedItem : IActiveItem
 	{
 		public List<TSource> BestSources { get; }
 		public Dictionary<TSource, TSourcedItem> ItemFrom { get; }
 
-		public Manager(Dictionary<TSource, TSourcedItem> itemFrom)
+		public BestItemTracker(Dictionary<TSource, TSourcedItem> itemFrom)
 		{
 			ItemFrom = itemFrom;
 			BestSources = new List<TSource>();
@@ -91,9 +91,6 @@ namespace StardewValleyStonks
 			}
 		}
 
-		protected virtual int Compare(TSource source)
-		{
-			return ItemFrom[BestSources[0]].CompareTo(ItemFrom[source]);
-		}
+		protected abstract int Compare(TSource source);
 	}
 }

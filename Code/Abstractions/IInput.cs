@@ -2,10 +2,11 @@
 {
     public interface IInput
     {
-        public IPriceManager<ISource, IPricedItem> Item { get; }
-        public double Amount { get; }
+        public IPriceTracker<ISource, IPricedItem> Item { get; }
+        public double OutputPerItem { get; }
 
-        public double Price { get; }
+        public double UnitPrice { get; }
         public double Output { get; }
+        public double Price { get; }
     }
 }

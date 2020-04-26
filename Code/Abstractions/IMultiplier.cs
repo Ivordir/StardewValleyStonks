@@ -2,6 +2,6 @@
 {
     public interface IMultiplier
     {
-        public int ApplyTo(int basePrice);
+        public double Value { get; }
     }
 }
