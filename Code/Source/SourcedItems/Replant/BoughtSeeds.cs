@@ -2,12 +2,12 @@
 
 namespace StardewValleyStonks
 {
-    public class BoughtSeeds : ActiveItem, IReplant, IComparable<IReplant>
+    public class BoughtSeeds : Selectable, IReplant, IComparable<IReplant>
     {
-        public IPriceTracker<ISource, IPricedItem> Seed { get; }
+        public IPriceFinder<ISource, BuyPrice> Seed { get; }
 
         public BoughtSeeds(
-            IPriceTracker<ISource, IPricedItem> seed,
+            IPriceFinder<ISource, BuyPrice> seed,
             bool enabled = true,
             ICondition[] conditions = null)
             : base (enabled, conditions)
@@ -15,7 +15,7 @@ namespace StardewValleyStonks
             Seed = seed;
         }
 
-        public double Price => Seed.Amount * Seed.UnitPrice;
+        public double Price => Seed.Price;
         public double UnitPrice => Seed.UnitPrice;
         public double Seeds => Seed.Amount;
 
@@ -24,6 +24,6 @@ namespace StardewValleyStonks
             return UnitPrice.CompareTo(other.UnitPrice);
         }
 
-        public override bool Active => base.Active && Seed.HasSource;
+        public override bool Active => base.Active && Seed.HasBestPair;
     }
 }

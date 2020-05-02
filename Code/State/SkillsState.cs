@@ -1,6 +1,9 @@
-﻿namespace StardewValleyStonks
+﻿using System;
+using System.ComponentModel;
+
+namespace StardewValleyStonks
 {
-    public class SkillsState
+    public class SkillsState : INotifyPropertyChanged
     {
         public int FarmLvl { get; set; }
         public int FarmBuff { get; set; }
@@ -8,9 +11,9 @@
 
         public double[] Quality { get; } 
 
-        public Multiplier Agriculturist { get; }
-        public PriceMultiplier Artisan { get; }
-        public PriceMultiplier Tiller { get; }
+        public MultiplierProfession Agriculturist { get; }
+        public PriceProfession Artisan { get; }
+        public PriceProfession Tiller { get; }
 
         public SkillsState()
         {
@@ -19,20 +22,20 @@
 
             Quality = new double[] { 1, 1.25, 1.5, 2 };
 
-            Tiller = new PriceMultiplier(
+            Tiller = new PriceProfession(
                 1.1,
                 new FarmLvlCondition(5),
                 new IProfession[] { Agriculturist, Artisan });
 
             FarmLvlCondition lvl10 = new FarmLvlCondition(10);
             IProfession[] NeedsTiller = new IProfession[] { Tiller };
-            Artisan = new PriceMultiplier(
+            Artisan = new PriceProfession(
                 1.4,
                 lvl10,
                 null,
                 NeedsTiller,
                 new IProfession[] { Agriculturist });
-            Agriculturist = new Multiplier(
+            Agriculturist = new MultiplierProfession(
                 0.1,
                 lvl10,
                 null,

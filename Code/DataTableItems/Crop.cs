@@ -9,134 +9,84 @@ namespace StardewValleyStonks
 		[Inject] private SkillsState Skills { get; }
 		[Inject] private SettingsState Settings { get; }
 
-		public Season AllowedSeasons { get; }
-		public Season SelectedSeasons { get; set; }
-		public int TotalGrowthTime { get; }
+		private readonly IGrow Grow;
+		public bool Regrows => Grow is IRegrow;
+		public int RegrowTime => ((IRegrow)Grow).RegrowTime;
+		public int GrowthTime => Grow.TotalTime;
+		public int GrowthTimeWith(double speed) => Grow.Time(speed);
+		public int HarvestsWithin(int days, double speed = 0) => Grow.HarvestsWithin(days, speed);
+		public int HarvestsWithin(ref int days, double speed = 0) => Grow.HarvestsWithin(ref days, speed);
 
-		//find what should be protected and what should be private
-		List<IPenalty> Penalties { get; }
-
-		private readonly int[] GrowthStagesOrg;
-		private readonly int[] GrowthStages;
 		private readonly double ExtraCrops;
+
 		private readonly bool Scythe;
-		protected readonly IPriceTracker<IProductSource, IPricedItem>[] Qualities;
+		private readonly bool Giant;
+		private readonly bool Indoors;
+		//find what should be protected and what should be private
+		//List<IPenalty> Penalties { get; }
+
+		protected readonly IPriceFinder<IProductSource, IProduct>[] Products;
 		protected readonly IRanker<ISource, IReplant> Replant;
 
 		public Crop(
 			string name,
-			Season seasons,
-			int[] growthStages,
-			double extraCrops,
-			IPriceTracker<IProductSource, IPricedItem>[] qualities,
+			IPriceFinder<IProductSource, IProduct>[] products,
 			IRanker<ISource, IReplant> replant)
 			: base(name)
 		{
-			GrowthStagesOrg = growthStages;
-			GrowthStages = new int[GrowthStagesOrg.Length];
-			ResetGrowthStages();
-			for (int i = 0; i < GrowthStagesOrg.Length; i++)
-			{
-				TotalGrowthTime += GrowthStagesOrg[i];
-			}
 
-			AllowedSeasons = seasons;
-			SelectedSeasons = AllowedSeasons;
-
-			Qualities = qualities;
+			Products = products;
 			Replant = replant;
-
-			ExtraCrops = extraCrops;
 		}
 
-		public int GrowthTime(double speedMultiplier)
-		{
-			if (speedMultiplier == 0)
-			{
-				return TotalGrowthTime;
-			}
-			int maxReduction = (int)Math.Ceiling((TotalGrowthTime - GrowthStages[^1]) * speedMultiplier);
-			int daysReduced = 0;
-			for (int passes = 0; daysReduced < maxReduction && passes < 3; passes++)
-			{
-				for (int stage = 0; stage < GrowthStages.Length; stage++)
-				{
-					if (stage > 0 || GrowthStages[stage] > 1)
-					{
-						GrowthStages[stage]--;
-						daysReduced++;
-						if (maxReduction == daysReduced)
-						{
-							break;
-						}
-					}
-				}
-			}
-			ResetGrowthStages();
-			return TotalGrowthTime - daysReduced;
-		}
-
-		public virtual int HarvestsWithin(int days, double speed = 0)
-		{
-			return days / GrowthTime(speed);
-		}
-
-		public virtual int HarvestsWithin(ref int days, double speed = 0)
-		{
-			int growthTime = GrowthTime(speed);
-			int numHarvests = days / growthTime;
-			days -= growthTime * numHarvests;
-			return numHarvests;
-		}
 
 		public override bool Active
 		{
 			get
 			{
+				//not in season
+				//no products
+				//no replant
 				throw new NotImplementedException();
 			}
 		}
 
-		private void ResetGrowthStages()
-		{
-			for (int i = 0; i < GrowthStagesOrg.Length; i++)
-			{
-				GrowthStages[i] = GrowthStagesOrg[i];
-			}
-		}
+		
 
 		public double GoldPerDay(Fertilizer fert)
 		{
-			return Profit(fert.Quality) / GrowthTime(fert.Speed);
+			return Profit(fert.Quality) / Grow.Time(fert.Speed);
 		}
 
-		public virtual double Profit(int fertQuality, int harvests = 1)
+		public virtual double Profit(int fertQuality = 0, int harvests = 1)
 		{
-			return (ProfitPerHarvest(fertQuality) - SeedPrice) * harvests;
+			return (ProfitPerHarvest(fertQuality) - ReplantCost) * harvests;
 		}
 
-		protected virtual double ProfitPerHarvest(int fertQuality)
+		protected virtual double ProfitPerHarvest(int fertQuality = 0)
 		{
 			double profit = 0;
 			double[] dist = Dist(fertQuality);
 			double[] extraDist = Dist(0);
-			for (int quality = 0; quality < Qualities.Length; quality++)
+			for (int quality = 0; quality < Products.Length; quality++)
 			{
-				Qualities[quality].Amount = dist[quality] + extraDist[quality] * AvgExtraCrops;
-				profit += Qualities[quality].Price;
+				Products[quality].Amount = dist[quality] * AvgCrops + extraDist[quality] * AvgExtraCrops;
+				profit += Products[quality].Price;
 			}
 			return profit;
 		}
 
-		private double AvgExtraCrops => Scythe ? ExtraCrops : ExtraCrops * Settings.DoubleCropChance + ExtraCrops;
+		private double AvgCrops => 1 - GiantCrops;
+		private double AvgExtraCrops => (Scythe ? 0 : (ExtraCrops + 1) * Settings.DoubleCropChance) + ExtraCrops - GiantCrops;
+		private double GiantCrops => Giant ? 2 * (1 - Math.Pow(0.99, Settings.GiantCropChecksPerTile)) : 0;
 
-		protected virtual double SeedPrice
+		protected virtual double ReplantCost
 		{
 			get
 			{
 				double cost = 0;
 				double seeds = 1;
-				foreach (List<KeyValuePair<ISource, IReplant>> rank in Replant.BestItems)
+				foreach (List<KeyValuePair<ISource, IReplant>> rank in Replant.Ranks)
 				{
 					foreach (KeyValuePair<ISource, IReplant> replant in rank)
 					{
@@ -152,9 +102,6 @@ namespace StardewValleyStonks
 				return cost;
 			}
 		}
-		//not in season
-		//no products
-		//no replant
 
 		private double[] Dist(int fertQuality)
 		{
@@ -163,6 +110,15 @@ namespace StardewValleyStonks
 			dist[1] = Math.Min(2 * dist[2], 0.75) * (1 - dist[2]); //silver
 			dist[0] = 1 - dist[1] - dist[2]; //normal
 			return dist;
+		}
+
+		public
+
+		struct Process
+		{
+			Product product;
+			int numForProduct;
+			int numForReplant;
 		}
 	}
 }

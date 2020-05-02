@@ -1,12 +1,10 @@
-﻿using System.Collections.Generic;
-
-namespace StardewValleyStonks
+﻿namespace StardewValleyStonks
 {
-    public class Source : ActiveItem, ISource
+    public class Source : Selectable, ISource
     {
         public string Name { get; }
 
-        public Source(string name, bool enabled = true, List<ICondition> conditions = null) : base(enabled, conditions)
+        public Source(string name, bool enabled = true, ICondition[] conditions = null) : base(enabled, conditions)
         {
             Name = name;
         }

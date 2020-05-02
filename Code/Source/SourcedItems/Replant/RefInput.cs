@@ -2,20 +2,18 @@
 {
     public class RefInput : IInput
     {
-        public IPriceTracker<ISource, IPricedItem> Item { get; }
-        public double OutputPerItem => Amount.Ref;
+        public IPriceTracker<ISource, IPrice> InputItem { get; }
+        public double OutputPerInput => Amount.Ref;
 
         private readonly Reference<double> Amount;
 
-        public RefInput(IPriceTracker<ISource, IPricedItem> item, Reference<double> amount)
+        public RefInput(IPriceTracker<ISource, IPrice> inputItem, Reference<double> amount)
         {
-            Item = item;
+            InputItem = inputItem;
             Amount = amount;
         }
 
-        public double UnitPrice => Item.UnitPrice / Amount.Ref;
-        public double Output => Item.Amount * Amount.Ref;
-
-        public double Price => Item.Amount * Item.UnitPrice;
+        public double UnitPrice => InputItem.UnitPrice / Amount.Ref;
+        public double Output => InputItem.Amount * Amount.Ref;
     }
 }

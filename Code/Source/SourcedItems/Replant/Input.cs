@@ -2,18 +2,16 @@
 {
     public class Input : IInput
     {
-        public IPriceTracker<ISource, IPricedItem> Item { get; }
-        public double OutputPerItem { get; }
+        public IPriceTracker<ISource, IPrice> InputItem { get; }
+        public double OutputPerInput { get; }
 
-        public Input(IPriceTracker<ISource, IPricedItem> item, double amount)
+        public Input(IPriceTracker<ISource, IPrice> inputItem, double amount)
         {
-            Item = item;
-            OutputPerItem = amount;
+            InputItem = inputItem;
+            OutputPerInput = amount;
         }
 
-        public double UnitPrice => Item.UnitPrice / OutputPerItem;
-        public double Output => Item.Amount * OutputPerItem;
-
-        public double Price => Item.Amount * Item.UnitPrice;
+        public double UnitPrice => InputItem.UnitPrice / OutputPerInput;
+        public double Output => InputItem.Amount * OutputPerInput;
     }
 }

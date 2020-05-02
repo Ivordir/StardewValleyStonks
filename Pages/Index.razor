@@ -99,7 +99,7 @@
 					<option value=@((int)season)>@season</option>
 				}
 			</select>
-			<input type="number" min="1" max="28" @bind=Date.StartDay>
+			<input type="number" @bind=Date.StartDay>
 		</label>
 		<label class="input-header">
 			End Date:
@@ -113,12 +113,14 @@
 		</label>
 	</div>
 	<div class="bottom-row">
-		<button class="switch-input-output" @onclick="@(() => Nav.NavigateTo("adv_input"))">
+		<button class="switch-input-output" @onclick="@(() => Nav.NavigateTo("output"))">
 			Back to Plans
 		</button>
+		<!---
 		<button class="calc-button" @onclick="Calc">
 			Calculate New Plans
 		</button>
+		-->
 		<button class="help-button" @onclick="@(() => Nav.NavigateTo("help"))">
 			Help
 		</button>

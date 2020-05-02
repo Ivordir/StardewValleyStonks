@@ -2,31 +2,45 @@
 {
     public class PlanNode
     {
-        public int EndSeason { get; }
-        public int DaysGrown { get; }
         public int NumHarvests { get; }
         public Crop Crop { get; }
         public Fertilizer Fertilizer { get; }
-        public bool MultiSeason { get; }
         private readonly PlanNode PrevNode;
 
-        public PlanNode(int endSeason, int daysGrown, Crop crop, Fertilizer fertilizer, PlanNode node = null, bool multiSeason = false)
+        public PlanNode(Crop crop, Fertilizer fertilizer, PlanNode node = null)
         {
-            EndSeason = endSeason;
-            DaysGrown = daysGrown;
             Crop = crop;
             Fertilizer = fertilizer;
             PrevNode = node;
-            MultiSeason = multiSeason;
         }
-        public double TotalProfit()
+        public double TotalProfit => (PrevNode == null ? 0 : PrevNode.TotalProfit) + Profit;
+
+        public double Profit => Crop.Profit(Fertilizer.Quality, NumHarvests);
+
+        public Product[] Products
         {
-            return (PrevNode == null ? Profit() : PrevNode.TotalProfit()) + Profit();
+            get
+            {
+                //check: num == 0 (don't display), seed == 0 (don't display seed), seed == num (don't display product), product == rawProduct (don't dispaly source)
+                //num: raw product --source--> num: product (xg) for $total
+                //          
+                //num: raw product (xg) for $total
+                //
+                //                    |--- num --source--> num: product (xg) for $total
+                //num: raw product ---|
+                //                    |--- num --source--> num: seeds
+                //
+                //                    |--> num: raw product (xg) for $total
+                //num: raw product ---|
+                //                    |--- num --source--> num: seeds
+                //
+                //num: raw product --source--> num: seeds
+                //
+                //buy num: seed (xg) for $total
+                return null;
+            }
         }
 
-        public double Profit()
-        {
-            return Crop.Profit(NumHarvests, Fertilizer.Quality);
-        }
+        //add fertilzier cost   if((prev == null && startingFert == null) || prev.fert != fert) 
     }
 }

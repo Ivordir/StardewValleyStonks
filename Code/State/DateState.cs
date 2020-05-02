@@ -53,12 +53,6 @@
             {
                 Seasons += season;
             }
-            /*
-            for (Season season = StartSeason; season <= EndSeason; season<<=1)
-            {
-                
-            }
-            */
         }
 
         public DateState()

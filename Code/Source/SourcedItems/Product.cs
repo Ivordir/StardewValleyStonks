@@ -1,9 +1,12 @@
-﻿namespace StardewValleyStonks
+﻿using System;
+
+namespace StardewValleyStonks
 {
-	public class Product : ActiveItem, IProduct
+	public class Product : Selectable, IProduct, IComparable<IProduct>
 	{
 		public string Name { get; }
 		public double OutputPerInput { get; }
+		public int Quality => 0;
 
 		private readonly int BasePrice;
 		private readonly IPriceMultiplier Multiplier;
@@ -25,8 +28,11 @@
 
 		public double Price => OutputPerInput * UnitPrice;
 
-		public double QualityPrice(double quality) => OutputPerInput * (int)(quality * UnitPrice);
-
 		public int UnitPrice => Multiplier == null ? BasePrice : Multiplier.ApplyTo(BasePrice);
+
+		public int CompareTo(IProduct other)
+		{
+			return Price.CompareTo(other.Price);
+		}
 	}
 }

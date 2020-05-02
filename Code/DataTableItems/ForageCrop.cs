@@ -2,6 +2,6 @@
 {
     public class ForageCrop
     {
-        protected readonly IPriceTracker<IProductSource, IPricedItem>[][] Crops;
+        protected readonly IPriceTracker<IProductSource, IPrice>[][] Crops;
     }
 }
