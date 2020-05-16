@@ -1,19 +1,19 @@
-﻿using Microsoft.AspNetCore.Components;
-
-namespace StardewValleyStonks
+﻿namespace StardewValleyStonks
 {
     public class YearCondition : ICondition
     {
-        [Inject] private DateState Date { get; }
+        private readonly DateState Date;
 
         public int Year { get; }
 
-        public YearCondition(int year)
+        public YearCondition(DateState date, int year)
         {
             Year = year;
+            Date = date;
+            Override = false;
         }
-
-        public bool IsMet => Date.Year >= Year;
+        public bool Override { get; set; }
+        public bool IsMet => Override || Date.Year >= Year;
         public string WarningMessage => $"Available from year {Year} and onwards.";
     }
 }

@@ -3,7 +3,7 @@
     public class RefInput : IInput
     {
         public IPriceTracker<ISource, IPrice> InputItem { get; }
-        public double OutputPerInput => Amount.Ref;
+        public double OutputPerInput => Amount.Value;
 
         private readonly Reference<double> Amount;
 
@@ -13,7 +13,7 @@
             Amount = amount;
         }
 
-        public double UnitPrice => InputItem.UnitPrice / Amount.Ref;
-        public double Output => InputItem.Amount * Amount.Ref;
+        public double UnitPrice => InputItem.UnitPrice / Amount.Value;
+        public double Output => InputItem.Amount * Amount.Value;
     }
 }

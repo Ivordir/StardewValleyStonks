@@ -6,8 +6,3 @@ public enum Season
   Fall = 1 << 2,
   Winter = 1 << 3
 }
-
-//public static class Season
-//{
-    
-//}

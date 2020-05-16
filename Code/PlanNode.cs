@@ -21,6 +21,12 @@
         {
             get
             {
+                //list of replant processes
+                //list of sell processes
+
+                //input --> process --> if only input display sell/seed
+                //process --> sell/seed
+
                 //check: num == 0 (don't display), seed == 0 (don't display seed), seed == num (don't display product), product == rawProduct (don't dispaly source)
                 //num: raw product --source--> num: product (xg) for $total
                 //          

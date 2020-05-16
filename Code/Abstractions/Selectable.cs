@@ -17,15 +17,14 @@
         {
             get
             {
-                if (Conditions == None)
+                if (Conditions != None)
                 {
-                    return true;
-                }
-                foreach (ICondition condition in Conditions)
-                {
-                    if (!condition.IsMet)
+                    foreach (ICondition condition in Conditions)
                     {
-                        return false;
+                        if (!condition.IsMet)
+                        {
+                            return false;
+                        }
                     }
                 }
                 return true;

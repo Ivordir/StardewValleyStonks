@@ -5,12 +5,13 @@
         public double Value { get; }
 
         public PriceProfession(
+            string name,
             double multiplier,
             ICondition[] conditions,
             IProfession[] dependants = null,
             IProfession[] requirements = null,
             IProfession[] exclusiveWith = null)
-            : base(conditions, dependants, requirements, exclusiveWith)
+            : base(name, conditions, dependants, requirements, exclusiveWith)
         {
             Value = multiplier;
         }

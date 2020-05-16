@@ -4,43 +4,42 @@ using System.Collections.Generic;
 namespace StardewValleyStonks
 {
     public class BestFinder<TSource, TSourcedItem> : IBestFinder<TSource, TSourcedItem>
-        where TSource : ISelectable
         where TSourcedItem : ISelectable, IComparable<TSourcedItem>
     {
         private readonly Dictionary<TSource, TSourcedItem> Dict;
-        protected readonly List<KeyValuePair<TSource, TSourcedItem>> _BestPairs;
+        protected readonly List<TSourcedItem> _BestItems;
 
         public BestFinder(Dictionary<TSource, TSourcedItem> dict)
         {
             Dict = dict;
-            _BestPairs = new List<KeyValuePair<TSource, TSourcedItem>>();
+            _BestItems = new List<TSourcedItem>();
         }
 
-        public bool HasBestPair => BestPairs.Count != 0;
+        public bool HasBestItem => BestItems.Count != 0;
 
         public TSourcedItem this [TSource source] => Dict[source];
         
-        public List<KeyValuePair<TSource, TSourcedItem>> BestPairs
+        public List<TSourcedItem> BestItems
         {
             get
             {
-                _BestPairs.Clear();
-                foreach (KeyValuePair<TSource, TSourcedItem> kvp in Dict)
+                _BestItems.Clear();
+                foreach (TSourcedItem item in Dict.Values)
                 {
-                    if (kvp.Key.Active && kvp.Value.Active)
+                    if (item.Active)
                     {
-                        if (_BestPairs.Count == 0 || Compare(kvp.Value) == 0)
+                        if (_BestItems.Count == 0 || Compare(item) == 0)
                         {
-                            _BestPairs.Add(kvp);
+                            _BestItems.Add(item);
                         }
-                        else if (Compare(kvp.Value) == -1) //source is better than BestSource
+                        else if (Compare(item) == -1) //source is better than BestSource
                         {
-                            _BestPairs.Clear();
-                            _BestPairs.Add(kvp);
+                            _BestItems.Clear();
+                            _BestItems.Add(item);
                         }
                     }
                 }
-                return _BestPairs;
+                return _BestItems;
             }
         }
 
@@ -52,7 +51,7 @@ namespace StardewValleyStonks
 
         protected virtual int Compare(TSourcedItem item)
         {
-            return _BestPairs[0].Value.CompareTo(item);
+            return _BestItems[0].CompareTo(item);
         }
     }
 }

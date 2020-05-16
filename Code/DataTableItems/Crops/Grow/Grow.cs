@@ -4,17 +4,17 @@ namespace StardewValleyStonks
 {
 	public class Grow : IGrow
 	{
-		private static readonly ISpeedMultiplier[] None = new ISpeedMultiplier[0];
+		private static readonly SpeedMultiplier[] None = new SpeedMultiplier[0];
 
 		public int TotalTime { get; }
 
 		private readonly int[] GrowthStagesOrg;
 		private readonly int[] GrowthStages;
-		private readonly ISpeedMultiplier[] SpeedMultipliers;
+		private readonly SpeedMultiplier[] SpeedMultipliers;
 
 		public Grow(
 			int[] growthStages,
-			ISpeedMultiplier[] speedMultipliers = null)
+			SpeedMultiplier[] speedMultipliers = null)
 		{
 			GrowthStagesOrg = growthStages;
 			GrowthStages = new int[GrowthStagesOrg.Length];
@@ -28,7 +28,7 @@ namespace StardewValleyStonks
 
 		public virtual int Time(double speed)
 		{
-			foreach (ISpeedMultiplier multiplier in SpeedMultipliers)
+			foreach (SpeedMultiplier multiplier in SpeedMultipliers)
 			{
 				if (multiplier.Active)
 				{
@@ -68,6 +68,9 @@ namespace StardewValleyStonks
 			days -= growthTime * numHarvests;
 			return numHarvests;
 		}
+
+		public virtual bool Regrows => false;
+		public virtual int RegrowTime => throw new MissingFieldException("This does not regrow");
 
 		private void ResetGrowthStages()
 		{

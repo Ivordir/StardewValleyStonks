@@ -5,13 +5,14 @@
 		public Regrow(
 			int[] growthStages,
 			int regrowTime,
-			ISpeedMultiplier[] speedMultipliers = null)
+			SpeedMultiplier[] speedMultipliers = null)
 			: base(growthStages, speedMultipliers)
 		{
 			RegrowTime = regrowTime;
 		}
 
-		public int RegrowTime { get; }
+		public override bool Regrows => true;
+		public override int RegrowTime { get; }
 
 		public override int HarvestsWithin(int days, double speed = 0)
 		{

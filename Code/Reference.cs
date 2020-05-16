@@ -2,8 +2,8 @@
 {
     public class Reference<T>
     {
-        public T Ref { get; set; }
+        public T Value { get; set; }
 
-        public Reference(T value) => Ref = value;
+        public Reference(T value) => Value = value;
     }
 }

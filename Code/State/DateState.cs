@@ -2,7 +2,11 @@
 {
     public class DateState
     {
-        public int Year { get; set; }
+        public int Year
+        {
+            get => Year;
+            set => value.WithMin(1);
+        }
         public Season Seasons { get; private set; }
         public int StartSeason
         {
@@ -25,25 +29,12 @@
         public int StartDay
         {
             get => StartDay;
-            set => ValidDay(value);
+            set => value.InRange(1, 28);
         }
         public int EndDay
         {
             get => EndDay;
-            set => ValidDay(value);
-        }
-
-        private int ValidDay(int day)
-        {
-            if (day < 1)
-            {
-                return 1;
-            }
-            else if (day > 28)
-            {
-                return 28;
-            }
-            return day;
+            set => value.InRange(1, 28);
         }
 
         private void UpdateSeasons()

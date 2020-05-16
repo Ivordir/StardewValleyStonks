@@ -1,17 +1,18 @@
-﻿namespace StardewValleyStonks.Code.Modifiers
+﻿namespace StardewValleyStonks
 {
-    public class SpeedMultiplier : Selectable, ISpeedMultiplier
+    public class SpeedMultiplier : Selectable, IMultiplier
     {
         public SpeedMultiplier(
+            string name,
             double value,
             bool selected = false,
             ICondition[] conditions = null)
             : base(selected, conditions)
         {
+            Name = name;
             Value = value;
         }
-
-        public bool HasTableColumn => true;
+        public string Name { get; }
         public double Value { get; }
     }
 }
