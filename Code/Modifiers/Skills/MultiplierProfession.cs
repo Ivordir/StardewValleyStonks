@@ -11,11 +11,12 @@
         public MultiplierProfession(
             IMultiplier multiplier,
             double defaultValue,
+            Skill skill,
             ICondition[] conditions, 
             IProfession[] dependants = null, 
             IProfession[] requirements = null, 
             IProfession[] exclusiveWith = null) 
-            : base(conditions, dependants, requirements, exclusiveWith)
+            : base(skill, conditions, dependants, requirements, exclusiveWith)
         {
             Multiplier = multiplier;
             DefaultValue = defaultValue;

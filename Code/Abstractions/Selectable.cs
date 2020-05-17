@@ -31,5 +31,11 @@
             Selected = selected;
             Conditions = conditions ?? None;
         }
+
+        //initialize selected in derived class
+        protected Selectable(ICondition[] conditions = null)
+        {
+            Conditions = conditions ?? None;
+        }
     }
 }

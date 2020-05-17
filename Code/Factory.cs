@@ -17,7 +17,7 @@ namespace StardewValleyStonks
 				"Pickle" => new Product(name + " Pickle", 2 * basePrice + 50, Skills.Artisan),
 				"Wine" => new Product(name + " Wine", 3 * basePrice, Skills.Artisan),
 				"Juice" => new Product(name + " Juice", (int)(2.25 * basePrice), Skills.Artisan),
-				_ => new Product(name, basePrice)
+				_ => null
 			};
 		}
 

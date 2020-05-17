@@ -1,8 +1,9 @@
 ﻿@page "/"
 @inject NavigationManager Nav
-@inject DateState  Date
-@inject SkillsState  Skills
-@inject SettingsState  Settings
+@inject DateState Date
+@inject SkillsState Skills
+@inject DataState Data 
+@inject SettingsState Settings
 
 <div class="input-grid">
 	<div class="editor">
@@ -27,7 +28,7 @@
 					</tr>
 				</table>
 			</Tab>
-			<Tab Name="Fertilizer">
+			@*<Tab Name="Fertilizer">
 				<table class="data-table">
 					<tr>
 						<th></th>
@@ -47,48 +48,71 @@
 						</td>
 					</tr>
 				</table>
-			</Tab>
+			</Tab>*@
 		</TabGroup>
 	</div>
 
-	<!-- right side -->
 	<div class="top-row">
 		<button class="switch-calc-mode">
 			Greenhouse Mode
 		</button>
 	</div>
-	<div class="skills">
+	@*<div class="skills">
 		<span class="input-header">Skills</span>
-		<br>
-		<label for="farming-lvl" class="input-label">Farming Level:</label>
-		<input type="number" class="number-input" min="0" max="10" id="farming-lvl" @bind=Skills.FarmLvl>
-		<br>
-		<label class="skills-checkbox-label"><input type="checkbox" class="skills-checkbox" @bind=Skills.Tiller.Enabled><span class="skills-checkbox-background"></span></label>
-		<br>
-		<label class="skills-checkbox-label"><input type="checkbox" class="skills-checkbox" @bind=Skills.Agriculturist.Enabled><span class="skills-checkbox-background"></span></label>
-		<label class="skills-checkbox-label"><input type="checkbox" class="skills-checkbox" @bind=Skills.Artisan.Enabled><span class="skills-checkbox-background"></span></label>
-	</div>
+		<TabGroup>
+			@foreach (Skill skill in Skills.Skills)
+			{
+				<Tab Name=@skill.Name>
+					<label class="input-label">
+						Farming Level:
+						<input type="number" class="number-input" @bind=skill.Level>
+					</label>
+					@foreach (IProfession[] professions in skill.Professions)
+					{
+						@foreach (IProfession profession in professions)
+						{
+							<ToggleButton @bind-Toggle=profession.Selected>
+								Image
+								@profession.Name
+							</ToggleButton>
+						}
+					}
+				</Tab>
+			}
+		</TabGroup>
+	</div>*@
 	<div class="products">
 		<span class="input-header">Sell</span>
-		<label class="input-checkbox-label">Raw Crop<input type="checkbox" class="input-checkbox"><span class="input-checkbox-background"></span></label>
-		<label class="input-checkbox-label">Preserves Jar<input type="checkbox" class="input-checkbox"><span class="input-checkbox-background"></span></label>
-		<label class="input-checkbox-label">Keg<input type="checkbox" class="input-checkbox"><span class="input-checkbox-background"></span></label>
-		<label class="input-checkbox-label">Oil Maker<input type="checkbox" class="input-checkbox"><span class="input-checkbox-background"></span></label>
-		<label class="input-checkbox-label">Mill<input type="checkbox" class="input-checkbox"><span class="input-checkbox-background"></span></label>
+		@foreach (IProcessor processor in Data.Processors)
+		{
+			<label class="input-checkbox-label">
+				@processor.Name
+				<input type="checkbox" class="input-checkbox" @bind=processor.Selected>
+				<span class="input-checkbox-background"></span>
+			</label>
+		}
 	</div>
 	<div class="sources">
 		<span class="input-header">Sources</span>
-		<label class="input-checkbox-label">Pierre<input type="checkbox" class="input-checkbox"><span class="input-checkbox-background"></span></label>
-		<label class="input-checkbox-label">Jojo<input type="checkbox" class="input-checkbox"><span class="input-checkbox-background"></span></label>
-		<label class="input-checkbox-label">Oasis<input type="checkbox" class="input-checkbox"><span class="input-checkbox-background"></span></label>
-		<label class="input-checkbox-label">Traveling Merchant<input type="checkbox" class="input-checkbox"><span class="input-checkbox-background"></span></label>
-		<label class="input-checkbox-label">Crafting<input type="checkbox" class="input-checkbox"><span class="input-checkbox-background"></span></label>
+		@foreach (ISource source in Data.BuySources)
+		{
+			<label class="input-checkbox-label">
+				@source.Name
+				<input type="checkbox" class="input-checkbox" @bind=source.Selected>
+				<span class="input-checkbox-background"></span>
+			</label>
+		}
 	</div>
 	<div class="replant">
 		<span class="input-header">Replant</span>
-		<label class="input-checkbox-label">Buy Seeds<input type="checkbox" class="input-checkbox"><span class="input-checkbox-background"></span></label>
-		<label class="input-checkbox-label">Seed Maker<input type="checkbox" class="input-checkbox"><span class="input-checkbox-background"></span></label>
-		<label class="input-checkbox-label">Replant Crop<input type="checkbox" class="input-checkbox"><span class="input-checkbox-background"></span></label>
+		@foreach (ISource replant in Data.ReplantMethods)
+		{
+			<label class="input-checkbox-label">
+				@replant.Name
+				<input type="checkbox" class="input-checkbox" @bind=replant.Selected>
+				<span class="input-checkbox-background"></span>
+			</label>
+		}
 	</div>
 	<div class="non-greenhouse-settings">
 		<label class="input-header">
@@ -109,20 +133,17 @@
 					<option value=@((int)season)>@season</option>
 				}
 			</select>
-			<input type="number" min="1" max="28" @bind=Date.EndDay>
+			<input type="number" @bind=Date.EndDay>
 		</label>
 	</div>
 	<div class="bottom-row">
 		<button class="switch-input-output" @onclick="@(() => Nav.NavigateTo("output"))">
 			Back to Plans
 		</button>
-		<!---
-		<button class="calc-button" @onclick="Calc">
-			Calculate New Plans
-		</button>
-		-->
+		
 		<button class="help-button" @onclick="@(() => Nav.NavigateTo("help"))">
 			Help
 		</button>
 	</div>
+
 </div>

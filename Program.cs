@@ -12,17 +12,22 @@ namespace StardewValleyStonks
             WebAssemblyHostBuilder builder = WebAssemblyHostBuilder.CreateDefault(args);
             //builder.Configuration.AddJsonFile("appsettings.json", false, false);
             //builder.Services.AddTransient(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+            builder.RootComponents.Add<App>("app");
             builder.Services.AddScoped<DateState>();
             builder.Services.AddScoped<SkillsState>();
             builder.Services.AddScoped<OutputState>();
-            builder.RootComponents.Add<App>("app");
+            builder.Services.AddScoped<SettingsState>();
+            builder.Services.AddScoped<DataState>();
+            /*
+            try
+            {
+                builder.Services.Configure<SettingsState>(settings =>
+                    new SettingsState(host.Configuration.GetSection("test").GetValue<bool>("test"))
+                );
+            }
+            */
 
             var host = builder.Build();
-
-            builder.Services.Configure<SettingsState>(settings =>
-                new SettingsState(host.Configuration.GetSection("test").GetValue<bool>("test"))
-            ) ;
-
             await host.RunAsync();
         }
     }

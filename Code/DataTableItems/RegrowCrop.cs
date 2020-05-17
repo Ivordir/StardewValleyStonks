@@ -1,5 +1,6 @@
 namespace StardewValleyStonks
 {
+	/*
 	public class RegrowCrop : Crop
 	{
 
@@ -8,4 +9,5 @@ namespace StardewValleyStonks
 			return ProfitPerHarvest(fertQuality) * harvests - ReplantCost;
 		}
 	}
+	*/
 }

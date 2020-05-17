@@ -7,10 +7,10 @@
         public bool MutableQuality => Products != None;
         public bool PreservesQuality
         {
-            get => PreservesQuality;
+            get => _PreservesQuality;
             set
             {
-                PreservesQuality = value;
+                _PreservesQuality = value;
                 if (MutableQuality)
                 {
                     foreach (Product product in Products)
@@ -21,6 +21,7 @@
             }
         }
 
+        private bool _PreservesQuality;
         private readonly Product[] Products;
 
         public Processor(
@@ -31,7 +32,7 @@
             ICondition[] conditions = null)
             : base(name, enabled, conditions)
         {
-            PreservesQuality = preservesQuality;
+            _PreservesQuality = preservesQuality;
             Products = products ?? None;
         }
     }

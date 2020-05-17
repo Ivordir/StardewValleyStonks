@@ -6,11 +6,12 @@
         
         public Profession(
             string name,
+            Skill skill,
             ICondition[] conditions,
             IProfession[] dependants = null,
             IProfession[] requirements = null,
             IProfession[] exclusiveWith = null)
-            : base (conditions, dependants, requirements, exclusiveWith)
+            : base (skill, conditions, dependants, requirements, exclusiveWith)
         {
             Name = name;
         }

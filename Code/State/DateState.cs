@@ -4,46 +4,48 @@
     {
         public int Year
         {
-            get => Year;
-            set => value.WithMin(1);
+            get => _Year;
+            set => _Year = value.WithMin(1);
         }
         public int StartSeason
         {
-            get => StartSeason;
+            get => _StartSeason;
             set
             {
-                StartSeason = value.InRange(1, 4);
+                _StartSeason = value.InRange(1, 4);
                 UpdateSeasons();
             }
         }
         public int EndSeason
         {
-            get => EndSeason;
+            get => _EndSeason;
             set
             {
-                StartSeason = value.InRange(1, 4);
+                _EndSeason = value.InRange(1, 4);
                 UpdateSeasons();
             }
         }
         public int StartDay
         {
-            get => StartDay;
-            set => value.InRange(1, 28);
+            get => _StartDay;
+            set => _StartDay = value.InRange(1, 28);
         }
         public int EndDay
         {
-            get => EndDay;
-            set => value.InRange(1, 28);
+            get => _EndDay;
+            set => _EndDay = value.InRange(1, 28);
         }
         public Season Seasons { get; private set; }
 
+        private int _Year, _StartSeason, _EndSeason, _StartDay, _EndDay;
+
         public DateState()
         {
-            Year = 1;
-            StartSeason = 1;
-            EndSeason = 3;
-            StartDay = 1;
-            EndDay = 28;
+            _Year = 1;
+            _StartSeason = 1;
+            _EndSeason = 3;
+            _StartDay = 1;
+            _EndDay = 28;
             UpdateSeasons();
         }
 

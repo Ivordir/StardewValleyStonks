@@ -9,7 +9,15 @@
 
         public static int InRange(this int value, int min, int max)
         {
-            return value.WithMin(min).WithMax(max);
+            if (value < min)
+            {
+                return min;
+            }
+            else if (value > max)
+            {
+                return max;
+            }
+            return value;
         }
 
         public static int WithMin(this int value, int min)
@@ -32,7 +40,15 @@
 
         public static double InRange(this double value, int min, int max)
         {
-            return value.WithMin(min).WithMax(max);
+            if (value < min)
+            {
+                return min;
+            }
+            else if (value > max)
+            {
+                return max;
+            }
+            return value;
         }
 
         public static double WithMin(this double value, int min)

@@ -9,16 +9,16 @@
         public IProfession[] Requirements { get; }
         public IProfession[] ExclusiveWith { get; }
 
-        private readonly ISkill Skill;
+        private readonly Skill Skill;
         public override bool Selected
         {
             get => base.Selected;
             set
             {
-                Selected = value;
+                base.Selected = value;
                 if (!Skill.IgnoreConflicts)
                 {
-                    if (Selected)
+                    if (value)
                     {
                         SetAll(Requirements, true);
                         SetAll(ExclusiveWith, false);
@@ -32,12 +32,14 @@
         }
 
         public BaseProfession(
+            Skill skill,
             ICondition[] conditions,
             IProfession[] dependants = null,
             IProfession[] requirements = null,
             IProfession[] exclusiveWith = null)
-            : base (false, conditions)
+            : base (conditions)
         {
+            Skill = skill;
             Dependants = dependants ?? None;
             Requirements = requirements ?? None;
             ExclusiveWith = exclusiveWith ?? None;

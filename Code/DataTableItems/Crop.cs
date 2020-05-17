@@ -1,13 +1,11 @@
-﻿using Microsoft.AspNetCore.Components;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace StardewValleyStonks
 {
 	public class Crop : DataTableItem
 	{
-		
-		[Inject] private SettingsState Settings { get; }
+		private SettingsState Settings { get; }
 
 		private readonly IGrow Grow;
 		public bool Regrows => Grow.Regrows;
@@ -31,7 +29,7 @@ namespace StardewValleyStonks
 			IGrow grow,
 			ICropAmount cropAmount,
 			IItemAmount[] harvestedItems,
-			IBestItemTracker<ISource, IPrice> priceManager)
+			BestFinder<ISource, BuyPrice> priceManager)
 			: base(name, priceManager)
 		{
 			Grow = grow;
@@ -62,16 +60,19 @@ namespace StardewValleyStonks
 		{
 			CropAmount.SetAmounts(fertQuality);
 			List<ItemAmount> inputs = new List<ItemAmount>();
-			
-			return ProfitPerHarvest(fertQuality) * harvests;
+			return 0;
+			//return ProfitPerHarvest(fertQuality) * harvests;
 		}
 
 		public List<List<Process>> ReplantPlans(List<ItemAmount> inputs, int seeds = 1)
 		{
+			return null;
+			/*
 			foreach (Process replant in replantProcesses)
 			{
 				if (replant.MaxOutput(inputs))
 			}
+			*/
 		}
 	}
 }
