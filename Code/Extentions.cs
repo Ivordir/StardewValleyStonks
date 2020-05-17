@@ -2,6 +2,11 @@
 {
     public static class Extentions
     {
+        public static int Price(this BestFinder<ISource, BuyPrice> bestFinder)
+        {
+            return bestFinder.HasBestItem ? bestFinder.BestItems[0].Price : -1;
+        }
+
         public static int InRange(this int value, int min, int max)
         {
             return value.WithMin(min).WithMax(max);

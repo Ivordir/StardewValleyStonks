@@ -2,15 +2,6 @@
 {
     public class Skill : ISkill
     {
-        public Skill(string name, IProfession[][] professions, int level = 0, int buff = 0, bool ignoreConflicts = false)
-        {
-            Name = name;
-            Level = level;
-            Buff = buff;
-            Professions = professions;
-            IgnoreConflicts = ignoreConflicts;
-        }
-
         public string Name { get; }
         public int Level
         {
@@ -25,5 +16,15 @@
         public int BuffedLevel => Level + Buff;
         public IProfession[][] Professions { get; }
         public bool IgnoreConflicts { get; set; }
+
+        public Skill(string name, IProfession[][] professions, int level = 0, int buff = 0, bool ignoreConflicts = false)
+        {
+            Name = name;
+            Level = level;
+            Buff = buff;
+            Professions = professions;
+            IgnoreConflicts = ignoreConflicts;
+        }
+        
     }
 }

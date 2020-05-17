@@ -3,6 +3,6 @@
     public interface IItemAmount
     {
         public double Amount { get; }
-        public IProduct Item { get; }
+        public IItem Item { get; }
     }
 }

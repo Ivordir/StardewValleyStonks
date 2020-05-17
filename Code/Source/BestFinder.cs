@@ -3,22 +3,9 @@ using System.Collections.Generic;
 
 namespace StardewValleyStonks
 {
-    public class BestFinder<TSource, TSourcedItem> : IBestFinder<TSource, TSourcedItem>
+    public class BestFinder<TSource, TSourcedItem>
         where TSourcedItem : ISelectable, IComparable<TSourcedItem>
     {
-        private readonly Dictionary<TSource, TSourcedItem> Dict;
-        protected readonly List<TSourcedItem> _BestItems;
-
-        public BestFinder(Dictionary<TSource, TSourcedItem> dict)
-        {
-            Dict = dict;
-            _BestItems = new List<TSourcedItem>();
-        }
-
-        public bool HasBestItem => BestItems.Count != 0;
-
-        public TSourcedItem this [TSource source] => Dict[source];
-        
         public List<TSourcedItem> BestItems
         {
             get
@@ -42,14 +29,22 @@ namespace StardewValleyStonks
                 return _BestItems;
             }
         }
-
+        public bool HasBestItem => BestItems.Count != 0;
         public bool HasSource(TSource source) => Dict.ContainsKey(source);
-
+        public TSourcedItem this[TSource source] => Dict[source];
         public Dictionary<TSource, TSourcedItem>.KeyCollection Sources => Dict.Keys;
-
         public Dictionary<TSource, TSourcedItem>.ValueCollection Items => Dict.Values;
 
-        protected virtual int Compare(TSourcedItem item)
+        private readonly Dictionary<TSource, TSourcedItem> Dict;
+        private readonly List<TSourcedItem> _BestItems;
+
+        public BestFinder(Dictionary<TSource, TSourcedItem> dict)
+        {
+            Dict = dict;
+            _BestItems = new List<TSourcedItem>();
+        }
+
+        private int Compare(TSourcedItem item)
         {
             return _BestItems[0].CompareTo(item);
         }

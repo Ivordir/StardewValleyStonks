@@ -4,33 +4,17 @@ namespace StardewValleyStonks
 {
 	public class Grow : IGrow
 	{
-		private static readonly SpeedMultiplier[] None = new SpeedMultiplier[0];
+		private static readonly IMultiplier[] None = new IMultiplier[0];
 
 		public int TotalTime { get; }
-
-		private readonly int[] GrowthStagesOrg;
-		private readonly int[] GrowthStages;
-		private readonly SpeedMultiplier[] SpeedMultipliers;
-
-		public Grow(
-			int[] growthStages,
-			SpeedMultiplier[] speedMultipliers = null)
-		{
-			GrowthStagesOrg = growthStages;
-			GrowthStages = new int[GrowthStagesOrg.Length];
-			ResetGrowthStages();
-			for (int i = 0; i < GrowthStagesOrg.Length; i++)
-			{
-				TotalTime += GrowthStagesOrg[i];
-			}
-			SpeedMultipliers = speedMultipliers ?? None;
-		}
+		public virtual bool Regrows => false;
+		public virtual int RegrowTime => throw new MissingFieldException("This does not regrow");
 
 		public virtual int Time(double speed)
 		{
-			foreach (SpeedMultiplier multiplier in SpeedMultipliers)
+			if (SpeedMultipliers != None)
 			{
-				if (multiplier.Active)
+				foreach (IMultiplier multiplier in SpeedMultipliers)
 				{
 					speed += multiplier.Value;
 				}
@@ -55,12 +39,10 @@ namespace StardewValleyStonks
 			ResetGrowthStages();
 			return TotalTime - daysReduced;
 		}
-
 		public virtual int HarvestsWithin(int days, double speed = 0)
 		{
 			return days / Time(speed);
 		}
-
 		public virtual int HarvestsWithin(ref int days, double speed = 0)
 		{
 			int growthTime = Time(speed);
@@ -69,8 +51,25 @@ namespace StardewValleyStonks
 			return numHarvests;
 		}
 
-		public virtual bool Regrows => false;
-		public virtual int RegrowTime => throw new MissingFieldException("This does not regrow");
+		private readonly int[] GrowthStagesOrg;
+		private readonly int[] GrowthStages;
+		private readonly IMultiplier[] SpeedMultipliers;
+
+		public Grow(
+			int[] growthStages,
+			IMultiplier[] speedMultipliers = null)
+		{
+			GrowthStagesOrg = growthStages;
+			for (int i = 0; i < GrowthStagesOrg.Length; i++)
+			{
+				TotalTime += GrowthStagesOrg[i];
+			}
+
+			GrowthStages = new int[GrowthStagesOrg.Length];
+			ResetGrowthStages();
+
+			SpeedMultipliers = speedMultipliers ?? None;
+		}
 
 		private void ResetGrowthStages()
 		{

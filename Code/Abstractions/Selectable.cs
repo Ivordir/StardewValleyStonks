@@ -7,12 +7,6 @@
         public virtual bool Selected { get; set; }
         public ICondition[] Conditions { get; }
 
-        public Selectable(bool selected = true, ICondition[] conditions = null)
-        {
-            Selected = selected;
-            Conditions = conditions ?? None;
-        }
-
         public bool ConditionsMet
         {
             get
@@ -30,7 +24,12 @@
                 return true;
             }
         }
-
         public virtual bool Active => Selected && ConditionsMet;
+
+        public Selectable(bool selected = true, ICondition[] conditions = null)
+        {
+            Selected = selected;
+            Conditions = conditions ?? None;
+        }
     }
 }

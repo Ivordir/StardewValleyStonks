@@ -7,33 +7,44 @@ namespace StardewValleyStonks
     {
         public Process(
             IProcessor processor,
-            Dictionary<IProduct, int> inputs,
-            IItemAmount[] outputs,
+            Dictionary<IItem, int> inputs,
+            IItemAmount output,
             ICondition[] conditions)
             : base(true, conditions)
         {
             Processor = processor;
             Inputs = inputs;
-            Outputs = outputs;
+            Output = output;
         }
 
         public IProcessor Processor { get; }
-        public Dictionary<IProduct, int> Inputs { get; }
-        public IItemAmount[] Outputs { get; }
+        public Dictionary<IItem, int> Inputs { get; }
+        public IItemAmount Output { get; }
 
-        public double Profit(List<ItemAmount> inputs)
+        public double Profit(Dictionary<IItem, double> inputs)
         {
-            double maxOutput = inputs.Min(i => i.Amount / Inputs[i.Item]);
-            for (int i = 0; i < inputs.Count; i++)
+            double output = MaxUnitOutput(inputs);
+            foreach(IItem input in inputs.Keys)
             {
-                inputs[i].Amount -= maxOutput * Inputs[inputs[i].Item];
-                if (inputs[i].Amount == 0)
+                inputs[input] -= output * Inputs[input];
+                if (inputs[input] == 0)
                 {
-                    inputs.RemoveAt(i);
-                    i--;
+                    inputs.Remove(input);
                 }
             }
-            return Outputs.Sum(o => o.Item.Price * o.Amount * maxOutput);
+            foreach(IItem input in inputs.Keys.Where(k => inputs[k] == 0))
+            {
+                inputs.Remove(input);
+            }
+            return Output.Item.Price * Output.Amount * output;
+        }
+        private double MaxUnitOutput(Dictionary<IItem, double> inputs)
+        {
+            return inputs.Min(i => i.Value / Inputs[i.Key]);
+        }
+        public double MaxOutput(Dictionary<IItem, double> inputs)
+        {
+            return Output.Amount * MaxUnitOutput(inputs);
         }
         /*
         public bool SameInputs(Process other)

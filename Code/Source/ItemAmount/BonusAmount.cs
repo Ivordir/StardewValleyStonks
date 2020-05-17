@@ -11,6 +11,6 @@
         IItemAmount BaseAmount { get; }
         public double Bonus { get; set; }
         public double Amount => BaseAmount.Amount + Bonus;
-        public IProduct Item => BaseAmount.Item;
+        public IItem Item => BaseAmount.Item;
     }
 }

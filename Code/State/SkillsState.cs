@@ -39,23 +39,20 @@
                 new ICondition[] { new SkillLvlCondition(Farming, 5) },
                 new IProfession[] { Agriculturist, Artisan });
 
-            ICondition[] farmLvl10 = new ICondition[] { new SkillLvlCondition(Farming, 10) };
-
-            IProfession[] NeedsTiller = new IProfession[] { Tiller };
             Artisan = new PriceProfession(
                 "Artisan",
                 1.4,
-                farmLvl10,
+                new ICondition[] { new SkillLvlCondition(Farming, 10) },
                 null,
-                NeedsTiller,
+                new IProfession[] { Tiller },
                 new IProfession[] { Agriculturist });
 
             Agriculturist = new MultiplierProfession(
                 "Agriculturist",
                 0.1,
-                farmLvl10,
+                new ICondition[] { new SkillLvlCondition(Farming, 10) },
                 null,
-                NeedsTiller,
+                new IProfession[] { Tiller },
                 new IProfession[] { Artisan });
 
 

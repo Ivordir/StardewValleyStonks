@@ -1,7 +1,10 @@
 ﻿namespace StardewValleyStonks
 {
-    public class QualityProduct : IProduct
+    public class QualityProduct : IItem
     {
+        public string Name => Product.Qualities ? $"{Product.Name} ({Quality.Name})" : Product.Name;
+        public int Price => Product.Qualities ? Quality.ApplyTo(Product.Price) : Product.Price;
+
         private readonly IPriceMultiplier Quality;
         private readonly Product Product;
 
@@ -12,8 +15,5 @@
             Quality = quality;
             Product = product;
         }
-
-        public string Name => Product.Qualities ? $"{Product.Name} ({Quality.Name})" : Product.Name;
-        public int Price => Product.Qualities ? Quality.ApplyTo(Product.Price) : Product.Price;
     }
 }

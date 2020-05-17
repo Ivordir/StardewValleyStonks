@@ -1,19 +1,21 @@
 ﻿namespace StardewValleyStonks
 {
-    public class PriceProfession : Profession, IPriceMultiplier
+    public class PriceProfession : BaseProfession, IPriceMultiplier
     {
-        public double Value { get; }
+        public override string Name => PriceMultiplier.Name;
+        public double Value => PriceMultiplier.Value;
+
+        private readonly IPriceMultiplier PriceMultiplier;
 
         public PriceProfession(
-            string name,
-            double multiplier,
+            IPriceMultiplier priceMultiplier,
             ICondition[] conditions,
             IProfession[] dependants = null,
             IProfession[] requirements = null,
             IProfession[] exclusiveWith = null)
-            : base(name, conditions, dependants, requirements, exclusiveWith)
+            : base(conditions, dependants, requirements, exclusiveWith)
         {
-            Value = multiplier;
+            PriceMultiplier = priceMultiplier;
         }
 
         public int ApplyTo(int basePrice) => Active ? (int)(Value * basePrice) : basePrice; 
