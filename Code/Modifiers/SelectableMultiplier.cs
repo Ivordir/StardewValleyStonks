@@ -3,22 +3,17 @@
     public class SelectableMultiplier : Selectable, IMultiplier
     {
         public string Name { get; }
-        public double Value => Active ? ActiveValue : InActiveValue;
-
-        private readonly double ActiveValue;
-        private readonly double InActiveValue;
+        public double Value { get; }
 
         public SelectableMultiplier(
             string name,
-            double activeValue,
-            double inactiveValue,
-            bool selected = false,
+            double value,
+            bool selected = true,
             ICondition[] conditions = null)
             : base(selected, conditions)
         {
             Name = name;
-            ActiveValue = activeValue;
-            InActiveValue = inactiveValue;
+            Value = value;
         }
     }
 }

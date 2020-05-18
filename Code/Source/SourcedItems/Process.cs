@@ -3,28 +3,31 @@ using System.Linq;
 
 namespace StardewValleyStonks
 {
-    public class Process : Selectable, ISelectable
+    public class Process : Selectable, IProcess
     {
+        public Source Source { get; }
+        public Dictionary<IItem, int> Inputs { get; }
+        public IItem OutputItem { get; }
+        public double OutputAmount { get; }
+
         public Process(
-            IProcessor processor,
+            Source processor,
             Dictionary<IItem, int> inputs,
-            IItemAmount output,
-            ICondition[] conditions)
+            IItem outputItem,
+            double outputAmount,
+            ICondition[] conditions = null)
             : base(true, conditions)
         {
-            Processor = processor;
+            Source = processor;
             Inputs = inputs;
-            Output = output;
+            OutputItem = outputItem;
+            OutputAmount = outputAmount;
         }
-
-        public IProcessor Processor { get; }
-        public Dictionary<IItem, int> Inputs { get; }
-        public IItemAmount Output { get; }
 
         public double Profit(Dictionary<IItem, double> inputs)
         {
             double output = MaxUnitOutput(inputs);
-            foreach(IItem input in inputs.Keys)
+            foreach (IItem input in inputs.Keys)
             {
                 inputs[input] -= output * Inputs[input];
                 if (inputs[input] == 0)
@@ -32,11 +35,11 @@ namespace StardewValleyStonks
                     inputs.Remove(input);
                 }
             }
-            foreach(IItem input in inputs.Keys.Where(k => inputs[k] == 0))
+            foreach (IItem input in inputs.Keys.Where(k => inputs[k] == 0))
             {
                 inputs.Remove(input);
             }
-            return Output.Item.Price * Output.Amount * output;
+            return OutputItem.Price * OutputAmount * output;
         }
         private double MaxUnitOutput(Dictionary<IItem, double> inputs)
         {
@@ -44,7 +47,7 @@ namespace StardewValleyStonks
         }
         public double MaxOutput(Dictionary<IItem, double> inputs)
         {
-            return Output.Amount * MaxUnitOutput(inputs);
+            return OutputAmount * MaxUnitOutput(inputs);
         }
         /*
         public bool SameInputs(Process other)
@@ -63,6 +66,6 @@ namespace StardewValleyStonks
             return true;
         }
         */
-        public override bool Active => base.Active && Processor.Active;
+        public override bool Active => base.Active && Source.Active;
     }
 }

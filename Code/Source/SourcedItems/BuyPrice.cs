@@ -5,7 +5,7 @@ namespace StardewValleyStonks
     public class BuyPrice : Selectable, IComparable<BuyPrice>
     {
         public int Price { get; }
-        public ISource Source { get; }
+        public Source Source { get; }
 
         public override bool Active => base.Active && Source.Active;
 

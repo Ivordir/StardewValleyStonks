@@ -1,21 +1,23 @@
-﻿namespace StardewValleyStonks
+﻿using System.Collections.Generic;
+
+namespace StardewValleyStonks
 {
     public class ForageAmount : BaseCropAmount
     {
 		private readonly SkillsState Skills;
 
-		private readonly ItemAmount[][] Amounts;
+		private readonly Dictionary<IItem, Amount> Amounts;
 
 		public override void SetAmounts(int fertQuality = 0)
 		{
 			double[] dist = Dist;
-			foreach(ItemAmount[] amount in Amounts)
-			{
-				for (int quality = 0; quality < dist.Length; quality++)
-				{
-					amount[quality].Amount = dist[quality] * (AvgCrops + AvgExtraCrops) / Amounts.Length;
-				}
-			}
+			//foreach(ItemAmount[] amount in Amounts)
+			//{
+			//	for (int quality = 0; quality < dist.Length; quality++)
+			//	{
+			//		amount[quality].Amount = dist[quality] * (AvgCrops + AvgExtraCrops) / Amounts.Length;
+			//	}
+			//}
 		}
 
 		private double[] Dist

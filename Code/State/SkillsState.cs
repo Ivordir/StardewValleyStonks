@@ -2,13 +2,13 @@
 {
     public class SkillsState
     {
-        public IPriceMultiplier[] Qualities { get; }
+
         public Skill[] Skills { get; }
 
         public Skill Farming { get; }
-        public PriceProfession Tiller { get; }
+        public MultiplierProfession Tiller { get; }
         public MultiplierProfession Agriculturist { get; }
-        public PriceProfession Artisan { get; }
+        public MultiplierProfession Artisan { get; }
 
         public Skill Foraging { get; }
         public MultiplierProfession Gatherer { get; }
@@ -16,14 +16,6 @@
 
         public SkillsState()
         {
-
-            Qualities = new IPriceMultiplier[]
-            {
-                new PriceMultiplier("Silver", 1.25),
-                new PriceMultiplier("Gold", 1.5),
-                new PriceMultiplier("Iridium", 2)
-            };
-
             Skills = new Skill[] { Farming, Foraging };
 
             Farming = new Skill(
@@ -34,14 +26,16 @@
                     new IProfession[] { Agriculturist, Artisan }
                 });
 
-            Tiller = new PriceProfession(
-                new PriceMultiplier("Tiller", 1.1),
+            Tiller = new MultiplierProfession(
+                "Tiller",
+                1.1,
                 Farming,
                 new ICondition[] { new SkillLvlCondition(Farming, 5) },
                 new IProfession[] { Agriculturist, Artisan });
 
-            Artisan = new PriceProfession(
-                new PriceMultiplier("Artisan", 1.4),
+            Artisan = new MultiplierProfession(
+                "Artisan", 
+                1.4,
                 Farming,
                 new ICondition[] { new SkillLvlCondition(Farming, 10) },
                 null,
@@ -49,8 +43,8 @@
                 new IProfession[] { Agriculturist });
 
             Agriculturist = new MultiplierProfession(
-                new Multiplier("Agriculturist", 0.1),
-                0,
+                "Agriculturist",
+                0.1,
                 Farming,
                 new ICondition[] { new SkillLvlCondition(Farming, 10) },
                 null,
@@ -67,8 +61,8 @@
                 });
 
             Gatherer = new MultiplierProfession(
-                new Multiplier("Gatherer", 1.2),
-                1,
+                "Gatherer",
+                1.2,
                 Foraging,
                 new ICondition[] { new SkillLvlCondition(Foraging, 5) },
                 new IProfession[] { Botanist });

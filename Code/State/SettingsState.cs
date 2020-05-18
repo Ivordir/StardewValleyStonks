@@ -1,4 +1,6 @@
-﻿namespace StardewValleyStonks
+﻿using System.Collections.Generic;
+
+namespace StardewValleyStonks
 {
     public class SettingsState
     {
@@ -15,29 +17,44 @@
             get => _SeedsFromSeedMaker;
             set
             {
-                _SeedsFromSeedMaker = value;
-                foreach(Reference<double> reference in QualitySeedsFromSeedMaker)
+                _SeedsFromSeedMaker = value.WithMin(0);
+                foreach(Amount amount in _SeedsByQuality.Values)
                 {
-                    reference.Value = value;
+                    amount.Value = _SeedsFromSeedMaker;
                 }
             }
         }
+        public double SeedProbability
+        {
+            get => _SeedProbability.Value;
+            set => _SeedProbability.Value = value.InRange(0, 1);
+        }
         public bool QualitySeedMaker { get; set; }
-        public Reference<double>[] QualitySeedsFromSeedMaker;
+        public double SeedsByQuality(Quality quality)
+        {
+            return _SeedsByQuality[quality].Value;
+        }
+        public void SetSeedsByQuality(Quality quality, double value)
+        {
+            _SeedsByQuality[quality].Value = value.WithMin(0);
+        }
+        public Dictionary<Quality, MultiplierAmount> SeedAmounts { get; }
 
         public double GiantCropChecksPerTile
         {
             get => _GiantCropChecksPerTile;
             set => _GiantCropChecksPerTile = value.InRange(0, 9);
         }
+
         public bool GreenhouseMode { get; set; }
-        //public bool TrelisPenalty;
         public Fertilizer StaringFert { get; set; }
 
         private int _LuckBuff;
         private double _GiantCropChecksPerTile, _SeedsFromSeedMaker;
+        private readonly Amount _SeedProbability;
+        private readonly Dictionary<Quality, Amount> _SeedsByQuality;
 
-        public SettingsState()
+        public SettingsState(DataState data)
         {
             StaringFert = null;
             SpecialCharm = false;
@@ -45,10 +62,18 @@
             _GiantCropChecksPerTile = 9;
             GreenhouseMode = false;
             _SeedsFromSeedMaker = 2;
-            QualitySeedsFromSeedMaker = new Reference<double>[4];
-            for(int quality = 0; quality < 4; quality++)
+            _SeedsByQuality = new Dictionary<Quality, Amount>();
+            foreach(Quality quality in data.Qualities)
             {
-                QualitySeedsFromSeedMaker[quality] = new Reference<double>(_SeedsFromSeedMaker);
+                _SeedsByQuality.Add(quality, new Amount(_SeedsFromSeedMaker));
+            }
+            _SeedProbability = new Amount(0.975);
+            SeedAmounts = new Dictionary<Quality, MultiplierAmount>();
+            foreach (Quality quality in data.Qualities)
+            {
+                SeedAmounts.Add(quality, new MultiplierAmount(
+                    _SeedsByQuality[quality],
+                    _SeedProbability));
             }
         }
     }

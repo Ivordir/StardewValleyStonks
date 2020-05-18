@@ -16,7 +16,10 @@ namespace StardewValleyStonks
 			{
 				foreach (IMultiplier multiplier in SpeedMultipliers)
 				{
-					speed += multiplier.Value;
+					if(multiplier.Active)
+					{
+						speed += multiplier.Value;
+					}
 				}
 			}
 			if (speed == 0)

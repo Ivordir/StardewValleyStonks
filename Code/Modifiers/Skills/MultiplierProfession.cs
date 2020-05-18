@@ -1,25 +1,20 @@
 ﻿namespace StardewValleyStonks
 {
-    public class MultiplierProfession : BaseProfession, IMultiplier
+    public class MultiplierProfession : Profession, IMultiplier
     {
-        public override string Name => Multiplier.Name;
-        public double Value => Active ? Multiplier.Value : DefaultValue;
-
-        private readonly IMultiplier Multiplier;
-        private readonly double DefaultValue;
+        public double Value { get; }
 
         public MultiplierProfession(
-            IMultiplier multiplier,
-            double defaultValue,
+            string name,
+            double value,
             Skill skill,
             ICondition[] conditions, 
             IProfession[] dependants = null, 
             IProfession[] requirements = null, 
             IProfession[] exclusiveWith = null) 
-            : base(skill, conditions, dependants, requirements, exclusiveWith)
+            : base(name, skill, conditions, dependants, requirements, exclusiveWith)
         {
-            Multiplier = multiplier;
-            DefaultValue = defaultValue;
+            Value = value;
         }
     }
 }

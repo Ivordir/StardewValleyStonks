@@ -20,7 +20,7 @@ namespace StardewValleyStonks
 		//find what should be protected and what should be private
 		//List<IPenalty> Penalties { get; }
 		protected readonly ICropAmount CropAmount;
-		protected readonly IItemAmount[] HarvestedItems;
+		protected readonly Dictionary<IItem, IAmount> HarvestedItems;
 		protected readonly Process[] processes;
 		protected readonly Process[] replantProcesses;
 
@@ -28,8 +28,8 @@ namespace StardewValleyStonks
 			string name,
 			IGrow grow,
 			ICropAmount cropAmount,
-			IItemAmount[] harvestedItems,
-			BestFinder<ISource, BuyPrice> priceManager)
+			Dictionary<IItem, IAmount> harvestedItems,
+			BestFinder<Source, BuyPrice> priceManager)
 			: base(name, priceManager)
 		{
 			Grow = grow;
@@ -59,12 +59,12 @@ namespace StardewValleyStonks
 		public virtual double Profit(int fertQuality = 0, int harvests = 1)
 		{
 			CropAmount.SetAmounts(fertQuality);
-			List<ItemAmount> inputs = new List<ItemAmount>();
+			//List<ItemAmount> inputs = new List<ItemAmount>();
 			return 0;
 			//return ProfitPerHarvest(fertQuality) * harvests;
 		}
 
-		public List<List<Process>> ReplantPlans(List<ItemAmount> inputs, int seeds = 1)
+		public List<List<Process>> ReplantPlans(Dictionary<IItem, IAmount> inputs, int seeds = 1)
 		{
 			return null;
 			/*

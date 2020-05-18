@@ -1,8 +1,7 @@
 ﻿namespace StardewValleyStonks
 {
-    public interface IMultiplier : ISelectable
+    public interface IAmount
     {
-        public string Name { get; }
         public double Value { get; }
     }
 }

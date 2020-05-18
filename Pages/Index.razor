@@ -83,7 +83,7 @@
 	</div>*@
 	<div class="products">
 		<span class="input-header">Sell</span>
-		@foreach (IProcessor processor in Data.Processors)
+		@foreach (Source processor in Data.SellSources)
 		{
 			<label class="input-checkbox-label">
 				@processor.Name
@@ -94,7 +94,7 @@
 	</div>
 	<div class="sources">
 		<span class="input-header">Sources</span>
-		@foreach (ISource source in Data.BuySources)
+		@foreach (Source source in Data.BuySources)
 		{
 			<label class="input-checkbox-label">
 				@source.Name
@@ -105,7 +105,7 @@
 	</div>
 	<div class="replant">
 		<span class="input-header">Replant</span>
-		@foreach (ISource replant in Data.ReplantMethods)
+		@foreach (Source replant in Data.ReplantMethods)
 		{
 			<label class="input-checkbox-label">
 				@replant.Name

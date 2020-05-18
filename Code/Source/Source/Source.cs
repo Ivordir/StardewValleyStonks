@@ -1,6 +1,6 @@
 ﻿namespace StardewValleyStonks
 {
-    public class Source : Selectable, ISource
+    public class Source : Selectable
     {
         public string Name { get; }
 

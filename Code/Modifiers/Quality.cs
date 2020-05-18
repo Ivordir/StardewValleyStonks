@@ -1,11 +1,11 @@
 ﻿namespace StardewValleyStonks
 {
-    public class PriceMultiplier : IPriceMultiplier
+    public class Quality
     {
         public string Name { get; }
         public double Value { get; }
 
-        public PriceMultiplier(string name, double value)
+        public Quality(string name, double value)
         {
             Name = name;
             Value = value;
