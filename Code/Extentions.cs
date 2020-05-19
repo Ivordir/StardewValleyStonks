@@ -2,7 +2,7 @@
 {
     public static class Extentions
     {
-        public static int Price(this BestFinder<Source, BuyPrice> bestFinder)
+        public static int Price(this BestDict<Source, BuyPrice> bestFinder)
         {
             return bestFinder.HasBestItem ? bestFinder.BestItems[0].Price : -1;
         }

@@ -4,13 +4,13 @@ namespace StardewValleyStonks
 	{
 		public string Name { get; }
 		public int Price => PriceManager.Price();
-		public BestFinder<Source, BuyPrice> PriceManager { get; }
+		public BestDict<Source, BuyPrice> PriceManager { get; }
 		public bool Enabled { get; set; }
 		public abstract bool Active { get; }
 
 		public DataTableItem(
 			string name,
-			BestFinder<Source, BuyPrice> priceManager,
+			BestDict<Source, BuyPrice> priceManager,
 			bool enbabled = true)
 		{
 			Name = name;

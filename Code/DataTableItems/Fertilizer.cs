@@ -13,7 +13,7 @@ namespace StardewValleyStonks
             string name,
             int quality,
             double speed,
-            BestFinder<Source, BuyPrice> priceManager)
+            BestDict<Source, BuyPrice> priceManager)
             : base(name, priceManager)
         {
             Quality = quality;

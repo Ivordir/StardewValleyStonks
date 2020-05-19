@@ -6,7 +6,7 @@ namespace StardewValleyStonks
     {
 		private readonly SkillsState Skills;
 
-		private readonly Dictionary<IItem, double> Amounts;
+		private readonly Dictionary<IItem, Amount> Amounts;
 
 		public override void SetAmounts(int fertQuality = 0)
 		{

@@ -24,48 +24,38 @@ namespace StardewValleyStonks
             OutputAmount = outputAmount;
         }
 
-        public double Profit(Dictionary<IItem, double> inputs)
+        public double Profit(double output)
         {
-            double output = MaxUnitOutput(inputs);
-            foreach (IItem input in inputs.Keys)
-            {
-                inputs[input] -= output * Inputs[input];
-                if (inputs[input] == 0)
-                {
-                    inputs.Remove(input);
-                }
-            }
-            foreach (IItem input in inputs.Keys.Where(k => inputs[k] == 0))
-            {
-                inputs.Remove(input);
-            }
-            return OutputItem.Price * OutputAmount * output;
+            return OutputItem.Price * output;
         }
-        private double MaxUnitOutput(Dictionary<IItem, double> inputs)
-        {
-            return inputs.Min(i => i.Value / Inputs[i.Key]);
-        }
+
         public double MaxOutput(Dictionary<IItem, double> inputs)
         {
-            return OutputAmount * MaxUnitOutput(inputs);
-        }
-        /*
-        public bool SameInputs(Process other)
-        {
-            if (Inputs.Count != other.Inputs.Count)
+            foreach (IItem requiredInput in Inputs.Keys)
             {
-                return false;
-            }
-            foreach (Product input in Inputs.Keys)
-            {
-                if (!other.Inputs.ContainsKey(input))
+                if (!inputs.ContainsKey(requiredInput))
                 {
-                    return false;
+                    return 0;
                 }
             }
-            return true;
+            return OutputAmount * Inputs.Min(i => inputs[i.Key] / i.Value);
         }
-        */
+
+        public Dictionary<IItem, List<(IProcess, double)>> ConsumeInput(Dictionary<IItem, double> inputs, double output)
+        {
+            Dictionary<IItem, List<(IProcess, double)>> consumed = new Dictionary<IItem, List<(IProcess, double)>>();
+            foreach (IItem requiredInput in Inputs.Keys)
+            {
+                inputs[requiredInput] -= output * Inputs[requiredInput];
+                consumed.Add(requiredInput, new List<(IProcess, double)> { (this, output * Inputs[requiredInput]) });
+                if (inputs[requiredInput] == 0)
+                {
+                    inputs.Remove(requiredInput);
+                }
+            }
+            return consumed;
+        }
+
         public override bool Active => base.Active && Source.Active;
     }
 }
