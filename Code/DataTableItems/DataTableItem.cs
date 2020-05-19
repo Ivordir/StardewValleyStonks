@@ -5,17 +5,17 @@ namespace StardewValleyStonks
 		public string Name { get; }
 		public int Price => PriceManager.Price();
 		public BestDict<Source, BuyPrice> PriceManager { get; }
-		public bool Enabled { get; set; }
+		public bool Selected { get; set; }
 		public abstract bool Active { get; }
 
 		public DataTableItem(
 			string name,
 			BestDict<Source, BuyPrice> priceManager,
-			bool enbabled = true)
+			bool selected = true)
 		{
 			Name = name;
 			PriceManager = priceManager;
-			Enabled = enbabled;
+			Selected = selected;
 		}
 
 		public virtual string Image => Name + ".png";

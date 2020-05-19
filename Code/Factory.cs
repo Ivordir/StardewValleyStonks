@@ -11,6 +11,8 @@ namespace StardewValleyStonks
 
 		public Product Product(string type, string name, int basePrice)
 		{
+			return null;
+			/*
 			return type switch
 			{
 				"Jam" => new Product(name + " Jam", 2 * basePrice + 50, Skills.Artisan),
@@ -19,6 +21,7 @@ namespace StardewValleyStonks
 				"Juice" => new Product(name + " Juice", (int)(2.25 * basePrice), Skills.Artisan),
 				_ => null
 			};
+			*/
 		}
 
 		public Product StaticProduct(string name)

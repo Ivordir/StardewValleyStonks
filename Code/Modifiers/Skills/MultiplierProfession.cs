@@ -9,12 +9,14 @@
             double value,
             Skill skill,
             ICondition[] conditions, 
-            IProfession[] dependants = null, 
-            IProfession[] requirements = null, 
-            IProfession[] exclusiveWith = null) 
+            Profession[] dependants = null, 
+            Profession[] requirements = null, 
+            Profession[] exclusiveWith = null) 
             : base(name, skill, conditions, dependants, requirements, exclusiveWith)
         {
             Value = value;
         }
+
+        public MultiplierProfession() : base() { }
     }
 }

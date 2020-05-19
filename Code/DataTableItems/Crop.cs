@@ -6,28 +6,34 @@ namespace StardewValleyStonks
 {
 	public class Crop : DataTableItem
 	{
-		private readonly IGrow Grow;
+		public Seasons Seasons { get; }
+		public Seasons SelectedSeasons { get; set; }
+
+		public int[] GrowthStages => Grow.GrowthStages;
+		public int GrowthTime => Grow.TotalTime;
 		public bool Regrows => Grow.Regrows;
 		public int RegrowTime => Grow.RegrowTime;
-		public int GrowthTime => Grow.TotalTime;
+
 		public int GrowthTimeWith(double speed) => Grow.Time(speed);
 		public int HarvestsWithin(int days, double speed = 0) => Grow.HarvestsWithin(days, speed);
 		public int HarvestsWithin(ref int days, double speed = 0) => Grow.HarvestsWithin(ref days, speed);
 
-
+		private readonly Grow Grow;
+		private readonly DateState Date;
 		private readonly bool Indoors;
 		//find what should be protected and what should be private
 		//List<IPenalty> Penalties { get; }
-		protected readonly ICropAmount CropAmount;
-		protected readonly Dictionary<IItem, IAmount> HarvestedItems;
+		private readonly ICropAmount CropAmount;
+		private readonly Dictionary<IItem, IAmount> HarvestedItems;
 		private readonly BestList<SingleProcess>[] SingleProcesses;
-		protected readonly Process[] Processes;
-		protected readonly Process[] Replants;
+		private readonly Process[] Processes;
+		private readonly Process[] Replants;
 		private readonly Source BuySource;
 
 		public Crop(
 			string name,
-			IGrow grow,
+			Seasons seasons,
+			Grow grow,
 			ICropAmount cropAmount,
 			Dictionary<IItem, IAmount> harvestedItems,
 			Process[] processes,
@@ -36,6 +42,8 @@ namespace StardewValleyStonks
 			BestDict<Source, BuyPrice> priceManager)
 			: base(name, priceManager)
 		{
+			Seasons = seasons;
+			SelectedSeasons = Seasons;
 			Grow = grow;
 			CropAmount = cropAmount;
 			HarvestedItems = harvestedItems;
@@ -48,7 +56,10 @@ namespace StardewValleyStonks
 		{
 			get
 			{
-				//not in season
+				if ((Date.Seasons & SelectedSeasons) == 0)
+				{
+
+				}
 				//no products
 				//no replant
 				throw new NotImplementedException();
@@ -87,7 +98,7 @@ namespace StardewValleyStonks
 				{
 					for (int i = 0; i < replantMethods.Count; i++)
 					{
-						if (replantMethods[i].SeedsLeft > 0)
+						if (replantMethods[i].BoughtSeeds > 0)
 						{
 							replantMethods.RemoveAt(i);
 							i--;
@@ -101,7 +112,7 @@ namespace StardewValleyStonks
 					{
 						foreach (SoldItems item in items)
 						{
-							item.Profit -= method.SeedsLeft * Price;
+							item.Profit -= method.BoughtSeeds * Price;
 						}
 					}
 					if (items[0].Profit > best[0].Item1.Profit)
@@ -142,13 +153,15 @@ namespace StardewValleyStonks
 					}
 
 					Dictionary<IItem, double> leftOver = new Dictionary<IItem, double>(inputs);
-					Dictionary<IItem, List<(IProcess, double)>> usages = replant.ConsumeInput(leftOver, maxOutput);
+					Dictionary<IItem, List<(IProcess, double)>> usages; 
 					if (maxOutput >= seeds)
 					{
 						maxOutput = seeds;
+						usages = replant.ConsumeInput(leftOver, maxOutput);
 					}
 					else
 					{
+						usages = replant.ConsumeInput(leftOver, maxOutput);
 						foreach (ReplantMethod method in ReplantMethods(leftOver, seeds - maxOutput))
 						{
 							foreach (var kvp in usages)
@@ -209,7 +222,7 @@ namespace StardewValleyStonks
 					double maxOutput = process.MaxOutput(inputs);
 					if (maxOutput == 0)
 					{
-						continue;
+						break;
 					}
 					Dictionary<IItem, double> leftOver = new Dictionary<IItem, double>(inputs);
 					Dictionary<IItem, List<(IProcess, double)>> usages = process.ConsumeInput(leftOver, maxOutput);
@@ -232,7 +245,7 @@ namespace StardewValleyStonks
 		public class ReplantMethod
 		{
 			public Dictionary<IItem, List<(IProcess, double)>> Usages { get; }
-			public double SeedsLeft { get; }
+			public double BoughtSeeds { get; }
 			public Dictionary<IItem, double> LeftOver { get; }
 
 			public ReplantMethod(
@@ -241,7 +254,7 @@ namespace StardewValleyStonks
 				Dictionary<IItem, double> leftOver)
 			{
 				Usages = usages;
-				SeedsLeft = seeds;
+				BoughtSeeds = seeds;
 				LeftOver = leftOver;
 			}
 		}

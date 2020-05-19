@@ -1,5 +1,5 @@
 [System.Flags]
-public enum Season
+public enum Seasons
 {
   Spring = 1,
   Summer = 1 << 1,

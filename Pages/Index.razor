@@ -7,9 +7,9 @@
 
 <div class="input-grid">
 	<div class="editor">
-		<TabGroup TabClass="editor-tab" SelectedTabClass="editor-tab">
+		<TabGroup Class="tabgroup" ActiveTab="active-tab" InactiveTab="inactive-tab">
 			<Tab Name="Crop">
-				<table class="data-table">
+				@*<table class="data-table">
 					<tr>
 						<th></th>
 						<th>Image and Name</th>
@@ -26,10 +26,10 @@
 							</select>
 						</td>
 					</tr>
-				</table>
+				</table>*@
 			</Tab>
-			@*<Tab Name="Fertilizer">
-				<table class="data-table">
+			<Tab Name="Fertilizer">
+				@*<table class="data-table">
 					<tr>
 						<th></th>
 						<th>Image and Name</th>
@@ -47,8 +47,8 @@
 							<label class="lock-checkbox-label"><input type="checkbox" class="lock-checkbox"><span class="lock-checkbox-background"></span></label>
 						</td>
 					</tr>
-				</table>
-			</Tab>*@
+				</table>*@
+			</Tab>
 		</TabGroup>
 	</div>
 
@@ -57,30 +57,31 @@
 			Greenhouse Mode
 		</button>
 	</div>
-	@*<div class="skills">
+	<div class="skills">
 		<span class="input-header">Skills</span>
-		<TabGroup>
+		<TabGroup Class="skills" ActiveTab="active-tab" InactiveTab="inactive-tab">
 			@foreach (Skill skill in Skills.Skills)
 			{
 				<Tab Name=@skill.Name>
 					<label class="input-label">
-						Farming Level:
+						@skill.Name Level:
 						<input type="number" class="number-input" @bind=skill.Level>
 					</label>
-					@foreach (IProfession[] professions in skill.Professions)
+					@foreach (Profession[] professions in skill.Professions)
 					{
-						@foreach (IProfession profession in professions)
+						@foreach (Profession profession in professions)
 						{
-							<ToggleButton @bind-Toggle=profession.Selected>
+							<ToggleButton ToggledClass="toggled" UntoggledClass="untoggled" @bind-Toggled=profession.Selected>
 								Image
 								@profession.Name
 							</ToggleButton>
 						}
+						<br />
 					}
 				</Tab>
 			}
 		</TabGroup>
-	</div>*@
+	</div>
 	<div class="products">
 		<span class="input-header">Sell</span>
 		@foreach (Source processor in Data.SellSources)
@@ -114,26 +115,30 @@
 			</label>
 		}
 	</div>
-	<div class="non-greenhouse-settings">
+	<div class="date-settings">
+		@if (Date.StartSeason > Date.EndSeason || Date.StartSeason == Date.EndSeason && Date.StartDay >= Date.EndDay)
+		{
+			<span>The start date cannot be on or after the end date.</span>
+		}
 		<label class="input-header">
 			Start Date:
 			<select class="season-selector" @bind=Date.StartSeason>
-				@foreach (Season season in Enum.GetValues(typeof(Season)))
+				@foreach (Seasons season in Enum.GetValues(typeof(Seasons)))
 				{
-					<option value=@((int)season)>@season</option>
+					<option value=@season>@season</option>
 				}
 			</select>
-			<input type="number" @bind=Date.StartDay>
+			<input type="number" class="number-input" @bind=Date.StartDay>
 		</label>
 		<label class="input-header">
 			End Date:
 			<select class="season-selector" @bind=Date.EndSeason>
-				@foreach (Season season in Enum.GetValues(typeof(Season)))
+				@foreach (Seasons season in Enum.GetValues(typeof(Seasons)))
 				{
-					<option value=@((int)season)>@season</option>
+					<option value=@season>@season</option>
 				}
 			</select>
-			<input type="number" @bind=Date.EndDay>
+			<input type="number" class="number-input" @bind=Date.EndDay>
 		</label>
 	</div>
 	<div class="bottom-row">

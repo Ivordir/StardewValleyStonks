@@ -12,7 +12,11 @@
 	[Parameter]
 	public string ToggledClass { get; set; }
 
-	private bool Toggled = false;
+	[Parameter]
+	public bool Toggled { get; set; }
+
+	[Parameter]
+	public EventCallback<bool> ToggledChanged { get; set; }
 
 	public void Toggle()
 	{

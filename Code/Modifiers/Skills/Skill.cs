@@ -14,12 +14,12 @@
             set => _Buff = value.WithMin(0);
         }
         public int BuffedLevel => _Level + _Buff;
-        public IProfession[][] Professions { get; }
+        public Profession[][] Professions { get; }
         public bool IgnoreConflicts { get; set; }
 
         private int _Level, _Buff;
 
-        public Skill(string name, IProfession[][] professions, int level = 0, int buff = 0, bool ignoreConflicts = false)
+        public Skill(string name, Profession[][] professions, int level = 0, int buff = 0, bool ignoreConflicts = false)
         {
             Name = name;
             _Level = level;
@@ -27,6 +27,5 @@
             Professions = professions;
             IgnoreConflicts = ignoreConflicts;
         }
-        
     }
 }

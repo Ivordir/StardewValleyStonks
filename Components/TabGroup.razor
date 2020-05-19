@@ -1,45 +1,43 @@
 ﻿<CascadingValue Value="this">
-	@foreach (Tab tab in Tabs)
-	{
-		<button type="button" class=@ButtonClass(tab) @onclick=@( () => SwitchTab(tab) )>
-			@tab.Name
-		</button>
-	}
+	<div class="btn-group">
+		@foreach (Tab tab in Tabs)
+		{
+			<button type="button" class=@ButtonClass(tab) @onclick=@( () => SwitchTab(tab) )>
+				@tab.Name
+			</button>
+		}
+	</div>
 	@ChildContent
 </CascadingValue>
 
-@code
-{
+@code {
 	[Parameter]
 	public RenderFragment ChildContent { get; set; }
 
 	[Parameter]
-	public string TabClass { get; set; }
+	public string Class { get; set; }
 
 	[Parameter]
-	public string SelectedTabClass { get; set; }
+	public string ActiveTab { get; set; }
 
-	public Tab SelectedTab { get; set; }
+	[Parameter]
+	public string InactiveTab { get; set; }
 
-	List<Tab> Tabs = new List<Tab>();
+	public Tab Tab { get; set; }
+
+	private readonly List<Tab> Tabs = new List<Tab>();
 
 	internal void AddTab(Tab tab)
 	{
 		Tabs.Add(tab);
-		if (Tabs.Count == 1)
+		if (Tab == null)
 		{
-			SelectedTab = tab;
+			Tab = tab;
+			StateHasChanged();
 		}
-		StateHasChanged();
 	}
 
-	private string ButtonClass(Tab tab)
-	{
-		return tab == SelectedTab ? SelectedTabClass : TabClass;
-	}
+	private string ButtonClass(Tab tab) => tab == Tab ? "btn-primary" : "btn-secondary";
 
-	void SwitchTab(Tab tab)
-	{
-		SelectedTab = tab;
-	}
+	private void SwitchTab(Tab tab) => Tab = tab;
 }

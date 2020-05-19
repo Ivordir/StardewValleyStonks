@@ -6,10 +6,12 @@ namespace StardewValleyStonks
     public class SingleProcess : Selectable, IProcess, IComparable<SingleProcess>
     {
         public Source Source { get; }
-        public IItem InputItem { get; }
-        public double InputAmount { get; }
+        public Dictionary<IItem, int> Inputs { get; }
         public IItem OutputItem { get; }
         public double OutputAmount { get; }
+
+        private readonly IItem InputItem;
+        private readonly int InputAmount;
 
         public SingleProcess(
             Source source,
@@ -18,6 +20,7 @@ namespace StardewValleyStonks
             : base(true, conditions)
         {
             Source = source;
+            Inputs = new Dictionary<IItem, int> { { InputItem, InputAmount } };
             InputItem = item;
             InputAmount = 1;
             OutputItem = item;
@@ -29,11 +32,12 @@ namespace StardewValleyStonks
             IItem input,
             int inputAmount,
             IItem output,
-            int outputAmount,
+            double outputAmount,
             ICondition[] conditions = null)
             : base(true, conditions)
         {
             Source = source;
+            Inputs = new Dictionary<IItem, int> { { InputItem, InputAmount } };
             InputItem = input;
             InputAmount = inputAmount;
             OutputItem = output;

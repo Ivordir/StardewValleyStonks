@@ -2,24 +2,21 @@
 
 namespace StardewValleyStonks
 {
-	public class Grow : IGrow
+	public class Grow
 	{
-		private static readonly IMultiplier[] None = new IMultiplier[0];
-
+		public int[] GrowthStages { get; }
 		public int TotalTime { get; }
+		public IMultiplier[] SpeedMultipliers { get; }
 		public virtual bool Regrows => false;
 		public virtual int RegrowTime => throw new MissingFieldException("This does not regrow");
 
 		public virtual int Time(double speed)
 		{
-			if (SpeedMultipliers != None)
+			foreach (IMultiplier multiplier in SpeedMultipliers)
 			{
-				foreach (IMultiplier multiplier in SpeedMultipliers)
+				if (multiplier.Active)
 				{
-					if(multiplier.Active)
-					{
-						speed += multiplier.Value;
-					}
+					speed += multiplier.Value;
 				}
 			}
 			if (speed == 0)
@@ -30,11 +27,11 @@ namespace StardewValleyStonks
 			int daysReduced = 0;
 			for (int passes = 0; daysReduced < maxReduction && passes < 3; passes++)
 			{
-				for (int stage = 0; daysReduced < maxReduction && stage < GrowthStages.Length; stage++)
+				for (int stage = 0; daysReduced < maxReduction && stage < _GrowthStages.Length; stage++)
 				{
-					if (stage > 0 || GrowthStages[stage] > 1)
+					if (stage > 0 || _GrowthStages[0] > 1)
 					{
-						GrowthStages[stage]--;
+						_GrowthStages[stage]--;
 						daysReduced++;
 					}
 				}
@@ -54,21 +51,19 @@ namespace StardewValleyStonks
 			return numHarvests;
 		}
 
-		private readonly int[] GrowthStagesOrg;
-		private readonly int[] GrowthStages;
-		private readonly IMultiplier[] SpeedMultipliers;
+		private readonly int[] _GrowthStages;
 
 		public Grow(
 			int[] growthStages,
 			IMultiplier[] speedMultipliers = null)
 		{
-			GrowthStagesOrg = growthStages;
-			for (int i = 0; i < GrowthStagesOrg.Length; i++)
+			GrowthStages = growthStages;
+			for (int i = 0; i < GrowthStages.Length; i++)
 			{
-				TotalTime += GrowthStagesOrg[i];
+				TotalTime += GrowthStages[i];
 			}
 
-			GrowthStages = new int[GrowthStagesOrg.Length];
+			_GrowthStages = new int[GrowthStages.Length];
 			ResetGrowthStages();
 
 			SpeedMultipliers = speedMultipliers ?? None;
@@ -76,10 +71,12 @@ namespace StardewValleyStonks
 
 		private void ResetGrowthStages()
 		{
-			for (int i = 0; i < GrowthStagesOrg.Length; i++)
+			for (int i = 0; i < GrowthStages.Length; i++)
 			{
-				GrowthStages[i] = GrowthStagesOrg[i];
+				_GrowthStages[i] = GrowthStages[i];
 			}
 		}
+
+		private static readonly IMultiplier[] None = new IMultiplier[0];
 	}
 }

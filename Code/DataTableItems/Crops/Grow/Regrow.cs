@@ -1,6 +1,6 @@
 ﻿namespace StardewValleyStonks
 {
-    public class Regrow : Grow, IGrow
+    public class Regrow : Grow
 	{
 		public override bool Regrows => true;
 		public override int RegrowTime { get; }

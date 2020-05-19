@@ -7,24 +7,25 @@
             get => _Year;
             set => _Year = value.WithMin(1);
         }
-        public int StartSeason
+        public Seasons StartSeason
         {
             get => _StartSeason;
             set
             {
-                _StartSeason = value.InRange(1, 4);
+                _StartSeason = value;
                 UpdateSeasons();
             }
         }
-        public int EndSeason
+        public Seasons EndSeason
         {
             get => _EndSeason;
             set
             {
-                _EndSeason = value.InRange(1, 4);
+                _EndSeason = value;
                 UpdateSeasons();
             }
         }
+
         public int StartDay
         {
             get => _StartDay;
@@ -35,15 +36,16 @@
             get => _EndDay;
             set => _EndDay = value.InRange(1, 28);
         }
-        public Season Seasons { get; private set; }
+        public Seasons Seasons { get; private set; }
 
-        private int _Year, _StartSeason, _EndSeason, _StartDay, _EndDay;
+        private Seasons _StartSeason, _EndSeason;
+        private int _Year, _StartDay, _EndDay;
 
         public DateState()
         {
             _Year = 1;
-            _StartSeason = 1;
-            _EndSeason = 3;
+            StartSeason = Seasons.Spring;
+            EndSeason = Seasons.Fall;
             _StartDay = 1;
             _EndDay = 28;
             UpdateSeasons();
@@ -52,7 +54,7 @@
         private void UpdateSeasons()
         {
             Seasons = 0;
-            for (int season = 1 << StartSeason - 1; season < 1 << EndSeason; season <<= 1)
+            for (int season = (int)StartSeason; season < (int)EndSeason << 1; season <<= 1)
             {
                 Seasons += season;
             }

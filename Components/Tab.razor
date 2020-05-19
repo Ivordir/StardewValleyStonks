@@ -1,10 +1,9 @@
-﻿@if (Parent.SelectedTab == this)
+﻿@if (Parent.Tab == this)
 {
 	@ChildContent
 }
 
-@code
-{
+@code {
 	[CascadingParameter]
 	private TabGroup Parent { get; set; }
 
@@ -18,8 +17,9 @@
 	{
 		if (Parent == null)
 		{
-			throw new ArgumentNullException(nameof(Parent), "Tab must exist within a TabGroup");
+			throw new ArgumentNullException(nameof(Parent), "A Tab must exist within a TabGroup");
 		}
+
 		base.OnInitialized();
 		Parent.AddTab(this);
 	}
