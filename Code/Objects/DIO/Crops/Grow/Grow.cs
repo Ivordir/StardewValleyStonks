@@ -6,19 +6,11 @@ namespace StardewValleyStonks
 	{
 		public int[] GrowthStages { get; }
 		public int TotalTime { get; }
-		public IMultiplier[] SpeedMultipliers { get; }
 		public virtual bool Regrows => false;
 		public virtual int RegrowTime => throw new MissingFieldException("This does not regrow");
 
 		public virtual int Time(double speed)
 		{
-			foreach (IMultiplier multiplier in SpeedMultipliers)
-			{
-				if (multiplier.Active)
-				{
-					speed += multiplier.Value;
-				}
-			}
 			if (speed == 0)
 			{
 				return TotalTime;
@@ -53,22 +45,6 @@ namespace StardewValleyStonks
 
 		private readonly int[] _GrowthStages;
 
-		public Grow(
-			int[] growthStages,
-			IMultiplier[] speedMultipliers = null)
-		{
-			GrowthStages = growthStages;
-			for (int i = 0; i < GrowthStages.Length; i++)
-			{
-				TotalTime += GrowthStages[i];
-			}
-
-			_GrowthStages = new int[GrowthStages.Length];
-			ResetGrowthStages();
-
-			SpeedMultipliers = speedMultipliers ?? None;
-		}
-
 		private void ResetGrowthStages()
 		{
 			for (int i = 0; i < GrowthStages.Length; i++)
@@ -77,6 +53,15 @@ namespace StardewValleyStonks
 			}
 		}
 
-		private static readonly IMultiplier[] None = new IMultiplier[0];
+		public Grow(int[] growthStages)
+		{
+			GrowthStages = growthStages;
+			_GrowthStages = new int[GrowthStages.Length];
+			for (int i = 0; i < GrowthStages.Length; i++)
+			{
+				TotalTime += GrowthStages[i];
+				_GrowthStages[i] = GrowthStages[i];
+			}
+		}
 	}
 }

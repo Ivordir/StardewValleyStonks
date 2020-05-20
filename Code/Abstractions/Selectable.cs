@@ -4,7 +4,6 @@
     {
         public virtual bool Selected { get; set; }
         public ICondition[] Conditions { get; }
-
         public bool ConditionsMet
         {
             get
@@ -24,7 +23,9 @@
         }
         public virtual bool Active => Selected && ConditionsMet;
 
-        public Selectable(bool selected = true, ICondition[] conditions = null)
+        public Selectable(
+            bool selected,
+            ICondition[] conditions = null)
         {
             Selected = selected;
             Conditions = conditions ?? None;

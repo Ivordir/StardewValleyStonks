@@ -2,19 +2,19 @@ using System.Collections.Generic;
 
 namespace StardewValleyStonks
 {
-    public class Fertilizer : DataTableItem
+    public class FertilizerDIO : DataTableItem
     {
         public int Quality { get; }
         public double Speed { get; }
 
         public override bool Active => Selected && PriceManager.HasBestItem && BetterFertilizers.Count == 0;
 
-        public List<Fertilizer> BetterFertilizers
+        public List<FertilizerDIO> BetterFertilizers
         {
             get
             {
                 _BetterFertilizers.Clear();
-                foreach(Fertilizer fert in Fertilizers)
+                foreach(FertilizerDIO fert in Fertilizers)
                 {
                     if (fert.Price <= Price && fert.Quality >= Quality && fert.Speed >= Speed
                         && (fert.Price < Price || fert.Quality > Quality || fert.Speed > Speed))
@@ -26,21 +26,21 @@ namespace StardewValleyStonks
             }
         }
 
-        private readonly Fertilizer[] Fertilizers;
-        private readonly List<Fertilizer> _BetterFertilizers;
+        private readonly FertilizerDIO[] Fertilizers;
+        private readonly List<FertilizerDIO> _BetterFertilizers;
 
-        public Fertilizer(
+        public FertilizerDIO(
             string name,
             int quality,
             double speed,
             BestDict<Source, BuyPrice> priceManager,
-            Fertilizer[] fertilizers)
+            FertilizerDIO[] fertilizers)
             : base(name, priceManager)
         {
             Quality = quality;
             Speed = speed;
             Fertilizers = fertilizers;
-            _BetterFertilizers = new List<Fertilizer>();
+            _BetterFertilizers = new List<FertilizerDIO>();
         }
     }
 }

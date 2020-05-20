@@ -12,7 +12,5 @@
         {
             Name = name;
         }
-
-        public override int GetHashCode() => System.HashCode.Combine(Name);
     }
 }

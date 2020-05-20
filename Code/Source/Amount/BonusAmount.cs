@@ -2,12 +2,11 @@
 {
     public class BonusAmount : IAmount
     {
-        public double Value => BaseAmount.Value + Bonus;
+        public double Value => BaseAmount.Value + Bonus.Value;
 
-        private readonly IAmount BaseAmount;
-        private readonly double Bonus;
+        private readonly IAmount BaseAmount, Bonus;
         
-        public BonusAmount(IAmount baseAmount, double bonus)
+        public BonusAmount(IAmount baseAmount, IAmount bonus)
         {
             BaseAmount = baseAmount;
             Bonus = bonus;

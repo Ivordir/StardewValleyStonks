@@ -3,11 +3,11 @@
     public class PlanNode
     {
         public int NumHarvests { get; }
-        public Crop Crop { get; }
-        public Fertilizer Fertilizer { get; }
+        public CropDIO Crop { get; }
+        public FertilizerDIO Fertilizer { get; }
         private readonly PlanNode PrevNode;
 
-        public PlanNode(Crop crop, Fertilizer fertilizer, PlanNode node = null)
+        public PlanNode(CropDIO crop, FertilizerDIO fertilizer, PlanNode node = null)
         {
             Crop = crop;
             Fertilizer = fertilizer;

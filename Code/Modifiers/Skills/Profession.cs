@@ -26,9 +26,18 @@
         }
 
         private readonly Skill Skill;
-        private readonly Profession[] Dependants;
-        private readonly Profession[] Requirements;
-        private readonly Profession[] ExclusiveWith;
+        private readonly Profession[] Dependants, Requirements, ExclusiveWith;
+
+        private void SetAll(Profession[] professions, bool selected)
+        {
+            if (professions != None)
+            {
+                foreach (Profession profession in professions)
+                {
+                    profession.Selected = selected;
+                }
+            }
+        }
 
         public Profession(
             string name,
@@ -44,17 +53,6 @@
             Dependants = dependants ?? None;
             Requirements = requirements ?? None;
             ExclusiveWith = exclusiveWith ?? None;
-        }
-
-        private void SetAll(Profession[] professions, bool selected)
-        {
-            if (professions != None)
-            {
-                foreach (Profession profession in professions)
-                {
-                    profession.Selected = selected;
-                }
-            }
         }
 
         private static readonly Profession[] None = new Profession[0];

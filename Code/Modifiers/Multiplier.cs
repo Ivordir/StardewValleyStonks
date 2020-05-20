@@ -1,11 +1,11 @@
 ﻿namespace StardewValleyStonks
 {
-    public class SelectableMultiplier : Selectable, IMultiplier
+    public class Multiplier : Selectable, IMultiplier
     {
         public string Name { get; }
         public double Value { get; }
 
-        public SelectableMultiplier(
+        public Multiplier(
             string name,
             double value,
             bool selected = true,

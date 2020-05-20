@@ -4,14 +4,11 @@ namespace StardewValleyStonks
 {
     public class SkillsState
     {
-
         public Skill[] Skills { get; }
-
         public Skill Farming { get; }
         public MultiplierProfession Tiller { get; }
         public MultiplierProfession Agriculturist { get; }
         public MultiplierProfession Artisan { get; }
-
         public Skill Foraging { get; }
         public MultiplierProfession Gatherer { get; }
         public Profession Botanist { get; }
@@ -90,62 +87,6 @@ namespace StardewValleyStonks
             botanist[0] = Gatherer;
 
             Skills = new Skill[] { Farming, Foraging };
-
-            //Farming = new Skill(
-            //"Farming",
-            //new Profession[][]
-            //{
-            //    new Profession[] { Tiller },
-            //    new Profession[] { Agriculturist, Artisan }
-            //});
-
-            //Tiller = new MultiplierProfession(
-            //    "Tiller",
-            //    1.1,
-            //    Farming,
-            //    new ICondition[] { new SkillLvlCondition(Farming, 5) },
-            //    new Profession[] { Agriculturist, Artisan });
-
-            //Artisan = new MultiplierProfession(
-            //    "Artisan",
-            //    1.4,
-            //    Farming,
-            //    new ICondition[] { new SkillLvlCondition(Farming, 10) },
-            //    null,
-            //    new Profession[] { Tiller },
-            //    new Profession[] { Agriculturist });
-
-            //Agriculturist = new MultiplierProfession(
-            //    "Agriculturist",
-            //    0.1,
-            //    Farming,
-            //    new ICondition[] { new SkillLvlCondition(Farming, 10) },
-            //    null,
-            //    new Profession[] { Tiller },
-            //    new Profession[] { Artisan });
-
-
-            //Foraging = new Skill(
-            //    "Foraging",
-            //    new Profession[][]
-            //    {
-            //        new Profession[] { Gatherer },
-            //        new Profession[] { Botanist }
-            //    });
-
-            //Gatherer = new MultiplierProfession(
-            //    "Gatherer",
-            //    1.2,
-            //    Foraging,
-            //    new ICondition[] { new SkillLvlCondition(Foraging, 5) },
-            //    new Profession[] { Botanist });
-
-            //Botanist = new Profession(
-            //    "Botanist",
-            //    Foraging,
-            //    new ICondition[] { new SkillLvlCondition(Foraging, 10) },
-            //    null,
-            //    new Profession[] { Gatherer });
         }
     }
 }

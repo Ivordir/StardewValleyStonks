@@ -9,7 +9,6 @@ namespace StardewValleyStonks
         public Dictionary<IItem, int> Inputs { get; }
         public IItem OutputItem { get; }
         public double OutputAmount { get; }
-
         public override bool Active => base.Active && Source.Active;
 
         public double Profit(double output) => OutputItem.Price * output;

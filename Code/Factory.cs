@@ -38,7 +38,7 @@ namespace StardewValleyStonks
 			Products.Add(product.Name, product);
 		}
 
-		public Crop Crop()
+		public CropDIO Crop()
 		{
 			/*
 			bool scythe = false, double extraCropChance = 0, int yield = 1

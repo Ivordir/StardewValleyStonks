@@ -5,16 +5,14 @@ namespace StardewValleyStonks
     public class DataState
     {
         public Quality[] Qualities { get; }
-
-        public Crop[] Crops { get; }
-        public Fertilizer[] Fertilizers { get; }
-
+        public CropDIO[] Crops { get; }
+        public FertilizerDIO[] Fertilizers { get; }
         public Source[] SellSources { get; }
         public Processor[] Processors { get; }
         public Source[] BuySources { get; }
         public Source[] ReplantMethods { get; }
 
-        private readonly SelectableMultiplier Irrigated;
+        private readonly Multiplier Irrigated;
 
         public DataState(SkillsState Skills)
         {
@@ -25,10 +23,10 @@ namespace StardewValleyStonks
                 new Quality("Iridium", 2)
             };
 
-            Irrigated = new SelectableMultiplier("Irrigated", 0.1);
+            Irrigated = new Multiplier("Irrigated", 0.1);
 
-            Crops = new Crop[0];
-            Fertilizers = new Fertilizer[0];
+            Crops = new CropDIO[0];
+            Fertilizers = new FertilizerDIO[0];
 
             Processors = new Processor[4] {
                 new Processor("Preserves Jar"),

@@ -10,25 +10,12 @@ namespace StardewValleyStonks
         public IItem OutputItem { get; }
         public double OutputAmount { get; }
         public double ProfitPerInput => OutputAmount * OutputItem.Price / InputAmount;
-
         public override bool Active => base.Active && Source.Active;
 
-        private readonly IItem InputItem;
-        private readonly int InputAmount;
+        public double MaxOutput(Dictionary<IItem, double> inputs) => 
+            inputs.ContainsKey(OutputItem) ? inputs[OutputItem] : 0;
 
-        public double MaxOutput(Dictionary<IItem, double> inputs)
-        {
-            if (!inputs.ContainsKey(OutputItem))
-            {
-                return 0;
-            }
-            return inputs[OutputItem];
-        }
-
-        public double Profit(double output)
-        {
-            return OutputItem.Price * output;
-        }
+        public double Profit(double output) => OutputItem.Price * output;
 
         public Dictionary<IItem, List<(IProcess, double)>> ConsumeInput(Dictionary<IItem, double> inputs, double output)
         {
@@ -43,10 +30,11 @@ namespace StardewValleyStonks
             };
         }
 
-        public int CompareTo(SingleProcess other)
-        {
-            return ProfitPerInput.CompareTo(other.ProfitPerInput);
-        }
+        public int CompareTo(SingleProcess other) =>
+            ProfitPerInput.CompareTo(other.ProfitPerInput);
+
+        private readonly IItem InputItem;
+        private readonly int InputAmount;
 
         public SingleProcess(
             Source source,

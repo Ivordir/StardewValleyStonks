@@ -47,7 +47,7 @@ namespace StardewValleyStonks
         }
 
         public bool GreenhouseMode { get; set; }
-        public Fertilizer StaringFert { get; set; }
+        public FertilizerDIO StaringFert { get; set; }
 
         private int _LuckBuff;
         private double _GiantCropChecksPerTile, _SeedsFromSeedMaker;

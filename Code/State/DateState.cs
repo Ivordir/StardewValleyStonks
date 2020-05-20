@@ -2,6 +2,7 @@
 {
     public class DateState
     {
+        public Seasons Seasons { get; private set; }
         public int Year
         {
             get => _Year;
@@ -25,7 +26,6 @@
                 UpdateSeasons();
             }
         }
-
         public int StartDay
         {
             get => _StartDay;
@@ -36,10 +36,18 @@
             get => _EndDay;
             set => _EndDay = value.InRange(1, 28);
         }
-        public Seasons Seasons { get; private set; }
 
         private Seasons _StartSeason, _EndSeason;
         private int _Year, _StartDay, _EndDay;
+
+        private void UpdateSeasons()
+        {
+            Seasons = 0;
+            for (int season = (int)StartSeason; season < (int)EndSeason << 1; season <<= 1)
+            {
+                Seasons += season;
+            }
+        }
 
         public DateState()
         {
@@ -49,15 +57,6 @@
             _StartDay = 1;
             _EndDay = 28;
             UpdateSeasons();
-        }
-
-        private void UpdateSeasons()
-        {
-            Seasons = 0;
-            for (int season = (int)StartSeason; season < (int)EndSeason << 1; season <<= 1)
-            {
-                Seasons += season;
-            }
         }
     }
 }

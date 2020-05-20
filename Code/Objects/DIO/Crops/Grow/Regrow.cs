@@ -2,8 +2,8 @@
 {
     public class Regrow : Grow
 	{
-		public override bool Regrows => true;
 		public override int RegrowTime { get; }
+		public override bool Regrows => true;
 
 		public override int HarvestsWithin(int days, double speed = 0)
 		{
@@ -19,9 +19,8 @@
 
 		public Regrow(
 			int[] growthStages,
-			int regrowTime,
-			IMultiplier[] speedMultipliers = null)
-			: base(growthStages, speedMultipliers)
+			int regrowTime)
+			: base(growthStages)
 		{
 			RegrowTime = regrowTime;
 		}

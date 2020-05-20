@@ -1,25 +1,21 @@
-﻿using System.Collections.Generic;
-
-namespace StardewValleyStonks
+﻿namespace StardewValleyStonks
 {
-    public class ForageAmount : BaseCropAmount
+    public class ForageDistribution : ICropDistribution
     {
-		private readonly SkillsState Skills;
-
-		private readonly Dictionary<IItem, Amount> Amounts;
-
-		public override void SetAmounts(int fertQuality = 0)
+		public void SetAmounts(int fertQuality = 0)
 		{
 			double[] dist = Dist;
-			//foreach(ItemAmount[] amount in Amounts)
-			//{
-			//	for (int quality = 0; quality < dist.Length; quality++)
-			//	{
-			//		amount[quality].Amount = dist[quality] * (AvgCrops + AvgExtraCrops) / Amounts.Length;
-			//	}
-			//}
+			foreach (Amount[] distribution in Distributions)
+			{
+				for (int quality = 0; quality < dist.Length; quality++)
+				{
+					distribution[quality].Value = dist[quality] / Distributions.Length;
+				}
+			}
 		}
 
+		private readonly Amount[][] Distributions;
+		private readonly SkillsState Skills;
 		private double[] Dist
 		{
 			get

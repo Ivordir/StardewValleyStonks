@@ -4,38 +4,53 @@ using System.Linq;
 
 namespace StardewValleyStonks
 {
-	public class Crop : DataTableItem
+	public class CropDIO : DataTableItem
 	{
 		public Seasons Seasons { get; }
 		public Seasons SelectedSeasons { get; set; }
 
 		public int[] GrowthStages => Grow.GrowthStages;
 		public int GrowthTime => Grow.TotalTime;
-		public IMultiplier[] GrowthMultipliers => Grow.SpeedMultipliers;
+		public IMultiplier[] SpeedMultipliers { get; }
 		public bool Regrows => Grow.Regrows;
 		public int RegrowTime => Grow.RegrowTime;
 
-		public int GrowthTimeWith(double speed) => Grow.Time(speed);
-		public int HarvestsWithin(int days, double speed = 0) => Grow.HarvestsWithin(days, speed);
-		public int HarvestsWithin(ref int days, double speed = 0) => Grow.HarvestsWithin(ref days, speed);
+		public int GrowthTimeWith(double speed) => Grow.Time(SpeedMultiplier + speed);
+		public int HarvestsWithin(int days, double speed = 0) => Grow.HarvestsWithin(days, SpeedMultiplier + speed);
+		public int HarvestsWithin(ref int days, double speed = 0) => Grow.HarvestsWithin(ref days, SpeedMultiplier + speed);
 
-		private readonly Grow Grow;
+		internal Grow Grow { get; }
+		private double SpeedMultiplier
+		{ 
+			get
+			{
+				double speed = 0;
+				foreach (IMultiplier multiplier in SpeedMultipliers)
+				{
+					if (multiplier.Active)
+					{
+						speed += multiplier.Value;
+					}
+				}
+				return speed;
+			}
+		}
 		private readonly DateState Date;
 		private readonly bool Indoors;
 		//find what should be protected and what should be private
 		//List<IPenalty> Penalties { get; }
-		private readonly ICropAmount CropAmount;
+		private readonly ICropDistribution CropDistribution;
 		private readonly Dictionary<IItem, IAmount> HarvestedItems;
 		private readonly BestList<SingleProcess>[] SingleProcesses;
 		private readonly Process[] Processes;
 		private readonly Process[] Replants;
 		private readonly Source BuySource;
 
-		public Crop(
+		public CropDIO(
 			string name,
 			Seasons seasons,
 			Grow grow,
-			ICropAmount cropAmount,
+			ICropDistribution cropDistribution,
 			Dictionary<IItem, IAmount> harvestedItems,
 			Process[] processes,
 			Process[] replants,
@@ -46,7 +61,7 @@ namespace StardewValleyStonks
 			Seasons = seasons;
 			SelectedSeasons = Seasons;
 			Grow = grow;
-			CropAmount = cropAmount;
+			CropDistribution = cropDistribution;
 			HarvestedItems = harvestedItems;
 			Processes = processes;
 			Replants = replants;
@@ -67,14 +82,14 @@ namespace StardewValleyStonks
 			}
 		}
 
-		public double GoldPerDay(Fertilizer fert)
+		public double GoldPerDay(FertilizerDIO fert)
 		{
 			return Profit(fert.Quality) / Grow.Time(fert.Speed);
 		}
 
 		public virtual double Profit(int fertQuality = 0, int harvests = 1)
 		{
-			CropAmount.SetAmounts(fertQuality);
+			CropDistribution.SetAmounts(fertQuality);
 			//List<ItemAmount> inputs = new List<ItemAmount>();
 			return 0;
 			//return ProfitPerHarvest(fertQuality) * harvests;

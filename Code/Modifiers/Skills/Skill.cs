@@ -3,6 +3,8 @@
     public class Skill
     {
         public string Name { get; }
+        public Profession[][] Professions { get; }
+        public bool IgnoreConflicts { get; set; }
         public int Level
         {
             get => _Level;
@@ -14,18 +16,18 @@
             set => _Buff = value.WithMin(0);
         }
         public int BuffedLevel => _Level + _Buff;
-        public Profession[][] Professions { get; }
-        public bool IgnoreConflicts { get; set; }
 
         private int _Level, _Buff;
 
-        public Skill(string name, Profession[][] professions, int level = 0, int buff = 0, bool ignoreConflicts = false)
+        public Skill(string name,
+            Profession[][] professions,
+            int level = 0,
+            int buff = 0)
         {
             Name = name;
             _Level = level;
             _Buff = buff;
             Professions = professions;
-            IgnoreConflicts = ignoreConflicts;
         }
     }
 }

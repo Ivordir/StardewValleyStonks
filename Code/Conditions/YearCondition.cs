@@ -2,8 +2,8 @@
 {
     public class YearCondition : ICondition
     {
-        public bool IsMet => Override || Date.Year >= Year;
         public bool Override { get; set; }
+        public bool IsMet => Override || Date.Year >= Year;
         public string WarningMessage => $"Available from year {Year} and onwards.";
 
         private readonly DateState Date;
