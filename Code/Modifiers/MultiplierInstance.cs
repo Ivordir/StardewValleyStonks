@@ -1,6 +1,6 @@
 ﻿namespace StardewValleyStonks
 {
-    public class ReferenceMultiplier : IMultiplier
+    public class MultiplierInstance : IMultiplier
     {
         public string Name => Multiplier.Name;
         public double Value => Multiplier.Value;
@@ -11,7 +11,7 @@
 
         private readonly IMultiplier Multiplier;
 
-        public ReferenceMultiplier(
+        public MultiplierInstance(
             IMultiplier multiplier,
             bool selected = false)
         {

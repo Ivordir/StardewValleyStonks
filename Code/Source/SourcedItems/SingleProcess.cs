@@ -9,40 +9,12 @@ namespace StardewValleyStonks
         public Dictionary<IItem, int> Inputs { get; }
         public IItem OutputItem { get; }
         public double OutputAmount { get; }
+        public double ProfitPerInput => OutputAmount * OutputItem.Price / InputAmount;
+
+        public override bool Active => base.Active && Source.Active;
 
         private readonly IItem InputItem;
         private readonly int InputAmount;
-
-        public SingleProcess(
-            Source source,
-            IItem item,
-            ICondition[] conditions = null)
-            : base(true, conditions)
-        {
-            Source = source;
-            Inputs = new Dictionary<IItem, int> { { InputItem, InputAmount } };
-            InputItem = item;
-            InputAmount = 1;
-            OutputItem = item;
-            OutputAmount = 1;
-        }
-
-        public SingleProcess(
-            Source source,
-            IItem input,
-            int inputAmount,
-            IItem output,
-            double outputAmount,
-            ICondition[] conditions = null)
-            : base(true, conditions)
-        {
-            Source = source;
-            Inputs = new Dictionary<IItem, int> { { InputItem, InputAmount } };
-            InputItem = input;
-            InputAmount = inputAmount;
-            OutputItem = output;
-            OutputAmount = outputAmount;
-        }
 
         public double MaxOutput(Dictionary<IItem, double> inputs)
         {
@@ -71,13 +43,40 @@ namespace StardewValleyStonks
             };
         }
 
-        public override bool Active => base.Active && Source.Active;
-
-        public double ProfitPerInput => OutputAmount * OutputItem.Price / InputAmount;
-
         public int CompareTo(SingleProcess other)
         {
             return ProfitPerInput.CompareTo(other.ProfitPerInput);
+        }
+
+        public SingleProcess(
+            Source source,
+            IItem item,
+            ICondition[] conditions = null)
+            : base(true, conditions)
+        {
+            Source = source;
+            InputItem = item;
+            InputAmount = 1;
+            Inputs = new Dictionary<IItem, int> { { InputItem, InputAmount } };
+            OutputItem = item;
+            OutputAmount = 1;
+        }
+
+        public SingleProcess(
+            Source source,
+            IItem input,
+            int inputAmount,
+            IItem output,
+            double outputAmount,
+            ICondition[] conditions = null)
+            : base(true, conditions)
+        {
+            Source = source;
+            InputItem = input;
+            InputAmount = inputAmount;
+            Inputs = new Dictionary<IItem, int> { { InputItem, InputAmount } };
+            OutputItem = output;
+            OutputAmount = outputAmount;
         }
     }
 }

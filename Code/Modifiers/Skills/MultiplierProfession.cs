@@ -16,7 +16,5 @@
         {
             Value = value;
         }
-
-        public MultiplierProfession() : base() { }
     }
 }

@@ -18,6 +18,7 @@ namespace StardewValleyStonks
 
         public SkillsState()
         {
+            //ugly, ugly, ugly! but whatever
             Profession[][] farmingProfessions = new Profession[2][];
             Farming = new Skill(
             "Farming",

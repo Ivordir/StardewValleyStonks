@@ -10,7 +10,7 @@ namespace StardewValleyStonks
         public Source Source { get; }
 
         public double MaxOutput(Dictionary<IItem, double> inputs);
-        public double Profit(double maxOutput);
+        public double Profit(double output);
         public Dictionary<IItem, List<(IProcess, double)>> ConsumeInput(Dictionary<IItem, double> inputs, double output);
     }
 }

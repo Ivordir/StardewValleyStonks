@@ -10,24 +10,9 @@ namespace StardewValleyStonks
         public IItem OutputItem { get; }
         public double OutputAmount { get; }
 
-        public Process(
-            Source processor,
-            Dictionary<IItem, int> inputs,
-            IItem outputItem,
-            double outputAmount,
-            ICondition[] conditions = null)
-            : base(true, conditions)
-        {
-            Source = processor;
-            Inputs = inputs;
-            OutputItem = outputItem;
-            OutputAmount = outputAmount;
-        }
+        public override bool Active => base.Active && Source.Active;
 
-        public double Profit(double output)
-        {
-            return OutputItem.Price * output;
-        }
+        public double Profit(double output) => OutputItem.Price * output;
 
         public double MaxOutput(Dictionary<IItem, double> inputs)
         {
@@ -44,18 +29,30 @@ namespace StardewValleyStonks
         public Dictionary<IItem, List<(IProcess, double)>> ConsumeInput(Dictionary<IItem, double> inputs, double output)
         {
             Dictionary<IItem, List<(IProcess, double)>> consumed = new Dictionary<IItem, List<(IProcess, double)>>();
-            foreach (IItem requiredInput in Inputs.Keys)
+            foreach (IItem requiredItem in Inputs.Keys)
             {
-                inputs[requiredInput] -= output * Inputs[requiredInput];
-                consumed.Add(requiredInput, new List<(IProcess, double)> { (this, output * Inputs[requiredInput]) });
-                if (inputs[requiredInput] == 0)
+                inputs[requiredItem] -= output * Inputs[requiredItem];
+                consumed.Add(requiredItem, new List<(IProcess, double)> { (this, output * Inputs[requiredItem]) });
+                if (inputs[requiredItem] == 0)
                 {
-                    inputs.Remove(requiredInput);
+                    inputs.Remove(requiredItem);
                 }
             }
             return consumed;
         }
 
-        public override bool Active => base.Active && Source.Active;
+        public Process(
+            Source processor,
+            Dictionary<IItem, int> inputs,
+            IItem outputItem,
+            double outputAmount,
+            ICondition[] conditions = null)
+            : base(true, conditions)
+        {
+            Source = processor;
+            Inputs = inputs;
+            OutputItem = outputItem;
+            OutputAmount = outputAmount;
+        }
     }
 }

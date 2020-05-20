@@ -2,8 +2,6 @@
 {
     public abstract class Selectable : ISelectable
     {
-        private static readonly ICondition[] None = new ICondition[0];
-
         public virtual bool Selected { get; set; }
         public ICondition[] Conditions { get; }
 
@@ -32,10 +30,12 @@
             Conditions = conditions ?? None;
         }
 
-        //initialize selected in derived class
+        //initialize selected in derived class or keep default false value
         protected Selectable(ICondition[] conditions = null)
         {
             Conditions = conditions ?? None;
         }
+
+        private static readonly ICondition[] None = new ICondition[0];
     }
 }

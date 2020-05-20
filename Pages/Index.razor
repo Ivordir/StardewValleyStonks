@@ -27,6 +27,22 @@
 						</td>
 					</tr>
 				</table>*@
+				<!---
+					summary:
+						select
+						name
+						image
+						g/day
+						growth time
+						regrow time
+						seed price and source
+						(selected)seasons?
+					edit:
+						selected seasons, growth multipliers
+						seed sources
+						processes
+						replant
+				-->
 			</Tab>
 			<Tab Name="Fertilizer">
 				@*<table class="data-table">
@@ -48,6 +64,15 @@
 						</td>
 					</tr>
 				</table>*@
+				<!---
+					fert:
+						select
+						name
+						image
+						quality
+						speed
+						price and source
+				-->
 			</Tab>
 		</TabGroup>
 	</div>
@@ -115,7 +140,7 @@
 			</label>
 		}
 	</div>
-	<div class="date-settings">
+	<div class="date-input">
 		@if (Date.StartSeason > Date.EndSeason || Date.StartSeason == Date.EndSeason && Date.StartDay >= Date.EndDay)
 		{
 			<span>The start date cannot be on or after the end date.</span>
@@ -143,12 +168,37 @@
 	</div>
 	<div class="bottom-row">
 		<button class="switch-input-output" @onclick="@(() => Nav.NavigateTo("output"))">
-			Back to Plans
+			View Plans
 		</button>
-		
+		<button class="calculate">
+			Calculate Plans
+		</button>
 		<button class="help-button" @onclick="@(() => Nav.NavigateTo("help"))">
 			Help
 		</button>
 	</div>
 
+</div>
+<div class="extra-settings">
+
+	<!--
+		special charm
+		luck buff
+		global seeds
+		seed probability
+		bool quality seed maker
+			| seeds by quality
+		giantcrop
+		starting fert
+
+		ignore conditions
+		ignore profession conflicts
+
+		the dreaded settings:
+			midseason fert change
+			multi-regrow crops per season
+			pair trelis crops with another crop
+				trelis penalty/percent of land given to other crop
+			
+	-->
 </div>

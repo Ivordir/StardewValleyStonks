@@ -1,17 +1,9 @@
-﻿using System.Collections.Generic;
-
-namespace StardewValleyStonks
+﻿namespace StardewValleyStonks
 {
     public class Profession : Selectable
     {
-        private static readonly Profession[] None = new Profession[0];
-
         public string Name { get; }
-        private readonly Profession[] Dependants;
-        private readonly Profession[] Requirements;
-        private readonly Profession[] ExclusiveWith;
 
-        private readonly Skill Skill;
         public override bool Selected
         {
             get => base.Selected;
@@ -33,6 +25,11 @@ namespace StardewValleyStonks
             }
         }
 
+        private readonly Skill Skill;
+        private readonly Profession[] Dependants;
+        private readonly Profession[] Requirements;
+        private readonly Profession[] ExclusiveWith;
+
         public Profession(
             string name,
             Skill skill,
@@ -49,8 +46,6 @@ namespace StardewValleyStonks
             ExclusiveWith = exclusiveWith ?? None;
         }
 
-        public Profession() : base(false) { }
-
         private void SetAll(Profession[] professions, bool selected)
         {
             if (professions != None)
@@ -61,5 +56,7 @@ namespace StardewValleyStonks
                 }
             }
         }
+
+        private static readonly Profession[] None = new Profession[0];
     }
 }

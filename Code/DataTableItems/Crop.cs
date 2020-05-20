@@ -11,6 +11,7 @@ namespace StardewValleyStonks
 
 		public int[] GrowthStages => Grow.GrowthStages;
 		public int GrowthTime => Grow.TotalTime;
+		public IMultiplier[] GrowthMultipliers => Grow.SpeedMultipliers;
 		public bool Regrows => Grow.Regrows;
 		public int RegrowTime => Grow.RegrowTime;
 

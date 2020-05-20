@@ -32,8 +32,8 @@ namespace StardewValleyStonks
         public bool HasBestItem => BestItems.Count != 0;
         public bool HasSource(TSource source) => Dict.ContainsKey(source);
         public TItem this[TSource source] => Dict[source];
-        public Dictionary<TSource, TItem>.KeyCollection Sources => Dict.Keys;
-        public Dictionary<TSource, TItem>.ValueCollection Items => Dict.Values;
+        public Dictionary<TSource, TItem>.KeyCollection Keys => Dict.Keys;
+        public Dictionary<TSource, TItem>.ValueCollection Values => Dict.Values;
 
         private readonly Dictionary<TSource, TItem> Dict;
         private readonly List<TItem> _BestItems;
