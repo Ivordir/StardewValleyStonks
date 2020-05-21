@@ -1,4 +1,4 @@
-﻿<button class=@ButtonClass @onclick=@( () => Toggle() )>
+﻿<button class=@ButtonClass @onclick=Toggle>
 	@ChildContent
 </button>
 
@@ -13,15 +13,16 @@
 	public string ToggledClass { get; set; }
 
 	[Parameter]
-	public bool Toggled { get; set; }
+	public bool Value { get; set; }
 
 	[Parameter]
-	public EventCallback<bool> ToggledChanged { get; set; }
+	public EventCallback<bool> ValueChanged { get; set; }
 
-	public void Toggle()
+	private void Toggle()
 	{
-		Toggled = !Toggled;
+		Value = !Value;
+		ValueChanged.InvokeAsync(Value);
 	}
 
-	public string ButtonClass => Toggled ? ToggledClass : UntoggledClass;
+	private string ButtonClass => Value ? ToggledClass : UntoggledClass;
 }

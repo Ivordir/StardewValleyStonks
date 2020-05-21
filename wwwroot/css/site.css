@@ -26,6 +26,12 @@ footer {
   display: grid;
   grid-template-columns: 1fr repeat(4, minmax(50px, 0.40451fr)); }
 
+.toggle-button {
+  background-color: white; }
+
+.toggled-button {
+  background-color: wheat; }
+
 .editor-tab {
   float: left; }
 

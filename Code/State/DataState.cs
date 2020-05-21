@@ -63,7 +63,6 @@ namespace StardewValleyStonks
 
         public DataState(SkillsState skills, SettingsState settings, DateState date, IConfiguration config)
         {
-            Console.WriteLine(config.GetSection("ConnectionStrings")["DefaultConnection"]);
             Skills = skills;
 
             ForageDistribution = new RefValue[4];

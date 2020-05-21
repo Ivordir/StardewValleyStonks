@@ -111,23 +111,23 @@
 		<TabGroup Class="skills" ActiveTab="active-tab" InactiveTab="inactive-tab">
 			@foreach (Skill skill in Skills.Skills)
 			{
-				<Tab Name=@skill.Name>
-					<label class="input-label">
-						@skill.Name Level:
-						<input type="number" class="number-input" @bind=skill.Level>
-					</label>
-					@foreach (Profession[] professions in skill.Professions)
+			<Tab Name=@skill.Name>
+				<label class="input-label">
+					@skill.Name Level:
+					<input type="number" class="number-input" @bind=skill.Level>
+				</label>
+				@foreach (Profession[] professions in skill.Professions)
+				{
+					@foreach (Profession profession in professions)
 					{
-						@foreach (Profession profession in professions)
-						{
-							<ToggleButton ToggledClass="toggled" UntoggledClass="untoggled" @bind-Toggled=profession.Selected>
-								Image
-								@profession.Name
-							</ToggleButton>
-						}
-						<br />
+						<ToggleButton ToggledClass="toggled-button" UntoggledClass="toggle-button" @bind-Value=profession.Selected>
+							Image
+							@profession.Name
+						</ToggleButton>
 					}
-				</Tab>
+					<br />
+				}
+			</Tab>
 			}
 		</TabGroup>
 	</div>

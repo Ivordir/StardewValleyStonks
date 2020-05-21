@@ -37,7 +37,7 @@
 		}
 	}
 
-	private string ButtonClass(Tab tab) => tab == Tab ? "btn-primary" : "btn-secondary";
+	private string ButtonClass(Tab tab) => tab == Tab ? ActiveTab : InactiveTab;
 
 	private void SwitchTab(Tab tab) => Tab = tab;
 }
