@@ -1,6 +1,6 @@
 ﻿namespace StardewValleyStonks
 {
-    public interface IAmount
+    public interface IValue
     {
         public double Value { get; }
     }

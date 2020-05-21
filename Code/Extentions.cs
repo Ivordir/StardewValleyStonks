@@ -1,10 +1,31 @@
-﻿namespace StardewValleyStonks
+﻿using System;
+using System.Collections.Concurrent;
+
+namespace StardewValleyStonks
 {
     public static class Extentions
     {
+        public static Func<X, T> Memoize<X, T>(this Func<X, T> f)
+        {
+            ConcurrentDictionary<X, T> cache = new ConcurrentDictionary<X, T>();
+            return x => cache.GetOrAdd(x, f(x));
+        }
+
+        public static Func<X, Y, T> Memoize<X, Y, T>(this Func<X, Y, T> f)
+        {
+            ConcurrentDictionary<(X, Y), T> cache = new ConcurrentDictionary<(X, Y), T>();
+            return (x, y) => cache.GetOrAdd((x ,y), f(x, y));
+        }
+
+        public static Func<X, Y, Z, T> Memoize<X, Y, Z, T>(this Func<X, Y, Z, T> f)
+        {
+            ConcurrentDictionary<(X, Y, Z), T> cache = new ConcurrentDictionary<(X, Y, Z), T>();
+            return (x, y, z) => cache.GetOrAdd((x, y, z), f(x, y, z));
+        }
+
         public static int Price(this BestDict<Source, BuyPrice> bestFinder)
         {
-            return bestFinder.HasBestItem ? bestFinder.BestItems[0].Price : -1;
+            return bestFinder.HasBestItem ? bestFinder.BestItems[0].Price : 0;
         }
 
         public static int InRange(this int value, int min, int max)

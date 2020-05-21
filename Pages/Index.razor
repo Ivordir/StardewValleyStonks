@@ -7,7 +7,7 @@
 
 <div class="input-grid">
 	<div class="editor">
-		<TabGroup Class="tabgroup" ActiveTab="active-tab" InactiveTab="inactive-tab">
+		<TabGroup Class="tabgroup" ActiveTab="editor-tab-active" InactiveTab="editor-tab">
 			<Tab Name="Crop">
 				@*<table class="data-table">
 					<tr>
@@ -32,7 +32,6 @@
 						select
 						name
 						image
-						g/day
 						growth time
 						regrow time
 						seed price and source
@@ -45,25 +44,50 @@
 				-->
 			</Tab>
 			<Tab Name="Fertilizer">
-				@*<table class="data-table">
+				<table class="data-table">
 					<tr>
 						<th></th>
-						<th>Image and Name</th>
+						<th>Image</th>
+						<th>Name</th>
 						<th>Price and Source</th>
+						<th>Quality</th>
+						<th>Speed</th>
 					</tr>
-					<tr>
-						<td><label class="entry-checkbox-label"><input type="checkbox" class="entry-checkbox" checked><span class="entry-checkbox-background"></span></label></td>
-						<td>Image and Name</td>
-						<td>
-							<select class="source-selector">
-								<option value="Pierre" class="source-option">Pierre</option>
-								<option value="Jojo" class="source-option">Jojo</option>
-								<option value="Oasis" class="source-option">Oasis</option>
-							</select>
-							<label class="lock-checkbox-label"><input type="checkbox" class="lock-checkbox"><span class="lock-checkbox-background"></span></label>
-						</td>
-					</tr>
-				</table>*@
+					@foreach (FertilizerDIO fertilizer in Data.Fertilizers)
+					{
+						<tr>
+							<td>
+								<label class="entry-checkbox-label">
+									<input type="checkbox" class="entry-checkbox" @bind=fertilizer.Selected>
+									<span class="entry-checkbox-background"></span>
+								</label>
+							</td>
+							<td>Image</td>
+							<td>@fertilizer.Name</td>
+							<td>
+								@if (fertilizer.HasPrice)
+								{
+									<span>
+										@fertilizer.BestPrices[0].Price
+										(@fertilizer.BestPrices[0].Source.Name)
+									</span>
+								}
+								else
+								{
+									<span>???</span>
+								}
+								@*<select class="source-selector">
+									@foreach (Source source in fertilizer.Sources)
+									{
+										<option>@source.Name</option>
+									}
+								</select>*@
+							</td>
+							<td>@fertilizer.Quality</td>
+							<td>@fertilizer.Speed</td>
+						</tr>
+					}
+				</table>
 				<!---
 					fert:
 						select
@@ -140,7 +164,7 @@
 			</label>
 		}
 	</div>
-	<div class="date-input">
+	<div class="date">
 		@if (Date.StartSeason > Date.EndSeason || Date.StartSeason == Date.EndSeason && Date.StartDay >= Date.EndDay)
 		{
 			<span>The start date cannot be on or after the end date.</span>
@@ -177,7 +201,6 @@
 			Help
 		</button>
 	</div>
-
 </div>
 <div class="extra-settings">
 

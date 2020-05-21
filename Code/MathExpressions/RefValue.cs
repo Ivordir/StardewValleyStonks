@@ -1,10 +1,10 @@
 ﻿namespace StardewValleyStonks
 {
-    public class Amount : IAmount
+    public class RefValue : IValue
     {
         public double Value { get; set; }
 
-        public Amount(double value)
+        public RefValue(double value)
         {
             Value = value;
         }

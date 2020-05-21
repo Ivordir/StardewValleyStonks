@@ -15,11 +15,12 @@ namespace StardewValleyStonks
 
         public BuyPrice(
             int price,
-            bool enabled = true,
+            Source source,
             ICondition[] conditions = null)
-            : base(enabled, conditions)
+            : base(true, conditions)
         {
             Price = price;
+            Source = source;
         }
     }
 }

@@ -6,6 +6,7 @@ namespace StardewValleyStonks
 	{
 		public string Name { get; }
 		public int Price => PriceManager.Price();
+		public Dictionary<Source, BuyPrice>.KeyCollection Sources => PriceManager.Keys;
 		public bool HasPrice => PriceManager.HasBestItem;
 		public List<BuyPrice> BestPrices => PriceManager.BestItems;
 		public BestDict<Source, BuyPrice> PriceManager { get; }

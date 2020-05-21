@@ -16,11 +16,21 @@
 
         private readonly Grow Grow;
         private readonly double SpeedMultiplier;
+        private readonly Source BuySource;
+        private readonly RefValue[] Distribution;
 
-        public Crop(CropDIO crop)
+        public Crop(CropDIO crop, Source buySource)
         {
             Name = crop.Name;
             Grow = crop.Grow;
+            foreach(IMultiplier multiplier in crop.SpeedMultipliers)
+            {
+                if (multiplier.Active)
+                {
+                    SpeedMultiplier += multiplier.Value;
+                }
+            }
+            BuySource = buySource; //needs to be a copy from factory
         }
     }
 }

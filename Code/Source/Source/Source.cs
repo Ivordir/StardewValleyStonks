@@ -6,9 +6,8 @@
 
         public Source(
             string name,
-            bool enabled = true,
             ICondition[] conditions = null)
-            : base(enabled, conditions)
+            : base(true, conditions)
         {
             Name = name;
         }

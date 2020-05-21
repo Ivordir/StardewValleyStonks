@@ -1,4 +1,6 @@
-﻿namespace StardewValleyStonks
+﻿using System.Diagnostics.Tracing;
+
+namespace StardewValleyStonks
 {
     public class Fertilizer
     {
@@ -21,5 +23,21 @@
                 Sources[i] = prices[i].Source;
             }
         }
+
+        public Fertilizer(
+            string name,
+            int quality,
+            double speed,
+            int price,
+            Source[] sources = null)
+        {
+            Name = name;
+            Quality = quality;
+            Speed = speed;
+            Price = price;
+            Sources = sources ?? NoSource;
+        }
+
+        private static readonly Source[] NoSource = new Source[0];
     }
 }

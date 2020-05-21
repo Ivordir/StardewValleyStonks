@@ -9,63 +9,36 @@ namespace StardewValleyStonks
 		public Seasons Seasons { get; }
 		public Seasons SelectedSeasons { get; set; }
 
-		public int[] GrowthStages => Grow.GrowthStages;
 		public int GrowthTime => Grow.TotalTime;
 		public IMultiplier[] SpeedMultipliers { get; }
 		public bool Regrows => Grow.Regrows;
 		public int RegrowTime => Grow.RegrowTime;
 
-		public int GrowthTimeWith(double speed) => Grow.Time(SpeedMultiplier + speed);
-		public int HarvestsWithin(int days, double speed = 0) => Grow.HarvestsWithin(days, SpeedMultiplier + speed);
-		public int HarvestsWithin(ref int days, double speed = 0) => Grow.HarvestsWithin(ref days, SpeedMultiplier + speed);
-
 		internal Grow Grow { get; }
-		private double SpeedMultiplier
-		{ 
-			get
-			{
-				double speed = 0;
-				foreach (IMultiplier multiplier in SpeedMultipliers)
-				{
-					if (multiplier.Active)
-					{
-						speed += multiplier.Value;
-					}
-				}
-				return speed;
-			}
-		}
 		private readonly DateState Date;
 		private readonly bool Indoors;
-		//find what should be protected and what should be private
-		//List<IPenalty> Penalties { get; }
-		private readonly ICropDistribution CropDistribution;
-		private readonly Dictionary<IItem, IAmount> HarvestedItems;
+		private readonly RefValue[] CropDistribution;
+		private readonly Dictionary<IItem, IValue> HarvestedItems;
 		private readonly BestList<SingleProcess>[] SingleProcesses;
 		private readonly Process[] Processes;
 		private readonly Process[] Replants;
-		private readonly Source BuySource;
 
 		public CropDIO(
 			string name,
 			Seasons seasons,
 			Grow grow,
-			ICropDistribution cropDistribution,
-			Dictionary<IItem, IAmount> harvestedItems,
+			Dictionary<IItem, IValue> harvestedItems,
 			Process[] processes,
 			Process[] replants,
-			Source buySource,
 			BestDict<Source, BuyPrice> priceManager)
 			: base(name, priceManager)
 		{
 			Seasons = seasons;
 			SelectedSeasons = Seasons;
 			Grow = grow;
-			CropDistribution = cropDistribution;
 			HarvestedItems = harvestedItems;
 			Processes = processes;
 			Replants = replants;
-			BuySource = buySource;
 		}
 
 		public override bool Active
@@ -82,14 +55,9 @@ namespace StardewValleyStonks
 			}
 		}
 
-		public double GoldPerDay(FertilizerDIO fert)
-		{
-			return Profit(fert.Quality) / Grow.Time(fert.Speed);
-		}
-
 		public virtual double Profit(int fertQuality = 0, int harvests = 1)
 		{
-			CropDistribution.SetAmounts(fertQuality);
+			//CropDistribution.SetAmounts(fertQuality);
 			//List<ItemAmount> inputs = new List<ItemAmount>();
 			return 0;
 			//return ProfitPerHarvest(fertQuality) * harvests;
@@ -106,7 +74,7 @@ namespace StardewValleyStonks
 				}
 				List<(SoldItems, ReplantMethod)> best = new List<(SoldItems, ReplantMethod)> { (new SoldItems(null, 0), null) };
 				List<ReplantMethod> replantMethods = ReplantMethods(inputs);
-				if (PriceManager.HasBestItem && BuySource.Active)
+				if (PriceManager.HasBestItem)// && BuySource.Active)
 				{
 					replantMethods.Add(new ReplantMethod(new Dictionary<IItem, List<(IProcess, double)>>(), 1, inputs));
 				}
@@ -124,7 +92,7 @@ namespace StardewValleyStonks
 				foreach (ReplantMethod method in replantMethods)
 				{
 					List<SoldItems> items = SoldMethod(method.LeftOver);
-					if (PriceManager.HasBestItem && BuySource.Active)
+					if (PriceManager.HasBestItem)// && BuySource.Active)
 					{
 						foreach (SoldItems item in items)
 						{

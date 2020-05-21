@@ -7,9 +7,8 @@
         public Processor(
             string name,
             bool preservesQuality = false,
-            bool enabled = true,
             ICondition[] conditions = null)
-            : base(name, enabled, conditions)
+            : base(name, conditions)
         {
             PreservesQuality = preservesQuality;
         }

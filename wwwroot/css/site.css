@@ -29,6 +29,10 @@ footer {
 .editor-tab {
   float: left; }
 
+.editor-tab-active {
+  float: left;
+  background-color: burlywood; }
+
 .editor {
   background-color: red;
   grid-column: 1;
@@ -66,7 +70,7 @@ footer {
   grid-row: 2;
   grid-column: 5; }
 
-.non-greenhouse-settings {
+.date {
   grid-row: 3;
   grid-column: 2/span 5; }
 
@@ -118,59 +122,6 @@ footer {
   display: block; }
 
 .entry-checkbox-label .entry-checkbox-background:after {
-  left: 8px;
-  bottom: 5px;
-  width: 6px;
-  height: 12px;
-  border: solid white;
-  border-width: 0 4px 4px 0;
-  transform: rotate(45deg); }
-
-.lock-checkbox {
-  visibility: hidden;
-  position: absolute;
-  left: 1px;
-  right: 1px;
-  height: 25px;
-  width: 25px;
-  margin: 0px; }
-
-.lock-checkbox-label {
-  display: block;
-  position: relative;
-  cursor: pointer;
-  height: 27px;
-  width: 27px;
-  margin: auto;
-  float: right; }
-
-.lock-checkbox-label:hover input ~ .lock-checkbox-background {
-  background-color: gray; }
-
-.lock-checkbox-label input:active ~ .lock-checkbox-background {
-  background-color: white; }
-
-.lock-checkbox-label input:checked ~ .lock-checkbox-background {
-  background-color: green; }
-
-.lock-checkbox-background {
-  position: absolute;
-  height: 25px;
-  width: 25px;
-  border-style: solid;
-  border-width: 1px;
-  background-color: white;
-  border-color: black; }
-
-.lock-checkbox-background:after {
-  content: "";
-  position: absolute;
-  display: none; }
-
-.lock-checkbox-label input:checked ~ .lock-checkbox-background:after {
-  display: block; }
-
-.lock-checkbox-label .lock-checkbox-background:after {
   left: 8px;
   bottom: 5px;
   width: 6px;
@@ -292,13 +243,6 @@ footer {
 
 .source-option {
   background-color: gray; }
-
-.preset-selector {
-  background-color: white;
-  float: right; }
-
-.preset-option {
-  background-color: white; }
 
 .number-inout {
   float: left; }
