@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Text;
 
 namespace StardewValleyStonks
 {
@@ -87,6 +88,16 @@ namespace StardewValleyStonks
                 return max;
             }
             return value;
+        }
+
+        public static string Repeat(this string str, int num)
+        {
+            string repeat = "";
+            for (int i = 0; i < num; i++)
+            {
+                repeat += str;
+            }
+            return repeat;
         }
     }
 }

@@ -35,15 +35,15 @@ namespace StardewValleyStonks
         private readonly List<T> _BestItems;
         private readonly List<T> Items;
 
+        private int Compare(T item)
+        {
+            return _BestItems[0].CompareTo(item);
+        }
+
         public BestList(List<T> items)
         {
             Items = items;
             _BestItems = new List<T>();
-        }
-
-        private int Compare(T item)
-        {
-            return _BestItems[0].CompareTo(item);
         }
     }
 }

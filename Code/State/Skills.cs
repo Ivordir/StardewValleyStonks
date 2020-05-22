@@ -1,10 +1,9 @@
-﻿using System;
+﻿using System.Collections;
 
 namespace StardewValleyStonks
 {
-    public class SkillsState
+    public class Skills : IEnumerable
     {
-        public Skill[] Skills { get; }
         public Skill Farming { get; }
         public MultiplierProfession Tiller { get; }
         public MultiplierProfession Agriculturist { get; }
@@ -12,10 +11,15 @@ namespace StardewValleyStonks
         public Skill Foraging { get; }
         public MultiplierProfession Gatherer { get; }
         public Profession Botanist { get; }
+        public bool IgnoreConflicts { get; set; }
 
-        public SkillsState()
+        public Skill this[int index] => _Skills[index];
+        IEnumerator IEnumerable.GetEnumerator() => _Skills.GetEnumerator();
+
+        private readonly Skill[] _Skills;
+
+        public Skills()
         {
-            //ugly, ugly, ugly! but whatever
             Profession[][] farmingProfessions = new Profession[2][];
             Farming = new Skill(
             "Farming",
@@ -25,7 +29,7 @@ namespace StardewValleyStonks
             Tiller = new MultiplierProfession(
                 "Tiller",
                 1.1,
-                Farming,
+                this,
                 new ICondition[] { new SkillLvlCondition(Farming, 5) },
                 tiller);
 
@@ -34,7 +38,7 @@ namespace StardewValleyStonks
             Artisan = new MultiplierProfession(
                 "Artisan",
                 1.4,
-                Farming,
+                this,
                 new ICondition[] { new SkillLvlCondition(Farming, 10) },
                 null,
                 artisanRequirements,
@@ -45,7 +49,7 @@ namespace StardewValleyStonks
             Agriculturist = new MultiplierProfession(
                 "Agriculturist",
                 0.1,
-                Farming,
+                this,
                 new ICondition[] { new SkillLvlCondition(Farming, 10) },
                 null,
                 agriculturistRequirements,
@@ -69,14 +73,14 @@ namespace StardewValleyStonks
             Gatherer = new MultiplierProfession(
                 "Gatherer",
                 1.2,
-                Foraging,
+                this,
                 new ICondition[] { new SkillLvlCondition(Foraging, 5) },
                 gatherer);
 
             Profession[] botanist = new Profession[1];
             Botanist = new Profession(
                 "Botanist",
-                Foraging,
+                this,
                 new ICondition[] { new SkillLvlCondition(Foraging, 10) },
                 null,
                 botanist);
@@ -86,7 +90,7 @@ namespace StardewValleyStonks
             gatherer[0] = Botanist;
             botanist[0] = Gatherer;
 
-            Skills = new Skill[] { Farming, Foraging };
+            _Skills = new Skill[] { Farming, Foraging };
         }
     }
 }

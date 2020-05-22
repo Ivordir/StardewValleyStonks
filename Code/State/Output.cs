@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 
 namespace StardewValleyStonks
 {
-    public class OutputState
+    public class Output
     {
         //StaticCrop[] Crops;
         //StaticRegrowCrop[] RegrowCrops;
@@ -12,7 +11,13 @@ namespace StardewValleyStonks
         private int FarmBuffLevel;
         private readonly Fertilizer NoFertilizer = new Fertilizer("None", 0, 0, 0);
 
-        Func<int, int, double[]> QualityDistribution =
+
+        public Output()
+        {
+
+        }
+
+        private static Func<int, int, double[]> QualityDistribution =
             new Func<int, int, double[]>((fertQuality, FarmBuffLevel) =>
             {
                 double[] dist = new double[3];
@@ -21,10 +26,5 @@ namespace StardewValleyStonks
                 dist[0] = 1 - dist[1] - dist[2];
                 return dist;
             }).Memoize();
-
-        public OutputState()
-        {
-
-        }
     }
 }

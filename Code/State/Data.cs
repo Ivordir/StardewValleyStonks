@@ -1,10 +1,11 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Binder;
 using System;
 using System.Collections.Generic;
 
 namespace StardewValleyStonks
 {
-    public class DataState
+    public class Data
     {
         public Quality[] Qualities { get; }
         public CropDIO[] Crops { get; }
@@ -14,8 +15,7 @@ namespace StardewValleyStonks
         public Source[] BuySources { get; }
         public Source[] ReplantMethods { get; }
 
-        private readonly SkillsState Skills;
-        private readonly RefValue QualityCrops;
+        private readonly Skills Skills;
         private readonly RefValue[] ForageDistribution;
         private readonly Func<int, RefValue[], IValue[]> ForageAmounts =
             new Func<int, RefValue[], IValue[]>((NumChoices, ForageDistribution) =>
@@ -61,7 +61,7 @@ namespace StardewValleyStonks
             }
         }
 
-        public DataState(SkillsState skills, SettingsState settings, DateState date, IConfiguration config)
+        public Data(Skills skills, Settings settings, Date date, IConfiguration config)
         {
             Skills = skills;
 
@@ -71,55 +71,6 @@ namespace StardewValleyStonks
                 ForageDistribution[i] = new RefValue(0);
             }
 
-            QualityCrops = new RefValue(1);
-            if (true) //cropItems.Length == 1
-            {
-                IValue qualityCrops = QualityCrops;
-                IValue normalCrops;
-                if (true) //has doublechance
-                {
-                    double extra = 0;
-                    RefValue e = new RefValue(extra);
-                    //normalCrops = P(d) * e + P(d) + e
-                    normalCrops = new Expression(new IValue[]
-                    {
-                    new Term(new IValue[] { settings.DoubleCropProb, e }),
-                    settings.DoubleCropProb,
-                    e
-                    });
-                }
-                if (true) //is giantcrop
-                {
-                    //qualityCrops = P(!giantcrop)
-                    qualityCrops = settings.NoGiantCropProb;
-                    //normalCrops = previousNormalCrops * P(!giantcrop) + GiantCrops
-                    normalCrops = new Expression(new IValue[]
-                    {
-                    new Term(new IValue[]
-                    {
-                        normalCrops,
-                        settings.NoGiantCropProb
-                    }),
-                    settings.GiantCrops
-                    });
-                }
-                RefValue[] distribution = new RefValue[3]
-                {
-                    new RefValue(0),
-                    new RefValue(0),
-                    new RefValue(0),
-                };
-                IValue[] cropAmounts = new IValue[3]
-                {
-                    new Expression(new IValue[]
-                    {
-                        new Term(new IValue[] { qualityCrops, distribution[0] }),
-                        normalCrops
-                    }),
-                    new Term(new IValue[] { qualityCrops, distribution[1] }),
-                    new Term(new IValue[] { qualityCrops, distribution[2] })
-                };
-            }
             if(true) //forage crop
             {
                 int numChoices = 4; //cropItems.Length
@@ -134,20 +85,20 @@ namespace StardewValleyStonks
             };
 
             Processors = new Processor[4] {
-                new Processor("Preserves Jar"),
-                new Processor("Keg"),
-                new Processor("Oil Maker"),
+                new Processor("Preserves Jar", new ICondition[]{ new SkillLvlCondition(Skills.Farming, 4)}),
+                new Processor("Keg", new ICondition[]{ new SkillLvlCondition(Skills.Farming, 8)}),
+                new Processor("Oil Maker", new ICondition[]{ new SkillLvlCondition(Skills.Farming, 8)}),
                 new Processor("Mill"),
             };
 
             SellSources = new Source[6]
             {
-                new Processor("Raw Crop"),
+                new Source("Raw Crop"),
                 Processors[0],
                 Processors[1],
                 Processors[2],
                 Processors[3],
-                new Processor("Seeds")
+                new Source("Seeds")
             };
 
             BuySources = new Source[5] {
@@ -178,12 +129,37 @@ namespace StardewValleyStonks
             Dictionary<string, Source> buySources = SourceDictionary(BuySources);
             Dictionary<string, Source> replantMethods = SourceDictionary(ReplantMethods);
             Dictionary<string, Skill> skillDict = new Dictionary<string, Skill>();
-            foreach(Skill skill in Skills.Skills)
+            foreach(Skill skill in Skills)
             {
                 skillDict.Add(skill.Name, skill);
             }
 
+            List<CropDIO> crops = new List<CropDIO>();
+            //foreach(IConfigurationSection crop in config.GetSection("Crops").GetChildren())
+            //{
+            //    Grow grow;
+            //    IConfigurationSection regrow = crop.GetSection("Regrow");
+            //    if(regrow.Exists())
+            //    {
+            //        grow = new Regrow(
+            //            crop.GetValue<int[]>("GrowthStages"),
+            //            regrow.Get<int>());
+            //    }
+            //    else
+            //    {
+            //        grow = new Grow(crop.GetValue<int[]>("GrowthStages"));
+            //    }
+
+
+
+            //    crops.Add(new CropDIO(
+            //        crop.GetValue<string>("Name"),
+            //        Enum.Parse<Seasons>(crop.GetValue<string>("Seasons")),
+            //        grow,
+            //        ));
+            //}
             Crops = new CropDIO[0];
+
             List<FertilizerDIO> fertilizers = new List<FertilizerDIO>();
             foreach(IConfigurationSection fert in config.GetSection("Fertilizers").GetChildren())
             {
@@ -191,7 +167,7 @@ namespace StardewValleyStonks
                     fert.GetValue<string>("Name"),
                     fert.GetValue<int>("Quality"),
                     fert.GetValue<double>("Speed"),
-                    SerializeBuyPrices(fert, buySources, skillDict, date)));
+                    ParseBuyPrices(fert, buySources, skillDict, date)));
             }
             Fertilizers = fertilizers.ToArray();
         }
@@ -206,10 +182,10 @@ namespace StardewValleyStonks
             return dict;
         }
 
-        private static ICondition[] SerializeConditions(
+        private static ICondition[] ParseConditions(
             IConfiguration config,
             Dictionary<string, Skill> skillDict,
-            DateState date)
+            Date date)
         {
             List<ICondition> conditions = new List<ICondition>();
             foreach (IConfigurationSection condition in config.GetChildren())
@@ -231,11 +207,11 @@ namespace StardewValleyStonks
             return conditions.ToArray();
         }
 
-        private static BestDict<Source, BuyPrice> SerializeBuyPrices(
+        private static BestDict<Source, BuyPrice> ParseBuyPrices(
             IConfiguration config,
             Dictionary<string, Source> sources,
             Dictionary<string, Skill> skillDict,
-            DateState date)
+            Date date)
         {
             Dictionary<Source, BuyPrice> prices = new Dictionary<Source, BuyPrice>();
             foreach (IConfigurationSection price in config.GetSection("Sources").GetChildren())
@@ -247,7 +223,7 @@ namespace StardewValleyStonks
                     prices.Add(source, new BuyPrice(
                         price.GetValue<int>("Price"),
                         source,
-                        SerializeConditions(conditions, skillDict, date)));
+                        ParseConditions(conditions, skillDict, date)));
                 }
                 else
                 {

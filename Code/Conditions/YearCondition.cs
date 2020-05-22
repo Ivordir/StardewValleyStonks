@@ -4,16 +4,16 @@
     {
         public bool Override { get; set; }
         public bool IsMet => Override || Date.Year >= Year;
-        public string WarningMessage => $"Available from year {Year} and onwards.";
+        public Warning Warning { get; }
 
-        private readonly DateState Date;
+        private readonly Date Date;
         private readonly int Year;
 
-        public YearCondition(DateState date, int year)
+        public YearCondition(Date date, int year)
         {
             Year = year;
             Date = date;
-            Override = false;
+            Warning = new Warning($"Available from year {Year} and onwards.");
         }
     }
 }

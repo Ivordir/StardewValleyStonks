@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace StardewValleyStonks
 {
-	public abstract class DataTableItem
+	public abstract class DataTableItem : ISelectable, IWarn
 	{
 		public string Name { get; }
 		public int Price => PriceManager.Price();
@@ -12,6 +12,19 @@ namespace StardewValleyStonks
 		public BestDict<Source, BuyPrice> PriceManager { get; }
 		public bool Selected { get; set; }
 		public abstract bool Active { get; }
+		public abstract List<Warning> Warnings { get; }
+		public string DisplayWarnings
+		{
+			get
+			{
+				string display = "";
+				foreach (Warning warning in Warnings)
+				{
+					display += warning.Display() + "\n";
+				}
+				return display;
+			}
+		}
 
 		public DataTableItem(
 			string name,
@@ -24,5 +37,7 @@ namespace StardewValleyStonks
 		}
 
 		public virtual string Image => Name + ".png";
+
+		//string IWarn.DisplayWarnings { get; }
 	}
 }

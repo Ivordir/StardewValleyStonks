@@ -5,7 +5,7 @@ namespace StardewValleyStonks
 {
     public class Factory
     {
-        [Inject] private SkillsState Skills { get; }
+        [Inject] private Skills Skills { get; }
 
 		private readonly Dictionary<string, Product> Products;
 

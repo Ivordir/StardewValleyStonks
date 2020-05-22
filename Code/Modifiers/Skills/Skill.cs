@@ -4,7 +4,6 @@
     {
         public string Name { get; }
         public Profession[][] Professions { get; }
-        public bool IgnoreConflicts { get; set; }
         public int Level
         {
             get => _Level;

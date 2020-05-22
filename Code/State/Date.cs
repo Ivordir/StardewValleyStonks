@@ -1,6 +1,6 @@
 ﻿namespace StardewValleyStonks
 {
-    public class DateState
+    public class Date
     {
         public Seasons Seasons { get; private set; }
         public int Year
@@ -49,7 +49,7 @@
             }
         }
 
-        public DateState()
+        public Date()
         {
             _Year = 1;
             StartSeason = Seasons.Spring;

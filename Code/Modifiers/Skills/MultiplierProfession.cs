@@ -7,12 +7,12 @@
         public MultiplierProfession(
             string name,
             double value,
-            Skill skill,
+            Skills skills,
             ICondition[] conditions, 
             Profession[] dependants = null, 
             Profession[] requirements = null, 
             Profession[] exclusiveWith = null) 
-            : base(name, skill, conditions, dependants, requirements, exclusiveWith)
+            : base(name, skills, conditions, dependants, requirements, exclusiveWith)
         {
             Value = value;
         }

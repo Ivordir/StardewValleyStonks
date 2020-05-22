@@ -4,7 +4,7 @@
     {
         public bool Override { get; set; }
         public bool IsMet => Override || Skill.Level >= Level;
-        public string WarningMessage => $"{Skill.Name} level too low. Unlocks at level {Level}.";
+        public Warning Warning { get; }
 
         private readonly Skill Skill;
         private readonly int Level;
@@ -13,7 +13,7 @@
         {
             Skill = skill;
             Level = level;
-            Override = false;
+            Warning = new Warning($"{Skill.Name} level too low. Unlocks at level {Level}.");
         }
     }
 }

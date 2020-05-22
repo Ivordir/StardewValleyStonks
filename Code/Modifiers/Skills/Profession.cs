@@ -10,7 +10,7 @@
             set
             {
                 base.Selected = value;
-                if (!Skill.IgnoreConflicts)
+                if (!Skills.IgnoreConflicts)
                 {
                     if (value)
                     {
@@ -25,12 +25,12 @@
             }
         }
 
-        private readonly Skill Skill;
+        private readonly Skills Skills;
         private readonly Profession[] Dependants, Requirements, ExclusiveWith;
 
         private void SetAll(Profession[] professions, bool selected)
         {
-            if (professions != None)
+            if (professions != null)
             {
                 foreach (Profession profession in professions)
                 {
@@ -41,7 +41,7 @@
 
         public Profession(
             string name,
-            Skill skill,
+            Skills skills,
             ICondition[] conditions,
             Profession[] dependants = null,
             Profession[] requirements = null,
@@ -49,12 +49,10 @@
             : base (conditions)
         {
             Name = name;
-            Skill = skill;
-            Dependants = dependants ?? None;
-            Requirements = requirements ?? None;
-            ExclusiveWith = exclusiveWith ?? None;
+            Skills = skills;
+            Dependants = dependants;
+            Requirements = requirements;
+            ExclusiveWith = exclusiveWith;
         }
-
-        private static readonly Profession[] None = new Profession[0];
     }
 }

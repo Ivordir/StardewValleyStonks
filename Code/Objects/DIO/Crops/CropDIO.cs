@@ -13,11 +13,22 @@ namespace StardewValleyStonks
 		public IMultiplier[] SpeedMultipliers { get; }
 		public bool Regrows => Grow.Regrows;
 		public int RegrowTime => Grow.RegrowTime;
+		public bool DestroysFertilizer { get; }
+		public double QualityCrops => NoGiantCropProb;
+		public double NormalCrops => (
+			(DoubleCrops ? ExtraCrops * Settings.DoubleCropProb + Settings.DoubleCropProb : 0)
+			+ ExtraCrops) * NoGiantCropProb + GiantCrops;
 
 		internal Grow Grow { get; }
-		private readonly DateState Date;
+
+		private readonly double ExtraCrops;
+		private readonly bool Giant, DoubleCrops;
+		private double GiantCrops => 2 * (1 - NoGiantCropProb);
+		private double NoGiantCropProb => Giant ? Settings.NoGiantCropProb : 1;
+
+		private readonly Settings Settings;
+		private readonly Date Date;
 		private readonly bool Indoors;
-		private readonly RefValue[] CropDistribution;
 		private readonly Dictionary<IItem, IValue> HarvestedItems;
 		private readonly BestList<SingleProcess>[] SingleProcesses;
 		private readonly Process[] Processes;
@@ -54,6 +65,8 @@ namespace StardewValleyStonks
 				throw new NotImplementedException();
 			}
 		}
+
+		public override List<Warning> Warnings => throw new NotImplementedException();
 
 		public virtual double Profit(int fertQuality = 0, int harvests = 1)
 		{

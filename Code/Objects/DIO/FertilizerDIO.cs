@@ -1,44 +1,44 @@
+using System.Collections.Generic;
+
 namespace StardewValleyStonks
 {
     public class FertilizerDIO : DataTableItem
     {
         public int Quality { get; }
         public double Speed { get; }
+        public override bool Active => Selected && PriceManager.HasBestItem;
+        public override List<Warning> Warnings
+        {
+            get
+            {
+                _Warnings.Clear();
+                if (!PriceManager.HasBestItem)
+                {
+                    NoSource.SubWarnings.Clear();
+                    foreach(BuyPrice price in PriceManager.Values)
+                    {
+                        NoSource.SubWarnings.AddRange(price.Warnings);
+                    }
+                    _Warnings.Add(NoSource);
+                }
+                return _Warnings;
+            }
+        }
 
-        public override bool Active => Selected && PriceManager.HasBestItem;// && BetterFertilizers.Count == 0;
-
-        //public List<FertilizerDIO> BetterFertilizers
-        //{
-        //    get
-        //    {
-        //        _BetterFertilizers.Clear();
-        //        foreach(FertilizerDIO fert in Fertilizers)
-        //        {
-        //            if (fert.Price <= Price && fert.Quality >= Quality && fert.Speed >= Speed
-        //                && (fert.Price < Price || fert.Quality > Quality || fert.Speed > Speed))
-        //            {
-        //                _BetterFertilizers.Add(fert);
-        //            }
-        //        }
-        //        return _BetterFertilizers;
-        //    }
-        //}
-
-        //private readonly FertilizerDIO[] Fertilizers;
-        //private readonly List<FertilizerDIO> _BetterFertilizers;
+        private readonly List<Warning> _Warnings;
+        private readonly Warning NoSource;
 
         public FertilizerDIO(
             string name,
             int quality,
             double speed,
-            BestDict<Source, BuyPrice> priceManager)//,
-            //FertilizerDIO[] fertilizers)
+            BestDict<Source, BuyPrice> priceManager)
             : base(name, priceManager)
         {
             Quality = quality;
             Speed = speed;
-            //Fertilizers = fertilizers;
-            //_BetterFertilizers = new List<FertilizerDIO>();
+            NoSource = new Warning($"{ Name } cannot be bought from anywhere:");
+            _Warnings = new List<Warning>();
         }
     }
 }
