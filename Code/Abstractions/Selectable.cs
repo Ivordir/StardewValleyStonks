@@ -77,6 +77,6 @@ namespace StardewValleyStonks
             _Warnings = new List<Warning>();
         }
 
-        private static Warning NotSelected = new Warning("Not Selected.");
+        private static readonly Warning NotSelected = new Warning("Not selected.");
     }
 }

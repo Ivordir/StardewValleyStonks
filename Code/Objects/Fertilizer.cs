@@ -1,6 +1,6 @@
 ﻿namespace StardewValleyStonks
 {
-    public class Fertilizer
+    public class Fertilizer : ICanCompare<Fertilizer>
     {
         public string Name { get; }
         public int Price { get; }
@@ -8,7 +8,7 @@
         public int Quality { get; }
         public double Speed { get; }
 
-        public bool CanCompare(Fertilizer other)
+        public bool CanCompareTo(Fertilizer other)
         {
             bool firstComparison = Price <= other.Price;
             return (Quality >= other.Quality) == firstComparison
@@ -21,8 +21,8 @@
             Name = fert.Name;
             Quality = fert.Quality;
             Speed = fert.Speed;
-            BuyPrice[] prices = fert.BestPrices.ToArray();
-            Price = prices[0].Price;
+            Price[] prices = fert.BestPrices.ToArray();
+            Price = prices[0].Value;
             Sources = new Source[prices.Length]; 
             for(int i = 0; i < prices.Length; i++)
             {

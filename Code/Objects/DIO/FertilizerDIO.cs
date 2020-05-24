@@ -6,16 +6,16 @@ namespace StardewValleyStonks
     {
         public int Quality { get; }
         public double Speed { get; }
-        public override bool Active => Selected && BestPrice.Exists;
+        public override bool Active => Selected && HasPrice;
         public override List<Warning> Warnings
         {
             get
             {
                 _Warnings.Clear();
-                if (!BestPrice.Exists)
+                if (!HasPrice)
                 {
                     NoSource.SubWarnings.Clear();
-                    foreach(BuyPrice price in BestPrice.Values)
+                    foreach(Price price in Prices)
                     {
                         NoSource.SubWarnings.AddRange(price.Warnings);
                     }
@@ -32,8 +32,8 @@ namespace StardewValleyStonks
             string name,
             int quality,
             double speed,
-            BestDict<Source, BuyPrice> priceManager)
-            : base(name, priceManager)
+            Dictionary<Source, Price> priceFrom)
+            : base(name, priceFrom)
         {
             Quality = quality;
             Speed = speed;

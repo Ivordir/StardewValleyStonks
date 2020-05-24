@@ -4,29 +4,40 @@ using ExtentionsLibrary.Collections;
 
 namespace StardewValleyStonks
 {
-    public class Process : Selectable, IProcess
+    public class Process : Selectable, ICanCompare<Process>
     {
         public Processor Source { get; }
         public Dictionary<IItem, int> Inputs { get; }
-        public IItem OutputItem { get; }
+        public IItem OutputItem => Source.PreservesQuality ? _OutputItem : _OutputItem.Normal;
         public double OutputAmount { get; }
         public override bool Active => base.Active && Source.Active;
 
+        public bool CanCompareTo(Process other)
+        {
+            IItem item = Inputs.Keys.First();
+            bool comparison = Inputs[item] >= other.Inputs[item];
+            return Inputs.Keys.All(k => (Inputs[k] >= other.Inputs[k]) == comparison);
+        }
+        public int CompareTo(Process other)
+        {
+            IItem item = Inputs.Keys.First();
+            return Inputs[item].CompareTo(other.Inputs[item]);
+        }
         public bool HasInput(IItem item) => Inputs.ContainsKey(item);
-        public bool SameInputs(IProcess other) => Inputs.SameKeys(other.Inputs);
+        public bool SameInputs(Process other) => Inputs.SameKeys(other.Inputs);
         public double Profit(double output) => OutputItem.Price * output;
         public double MaxOutput(Dictionary<IItem, double> inputs)
             => inputs.ContainsAllKeys(Inputs) ?
                 OutputAmount * Inputs.Min(i => inputs[i.Key] / i.Value)
                 : 0;
 
-        public Dictionary<IItem, List<(IProcess, double)>> ConsumeInput(Dictionary<IItem, double> inputs, double output)
+        public Dictionary<IItem, List<(Process, double)>> ConsumeInput(Dictionary<IItem, double> inputs, double output)
         {
-            Dictionary<IItem, List<(IProcess, double)>> consumed = new Dictionary<IItem, List<(IProcess, double)>>();
+            Dictionary<IItem, List<(Process, double)>> consumed = new Dictionary<IItem, List<(Process, double)>>();
             foreach (IItem requiredItem in Inputs.Keys)
             {
                 inputs[requiredItem] -= output * Inputs[requiredItem];
-                consumed.Add(requiredItem, new List<(IProcess, double)> { (this, output * Inputs[requiredItem]) });
+                consumed.Add(requiredItem, new List<(Process, double)> { (this, output * Inputs[requiredItem]) });
                 if (inputs[requiredItem] == 0)
                 {
                     inputs.Remove(requiredItem);
@@ -34,6 +45,8 @@ namespace StardewValleyStonks
             }
             return consumed;
         }
+
+        private readonly IItem _OutputItem;
 
         public Process(
             Processor processor,
@@ -45,7 +58,7 @@ namespace StardewValleyStonks
         {
             Source = processor;
             Inputs = inputs;
-            OutputItem = outputItem;
+            _OutputItem = outputItem;
             OutputAmount = outputAmount;
         }
     }

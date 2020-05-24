@@ -127,8 +127,8 @@ namespace StardewValleyStonks
                 { irrigated.Name, irrigated }
             };
             Dictionary<string, Source> sellSources = SellSources.ToDictionary(s => s.Name);
-            Dictionary<string, Source> buySources = SellSources.ToDictionary(s => s.Name);
-            Dictionary<string, Source> replantMethods = SellSources.ToDictionary(s => s.Name);
+            Dictionary<string, Source> buySources = BuySources.ToDictionary(s => s.Name);
+            Dictionary<string, Source> replantMethods = ReplantMethods.ToDictionary(s => s.Name);
             Dictionary<string, Skill> skillDict = Skills.ToDictionary(s => s.Name);
 
             List<CropDIO> crops = new List<CropDIO>();
@@ -157,23 +157,24 @@ namespace StardewValleyStonks
             //}
             Crops = new CropDIO[0];
 
-            List<FertilizerDIO> fertilizers = new List<FertilizerDIO>();
-            foreach(IConfigurationSection fert in config.GetSection("Fertilizers").GetChildren())
-            {
-                fertilizers.Add(new FertilizerDIO(
-                    fert.GetValue<string>("Name"),
-                    fert.GetValue<int>("Quality"),
-                    fert.GetValue<double>("Speed"),
-                    ParseBuyPrices(fert, buySources, skillDict, date)));
-            }
-            Fertilizers = fertilizers.ToArray();
+            Fertilizers = config.GetSection("Fertilizers").GetChildren()
+                .Select(f => new FertilizerDIO(
+                    f.GetValue<string>("Name"),
+                    f.GetValue("Quality", 0),
+                    f.GetValue<double>("Speed", 0),
+                    ParsePrices(f, buySources, skillDict, date)))
+                .ToArray();
         }
 
         private static ICondition[] ParseConditions(
-            IConfiguration config,
+            IConfigurationSection config,
             Dictionary<string, Skill> skillDict,
             Date date)
         {
+            if (!config.Exists())
+            {
+                return null;
+            }
             List<ICondition> conditions = new List<ICondition>();
             foreach (IConfigurationSection condition in config.GetChildren())
             {
@@ -194,33 +195,22 @@ namespace StardewValleyStonks
             return conditions.ToArray();
         }
 
-        private static BestDict<Source, BuyPrice> ParseBuyPrices(
+        private static Dictionary<Source, Price> ParsePrices(
             IConfiguration config,
             Dictionary<string, Source> sources,
             Dictionary<string, Skill> skillDict,
             Date date)
         {
-            Dictionary<Source, BuyPrice> prices = new Dictionary<Source, BuyPrice>();
+            Dictionary<Source, Price> prices = new Dictionary<Source, Price>();
             foreach (IConfigurationSection price in config.GetSection("Sources").GetChildren())
             {
-                IConfigurationSection conditions = price.GetSection("Conditions");
-                if (conditions.Exists())
-                {
-                    Source source = sources[price.GetValue<string>("Name")];
-                    prices.Add(source, new BuyPrice(
-                        price.GetValue<int>("Price"),
-                        source,
-                        ParseConditions(conditions, skillDict, date)));
-                }
-                else
-                {
-                    Source source = sources[price.GetValue<string>("Name")];
-                    prices.Add(source, new BuyPrice(
-                        price.GetValue<int>("Price"),
-                        source));
-                }
+                Source source = sources[price.GetValue<string>("Name")];
+                prices.Add(source, new BuyPrice(
+                    price.GetValue<int>("Price"),
+                    source,
+                    ParseConditions(price.GetSection("Conditions"), skillDict, date)));
             }
-            return new BestDict<Source, BuyPrice>(prices);
+            return prices;
         }
     }
 }

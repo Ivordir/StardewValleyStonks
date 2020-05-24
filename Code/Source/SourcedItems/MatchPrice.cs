@@ -2,23 +2,23 @@
 
 namespace StardewValleyStonks
 {
-    public class MatchPrice : BasePrice, IComparable<BuyPrice>
+    public class MatchPrice : Price
     {
-        public override int Price => _Source.Match ? Match.Price : _Price;
+        public override int Value => _Source.Match ? Match.Value : _Value;
         public override Source Source => _Source;
 
-        private readonly int _Price;
+        private readonly int _Value;
         private readonly MatchSource _Source;
-        private readonly BasePrice Match;
+        private readonly Price Match;
 
         public MatchPrice(
             int price,
             MatchSource source,
-            BasePrice match,
+            Price match,
             ICondition[] conditions = null)
             : base(source, conditions)
         {
-            _Price = price;
+            _Value = price;
             _Source = source;
             Match = match;
         }

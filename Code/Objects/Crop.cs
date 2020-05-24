@@ -54,156 +54,120 @@ namespace StardewValleyStonks
 			Sources = crop.BestPrices
 				.Select(x => x.Source).ToArray();
 
-			HashSet<IProcess> allProcesses = crop.Processes
-				.FindAll(p => p.Active).ToHashSet();
+			HashSet<Process> allProcesses = crop.Processes
+				.Where(p => p.Active).ToHashSet();
 			foreach (IItem item in InputOrder)
 			{
-				IProcess process = allProcesses.FirstOrDefault(p => p.HasInput(item));
+				ProcessesWith.Add(item, new List<LinkedList<Process>>());
+				Process process = allProcesses.FirstOrDefault(p => p.HasInput(item));
 				while (process != null)
 				{
-					List<IProcess> pro = new List<IProcess>() { process };
-					pro.AddRange(allProcesses.Where(p => process.SameInputs(p)));
-					allProcesses.RemoveAll(pro);
+					LinkedList<Process> processes = new LinkedList<Process>
+						(allProcesses.Where(p => process.SameInputs(p)));
+					processes.AddFirst(process);
+					allProcesses.RemoveAll(processes);
 
-					LinkedList<IProcess> link = new LinkedList<IProcess>(pro);
-					LinkedListNode<IProcess> node = link.First;
-					while(node != link.Last)
-					{
-						LinkedListNode<IProcess> compare = node.Next;
-						while (compare != link.Last)
-						{
-							if (true) //can compare
-							{
-								if (true) //pro[i] == pro[j]
-								{
-									EqualProcesses[node.Value].Add(compare.Value);
-									link.Remove(compare);
-								}
-								else if (true) //pro[i] > pro[j]
-								{
-									link.Remove(compare);
-								}
-								else //pro[i] < pro[j]
-								{
-
-									link.Remove(node);
-								}
-							}
-							compare = compare.Next;
-						}
-						node = node.Next;
-					}
-
-
-					Perms[item].Add(pro);
+					processes.DoComparisons(EqualProcesses);
+					ProcessesWith[item].Add(processes);
 
 					process = allProcesses.FirstOrDefault(p => p.HasInput(item));
 				}
 			}
 		}
 
-		//private readonly IProcess[] Processes;
-
         private readonly IItem[] InputOrder;
         private readonly Dictionary<IItem, double> InputAmounts;
 
-		private readonly Dictionary<IProcess, List<IProcess>> EqualProcesses;
-		
-		private readonly Dictionary<IItem, List<List<IProcess>>> Perms;
+		private readonly Dictionary<Process, List<Process>> EqualProcesses;
+		private readonly Dictionary<IItem, List<LinkedList<Process>>> ProcessesWith;
 
 
-		//private Dictionary<IItem, List<List<IProcess>>> Permu(List<IProcess> processes)
+		//public List<(SoldItems, ReplantMethod)> Calculate
 		//{
-		//	InputAmounts.Keys.Contains(InputAmounts.Keys);
+		//	get
+		//	{
+		//		List<(SoldItems, ReplantMethod)> best = new List<(SoldItems, ReplantMethod)> { (new SoldItems(null, 0), null) };
+		//		List<ReplantMethod> replantMethods = ReplantMethods(inputs);
+		//		if (BestPrice.Exists)// && BuySource.Active)
+		//		{
+		//			replantMethods.Add(new ReplantMethod(new Dictionary<IItem, List<(IProcess, double)>>(), 1, inputs));
+		//		}
+		//		else
+		//		{
+		//			for (int i = 0; i < replantMethods.Count; i++)
+		//			{
+		//				if (replantMethods[i].BoughtSeeds > 0)
+		//				{
+		//					replantMethods.RemoveAt(i);
+		//					i--;
+		//				}
+		//			}
+		//		}
+		//		foreach (ReplantMethod method in replantMethods)
+		//		{
+		//			List<SoldItems> items;
+		//			if (singleCalc)
+		//			{
+		//				items = SoldMethod(method.LeftOver);
+		//			}
+		//			else
+		//			{
+		//				items = SingleSoldMethod(method.LeftOver);
+		//			}
+		//			if (BestPrice.Exists)// && BuySource.Active)
+		//			{
+		//				foreach (SoldItems item in items)
+		//				{
+		//					item.Profit -= method.BoughtSeeds * Price;
+		//				}
+		//			}
+		//			if (items[0].Profit > best[0].Item1.Profit)
+		//			{
+		//				best.Clear();
+		//				foreach (SoldItems item in items)
+		//				{
+		//					best.Add((item, method));
+		//				}
+		//			}
+		//			else if (items[0].Profit == best[0].Item1.Profit)
+		//			{
+		//				foreach (SoldItems item in items)
+		//				{
+		//					best.Add((item, method));
+		//				}
+		//			}
+		//		}
+		//		return best;
+		//	}
 		//}
 
+		//public class ReplantMethod
+		//{
+		//	public Dictionary<IItem, List<(IProcess, double)>> Usages { get; }
+		//	public double BoughtSeeds { get; }
+		//	public Dictionary<IItem, double> LeftOver { get; }
 
-		public List<(SoldItems, ReplantMethod)> Calculate
-		{
-			get
-			{
-				List<(SoldItems, ReplantMethod)> best = new List<(SoldItems, ReplantMethod)> { (new SoldItems(null, 0), null) };
-				List<ReplantMethod> replantMethods = ReplantMethods(inputs);
-				if (BestPrice.Exists)// && BuySource.Active)
-				{
-					replantMethods.Add(new ReplantMethod(new Dictionary<IItem, List<(IProcess, double)>>(), 1, inputs));
-				}
-				else
-				{
-					for (int i = 0; i < replantMethods.Count; i++)
-					{
-						if (replantMethods[i].BoughtSeeds > 0)
-						{
-							replantMethods.RemoveAt(i);
-							i--;
-						}
-					}
-				}
-				foreach (ReplantMethod method in replantMethods)
-				{
-					List<SoldItems> items;
-					if (singleCalc)
-					{
-						items = SoldMethod(method.LeftOver);
-					}
-					else
-					{
-						items = SingleSoldMethod(method.LeftOver);
-					}
-					if (BestPrice.Exists)// && BuySource.Active)
-					{
-						foreach (SoldItems item in items)
-						{
-							item.Profit -= method.BoughtSeeds * Price;
-						}
-					}
-					if (items[0].Profit > best[0].Item1.Profit)
-					{
-						best.Clear();
-						foreach (SoldItems item in items)
-						{
-							best.Add((item, method));
-						}
-					}
-					else if (items[0].Profit == best[0].Item1.Profit)
-					{
-						foreach (SoldItems item in items)
-						{
-							best.Add((item, method));
-						}
-					}
-				}
-				return best;
-			}
-		}
+		//	public ReplantMethod(
+		//		Dictionary<IItem, List<(IProcess, double)>> usages,
+		//		double seeds,
+		//		Dictionary<IItem, double> leftOver)
+		//	{
+		//		Usages = usages;
+		//		BoughtSeeds = seeds;
+		//		LeftOver = leftOver;
+		//	}
+		//}
 
-		public class ReplantMethod
-		{
-			public Dictionary<IItem, List<(IProcess, double)>> Usages { get; }
-			public double BoughtSeeds { get; }
-			public Dictionary<IItem, double> LeftOver { get; }
+		//public class SoldItems
+		//{
+		//	public Dictionary<IItem, List<(IProcess, double)>> Products { get; }
+		//	public double Profit { get; set; }
 
-			public ReplantMethod(
-				Dictionary<IItem, List<(IProcess, double)>> usages,
-				double seeds,
-				Dictionary<IItem, double> leftOver)
-			{
-				Usages = usages;
-				BoughtSeeds = seeds;
-				LeftOver = leftOver;
-			}
-		}
-
-		public class SoldItems
-		{
-			public Dictionary<IItem, List<(IProcess, double)>> Products { get; }
-			public double Profit { get; set; }
-
-			public SoldItems(Dictionary<IItem, List<(IProcess, double)>> products, double profit)
-			{
-				Products = products;
-				Profit = profit;
-			}
-		}
+		//	public SoldItems(Dictionary<IItem, List<(IProcess, double)>> products, double profit)
+		//	{
+		//		Products = products;
+		//		Profit = profit;
+		//	}
+		//}
 	}
 }

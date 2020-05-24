@@ -1,10 +1,8 @@
-﻿using System;
-
-namespace StardewValleyStonks
+﻿namespace StardewValleyStonks
 {
-    public class BuyPrice : BasePrice, IComparable<BuyPrice>
+    public class BuyPrice : Price
     {
-        public override int Price { get; }
+        public override int Value { get; }
         public override Source Source { get; }
 
         public BuyPrice(
@@ -13,7 +11,7 @@ namespace StardewValleyStonks
             ICondition[] conditions = null)
             : base(source, conditions)
         {
-            Price = price;
+            Value = price;
             Source = source;
         }
     }
