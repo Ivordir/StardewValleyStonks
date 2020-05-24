@@ -2,18 +2,19 @@
 {
     public class QualityProduct : IItem
     {
-        public string Name => Product.Qualities ? $"{Product.Name} ({Quality.Name})" : Product.Name;
-        public int Price => Product.Qualities ? Quality.ApplyTo(Product.Price) : Product.Price;
+        public string Name => $"{Product.Name} ({_Quality.Name})";
+        public int Price => _Quality.ApplyTo(Product.Price);
+        public IItem Normal => Product;
 
         private readonly Product Product;
-        private readonly Quality Quality;
+        private readonly Quality _Quality;
 
         public QualityProduct(
             Product product,
             Quality quality)
         {
             Product = product;
-            Quality = quality;
+            _Quality = quality;
         }
     }
 }

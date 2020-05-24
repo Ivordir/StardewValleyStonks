@@ -1,8 +1,10 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
+using ExtentionsLibrary.Collections;
 
 namespace StardewValleyStonks
 {
-    public class Skills : IEnumerable
+    public class Skills : IEnumerable<Skill>
     {
         public Skill Farming { get; }
         public MultiplierProfession Tiller { get; }
@@ -15,6 +17,7 @@ namespace StardewValleyStonks
 
         public Skill this[int index] => _Skills[index];
         IEnumerator IEnumerable.GetEnumerator() => _Skills.GetEnumerator();
+        public IEnumerator<Skill> GetEnumerator() => _Skills.GetEnumerator<Skill>();
 
         private readonly Skill[] _Skills;
 

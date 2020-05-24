@@ -1,4 +1,6 @@
-﻿namespace StardewValleyStonks
+﻿using ExtentionsLibrary.Validation;
+
+namespace StardewValleyStonks
 {
     public class Date
     {

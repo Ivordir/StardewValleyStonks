@@ -29,7 +29,7 @@ namespace StardewValleyStonks
                 return _BestItems;
             }
         }
-        public bool HasBestItem => BestItems.Count > 0;
+        public bool Exists => BestItems.Count > 0;
         public TItem this[TSource source] => Dict[source];
         public bool ContainsKey(TSource source) => Dict.ContainsKey(source);
         public Dictionary<TSource, TItem>.KeyCollection Keys => Dict.Keys;

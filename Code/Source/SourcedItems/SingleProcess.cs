@@ -5,15 +5,14 @@ namespace StardewValleyStonks
 {
     public class SingleProcess : Selectable, IProcess, IComparable<SingleProcess>
     {
-        public Source Source { get; }
-        public Dictionary<IItem, int> Inputs { get; }
-        public IItem OutputItem { get; }
+        public Processor Source { get; }
+        public Dictionary<IItem, int> InputAmounts { get; }
+        public IItem OutputItem => Source.PreservesQuality ? _OutputItem : _OutputItem.Normal;
         public double OutputAmount { get; }
         public double ProfitPerInput => OutputAmount * OutputItem.Price / InputAmount;
         public override bool Active => base.Active && Source.Active;
 
-        public double MaxOutput(Dictionary<IItem, double> inputs) => 
-            inputs.ContainsKey(OutputItem) ? inputs[OutputItem] : 0;
+        public double MaxOutput(Dictionary<IItem, double> inputs) => inputs.ContainsKey(InputItem) ? inputs[InputItem] : 0;
 
         public double Profit(double output) => OutputItem.Price * output;
 
@@ -30,30 +29,15 @@ namespace StardewValleyStonks
             };
         }
 
-        public int CompareTo(SingleProcess other) =>
-            ProfitPerInput.CompareTo(other.ProfitPerInput);
+        public int CompareTo(SingleProcess other) => ProfitPerInput.CompareTo(other.ProfitPerInput);
 
-        private readonly IItem InputItem;
+        private readonly IItem InputItem, _OutputItem;
         private readonly int InputAmount;
 
         public SingleProcess(
-            Source source,
-            IItem item,
-            ICondition[] conditions = null)
-            : base(true, conditions)
-        {
-            Source = source;
-            InputItem = item;
-            InputAmount = 1;
-            Inputs = new Dictionary<IItem, int> { { InputItem, InputAmount } };
-            OutputItem = item;
-            OutputAmount = 1;
-        }
-
-        public SingleProcess(
-            Source source,
             IItem input,
             int inputAmount,
+            Processor source,
             IItem output,
             double outputAmount,
             ICondition[] conditions = null)
@@ -62,9 +46,22 @@ namespace StardewValleyStonks
             Source = source;
             InputItem = input;
             InputAmount = inputAmount;
-            Inputs = new Dictionary<IItem, int> { { InputItem, InputAmount } };
-            OutputItem = output;
+            InputAmounts = new Dictionary<IItem, int> { { InputItem, InputAmount } };
+            _OutputItem = output;
             OutputAmount = outputAmount;
         }
+
+        public SingleProcess(
+            IItem item,
+            Processor source,
+            ICondition[] conditions = null)
+            : this(item, 1, source, item, 1, conditions) { }
+
+        public SingleProcess(
+            IItem input,
+            Processor source,
+            IItem ouput,
+            ICondition[] conditions = null)
+            : this(input, 1, source, ouput, 1, conditions) { }
     }
 }

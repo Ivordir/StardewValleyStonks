@@ -29,7 +29,7 @@ namespace StardewValleyStonks
                 return _BestItems;
             }
         }
-        public bool HasBestItem => BestItems.Count > 0;
+        public bool Exists => BestItems.Count > 0;
         public T this[int index] => Items[index];
 
         private readonly List<T> _BestItems;

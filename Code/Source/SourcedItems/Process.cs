@@ -1,29 +1,24 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using ExtentionsLibrary.Collections;
 
 namespace StardewValleyStonks
 {
     public class Process : Selectable, IProcess
     {
-        public Source Source { get; }
+        public Processor Source { get; }
         public Dictionary<IItem, int> Inputs { get; }
         public IItem OutputItem { get; }
         public double OutputAmount { get; }
         public override bool Active => base.Active && Source.Active;
 
+        public bool HasInput(IItem item) => Inputs.ContainsKey(item);
+        public bool SameInputs(IProcess other) => Inputs.SameKeys(other.Inputs);
         public double Profit(double output) => OutputItem.Price * output;
-
         public double MaxOutput(Dictionary<IItem, double> inputs)
-        {
-            foreach (IItem requiredInput in Inputs.Keys)
-            {
-                if (!inputs.ContainsKey(requiredInput))
-                {
-                    return 0;
-                }
-            }
-            return OutputAmount * Inputs.Min(i => inputs[i.Key] / i.Value);
-        }
+            => inputs.ContainsAllKeys(Inputs) ?
+                OutputAmount * Inputs.Min(i => inputs[i.Key] / i.Value)
+                : 0;
 
         public Dictionary<IItem, List<(IProcess, double)>> ConsumeInput(Dictionary<IItem, double> inputs, double output)
         {
@@ -41,7 +36,7 @@ namespace StardewValleyStonks
         }
 
         public Process(
-            Source processor,
+            Processor processor,
             Dictionary<IItem, int> inputs,
             IItem outputItem,
             double outputAmount,

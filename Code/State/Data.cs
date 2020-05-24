@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Binder;
+using ExtentionsLibrary.Memoization;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace StardewValleyStonks
 {
@@ -91,14 +93,14 @@ namespace StardewValleyStonks
                 new Processor("Mill"),
             };
 
-            SellSources = new Source[6]
+            SellSources = new Processor[6]
             {
-                new Source("Raw Crop"),
+                new Processor("Raw Crop", null, true),
                 Processors[0],
                 Processors[1],
                 Processors[2],
                 Processors[3],
-                new Source("Seeds")
+                new Processor("Seeds", null, true)
             };
 
             BuySources = new Source[5] {
@@ -115,7 +117,6 @@ namespace StardewValleyStonks
                 new Source("Replant Crop")
             };
 
-
             Multiplier irrigated = new Multiplier("Irrigated", 0.1);
             Dictionary<string, IMultiplier> multipliers = new Dictionary<string, IMultiplier>
             {
@@ -125,14 +126,10 @@ namespace StardewValleyStonks
                 { Skills.Gatherer.Name, Skills.Gatherer },
                 { irrigated.Name, irrigated }
             };
-            Dictionary<string, Source> sellSources = SourceDictionary(SellSources);
-            Dictionary<string, Source> buySources = SourceDictionary(BuySources);
-            Dictionary<string, Source> replantMethods = SourceDictionary(ReplantMethods);
-            Dictionary<string, Skill> skillDict = new Dictionary<string, Skill>();
-            foreach(Skill skill in Skills)
-            {
-                skillDict.Add(skill.Name, skill);
-            }
+            Dictionary<string, Source> sellSources = SellSources.ToDictionary(s => s.Name);
+            Dictionary<string, Source> buySources = SellSources.ToDictionary(s => s.Name);
+            Dictionary<string, Source> replantMethods = SellSources.ToDictionary(s => s.Name);
+            Dictionary<string, Skill> skillDict = Skills.ToDictionary(s => s.Name);
 
             List<CropDIO> crops = new List<CropDIO>();
             //foreach(IConfigurationSection crop in config.GetSection("Crops").GetChildren())
@@ -170,16 +167,6 @@ namespace StardewValleyStonks
                     ParseBuyPrices(fert, buySources, skillDict, date)));
             }
             Fertilizers = fertilizers.ToArray();
-        }
-
-        private static Dictionary<string, Source> SourceDictionary(Source[] sources)
-        {
-            Dictionary<string, Source> dict = new Dictionary<string, Source>();
-            foreach(Source source in sources)
-            {
-                dict.Add(source.Name, source);
-            }
-            return dict;
         }
 
         private static ICondition[] ParseConditions(

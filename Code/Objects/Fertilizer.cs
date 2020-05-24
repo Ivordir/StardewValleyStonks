@@ -1,14 +1,20 @@
-﻿using System.Diagnostics.Tracing;
-
-namespace StardewValleyStonks
+﻿namespace StardewValleyStonks
 {
     public class Fertilizer
     {
         public string Name { get; }
-        public int Quality { get; }
-        public double Speed { get; }
         public int Price { get; }
         public Source[] Sources { get; }
+        public int Quality { get; }
+        public double Speed { get; }
+
+        public bool CanCompare(Fertilizer other)
+        {
+            bool firstComparison = Price <= other.Price;
+            return (Quality >= other.Quality) == firstComparison
+                && (Speed >= other.Speed) == firstComparison;
+        }
+        public int CompareTo(Fertilizer other) => Price.CompareTo(other.Price);
 
         public Fertilizer(FertilizerDIO fert)
         {

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using ExtentionsLibrary.Text;
 
 namespace StardewValleyStonks
 {
@@ -10,7 +11,6 @@ namespace StardewValleyStonks
         {
             //string builder? nah
             string display = Message;
-            System.Console.WriteLine(indentation);
             foreach(Warning warning in SubWarnings)
             {
                 display += "\n" + "  ".Repeat(indentation) + "•" + warning.Display(indentation + 1);

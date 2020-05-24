@@ -6,16 +6,16 @@ namespace StardewValleyStonks
     {
         public int Quality { get; }
         public double Speed { get; }
-        public override bool Active => Selected && PriceManager.HasBestItem;
+        public override bool Active => Selected && BestPrice.Exists;
         public override List<Warning> Warnings
         {
             get
             {
                 _Warnings.Clear();
-                if (!PriceManager.HasBestItem)
+                if (!BestPrice.Exists)
                 {
                     NoSource.SubWarnings.Clear();
-                    foreach(BuyPrice price in PriceManager.Values)
+                    foreach(BuyPrice price in BestPrice.Values)
                     {
                         NoSource.SubWarnings.AddRange(price.Warnings);
                     }
