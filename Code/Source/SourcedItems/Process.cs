@@ -4,7 +4,7 @@ using ExtentionsLibrary.Collections;
 
 namespace StardewValleyStonks
 {
-    public class Process : Selectable, ICanCompare<Process>
+    public class Process : Selectable, INullComparable<Process>
     {
         public Processor Source { get; }
         public Dictionary<IItem, int> Inputs { get; }
@@ -12,25 +12,61 @@ namespace StardewValleyStonks
         public double OutputAmount { get; }
         public override bool Active => base.Active && Source.Active;
 
-        public bool CanCompareTo(Process other)
+        public int? CompareTo(Process other)
         {
-            IItem item = Inputs.Keys.First();
-            bool comparison = Inputs[item] >= other.Inputs[item];
-            return Inputs.Keys.All(k => (Inputs[k] >= other.Inputs[k]) == comparison);
-        }
-        public int CompareTo(Process other)
-        {
-            IItem item = Inputs.Keys.First();
-            return Inputs[item].CompareTo(other.Inputs[item]);
+            bool superSet = Inputs.IsSuperSetOf(other.Inputs);
+            bool subSet = Inputs.IsSubSetOf(other.Inputs);
+            if (subSet && superSet) //same inputs
+            {
+                bool anyBetter = false;
+                bool anyWorse = false;
+                foreach (IItem item in Inputs.Keys)
+                {
+                    if (Inputs[item] > other.Inputs[item])
+                    {
+                        anyWorse = true;
+                    }
+                    else if (Inputs[item] < other.Inputs[item])
+                    {
+                        anyBetter = true;
+                    }
+                    if (anyBetter && anyWorse)
+                    {
+                        return null;
+                    }
+                }
+                if (anyBetter)
+                {
+                    return 1;
+                }
+                else if (anyWorse)
+                {
+                    return -1;
+                }
+                return 0;
+            }
+            else if (superSet)
+            {
+                if (other.Inputs.Keys.Any(k => Inputs[k] < other.Inputs[k]))
+                {
+                    return null;
+                }
+                return -1;
+            }
+            else if (subSet)
+            {
+                if (Inputs.Keys.Any(k => Inputs[k] > other.Inputs[k]))
+                {
+                    return null;
+                }
+                return 1;
+            }
+            return null;
         }
         public bool HasInput(IItem item) => Inputs.ContainsKey(item);
-        public bool SameInputs(Process other) => Inputs.SameKeys(other.Inputs);
         public double Profit(double output) => OutputItem.Price * output;
         public double MaxOutput(Dictionary<IItem, double> inputs)
-            => inputs.ContainsAllKeys(Inputs) ?
-                OutputAmount * Inputs.Min(i => inputs[i.Key] / i.Value)
-                : 0;
-
+            => OutputAmount * Inputs.Min(i => inputs[i.Key] / i.Value);
         public Dictionary<IItem, List<(Process, double)>> ConsumeInput(Dictionary<IItem, double> inputs, double output)
         {
             Dictionary<IItem, List<(Process, double)>> consumed = new Dictionary<IItem, List<(Process, double)>>();
@@ -48,6 +84,68 @@ namespace StardewValleyStonks
 
         private readonly IItem _OutputItem;
 
+        public Process(
+            Processor processor,
+            IItem sell,
+            ICondition[] conditions = null)
+        : this(
+            processor,
+            sell,
+            1,
+            sell,
+            1,
+            conditions) { }
+        //public Process(
+        //    Processor processor,
+        //    IItem input,
+        //    IItem output,
+        //    ICondition[] conditions = null)
+        //: this(
+        //    processor,
+        //    input,
+        //    1,
+        //    output,
+        //    1,
+        //    conditions) { }
+        //public Process(
+        //    Processor processor,
+        //    IItem input,
+        //    int inputAmount,
+        //    IItem output,
+        //    ICondition[] conditions = null)
+        //: this(
+        //    processor,
+        //    input,
+        //    inputAmount,
+        //    output,
+        //    1,
+        //    conditions) { }
+        //public Process(
+        //    Processor processor,
+        //    IItem item,
+        //    IItem output,
+        //    double outputAmount,
+        //    ICondition[] conditions = null)
+        //: this(
+        //    processor,
+        //    item,
+        //    1,
+        //    output,
+        //    outputAmount,
+        //    conditions) { }
+        public Process(
+            Processor processor,
+            IItem input,
+            int inputAmount,
+            IItem output,
+            double outputAmount,
+            ICondition[] conditions = null)
+        : this(
+            processor,
+            new Dictionary<IItem, int>() { { input, inputAmount } },
+            output,
+            outputAmount,
+            conditions) { }
         public Process(
             Processor processor,
             Dictionary<IItem, int> inputs,

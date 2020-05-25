@@ -18,24 +18,23 @@ namespace StardewValleyStonks
 
         public Output()
         {
-
+            EqualAlternatesTo = new Dictionary<Fertilizer, List<Fertilizer>>();
         }
 
-        public void Calculate(Data data)
+        public void Calculate(Data data, Skills skills)
         {
+            FarmBuffLevel = skills.Farming.BuffedLevel;
+            EqualAlternatesTo.Clear();
+
             //make sure NoFert is in list
-            LinkedList<Fertilizer> fertilizers = new LinkedList<Fertilizer>
-                (data.Fertilizers.Select(f => new Fertilizer(f)));
-            EqualAlternatesTo = fertilizers.ToDictionary
-                (f => f, f => new List<Fertilizer>());
-
-            fertilizers.DoComparisons(EqualAlternatesTo);
-
-            Fertilizers = fertilizers.ToArray();
+            Fertilizers = new LinkedList<Fertilizer>
+                (data.Fertilizers.Select(f => new Fertilizer(f)))
+                .DoComparisons(EqualAlternatesTo)
+                .ToArray();
         }
 
         private static Func<int, int, double[]> QualityDistribution =
-            new Func<int, int, double[]>((fertQuality, FarmBuffLevel) =>
+            new Func<int, int, double[]>( (fertQuality, FarmBuffLevel) =>
             {
                 double[] dist = new double[3];
                 dist[2] = 0.01 + 0.2 * (FarmBuffLevel / 10.0 + fertQuality * (FarmBuffLevel + 2) / 12.0);

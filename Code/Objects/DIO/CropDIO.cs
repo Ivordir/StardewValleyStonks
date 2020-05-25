@@ -35,7 +35,6 @@ namespace StardewValleyStonks
 		internal Process[] Processes { get; }
 
 		internal Process[] Replants { get; }
-		private readonly List<Process> AllProcesses;
 
 		public CropDIO(
 			string name,
@@ -118,7 +117,7 @@ namespace StardewValleyStonks
 		//		foreach (ReplantMethod method in replantMethods)
 		//		{
 		//			List<SoldItems> items = SoldMethod(method.LeftOver);
-
+		//
 		//			if (BestPrice.Exists)// && BuySource.Active)
 		//			{
 		//				foreach (SoldItems item in items)
@@ -222,73 +221,6 @@ namespace StardewValleyStonks
 		//	}
 		//	double maxProfit = soldItems.Max(i => i.Profit);
 		//	return soldItems.FindAll(i => i.Profit == maxProfit);
-		//}
-
-		//private readonly Dictionary<IItem, List<Process>> ProcessesWith;
-
-		//private readonly Dictionary<IProcess, List<IProcess>> EqualProcesses;
-		//private readonly Dictionary<IItem, List<List<IProcess>>> Perms;
-		//private List<SoldItems> NewSoldMethodStartup(Dictionary<IItem, double> inputs)
-		//{
-		//	List<IItem> inputOrder = new List<IItem>(inputs.Keys);
-		//	inputOrder.NameSort();
-		//	List<IProcess> allProcesses = new List<IProcess>(AllProcesses);
-		//	foreach (IItem item in inputOrder)
-		//	{
-		//		List<List<IProcess>> processes = new List<List<IProcess>>();
-		//		for(int i = 0; i < allProcesses.Count; i++)
-		//		{					
-		//			List<IProcess> process = new List<IProcess>() { allProcesses[i] };
-		//			for(int j = i + 1; j < allProcesses.Count; j++)
-		//			{
-		//				if (allProcesses[i].Inputs.SequenceEqual(allProcesses[j].Inputs))
-		//				{
-		//					if (allProcesses[i].EqualInputs(allProcesses[j]))
-		//					{
-		//						int comparison = allProcesses[i].Compare(allProcesses[j]);
-		//						if (comparison == 1)
-		//						{
-		//							allProcesses.RemoveAt(j);
-		//							j--;
-		//						}
-		//						else if (comparison == 0)
-		//						{
-		//							EqualProcesses[allProcesses[i]].Add(allProcesses[j]);
-		//						}
-		//						else
-		//						{
-		//							allProcesses.RemoveAt(i);
-		//							i--;
-		//						}
-		//					}
-		//					else
-		//					{
-		//						process.Add(allProcesses[j]);
-		//						allProcesses.RemoveAt(j);
-		//						j--;
-		//					}
-		//				}
-		//			}
-		//			processes.Add(process);
-		//		}
-		//		Perms.Add(item, processes);
-		//	}
-		//	return NewSoldMethod(inputs, inputOrder);
-		//}
-		//private List<SoldItems> NewSoldMethod(Dictionary<IItem, double> inputs, List<IItem> order, int index = 0)
-		//{
-		//	List<SoldItems> soldItems = new List<SoldItems>();
-		//	if (inputs.Count == 0)
-		//	{
-		//		soldItems.Add(new SoldItems(new Dictionary<IItem, List<(IProcess, double)>>(), 0));
-		//		return soldItems;
-		//	}
-		//	for(int i = index; i < order.Count; i++)
-		//	{
-
-		//	}
-		//}
-
-		
+		//}		
 	}
 }

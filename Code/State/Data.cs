@@ -13,7 +13,7 @@ namespace StardewValleyStonks
         public CropDIO[] Crops { get; }
         public FertilizerDIO[] Fertilizers { get; }
         public Source[] SellSources { get; }
-        public Processor[] Processors { get; }
+        public Processor[] QualityProducts { get; }
         public Source[] BuySources { get; }
         public Source[] ReplantMethods { get; }
 
@@ -86,21 +86,23 @@ namespace StardewValleyStonks
                 new Quality("Iridium", 2)
             };
 
-            Processors = new Processor[4] {
+            QualityProducts = new Processor[4] {
                 new Processor("Preserves Jar", new ICondition[]{ new SkillLvlCondition(Skills.Farming, 4)}),
                 new Processor("Keg", new ICondition[]{ new SkillLvlCondition(Skills.Farming, 8)}),
                 new Processor("Oil Maker", new ICondition[]{ new SkillLvlCondition(Skills.Farming, 8)}),
-                new Processor("Mill"),
+                new Processor("Mill")
+                //custom processors affected by Quality Products Mod
             };
 
             SellSources = new Processor[6]
             {
                 new Processor("Raw Crop", null, true),
-                Processors[0],
-                Processors[1],
-                Processors[2],
-                Processors[3],
+                QualityProducts[0],
+                QualityProducts[1],
+                QualityProducts[2],
+                QualityProducts[3],
                 new Processor("Seeds", null, true)
+                //custom sellSources
             };
 
             BuySources = new Source[5] {
@@ -166,6 +168,23 @@ namespace StardewValleyStonks
                 .ToArray();
         }
 
+        private static Dictionary<Source, Price> ParsePrices(
+            IConfiguration config,
+            Dictionary<string, Source> sources,
+            Dictionary<string, Skill> skillDict,
+            Date date)
+        {
+            Dictionary<Source, Price> prices = new Dictionary<Source, Price>();
+            foreach (IConfigurationSection price in config.GetSection("Sources").GetChildren())
+            {
+                Source source = sources[price.GetValue<string>("Name")];
+                prices.Add(source, new BuyPrice(
+                    price.GetValue<int>("Price"),
+                    source,
+                    ParseConditions(price.GetSection("Conditions"), skillDict, date)));
+            }
+            return prices;
+        }
         private static ICondition[] ParseConditions(
             IConfigurationSection config,
             Dictionary<string, Skill> skillDict,
@@ -195,22 +214,5 @@ namespace StardewValleyStonks
             return conditions.ToArray();
         }
 
-        private static Dictionary<Source, Price> ParsePrices(
-            IConfiguration config,
-            Dictionary<string, Source> sources,
-            Dictionary<string, Skill> skillDict,
-            Date date)
-        {
-            Dictionary<Source, Price> prices = new Dictionary<Source, Price>();
-            foreach (IConfigurationSection price in config.GetSection("Sources").GetChildren())
-            {
-                Source source = sources[price.GetValue<string>("Name")];
-                prices.Add(source, new BuyPrice(
-                    price.GetValue<int>("Price"),
-                    source,
-                    ParseConditions(price.GetSection("Conditions"), skillDict, date)));
-            }
-            return prices;
-        }
     }
 }

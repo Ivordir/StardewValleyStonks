@@ -49,38 +49,80 @@ namespace StardewValleyStonks
 			InputAmounts = crop.HarvestedItems.ToDictionary
 				(kvp => kvp.Key, kvp => kvp.Value.Value);
 			InputOrder = InputAmounts.Keys
-				.OrderBy(i => i.Name).ToArray();
+				.OrderBy(i => i.Name)
+				.ToArray();
 			Price = crop.Price;
 			Sources = crop.BestPrices
-				.Select(x => x.Source).ToArray();
+				.Select(x => x.Source)
+				.ToArray();
 
-			HashSet<Process> allProcesses = crop.Processes
-				.Where(p => p.Active).ToHashSet();
-			foreach (IItem item in InputOrder)
-			{
-				ProcessesWith.Add(item, new List<LinkedList<Process>>());
-				Process process = allProcesses.FirstOrDefault(p => p.HasInput(item));
-				while (process != null)
-				{
-					LinkedList<Process> processes = new LinkedList<Process>
-						(allProcesses.Where(p => process.SameInputs(p)));
-					processes.AddFirst(process);
-					allProcesses.RemoveAll(processes);
+			EqualAlternativesTo = new Dictionary<Process, List<Process>>();
+			LinkedList<Process> processes = new LinkedList<Process>
+				(crop.Processes
+				.Where(p => p.Active))
+				.DoComparisons(EqualAlternativesTo);
+			ProcessesWith = InputOrder.ToDictionary
+				(item => item, item => processes.TakeRemove(p => p.HasInput(item)));
 
-					processes.DoComparisons(EqualProcesses);
-					ProcessesWith[item].Add(processes);
-
-					process = allProcesses.FirstOrDefault(p => p.HasInput(item));
-				}
-			}
+			List<IItem> inputs = new List<IItem>(InputOrder);
+			List<SoldItems> soldItems = SoldItemsCalc(inputs, InputAmounts);
 		}
 
         private readonly IItem[] InputOrder;
         private readonly Dictionary<IItem, double> InputAmounts;
 
-		private readonly Dictionary<Process, List<Process>> EqualProcesses;
-		private readonly Dictionary<IItem, List<LinkedList<Process>>> ProcessesWith;
+		private readonly Dictionary<Process, List<Process>> EqualAlternativesTo;
+		private readonly Dictionary<IItem, List<Process>> ProcessesWith;
 
+		public List<SoldItems> SoldItemsCalc(List<IItem> inputs, Dictionary<IItem, double> amounts)
+		{
+			if (amounts.Count == 0)
+			{
+				return new List<SoldItems>() { new SoldItems() };
+			}
+			List<SoldItems> soldItems = new List<SoldItems>();
+			foreach (Process process in ProcessesWith[inputs[0]])
+			{
+				Dictionary<IItem, double> leftOver = new Dictionary<IItem, double>(amounts);
+				List<IItem> newInputs = new List<IItem>(inputs);
+
+				double output = process.MaxOutput(amounts);
+				Dictionary<IItem, List<(double, Process)>> consumed = new Dictionary<IItem, List<(double, Process)>>();
+				foreach (IItem item in process.Inputs.Keys)
+				{
+					leftOver[item] -= output * process.Inputs[item];
+					consumed.Add(item, new List<(double, Process)> { (output * process.Inputs[item], process) });
+					if (leftOver[item] == 0)
+					{
+						leftOver.Remove(item);
+						newInputs.Remove(item);
+					}
+				}
+
+				double profit = process.Profit(output);
+				SoldItems sold = new SoldItems(profit, consumed);
+				List<SoldItems> subsequent = SoldItemsCalc(newInputs, leftOver);
+				subsequent[0].Add(sold);
+				if (soldItems.Count == 0 || subsequent[0].Profit.CompareTo(soldItems[0].Profit) == 0)
+				{
+					for (int i = 1; i < subsequent.Count; i++)
+					{
+						subsequent[i].Add(sold);
+					}
+					soldItems.AddRange(subsequent);
+				}
+				else if (subsequent[0].Profit.CompareTo(soldItems[0].Profit) == 1)
+				{
+					soldItems.Clear();
+					for (int i = 1; i < subsequent.Count; i++)
+					{
+						subsequent[i].Add(sold);
+					}
+					soldItems.AddRange(subsequent);
+				}
+			}
+			return soldItems;
+		}
 
 		//public List<(SoldItems, ReplantMethod)> Calculate
 		//{
@@ -141,33 +183,50 @@ namespace StardewValleyStonks
 		//	}
 		//}
 
-		//public class ReplantMethod
-		//{
-		//	public Dictionary<IItem, List<(IProcess, double)>> Usages { get; }
-		//	public double BoughtSeeds { get; }
-		//	public Dictionary<IItem, double> LeftOver { get; }
+		public class ReplantMethod
+		{
+			public Dictionary<IItem, List<(Process, double)>> Usages { get; }
+			public double BoughtSeeds { get; }
+			public Dictionary<IItem, double> LeftOver { get; }
 
-		//	public ReplantMethod(
-		//		Dictionary<IItem, List<(IProcess, double)>> usages,
-		//		double seeds,
-		//		Dictionary<IItem, double> leftOver)
-		//	{
-		//		Usages = usages;
-		//		BoughtSeeds = seeds;
-		//		LeftOver = leftOver;
-		//	}
-		//}
+			public ReplantMethod(
+				Dictionary<IItem, List<(Process, double)>> usages,
+				double seeds,
+				Dictionary<IItem, double> leftOver)
+			{
+				Usages = usages;
+				BoughtSeeds = seeds;
+				LeftOver = leftOver;
+			}
+		}
 
-		//public class SoldItems
-		//{
-		//	public Dictionary<IItem, List<(IProcess, double)>> Products { get; }
-		//	public double Profit { get; set; }
+		public class SoldItems
+		{
+			public Dictionary<IItem, List<(double, Process)>> Products { get; }
+			public double Profit { get; set; }
 
-		//	public SoldItems(Dictionary<IItem, List<(IProcess, double)>> products, double profit)
-		//	{
-		//		Products = products;
-		//		Profit = profit;
-		//	}
-		//}
+			public void Add(SoldItems items)
+			{
+				Profit += items.Profit;
+				foreach(IItem item in items.Products.Keys)
+				{
+					if (Products.ContainsKey(item))
+					{
+						Products[item].AddRange(items.Products[item]);
+					}
+					else
+					{
+						Products.Add(item, items.Products[item]);
+					}
+				}
+			}
+
+			public SoldItems(double profit, Dictionary<IItem, List<(double, Process)>> products)
+			{
+				Profit = profit;
+				Products = products;
+			}
+			public SoldItems() : this(0, new Dictionary<IItem, List<(double, Process)>>()) { }
+		}
 	}
 }
