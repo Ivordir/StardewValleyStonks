@@ -21,20 +21,20 @@ namespace StardewValleyStonks
                 _SeedsFromSeedMaker = value.WithMin(0);
                 foreach(RefValue amount in _SeedsByQuality.Values)
                 {
-                    amount.Value = _SeedsFromSeedMaker;
+                    amount._Value = _SeedsFromSeedMaker;
                 }
             }
         }
         public double SeedProbability
         {
-            get => _SeedProbability.Value;
-            set => _SeedProbability.Value = value.InRange(0, 1);
+            get => _SeedProbability._Value;
+            set => _SeedProbability._Value = value.InRange(0, 1);
         }
         public bool QualitySeedMaker { get; set; }
         public int SeedsByQuality(Quality quality)
-            => (int)_SeedsByQuality[quality].Value;
+            => (int)_SeedsByQuality[quality]._Value;
         public void SetSeedsByQuality(Quality quality, int value)
-            => _SeedsByQuality[quality].Value = value.WithMin(0);
+            => _SeedsByQuality[quality]._Value = value.WithMin(0);
         public Dictionary<Quality, IValue> SeedAmounts { get; }
 
         public double GiantCropChecksPerTile

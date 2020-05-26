@@ -1,19 +1,10 @@
-﻿namespace StardewValleyStonks
+﻿using System.Linq;
+
+namespace StardewValleyStonks
 {
-    public class Expression : IValue
+    public readonly struct Expression : IValue
     {
-        public double Value
-        {
-            get
-            {
-                double sum = 0;
-                foreach(IValue term in Terms)
-                {
-                    sum += term.Value;
-                }
-                return sum;
-            }
-        }
+        public readonly double Value => Terms.Sum(x => x.Value);
 
         private readonly IValue[] Terms;
 

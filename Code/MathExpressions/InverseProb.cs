@@ -1,6 +1,6 @@
 ﻿namespace StardewValleyStonks
 {
-    public class InverseProb : IValue
+    public struct InverseProb : IValue
     {
         public double Value => 1 - Prob.Value;
 

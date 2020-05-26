@@ -9,7 +9,6 @@ namespace StardewValleyStonks
 {
     public class Data
     {
-        public Quality[] Qualities { get; }
         public CropDIO[] Crops { get; }
         public FertilizerDIO[] Fertilizers { get; }
         public Source[] SellSources { get; }
@@ -43,22 +42,22 @@ namespace StardewValleyStonks
         {
             if (Skills.Botanist.Active)
             {
-                ForageDistribution[3].Value = 1;
-                ForageDistribution[2].Value = 0;
-                ForageDistribution[1].Value = 0;
-                ForageDistribution[0].Value = 0;
+                ForageDistribution[3]._Value = 1;
+                ForageDistribution[2]._Value = 0;
+                ForageDistribution[1]._Value = 0;
+                ForageDistribution[0]._Value = 0;
             }
             else
             {
-                ForageDistribution[2].Value = Skills.Foraging.BuffedLevel / 30.0;
-                ForageDistribution[1].Value = Skills.Foraging.BuffedLevel / 15.0 * (1 - ForageDistribution[2].Value);
-                ForageDistribution[0].Value = 1 - ForageDistribution[1].Value - ForageDistribution[2].Value;
+                ForageDistribution[2]._Value = Skills.Foraging.BuffedLevel / 30.0;
+                ForageDistribution[1]._Value = Skills.Foraging.BuffedLevel / 15.0 * (1 - ForageDistribution[2]._Value);
+                ForageDistribution[0]._Value = 1 - ForageDistribution[1]._Value - ForageDistribution[2]._Value;
             }
             if (Skills.Gatherer.Active)
             {
                 foreach(RefValue value in ForageDistribution)
                 {
-                    value.Value *= Skills.Gatherer.Value;
+                    value._Value *= Skills.Gatherer.Value;
                 }
             }
         }
@@ -78,13 +77,6 @@ namespace StardewValleyStonks
                 int numChoices = 4; //cropItems.Length
                 IValue[] values = ForageAmounts(numChoices, ForageDistribution);
             }
-
-            Qualities = new Quality[]
-            {
-                new Quality("Silver", 1.25),
-                new Quality("Gold", 1.5),
-                new Quality("Iridium", 2)
-            };
 
             QualityProducts = new Processor[4] {
                 new Processor("Preserves Jar", new ICondition[]{ new SkillLvlCondition(Skills.Farming, 4)}),

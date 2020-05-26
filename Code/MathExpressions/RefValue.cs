@@ -1,8 +1,10 @@
 ﻿namespace StardewValleyStonks
 {
-    public class RefValue : IValue
+    public struct RefValue : IValue
     {
         public double Value { get; set; }
+
+        public static implicit operator RefValue(double value) => new RefValue(value);
 
         public RefValue(double value)
         {

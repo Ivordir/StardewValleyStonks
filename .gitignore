@@ -58,6 +58,7 @@ artifacts/
 
 # StyleCop
 StyleCopReport.xml
+*.StyleCop
 
 # Files built by Visual Studio
 *_i.c
@@ -147,6 +148,9 @@ nCrunchTemp_*
 # MightyMoose
 *.mm.*
 AutoTest.Net/
+
+# Web Compiler
+compilerconfig.*
 
 # Web workbench (sass)
 .sass-cache/

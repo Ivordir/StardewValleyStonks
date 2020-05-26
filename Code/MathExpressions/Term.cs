@@ -1,6 +1,6 @@
 ﻿namespace StardewValleyStonks
 {
-    public class Term : IValue
+    public struct Term : IValue
     {
         public double Value
         {
@@ -11,7 +11,7 @@
                 {
                     value *= amount.Value;
                 }
-                return Negative ? value * -1 : value;
+                return Negative ? -1 * value : value;
             }
         }
 
