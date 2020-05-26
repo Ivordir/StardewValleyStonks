@@ -46,12 +46,13 @@ namespace StardewValleyStonks
             SpeedMultiplier = crop.SpeedMultipliers
                 .Where(m => m.Active)
                 .Sum(m => m.Value);
-            BuySource = buySource; //needs to be a copy from factory
+            BuySource = buySource; // needs to be a copy from factory
             CropItem = crop.Crop;
             QualityCrops = crop.QualityCrops;
             NormalCrops = crop.NormalCrops;
-            InputAmounts = crop.HarvestedItems.ToDictionary
-                (kvp => kvp.Key, kvp => new QualityDist(kvp.Value.Select(v => (double)v).ToArray()));
+            InputAmounts = crop.HarvestedItems.ToDictionary(
+                kvp => kvp.Key,
+                kvp => new QualityDist(kvp.Value.Select(v => (double)v).ToArray()));
             Price = crop.Price;
             Sources = crop.BestPrices
                 .Select(x => x.Source)

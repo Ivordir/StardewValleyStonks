@@ -11,8 +11,9 @@ namespace StardewValleyStonks
         //StaticRegrowCrop[] RegrowCrops;
         //StaticFertilizer[] Fertilizers;
         //List<PlanNode> Plans;
-        private int FarmBuffLevel;
+
         private readonly Fertilizer NoFertilizer = new Fertilizer("None", 0, 0, 0);
+        private int FarmBuffLevel;
         private Dictionary<Fertilizer, List<Fertilizer>> EqualAlternatesTo;
         private Fertilizer[] Fertilizers;
 
@@ -27,14 +28,14 @@ namespace StardewValleyStonks
             EqualAlternatesTo.Clear();
 
             //make sure NoFert is in list
-            Fertilizers = new LinkedList<Fertilizer>
-                (data.Fertilizers.Select(f => new Fertilizer(f)))
+            Fertilizers = new LinkedList<Fertilizer>(
+                data.Fertilizers.Select(f => new Fertilizer(f)))
                 .DoComparisons(EqualAlternatesTo)
                 .ToArray();
         }
 
         private static Func<int, int, double[]> QualityDistribution =
-            new Func<int, int, double[]>( (fertQuality, FarmBuffLevel) =>
+            new Func<int, int, double[]>((fertQuality, FarmBuffLevel) =>
             {
                 double[] dist = new double[3];
                 dist[2] = 0.01 + 0.2 * (FarmBuffLevel / 10.0 + fertQuality * (FarmBuffLevel + 2) / 12.0);

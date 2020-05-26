@@ -35,7 +35,7 @@
             Price[] prices = fert.BestPrices.ToArray();
             Price = prices[0].Value;
             Sources = new Source[prices.Length]; 
-            for(int i = 0; i < prices.Length; i++)
+            for (int i = 0; i < prices.Length; i++)
             {
                 Sources[i] = prices[i].Source;
             }

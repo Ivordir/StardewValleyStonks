@@ -32,7 +32,7 @@ namespace StardewValleyStonks
         {
             get
             {
-                string display = "";
+                string display = string.Empty;
                 foreach (Warning warning in Warnings)
                 {
                     display += warning.Display() + "\n";
@@ -70,7 +70,7 @@ namespace StardewValleyStonks
             _Warnings = new List<Warning>();
         }
 
-        //initialize selected in derived class or keep default false value
+        // initialize selected in derived class or keep default false value
         protected Selectable(ICondition[] conditions = null)
         {
             Conditions = conditions;

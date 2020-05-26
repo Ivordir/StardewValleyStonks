@@ -15,7 +15,7 @@ namespace StardewValleyStonks
                 if (!HasPrice)
                 {
                     NoSource.SubWarnings.Clear();
-                    foreach(Price price in Prices)
+                    foreach (Price price in Prices)
                     {
                         NoSource.SubWarnings.AddRange(price.Warnings);
                     }

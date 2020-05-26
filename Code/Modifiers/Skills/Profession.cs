@@ -46,7 +46,7 @@
             Profession[] dependants = null,
             Profession[] requirements = null,
             Profession[] exclusiveWith = null)
-            : base (conditions)
+            : base(conditions)
         {
             Name = name;
             Skills = skills;

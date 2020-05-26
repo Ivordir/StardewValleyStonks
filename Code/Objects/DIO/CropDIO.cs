@@ -19,6 +19,26 @@ namespace StardewValleyStonks
 			(DoubleCrops ? ExtraCrops * Settings.DoubleCropProb + Settings.DoubleCropProb : 0)
 			+ ExtraCrops) * NoGiantCropProb + GiantCrops;
 
+		public override bool Active
+		{
+			get
+			{
+				if ((Date.Seasons & SelectedSeasons) == 0)
+				{
+					return false;
+				}
+				// no products
+				// no replant
+				throw new NotImplementedException();
+			}
+		}
+		public override List<Warning> Warnings => throw new NotImplementedException();
+
+		internal Grow Grow { get; }
+		internal Item Crop { get; }
+		internal Dictionary<Item, Value[]> HarvestedItems { get; }
+		internal MultiProcess[] Processes { get; }
+		internal MultiProcess[] Replants { get; }
 
 		private readonly double ExtraCrops;
 		private readonly bool Giant, DoubleCrops;
@@ -28,12 +48,6 @@ namespace StardewValleyStonks
 		private readonly Settings Settings;
 		private readonly Date Date;
 		private readonly bool Indoors;
-
-		internal Grow Grow { get; }
-		internal Item Crop { get; }
-		internal Dictionary<Item, Value[]> HarvestedItems { get; }
-		internal MultiProcess[] Processes { get; }
-		internal MultiProcess[] Replants { get; }
 
 		public CropDIO(
 			string name,
@@ -52,21 +66,5 @@ namespace StardewValleyStonks
 			Processes = processes;
 			Replants = replants;
 		}
-
-		public override bool Active
-		{
-			get
-			{
-				if ((Date.Seasons & SelectedSeasons) == 0)
-				{
-
-				}
-				//no products
-				//no replant
-				throw new NotImplementedException();
-			}
-		}
-		public override List<Warning> Warnings => throw new NotImplementedException();
-
 	}
 }

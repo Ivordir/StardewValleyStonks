@@ -1,9 +1,9 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Binder;
-using ExtentionsLibrary.Memoization;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ExtentionsLibrary.Memoization;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Binder;
 
 namespace StardewValleyStonks
 {
@@ -27,7 +27,7 @@ namespace StardewValleyStonks
             }
             IValue[] amounts = new Term[NumChoices];
             RefValue numChoices = new RefValue(1.0 / NumChoices);
-            for(int i = 0; i < ForageDistribution.Length; i++)
+            for (int i = 0; i < ForageDistribution.Length; i++)
             {
                 amounts[i] = new Term(new IValue[]
                 {
@@ -55,7 +55,7 @@ namespace StardewValleyStonks
             }
             if (Skills.Gatherer.Active)
             {
-                foreach(RefValue value in ForageDistribution)
+                foreach (RefValue value in ForageDistribution)
                 {
                     value._Value *= Skills.Gatherer.Value;
                 }
@@ -67,21 +67,22 @@ namespace StardewValleyStonks
             Skills = skills;
 
             ForageDistribution = new RefValue[4];
-            for(int i = 0; i < ForageDistribution.Length; i++)
+            for (int i = 0; i < ForageDistribution.Length; i++)
             {
                 ForageDistribution[i] = new RefValue(0);
             }
 
-            if(true) //forage crop
+            if (true) //forage crop
             {
                 int numChoices = 4; //cropItems.Length
                 IValue[] values = ForageAmounts(numChoices, ForageDistribution);
             }
 
-            QualityProducts = new Processor[4] {
-                new Processor("Preserves Jar", new ICondition[]{ new SkillLvlCondition(Skills.Farming, 4)}),
-                new Processor("Keg", new ICondition[]{ new SkillLvlCondition(Skills.Farming, 8)}),
-                new Processor("Oil Maker", new ICondition[]{ new SkillLvlCondition(Skills.Farming, 8)}),
+            QualityProducts = new Processor[4]
+            {
+                new Processor("Preserves Jar", new ICondition[]{new SkillLvlCondition(Skills.Farming, 4)} ),
+                new Processor("Keg", new ICondition[]{new SkillLvlCondition(Skills.Farming, 8)} ),
+                new Processor("Oil Maker", new ICondition[]{new SkillLvlCondition(Skills.Farming, 8)} ),
                 new Processor("Mill")
                 //custom processors affected by Quality Products Mod
             };
@@ -97,7 +98,8 @@ namespace StardewValleyStonks
                 //custom sellSources
             };
 
-            BuySources = new Source[5] {
+            BuySources = new Source[5]
+            {
                 new Source("Pierre"),
                 new Source("Jojo"),
                 new Source("Oasis"),
@@ -105,9 +107,10 @@ namespace StardewValleyStonks
                 new Source("Crafting")
             };
 
-            ReplantMethods = new Source[3] {
+            ReplantMethods = new Source[3]
+            {
                 new Source("Buy Seeds"),
-                new Source("Seed Maker", new ICondition[]{ new SkillLvlCondition(Skills.Farming, 9)}),
+                new Source("Seed Maker", new ICondition[]{ new SkillLvlCondition(Skills.Farming, 9) }),
                 new Source("Replant Crop")
             };
 
@@ -140,9 +143,6 @@ namespace StardewValleyStonks
             //    {
             //        grow = new Grow(crop.GetValue<int[]>("GrowthStages"));
             //    }
-
-
-
             //    crops.Add(new CropDIO(
             //        crop.GetValue<string>("Name"),
             //        Enum.Parse<Seasons>(crop.GetValue<string>("Seasons")),
@@ -170,10 +170,12 @@ namespace StardewValleyStonks
             foreach (IConfigurationSection price in config.GetSection("Sources").GetChildren())
             {
                 Source source = sources[price.GetValue<string>("Name")];
-                prices.Add(source, new BuyPrice(
-                    price.GetValue<int>("Price"),
+                prices.Add(
                     source,
-                    ParseConditions(price.GetSection("Conditions"), skillDict, date)));
+                    new BuyPrice(
+                        price.GetValue<int>("Price"),
+                        source,
+                        ParseConditions(price.GetSection("Conditions"), skillDict, date)));
             }
             return prices;
         }
@@ -205,6 +207,5 @@ namespace StardewValleyStonks
             }
             return conditions.ToArray();
         }
-
     }
 }

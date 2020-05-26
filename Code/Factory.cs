@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Components;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Microsoft.AspNetCore.Components;
 
 namespace StardewValleyStonks
 {
@@ -26,7 +26,7 @@ namespace StardewValleyStonks
 
 		public Item StaticProduct(string name)
 		{
-			if(Products.ContainsKey(name))
+			if (Products.ContainsKey(name))
 			{
 				return Products[name];
 			}

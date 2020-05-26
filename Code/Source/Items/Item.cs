@@ -22,7 +22,7 @@
             Multiplier = multiplier;
             Qualitites = new IItem[qualities];
             Qualitites[0] = this;
-            for(int quality = 1; quality < qualities - 1; quality++)
+            for (int quality = 1; quality < qualities - 1; quality++)
             {
                 Qualitites[quality] = new QualityItem(this, quality);
             }

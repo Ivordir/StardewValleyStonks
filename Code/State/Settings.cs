@@ -19,7 +19,7 @@ namespace StardewValleyStonks
             set
             {
                 _SeedsFromSeedMaker = value.WithMin(0);
-                foreach(RefValue amount in _SeedsByQuality.Values)
+                foreach (RefValue amount in _SeedsByQuality.Values)
                 {
                     amount._Value = _SeedsFromSeedMaker;
                 }
@@ -42,11 +42,10 @@ namespace StardewValleyStonks
             get => _GiantCropChecksPerTile;
             set
             {
-                _GiantCropChecksPerTile= value.InRange(0, 9);
+                _GiantCropChecksPerTile = value.InRange(0, 9);
             }
         }
         public double NoGiantCropProb => System.Math.Pow(1 - GiantCropChance, _GiantCropChecksPerTile);
-
 
         public bool GreenhouseMode { get; set; }
         public FertilizerDIO StaringFert { get; set; }
@@ -66,7 +65,7 @@ namespace StardewValleyStonks
 
             _SeedsFromSeedMaker = 2;
             _SeedsByQuality = new Dictionary<Quality, RefValue>();
-            foreach(Quality quality in qualities)
+            foreach (Quality quality in qualities)
             {
                 _SeedsByQuality.Add(quality, new RefValue(_SeedsFromSeedMaker));
             }
@@ -74,11 +73,13 @@ namespace StardewValleyStonks
             SeedAmounts = new Dictionary<Quality, IValue>();
             foreach (Quality quality in qualities)
             {
-                SeedAmounts.Add(quality, new Term(new IValue[]
-                {
-                    _SeedsByQuality[quality],
-                    _SeedProbability
-                }));
+                SeedAmounts.Add(
+                    quality,
+                    new Term(new IValue[]
+                    {
+                        _SeedsByQuality[quality],
+                        _SeedProbability
+                    }));
             }
 
             StaringFert = null;

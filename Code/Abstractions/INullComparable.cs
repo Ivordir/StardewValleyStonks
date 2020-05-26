@@ -2,10 +2,6 @@
 
 namespace StardewValleyStonks
 {
-    /// <summary>
-    /// Same as IComparable<T>, except that CompareTo can return a null value, indicating the two objects cannot be compared.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
     public interface INullComparable<T>
     {
         public int? CompareTo(T other);
@@ -14,7 +10,7 @@ namespace StardewValleyStonks
     public static class NullCompareExtentions
     {
         public static LinkedList<T> DoComparisons<T>(this LinkedList<T> list, Dictionary<T, List<T>> equalDict)
-            where T: INullComparable<T>
+            where T : INullComparable<T>
         {
             LinkedListNode<T> item = list.First;
             while (item != list.Last)

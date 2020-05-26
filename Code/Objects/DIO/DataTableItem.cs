@@ -30,7 +30,7 @@ namespace StardewValleyStonks
 		{
 			get
 			{
-				string display = "";
+				string display = string.Empty;
 				foreach (Warning warning in Warnings)
 				{
 					display += warning.Display() + "\n";

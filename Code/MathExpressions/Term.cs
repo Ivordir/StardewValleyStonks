@@ -7,7 +7,7 @@
             get
             {
                 double value = 1;
-                foreach(IValue amount in Amounts)
+                foreach (IValue amount in Amounts)
                 {
                     value *= amount.Value;
                 }

@@ -47,8 +47,8 @@ namespace StardewValleyStonks
 			CropItem = crop.Crop;
             QualityCrops = crop.QualityCrops;
             NormalCrops = crop.NormalCrops;
-			InputAmounts = crop.HarvestedItems.ToDictionary
-				(kvp => kvp.Key, kvp => kvp.Value.Select(v => (double)v).ToList());
+			//InputAmounts = crop.HarvestedItems.ToDictionary
+			//	(kvp => kvp.Key, kvp => kvp.Value.Select(v => (double)v).ToList());
 			InputOrder = new List<IItem>(InputAmounts.Keys
 				.OrderBy(i => i.Name));
 			Price = crop.Price;
@@ -61,8 +61,8 @@ namespace StardewValleyStonks
 				(crop.Processes
 				.Where(p => p.Active))
 				.DoComparisons(EqualAlternativesTo);
-			ProcessesWith = crop.Normals.ToDictionary
-				(item => item, item => processes.TakeRemove(p => p.HasInput(item)));
+			//ProcessesWith = crop.Normals.ToDictionary
+			//	(item => item, item => processes.TakeRemove(p => p.HasInput(item)));
 
 			List<SoldItems> soldItems = SoldItemsCalc(InputOrder, InputAmounts);
 

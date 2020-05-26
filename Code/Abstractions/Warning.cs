@@ -9,9 +9,9 @@ namespace StardewValleyStonks
         public List<Warning> SubWarnings { get; set; }
         public string Display(int indentation = 1)
         {
-            //string builder? nah
+            // string builder? nah
             string display = Message;
-            foreach(Warning warning in SubWarnings)
+            foreach (Warning warning in SubWarnings)
             {
                 display += "\n" + "  ".Repeat(indentation) + "•" + warning.Display(indentation + 1);
             }

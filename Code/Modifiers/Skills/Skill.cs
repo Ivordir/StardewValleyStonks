@@ -20,7 +20,8 @@ namespace StardewValleyStonks
 
         private int _Level, _Buff;
 
-        public Skill(string name,
+        public Skill(
+            string name,
             Profession[][] professions,
             int level = 0,
             int buff = 0)
