@@ -7,9 +7,9 @@ namespace StardewValleyStonks
     {
         [Inject] private Skills Skills { get; }
 
-		private readonly Dictionary<string, Product> Products;
+		private readonly Dictionary<string, Item> Products;
 
-		public Product Product(string type, string name, int basePrice)
+		public Item Product(string type, string name, int basePrice)
 		{
 			return null;
 			/*
@@ -24,7 +24,7 @@ namespace StardewValleyStonks
 			*/
 		}
 
-		public Product StaticProduct(string name)
+		public Item StaticProduct(string name)
 		{
 			if(Products.ContainsKey(name))
 			{
@@ -33,7 +33,7 @@ namespace StardewValleyStonks
 			throw new KeyNotFoundException($"The product { name } does not exist as a static product.");
 		}
 
-		public void RegisterStaticProduct(Product product)
+		public void RegisterStaticProduct(Item product)
 		{
 			Products.Add(product.Name, product);
 		}

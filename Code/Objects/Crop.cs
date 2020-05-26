@@ -1,4 +1,5 @@
 ﻿using ExtentionsLibrary.Collections;
+using ExtentionsLibrary.Limits;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -20,9 +21,9 @@ namespace StardewValleyStonks
 
         private void ApplyDistribution(double[] dist)
         {
-            InputAmounts[Crops[0]] = dist[0] * QualityCrops + NormalCrops;
-            InputAmounts[Crops[1]] = dist[1] * QualityCrops;
-            InputAmounts[Crops[2]] = dist[2] * QualityCrops;
+            InputAmounts[CropItem][0] = dist[0] * QualityCrops + NormalCrops;
+            InputAmounts[CropItem][1] = dist[1] * QualityCrops;
+            InputAmounts[CropItem][2] = dist[2] * QualityCrops;
         }
 
         public bool DestroysFertilizer { get; }
@@ -31,7 +32,7 @@ namespace StardewValleyStonks
         private readonly Grow Grow;
         private readonly double SpeedMultiplier;
         private readonly Source BuySource;
-        private readonly IItem[] Crops;
+        private readonly IItem CropItem;
         private readonly double QualityCrops;
         private readonly double NormalCrops;
 
@@ -43,14 +44,13 @@ namespace StardewValleyStonks
 				.Where(m => m.Active)
 				.Sum(m => m.Value);
             BuySource = buySource; //needs to be a copy from factory
-			Crops = crop.Crops;
+			CropItem = crop.Crop;
             QualityCrops = crop.QualityCrops;
             NormalCrops = crop.NormalCrops;
 			InputAmounts = crop.HarvestedItems.ToDictionary
-				(kvp => kvp.Key, kvp => kvp.Value.Value);
-			InputOrder = InputAmounts.Keys
-				.OrderBy(i => i.Name)
-				.ToArray();
+				(kvp => kvp.Key, kvp => kvp.Value.Select(v => v.Value).ToList());
+			InputOrder = new List<IItem>(InputAmounts.Keys
+				.OrderBy(i => i.Name));
 			Price = crop.Price;
 			Sources = crop.BestPrices
 				.Select(x => x.Source)
@@ -61,46 +61,54 @@ namespace StardewValleyStonks
 				(crop.Processes
 				.Where(p => p.Active))
 				.DoComparisons(EqualAlternativesTo);
-			ProcessesWith = InputOrder.ToDictionary
+			ProcessesWith = crop.Normals.ToDictionary
 				(item => item, item => processes.TakeRemove(p => p.HasInput(item)));
 
-			List<IItem> inputs = new List<IItem>(InputOrder);
-			List<SoldItems> soldItems = SoldItemsCalc(inputs, InputAmounts);
+			List<SoldItems> soldItems = SoldItemsCalc(InputOrder, InputAmounts);
+
+			Replants = crop.Replants
+				.Where(r => r.Active)
+				.ToArray();
 		}
 
-        private readonly IItem[] InputOrder;
-        private readonly Dictionary<IItem, double> InputAmounts;
+        private readonly List<IItem> InputOrder;
+        private readonly Dictionary<IItem, List<double>> InputAmounts;
 
 		private readonly Dictionary<Process, List<Process>> EqualAlternativesTo;
 		private readonly Dictionary<IItem, List<Process>> ProcessesWith;
 
-		public List<SoldItems> SoldItemsCalc(List<IItem> inputs, Dictionary<IItem, double> amounts)
+		public List<SoldItems> SoldItemsCalc(List<IItem> inputs, Dictionary<IItem, List<double>> amounts)
 		{
 			if (amounts.Count == 0)
 			{
 				return new List<SoldItems>() { new SoldItems() };
 			}
 			List<SoldItems> soldItems = new List<SoldItems>();
-			foreach (Process process in ProcessesWith[inputs[0]])
+			foreach (Process process in ProcessesWith[inputs[^1]])
 			{
-				Dictionary<IItem, double> leftOver = new Dictionary<IItem, double>(amounts);
+				Dictionary<IItem, List<double>> leftOver = amounts.ToDictionary
+					(kvp => kvp.Key, kvp => new List<double>(kvp.Value));
 				List<IItem> newInputs = new List<IItem>(inputs);
 
 				double output = process.MaxOutput(amounts);
 				Dictionary<IItem, List<(double, Process)>> consumed = new Dictionary<IItem, List<(double, Process)>>();
 				foreach (IItem item in process.Inputs.Keys)
 				{
-					leftOver[item] -= output * process.Inputs[item];
+					List<double> qualities = leftOver[item];
+					qualities[^1] -= output * process.Inputs[item];
 					consumed.Add(item, new List<(double, Process)> { (output * process.Inputs[item], process) });
-					if (leftOver[item] == 0)
+					if (qualities[^1] == 0)
 					{
-						leftOver.Remove(item);
-						newInputs.Remove(item);
+						qualities.RemoveLast();
+						if (qualities.Count == 0)
+						{
+							newInputs.Remove(item);
+							leftOver.Remove(item);
+						}
 					}
 				}
 
-				double profit = process.Profit(output);
-				SoldItems sold = new SoldItems(profit, consumed);
+				SoldItems sold = new SoldItems(process.Profit(output), consumed);
 				List<SoldItems> subsequent = SoldItemsCalc(newInputs, leftOver);
 				subsequent[0].Add(sold);
 				if (soldItems.Count == 0 || subsequent[0].Profit.CompareTo(soldItems[0].Profit) == 0)
@@ -122,6 +130,53 @@ namespace StardewValleyStonks
 				}
 			}
 			return soldItems;
+		}
+
+
+		private readonly Process[] Replants;
+
+		private List<ReplantMethod> ReplantMethods(Dictionary<IItem, List<double>> inputs, double seeds = 1)
+		{
+			if (inputs.Count == 0 || seeds == 0)
+			{
+				return new List<ReplantMethod>();
+			}
+			List<ReplantMethod> methods = new List<ReplantMethod>();
+			foreach (Process replant in Replants)
+			{
+				if (replant.HasOutput(inputs))
+				{
+					double output = replant.MaxOutput(inputs).WithMax(seeds);
+					Dictionary<IItem, List<double>> leftOver = inputs.ToDictionary
+						(kvp => kvp.Key, kvp => new List<double>(kvp.Value));
+					Dictionary<IItem, List<(double, Process)>> consumed = new Dictionary<IItem, List<(double, Process)>>();
+					foreach (IItem item in replant.Inputs.Keys)
+					{
+						List<double> qualities = leftOver[item];
+						qualities[^1] -= output * replant.Inputs[item];
+						consumed.Add(item, new List<(double, Process)> { (output * replant.Inputs[item], replant) });
+						if (qualities[^1] == 0)
+						{
+							leftOver.Remove(item);
+							//newInputs.Remove(item);
+						}
+					}
+					foreach (ReplantMethod method in ReplantMethods(leftOver, seeds - output))
+					{
+						foreach (var kvp in consumed)
+						{
+							method.Usages[kvp.Key].AddRange(kvp.Value);
+						}
+						methods.Add(method);
+					}
+					methods.Add(new ReplantMethod(
+								consumed,
+								seeds - output,
+								leftOver
+								));
+				}
+			}
+			return methods;
 		}
 
 		//public List<(SoldItems, ReplantMethod)> Calculate
@@ -185,14 +240,14 @@ namespace StardewValleyStonks
 
 		public class ReplantMethod
 		{
-			public Dictionary<IItem, List<(Process, double)>> Usages { get; }
+			public Dictionary<IItem, List<(double, Process)>> Usages { get; }
 			public double BoughtSeeds { get; }
-			public Dictionary<IItem, double> LeftOver { get; }
+			public Dictionary<IItem, List<double>> LeftOver { get; }
 
 			public ReplantMethod(
-				Dictionary<IItem, List<(Process, double)>> usages,
+				Dictionary<IItem, List<(double, Process)>> usages,
 				double seeds,
-				Dictionary<IItem, double> leftOver)
+				Dictionary<IItem, List<double>> leftOver)
 			{
 				Usages = usages;
 				BoughtSeeds = seeds;

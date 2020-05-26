@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using ExtentionsLibrary.Validation;
+using ExtentionsLibrary.Limits;
 
 namespace StardewValleyStonks
 {
@@ -8,7 +8,7 @@ namespace StardewValleyStonks
         public bool SpecialCharm { get; set; }
         public int LuckBuff
         {
-            get => (int)_LuckBuff;
+            get => _LuckBuff;
             set => _LuckBuff = value.WithMin(0);
         }
         public double DoubleCropProb => 0.0000999999974737875 + _LuckBuff / 1500 + (SpecialCharm ? 0.025000000372529 : 0);

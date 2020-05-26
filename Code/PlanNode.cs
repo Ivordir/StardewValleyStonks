@@ -17,7 +17,7 @@
 
         public double Profit => Crop.Profit(Fertilizer.Quality, NumHarvests);
 
-        public Product[] Products
+        public Item[] Products
         {
             get
             {

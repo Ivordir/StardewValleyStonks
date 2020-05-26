@@ -49,7 +49,7 @@ namespace StardewValleyStonks
 		{
 			Name = name;
             _PriceFrom = priceFrom;
-            _BestPrices = new List<Price>(1);
+            _BestPrices = new List<Price>();
 			Selected = true;
 		}
     }

@@ -18,8 +18,8 @@ namespace StardewValleyStonks
             bool subSet = Inputs.IsSubSetOf(other.Inputs);
             if (subSet && superSet) //same inputs
             {
-                bool anyBetter = false;
-                bool anyWorse = false;
+                bool anyBetter = OutputAmount * OutputItem.Price > other.OutputAmount * other.OutputItem.Price;
+                bool anyWorse = OutputAmount * OutputItem.Price < other.OutputAmount * other.OutputItem.Price;
                 foreach (IItem item in Inputs.Keys)
                 {
                     if (Inputs[item] > other.Inputs[item])
@@ -47,7 +47,8 @@ namespace StardewValleyStonks
             }
             else if (superSet)
             {
-                if (other.Inputs.Keys.Any(k => Inputs[k] < other.Inputs[k]))
+                if (OutputAmount * OutputItem.Price > other.OutputAmount * other.OutputItem.Price
+                    || other.Inputs.Keys.Any(k => Inputs[k] < other.Inputs[k]))
                 {
                     return null;
                 }
@@ -55,7 +56,8 @@ namespace StardewValleyStonks
             }
             else if (subSet)
             {
-                if (Inputs.Keys.Any(k => Inputs[k] > other.Inputs[k]))
+                if (OutputAmount * OutputItem.Price < other.OutputAmount * other.OutputItem.Price 
+                    || Inputs.Keys.Any(k => Inputs[k] > other.Inputs[k]))
                 {
                     return null;
                 }
@@ -65,22 +67,10 @@ namespace StardewValleyStonks
         }
         public bool HasInput(IItem item) => Inputs.ContainsKey(item);
         public double Profit(double output) => OutputItem.Price * output;
-        public double MaxOutput(Dictionary<IItem, double> inputs)
-            => OutputAmount * Inputs.Min(i => inputs[i.Key] / i.Value);
-        public Dictionary<IItem, List<(Process, double)>> ConsumeInput(Dictionary<IItem, double> inputs, double output)
-        {
-            Dictionary<IItem, List<(Process, double)>> consumed = new Dictionary<IItem, List<(Process, double)>>();
-            foreach (IItem requiredItem in Inputs.Keys)
-            {
-                inputs[requiredItem] -= output * Inputs[requiredItem];
-                consumed.Add(requiredItem, new List<(Process, double)> { (this, output * Inputs[requiredItem]) });
-                if (inputs[requiredItem] == 0)
-                {
-                    inputs.Remove(requiredItem);
-                }
-            }
-            return consumed;
-        }
+        public bool HasOutput(Dictionary<IItem, List<double>> inputs)
+            => Inputs.IsSubSetOf(inputs);
+        public double MaxOutput(Dictionary<IItem, List<double>> inputs)
+            => OutputAmount * Inputs.Min(i => inputs[i.Key][^1] / i.Value);
 
         private readonly IItem _OutputItem;
 
@@ -95,18 +85,18 @@ namespace StardewValleyStonks
             sell,
             1,
             conditions) { }
-        //public Process(
-        //    Processor processor,
-        //    IItem input,
-        //    IItem output,
-        //    ICondition[] conditions = null)
-        //: this(
-        //    processor,
-        //    input,
-        //    1,
-        //    output,
-        //    1,
-        //    conditions) { }
+        public Process(
+            Processor processor,
+            IItem input,
+            IItem output,
+            ICondition[] conditions = null)
+        : this(
+            processor,
+            input,
+            1,
+            output,
+            1,
+            conditions) { }
         //public Process(
         //    Processor processor,
         //    IItem input,

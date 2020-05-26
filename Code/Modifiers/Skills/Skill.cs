@@ -1,4 +1,4 @@
-﻿using ExtentionsLibrary.Validation;
+﻿using ExtentionsLibrary.Limits;
 
 namespace StardewValleyStonks
 {

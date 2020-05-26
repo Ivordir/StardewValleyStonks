@@ -1,17 +1,22 @@
 ﻿namespace StardewValleyStonks
 {
-	public class Item : IItem
-	{
-		public string Name { get; }
-		public int Price { get; }
-		public IItem Normal => this;
+    public class Item : IItem
+    {
+        public string Name { get; }
+        public int Price => Multiplier != null && Multiplier.Active ? (int)(Multiplier.Value * BasePrice) : BasePrice;
+        public IItem Normal => this;
 
-		public Item(
-			string name,
-			int price)
-		{
-			Name = name;
-			Price = price;
-		}
-	}
+        private readonly int BasePrice;
+        private readonly IMultiplier Multiplier;
+
+        public Item(
+            string name,
+            int basePrice,
+            IMultiplier multiplier = null)
+        {
+            Name = name;
+            BasePrice = basePrice;
+            Multiplier = multiplier;
+        }
+    }
 }

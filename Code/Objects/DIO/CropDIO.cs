@@ -30,17 +30,17 @@ namespace StardewValleyStonks
 		private readonly bool Indoors;
 
 		internal Grow Grow { get; }
-		internal IItem[] Crops { get; }
-		internal Dictionary<IItem, IValue> HarvestedItems { get; }
+		internal IItem Crop { get; }
+		internal Dictionary<IItem, IValue[]> HarvestedItems { get; }
 		internal Process[] Processes { get; }
-
+		internal IItem[] Normals { get; }
 		internal Process[] Replants { get; }
 
 		public CropDIO(
 			string name,
 			Seasons seasons,
 			Grow grow,
-			Dictionary<IItem, IValue> harvestedItems,
+			Dictionary<IItem, IValue[]> harvestedItems,
 			Process[] processes,
 			Process[] replants,
 			Dictionary<Source, Price> priceFrom)
