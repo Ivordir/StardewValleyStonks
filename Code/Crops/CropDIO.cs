@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace StardewValleyStonks
 {
@@ -15,10 +15,9 @@ namespace StardewValleyStonks
 		public int RegrowTime => Grow.RegrowTime;
 		public bool DestroysFertilizer { get; }
 		public double QualityCrops => NoGiantCropProb;
-		public double NormalCrops => (
-			(DoubleCrops ? ExtraCrops * Settings.DoubleCropProb + Settings.DoubleCropProb : 0)
+		public double NormalCrops =>
+			((DoubleCrops ? ExtraCrops * Settings.DoubleCropProb + Settings.DoubleCropProb : 0)
 			+ ExtraCrops) * NoGiantCropProb + GiantCrops;
-
 		public override bool Active
 		{
 			get
@@ -36,7 +35,7 @@ namespace StardewValleyStonks
 
 		internal Grow Grow { get; }
 		internal Item Crop { get; }
-		internal Dictionary<Item, Value[]> HarvestedItems { get; }
+		internal Dictionary<Item, IValue[]> HarvestedItems { get; }
 		internal MultiProcess[] Processes { get; }
 		internal MultiProcess[] Replants { get; }
 
@@ -53,7 +52,7 @@ namespace StardewValleyStonks
 			string name,
 			Seasons seasons,
 			Grow grow,
-			Dictionary<Item, Value[]> harvestedItems,
+			Dictionary<Item, IValue[]> harvestedItems,
 			MultiProcess[] processes,
 			MultiProcess[] replants,
 			Dictionary<Source, Price> priceFrom)

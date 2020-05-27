@@ -19,7 +19,7 @@ namespace StardewValleyStonks
         IEnumerator IEnumerable.GetEnumerator() => _Skills.GetEnumerator();
         public IEnumerator<Skill> GetEnumerator() => _Skills.GetEnumerator<Skill>();
 
-        private readonly Skill[] _Skills;
+        readonly Skill[] _Skills;
 
         public Skills()
         {

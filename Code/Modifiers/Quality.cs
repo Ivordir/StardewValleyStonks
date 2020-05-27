@@ -1,29 +1,38 @@
-﻿namespace StardewValleyStonks
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace StardewValleyStonks
 {
     public readonly struct Quality
     {
-        public readonly string Name { get; }
+        public static IReadOnlyCollection<Quality> Qualities { get; } 
 
         public static int operator *(Quality quality, int basePrice) => (int)(quality.Multiplier * basePrice);
 
-        private readonly double Multiplier;
+        public static Quality Get(int index) => Qualities.ElementAt(index);
+
+        static Quality()
+        {
+            Qualities = Array.AsReadOnly(new Quality[]
+            {
+                new Quality("Normal", 0), //no reason to be accessing normal quality, but it's here in case.
+                new Quality("Silver", 1),
+                new Quality("Gold", 2),
+                new Quality("Iridium", 4)
+            });
+        }
+
+        public readonly string Name { get; }
+
+        readonly double Multiplier;
 
         public Quality(
             string name,
-            double multiplier)
+            int multiplierLevel)
         {
             Name = name;
-            Multiplier = multiplier;
+            Multiplier = 1 + multiplierLevel * 0.25;
         }
-
-        public static Quality Get(int quality) => Qualities[quality];
-
-        private static readonly Quality[] Qualities = new Quality[]
-        {
-            new Quality("Normal", 1), //no reason to be accessing normal quality
-            new Quality("Silver", 1.25),
-            new Quality("Gold", 1.5),
-            new Quality("Iridium", 2)
-        };
     }
 }

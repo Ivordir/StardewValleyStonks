@@ -2,9 +2,15 @@
 {
     public struct RefValue : IValue
     {
-        public double Value { get; set; }
+        public static explicit operator RefValue(double value) => new RefValue(value);
+        public static implicit operator double(RefValue value) => value.Value;
+        public static RefValue operator -(RefValue value, double amount)
+        {
+            value.Value -= amount;
+            return value;
+        }
 
-        public static implicit operator RefValue(double value) => new RefValue(value);
+        public double Value { get; set; }
 
         public RefValue(double value)
         {

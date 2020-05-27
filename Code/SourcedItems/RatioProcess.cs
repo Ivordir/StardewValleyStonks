@@ -2,30 +2,33 @@
 {
     public class RatioProcess : Selectable, IProcess
     {
-        public IItem Input { get; }
+        public Item Input { get; }
         public int InputAmount { get; }
         public Processor Source { get; }
-        public IItem Output => Source.PreservesQuality ? _Output : _Output.Normal;
         public double OutputAmount { get; }
-        public double ProfitPerInput => Output.Price * OutputAmount / InputAmount;
         public override bool Active => base.Active && Source.Active;
 
-        public int CompareTo(IProcess other)
-            => ProfitPerInput.CompareTo(other.ProfitPerInput);
-        //public bool HasInput(IItem item) => Inputs.ContainsKey(item);
-        public double Profit(double output) => Output.Price * OutputAmount * output;
-        //public bool HasOutput(Dictionary<IItem, List<double>> inputs)
-        //    => Inputs.IsSubSetOf(inputs);
+        readonly Item _Output;
+
+        public IItem Output(IItem input) => Output(input.Quality);
+        public double ProfitPerInput(int quality) => Output(quality).Price * OutputAmount / InputAmount;
+        public int CompareTo(IProcess other, int quality) =>
+            ProfitPerInput(quality).CompareTo(other.ProfitPerInput(quality));
+
+        public double Profit(double output) => Output.Price * output;
         public double MaxOutput(QualityDist inputs)
             => inputs.AllQualities / InputAmount * OutputAmount;
 
-        private readonly IItem _Output;
+        private IItem Output(int quality) =>
+            Source.PreservesQuality ?
+            _Output.WithQuality[quality] :
+            _Output.Normal;
 
         public RatioProcess(
-           IItem input,
+           Item input,
            int inputAmount,
            Processor processor,
-           IItem output,
+           Item output,
            double outputAmount,
            ICondition[] conditions = null)
            : base(true, conditions)

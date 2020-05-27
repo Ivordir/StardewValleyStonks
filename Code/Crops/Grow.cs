@@ -32,9 +32,7 @@ namespace StardewValleyStonks
 		public virtual int RegrowTime => throw new MissingFieldException("This does not regrow");
 
 		public int DaysPerHarvest(double speed) =>
-			speed == 0 ?
-			TotalTime :
-			ReducedTime(speed, TotalTime, GrowthStages);
+			speed == 0 ? TotalTime : ReducedTime(speed, TotalTime, GrowthStages);
 		public virtual int HarvestsWithin(int days, double speed = 0) =>
 			days / DaysPerHarvest(speed);
 		public virtual int HarvestsWithin(ref int days, double speed = 0)

@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using System.Linq;
+using System.Collections.Generic;
 using ExtentionsLibrary.Collections;
 
 namespace StardewValleyStonks
@@ -20,9 +20,9 @@ namespace StardewValleyStonks
 			get
 			{
 				_BestPrices.Clear();
-				return _PriceFrom.Values
-					.Where(p => p.Active)
-					.MaxElements(_BestPrices);
+				return _PriceFrom.Values.
+					Where(p => p.Active).
+					MaxElements(_BestPrices);
 			}
 		}
         public abstract List<Warning> Warnings { get; }
@@ -40,8 +40,8 @@ namespace StardewValleyStonks
 		}
         public virtual string Image => Name + ".png";
 
-        private readonly Dictionary<Source, Price> _PriceFrom;
-        private readonly List<Price> _BestPrices;
+        readonly Dictionary<Source, Price> _PriceFrom;
+        readonly List<Price> _BestPrices;
 
         public DataTableItem(
 			string name,

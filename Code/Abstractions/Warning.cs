@@ -3,10 +3,10 @@ using ExtentionsLibrary.Text;
 
 namespace StardewValleyStonks
 {
-    public class Warning
+    public readonly struct Warning
     {
-        public string Message { get; }
-        public List<Warning> SubWarnings { get; set; }
+        public readonly string Message { get; }
+        public readonly List<Warning> SubWarnings { get; }
         public string Display(int indentation = 1)
         {
             // string builder? nah

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using ExtentionsLibrary.Limits;
+using static StardewValleyStonks.Quality;
 
 namespace StardewValleyStonks
 {
@@ -13,29 +14,12 @@ namespace StardewValleyStonks
         }
         public double DoubleCropProb => 0.0000999999974737875 + _LuckBuff / 1500 + (SpecialCharm ? 0.025000000372529 : 0);
 
-        public int SeedsFromSeedMaker
-        {
-            get => (int)_SeedsFromSeedMaker;
-            set
-            {
-                _SeedsFromSeedMaker = value.WithMin(0);
-                foreach (RefValue amount in _SeedsByQuality.Values)
-                {
-                    amount._Value = _SeedsFromSeedMaker;
-                }
-            }
-        }
-        public double SeedProbability
-        {
-            get => _SeedProbability._Value;
-            set => _SeedProbability._Value = value.InRange(0, 1);
-        }
         public bool QualitySeedMaker { get; set; }
-        public int SeedsByQuality(Quality quality)
-            => (int)_SeedsByQuality[quality]._Value;
-        public void SetSeedsByQuality(Quality quality, int value)
-            => _SeedsByQuality[quality]._Value = value.WithMin(0);
-        public Dictionary<Quality, IValue> SeedAmounts { get; }
+        public int SeedsByQuality(int quality)
+            => (int)_Seeds[quality].Value;
+        public void SetSeedsByQuality(int quality, int value)
+            => _Seeds[quality].Value = value.WithMin(0);
+        public IValue[] SeedAmounts { get; }
 
         public double GiantCropChecksPerTile
         {
@@ -50,36 +34,27 @@ namespace StardewValleyStonks
         public bool GreenhouseMode { get; set; }
         public FertilizerDIO StaringFert { get; set; }
 
-        private int _LuckBuff;
-        private double _SeedsFromSeedMaker, _GiantCropChecksPerTile;
-        private readonly double GiantCropChance;
-        private readonly RefValue _SeedProbability;
-        private readonly Dictionary<Quality, RefValue> _SeedsByQuality;
+        int _LuckBuff;
+        double _GiantCropChecksPerTile;
+
+        readonly double GiantCropChance;
+        readonly RefValue SeedProb;
+        readonly RefValue[] _Seeds;
 
         public Settings()
         {
-            Quality[] qualities;
-            qualities = new Quality[0];
-
             GiantCropChance = 0.01;
 
-            _SeedsFromSeedMaker = 2;
-            _SeedsByQuality = new Dictionary<Quality, RefValue>();
-            foreach (Quality quality in qualities)
+            _Seeds = new RefValue[Qualities.Count];
+            for (int quality = 0; quality < Qualities.Count; quality++)
             {
-                _SeedsByQuality.Add(quality, new RefValue(_SeedsFromSeedMaker));
+                _Seeds[quality] = (RefValue)2;
             }
-            _SeedProbability = new RefValue(0.975);
-            SeedAmounts = new Dictionary<Quality, IValue>();
-            foreach (Quality quality in qualities)
+            SeedProb = new RefValue(0.975);
+            SeedAmounts = new IValue[Qualities.Count];
+            for (int quality = 0; quality < Qualities.Count; quality++)
             {
-                SeedAmounts.Add(
-                    quality,
-                    new Term(new IValue[]
-                    {
-                        _SeedsByQuality[quality],
-                        _SeedProbability
-                    }));
+                SeedAmounts[quality] = new Term(SeedProb, _Seeds[quality]);
             }
 
             StaringFert = null;

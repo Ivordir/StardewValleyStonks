@@ -2,7 +2,7 @@
 {
     public interface ISelectable
     {
-        public bool Selected { get; set; }
+        public bool Selected { get; }
         public bool Active { get; }
     }
 }

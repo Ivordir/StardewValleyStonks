@@ -4,6 +4,7 @@
     {
         public string Name { get; }
         public int Price { get; }
-        public IItem Normal { get; }
+        public Item Normal { get; }
+        public int Quality { get; }
     }
 }

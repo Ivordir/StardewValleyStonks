@@ -30,10 +30,10 @@ namespace StardewValleyStonks
             }
         }
 
-        public int CompareTo(Price other) => -1 * Value.CompareTo(other.Value);
+        readonly List<Warning> _Warnings;
+        readonly Warning NoSource;
 
-        private readonly List<Warning> _Warnings;
-        private readonly Warning NoSource;
+        public int CompareTo(Price other) => -1 * Value.CompareTo(other.Value);
 
         public Price(
             Source source,

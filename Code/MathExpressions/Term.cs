@@ -1,6 +1,6 @@
 ﻿namespace StardewValleyStonks
 {
-    public struct Term : IValue
+    public readonly struct Term : IValue
     {
         public double Value
         {
@@ -15,9 +15,14 @@
             }
         }
 
-        private readonly IValue[] Amounts;
-        private readonly bool Negative;
+        readonly IValue[] Amounts;
+        readonly bool Negative;
 
+        public Term(IValue coefficient, IValue variable, bool negative = false)
+        {
+            Amounts = new IValue[] { coefficient, variable };
+            Negative = negative;
+        }
         public Term(IValue[] amounts, bool negative = false)
         {
             Amounts = amounts;

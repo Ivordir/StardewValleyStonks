@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace StardewValleyStonks
 {
@@ -25,8 +26,16 @@ namespace StardewValleyStonks
             }
         }
 
-        private readonly List<Warning> _Warnings;
-        private readonly Warning NoSource;
+        readonly List<Warning> _Warnings;
+        readonly Warning NoSource;
+
+        public Fertilizer ToFertilizer(int farmBuffLevel) => new Fertilizer(
+            Name,
+            Quality,
+            Speed,
+            Price,
+            BestPrices.Select(p => p.Source).ToArray(),
+            farmBuffLevel);
 
         public FertilizerDIO(
             string name,

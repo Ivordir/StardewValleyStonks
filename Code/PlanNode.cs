@@ -15,7 +15,7 @@
         }
         public double TotalProfit => (PrevNode == null ? 0 : PrevNode.TotalProfit) + Profit;
 
-        public double Profit => Crop.Profit(Fertilizer.Quality, NumHarvests);
+        public double Profit => 0;// Crop.Profit(Fertilizer.Quality, NumHarvests);
 
         public Item[] Products
         {
