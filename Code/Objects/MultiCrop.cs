@@ -15,7 +15,7 @@ namespace StardewValleyStonks
         public int Price { get; }
         public Source[] Sources { get; }
 
-        public int GrowthTimeWith(double speed) => Grow.Time(SpeedMultiplier + speed);
+        public int GrowthTimeWith(double speed) => Grow.DaysPerHarvest(SpeedMultiplier + speed);
         public int HarvestsWithin(int days, double speed = 0) => Grow.HarvestsWithin(days, SpeedMultiplier + speed);
         public int HarvestsWithin(ref int days, double speed = 0) => Grow.HarvestsWithin(ref days, SpeedMultiplier + speed);
 

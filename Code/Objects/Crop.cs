@@ -13,9 +13,24 @@ namespace StardewValleyStonks
         public int Price { get; }
         public Source[] Sources { get; }
 
-        public int GrowthTimeWith(double speed) => Grow.Time(SpeedMultiplier + speed);
-        public int HarvestsWithin(int days, double speed = 0) => Grow.HarvestsWithin(days, SpeedMultiplier + speed);
-        public int HarvestsWithin(ref int days, double speed = 0) => Grow.HarvestsWithin(ref days, SpeedMultiplier + speed);
+        public bool DestroysFertilizer { get; }
+        public bool FertilizerCompatable { get; }
+        public bool IndoorsOnly { get; }
+
+        readonly Grow Grow;
+        readonly double SpeedMultiplier;
+        readonly Source BuySource;
+        readonly Item CropItem;
+        readonly double QualityCrops;
+        readonly double NormalCrops;
+        readonly Dictionary<Item, QualityDist> InputAmounts;
+
+        public int GrowthTimeWith(double speed) =>
+            Grow.DaysPerHarvest(SpeedMultiplier + speed);
+        public int HarvestsWithin(int days, double speed = 0) =>
+            Grow.HarvestsWithin(days, SpeedMultiplier + speed);
+        public int HarvestsWithin(ref int days, double speed = 0) =>
+            Grow.HarvestsWithin(ref days, SpeedMultiplier + speed);
 
         private void ApplyDistribution(double[] dist)
         {
@@ -26,18 +41,6 @@ namespace StardewValleyStonks
                 dist[2] * QualityCrops
             };
         }
-
-        public bool DestroysFertilizer { get; }
-        public bool FertilizerCompatable { get; }
-        public bool IndoorsOnly { get; }
-
-        private readonly Grow Grow;
-        private readonly double SpeedMultiplier;
-        private readonly Source BuySource;
-        private readonly Item CropItem;
-        private readonly double QualityCrops;
-        private readonly double NormalCrops;
-        private readonly Dictionary<Item, QualityDist> InputAmounts;
 
         public Crop(CropDIO crop, Source buySource)
         {

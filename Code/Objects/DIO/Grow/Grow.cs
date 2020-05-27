@@ -1,58 +1,18 @@
-﻿using ExtentionsLibrary.Memoization;
-using System;
+﻿using System;
 using System.Linq;
+using ExtentionsLibrary.Memoization;
 
 namespace StardewValleyStonks
 {
 	public class Grow
 	{
-		public int[] GrowthStages { get; }
-		public int TotalTime { get; }
-		public virtual bool Regrows => false;
-		public virtual int RegrowTime => throw new MissingFieldException("This does not regrow");
-
-		
-		public int Time(double speed)
-			=> speed == 0 ?
-			TotalTime
-			: TotalTime - DaysReduced(speed, GrowthStages);
-		public virtual int HarvestsWithin(int days, double speed = 0)
-			=> days / Time(speed);
-		public virtual int HarvestsWithin(ref int days, double speed = 0)
-		{
-			int growthTime = Time(speed);
-			int numHarvests = days / growthTime;
-			days -= growthTime * numHarvests;
-			return numHarvests;
-		}
-
-		private readonly int[] _GrowthStages;
-
-		private void ResetGrowthStages()
-		{
-			for (int i = 0; i < GrowthStages.Length; i++)
-			{
-				_GrowthStages[i] = GrowthStages[i];
-			}
-		}
-
-		public Grow(int[] growthStages)
-		{
-			GrowthStages = growthStages;
-			_GrowthStages = new int[GrowthStages.Length];
-			for (int i = 0; i < GrowthStages.Length; i++)
-			{
-				TotalTime += GrowthStages[i];
-				_GrowthStages[i] = GrowthStages[i];
-			}
-		}
-
-		private static readonly Func<double, int[], int> DaysReduced = new Func<double, int[], int>((speed, GrowthStages) =>
+		static readonly Func<double, int, int[], int> ReducedTime = new Func<double, int, int[], int>(
+			(speed, TotalTime, GrowthStages) =>
 		{
 			int[] growthStages = GrowthStages[..];
-			int maxReduction = (int)Math.Ceiling(growthStages[..^1].Sum() * speed);
+			int maxReduction = (int)Math.Ceiling((TotalTime - growthStages[^1]) * speed);
 			int daysReduced = 0;
-			for (int passes = 0; daysReduced < maxReduction && passes < 3; passes++)
+			for (int traverses = 0; daysReduced < maxReduction && traverses < 3; traverses++)
 			{
 				for (int stage = 0; daysReduced < maxReduction && stage < growthStages.Length; stage++)
 				{
@@ -63,7 +23,30 @@ namespace StardewValleyStonks
 					}
 				}
 			}
-			return daysReduced;
+			return TotalTime - daysReduced;
 		}).Memoize();
+
+		public int[] GrowthStages { get; }
+		public int TotalTime { get; }
+		public virtual bool Regrows => false;
+		public virtual int RegrowTime => throw new MissingFieldException("This does not regrow");
+
+		public int DaysPerHarvest(double speed) =>
+			speed == 0 ?
+			TotalTime :
+			ReducedTime(speed, TotalTime, GrowthStages);
+		public virtual int HarvestsWithin(int days, double speed = 0) =>
+			days / DaysPerHarvest(speed);
+		public virtual int HarvestsWithin(ref int days, double speed = 0)
+		{
+			days -= days / DaysPerHarvest(speed) * DaysPerHarvest(speed);
+			return days / DaysPerHarvest(speed);
+		}
+
+		public Grow(int[] growthStages)
+		{
+			GrowthStages = growthStages;
+			TotalTime = GrowthStages.Sum();
+		}
 	}
 }
