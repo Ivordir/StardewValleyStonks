@@ -4,7 +4,7 @@
     {
         public readonly string Name { get; }
         public readonly int Price => Multiplier != null && Multiplier.Active ? (int)(Multiplier.Value * BasePrice) : BasePrice;
-        public readonly IItem Normal => this;
+        public readonly Item Normal => this;
         public readonly IItem[] WithQuality { get; }
         public readonly int Quality => 0;
 

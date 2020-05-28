@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -8,26 +9,26 @@ namespace StardewValleyStonks
         public int Quality { get; }
         public double Speed { get; }
         public override bool Active => Selected && HasPrice;
-        public override List<Warning> Warnings
+        public override string Warnings
         {
             get
             {
-                _Warnings.Clear();
+                string warnings = string.Empty;
                 if (!HasPrice)
                 {
-                    NoSource.SubWarnings.Clear();
+                    string priceWarnings = string.Empty;
                     foreach (Price price in Prices)
                     {
-                        NoSource.SubWarnings.AddRange(price.Warnings);
+                        if (!price.Active)
+                        {
+                            priceWarnings += price.Warnings.WrapTag("li");
+                        }
                     }
-                    _Warnings.Add(NoSource);
+                    warnings += $"{ Name } cannot be bought from anywhere:" + priceWarnings.WrapTag("ul");
                 }
-                return _Warnings;
+                return warnings;
             }
         }
-
-        readonly List<Warning> _Warnings;
-        readonly Warning NoSource;
 
         public Fertilizer ToFertilizer(int farmBuffLevel) => new Fertilizer(
             Name,
@@ -46,8 +47,6 @@ namespace StardewValleyStonks
         {
             Quality = quality;
             Speed = speed;
-            NoSource = new Warning($"{ Name } cannot be bought from anywhere:");
-            _Warnings = new List<Warning>();
         }
     }
 }

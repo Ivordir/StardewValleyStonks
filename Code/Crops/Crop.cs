@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace StardewValleyStonks
 {
@@ -27,7 +26,6 @@ namespace StardewValleyStonks
         readonly Dictionary<Item, QualityDist> InputAmounts;
         readonly Dictionary<Item, Process[]> Processes;
         readonly Dictionary<Item, Process[]> Replants;
-        readonly bool BuySeeds;
 
         public int GrowthTimeWith(double speed) =>
             Grow.DaysPerHarvest(SpeedMultiplier + speed);
@@ -61,24 +59,30 @@ namespace StardewValleyStonks
             };
         }
 
-        public Crop(CropDIO crop, bool buySeeds)
+        public Crop(
+            string name,
+            Grow grow,
+            double speedMultiplier,
+            Item cropItem,
+            double qualityCrops,
+            double normalCrops,
+            int price,
+            Source[] sources,
+            Dictionary<Item, QualityDist> harvestItems,
+            Dictionary<Item, Process[]> processes,
+            Dictionary<Item, Process[]> replants)
         {
-            Name = crop.Name;
-            Grow = crop.Grow;
-            SpeedMultiplier = crop.SpeedMultipliers
-                .Where(m => m.Active)
-                .Sum(m => m.Value);
-            BuySeeds = buySeeds;
-            CropItem = crop.Crop;
-            QualityCrops = crop.QualityCrops;
-            NormalCrops = crop.NormalCrops;
-            InputAmounts = crop.HarvestedItems.ToDictionary(
-                kvp => kvp.Key,
-                kvp => new QualityDist(kvp.Value.Select(v => v.Value).ToArray()));
-            Price = crop.Price;
-            Sources = crop.BestPrices.
-                Select(x => x.Source).
-                ToArray();
+            Name = name;
+            Grow = grow;
+            SpeedMultiplier = speedMultiplier;
+            CropItem = cropItem;
+            QualityCrops = qualityCrops;
+            NormalCrops = normalCrops;
+            Price = price;
+            Sources = sources;
+            InputAmounts = harvestItems;
+            Processes = processes;
+            Replants = replants;
         }
     }
 }

@@ -15,7 +15,7 @@
         public int CompareTo(IProcess other, int quality) =>
             ProfitPerInput(quality).CompareTo(other.ProfitPerInput(quality));
 
-        public double Profit(double output) => Output.Price * output;
+        //public double Profit(double output) => Output.Price * output;
         public double MaxOutput(QualityDist inputs)
             => inputs.AllQualities / InputAmount * OutputAmount;
 

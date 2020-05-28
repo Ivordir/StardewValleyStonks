@@ -1,19 +1,17 @@
 ﻿namespace StardewValleyStonks
 {
-    public class YearCondition : ICondition
+    public readonly struct YearCondition : ICondition
     {
-        public bool Override { get; set; }
-        public bool IsMet => Override || Date.Year >= Year;
-        public Warning Warning { get; }
+        public readonly bool IsMet => Date.Year >= Year;
+        public readonly string Warning => $"Available from year {Year} and onwards.";
 
-        private readonly Date Date;
-        private readonly int Year;
+        readonly Date Date;
+        readonly int Year;
 
         public YearCondition(Date date, int year)
         {
             Year = year;
             Date = date;
-            Warning = new Warning($"Available from year {Year} and onwards.");
         }
     }
 }

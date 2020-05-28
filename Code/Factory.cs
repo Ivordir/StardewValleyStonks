@@ -9,20 +9,17 @@ namespace StardewValleyStonks
 
 		private readonly Dictionary<string, Item> Products;
 
-		public Item Product(string type, string name, int basePrice)
-		{
-			return null;
-			/*
-			return type switch
-			{
-				"Jam" => new Product(name + " Jam", 2 * basePrice + 50, Skills.Artisan),
-				"Pickle" => new Product(name + " Pickle", 2 * basePrice + 50, Skills.Artisan),
-				"Wine" => new Product(name + " Wine", 3 * basePrice, Skills.Artisan),
-				"Juice" => new Product(name + " Juice", (int)(2.25 * basePrice), Skills.Artisan),
-				_ => null
-			};
-			*/
-		}
+		//public Item Product(string type, string name, int basePrice)
+		//{
+		//	return type switch
+		//	{
+		//		"Jam" => new Product(name + " Jam", 2 * basePrice + 50, Skills.Artisan),
+		//		"Pickle" => new Product(name + " Pickle", 2 * basePrice + 50, Skills.Artisan),
+		//		"Wine" => new Product(name + " Wine", 3 * basePrice, Skills.Artisan),
+		//		"Juice" => new Product(name + " Juice", (int)(2.25 * basePrice), Skills.Artisan),
+		//		_ => null
+		//	};
+		//}
 
 		public Item StaticProduct(string name)
 		{

@@ -9,6 +9,6 @@
 
         public IItem Output(IItem input);
         public double ProfitPerInput(int quality);
-        public int CompareTo(IProcess other, int quality)
+        public int CompareTo(IProcess other, int quality);
     }
 }

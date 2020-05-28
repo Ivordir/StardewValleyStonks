@@ -1,11 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Extensions.Configuration;
 
 namespace StardewValleyStonks
 {
     public static class Extentions
     {
-        
+        public static string WrapTag(this string value, string tag)
+        => $"<{tag}>{value}</{tag}>";
+
+        public static int[] ToArray(this IConfigurationSection config)
+        => config.ToArray(s => Convert.ToInt32(s));
+        public static T[] ToArray<T>(
+            this IConfigurationSection config,
+            Func<string, T> converter)
+        => config.ConvertAll(converter).ToArray();
+        public static IEnumerable<T> ConvertAll<T>(
+            this IConfigurationSection config,
+            Func<string, T> converter)
+        => config.GetChildren().Select(s => converter(s.Value));
+        public static IEnumerable<string> RawValues(this IConfigurationSection config)
+        => config.GetChildren().Select(s => s.Value);
     }
 
     //assumptions list:

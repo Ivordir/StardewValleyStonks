@@ -1,47 +1,39 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace StardewValleyStonks
 {
-    public abstract class Price : Selectable, IComparable<Price>
+    public class Price : Selectable, IComparable<Price>
     {
-        public abstract int Value { get; }
-        public abstract Source Source { get; }
+        public virtual int Value { get; }
+        public Source Source { get; }
         public override bool Active => base.Active && Source.Active;
-        public override List<Warning> Warnings
+        public override string Warnings
         {
             get
             {
-                _Warnings.Clear();
-                if (!Active)
+                string warnings = string.Empty;
+                if (!base.Active)
                 {
-                    NoSource.SubWarnings.Clear();
-                    if (!base.Active)
-                    {
-                        NoSource.SubWarnings.AddRange(base.Warnings);
-                    }
-                    if (!Source.Active)
-                    {
-                        NoSource.SubWarnings.AddRange(Source.Warnings);
-                    }
-                    _Warnings.Add(NoSource);
+                    warnings += ($"Locally:" + base.Warnings).WrapTag("li");
                 }
-                return _Warnings;
+                if (!Source.Active)
+                {
+                    warnings += ($"Globally:" + Source.Warnings).WrapTag("li");
+                }
+                return $"{Source.Name}:" + warnings.WrapTag("ul");
             }
         }
-
-        readonly List<Warning> _Warnings;
-        readonly Warning NoSource;
 
         public int CompareTo(Price other) => -1 * Value.CompareTo(other.Value);
 
         public Price(
+            int price,
             Source source,
             ICondition[] conditions = null)
             : base(true, conditions)
         {
-            NoSource = new Warning($"{source.Name}:");
-            _Warnings = new List<Warning>();
+            Value = price;
+            Source = source;
         }
     }
 }

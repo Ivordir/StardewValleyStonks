@@ -1,49 +1,34 @@
-﻿using System.Collections.Generic;
-
-namespace StardewValleyStonks
+﻿namespace StardewValleyStonks
 {
     public abstract class Selectable : ISelectable, IWarn
     {
         public virtual bool Selected { get; set; }
         public virtual bool Active => Selected && ConditionsMet;
-        public virtual List<Warning> Warnings
+        public virtual string Warnings
         {
             get
             {
-                _Warnings.Clear();
+                string warnings = string.Empty;
                 if (Conditions != null)
                 {
                     foreach (ICondition condition in Conditions)
                     {
                         if (!condition.IsMet)
                         {
-                            _Warnings.Add(condition.Warning);
+                            warnings += condition.Warning.WrapTag("li");
                         }
                     }
                 }
                 if (!Selected)
                 {
-                    _Warnings.Add(NotSelected);
+                    warnings += "Not selected.".WrapTag("li");
                 }
-                return _Warnings;
-            }
-        }
-        public string DisplayWarnings
-        {
-            get
-            {
-                string display = string.Empty;
-                foreach (Warning warning in Warnings)
-                {
-                    display += warning.Display() + "\n";
-                }
-                return display;
+                return warnings.WrapTag("ul");
             }
         }
 
-        private readonly ICondition[] Conditions;
-        private readonly List<Warning> _Warnings;
-        private bool ConditionsMet
+        readonly ICondition[] Conditions;
+        bool ConditionsMet
         {
             get
             {
@@ -67,16 +52,12 @@ namespace StardewValleyStonks
         {
             Selected = selected;
             Conditions = conditions;
-            _Warnings = new List<Warning>();
         }
 
         // initialize selected in derived class or keep default false value
         protected Selectable(ICondition[] conditions = null)
         {
             Conditions = conditions;
-            _Warnings = new List<Warning>();
         }
-
-        private static readonly Warning NotSelected = new Warning("Not selected.");
     }
 }

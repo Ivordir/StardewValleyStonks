@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using ExtentionsLibrary.Limits;
+﻿using ExtentionsLibrary.Limits;
 using static StardewValleyStonks.Quality;
 
 namespace StardewValleyStonks
@@ -12,7 +11,7 @@ namespace StardewValleyStonks
             get => _LuckBuff;
             set => _LuckBuff = value.WithMin(0);
         }
-        public double DoubleCropProb => 0.0000999999974737875 + _LuckBuff / 1500 + (SpecialCharm ? 0.025000000372529 : 0);
+        public double DoubleCropProb => 0.0001 + _LuckBuff / 1500 + (SpecialCharm ? 0.025 : 0);
 
         public bool QualitySeedMaker { get; set; }
         public int SeedsByQuality(int quality)
@@ -44,6 +43,7 @@ namespace StardewValleyStonks
         public Settings()
         {
             GiantCropChance = 0.01;
+            _GiantCropChecksPerTile = 8;
 
             _Seeds = new RefValue[Qualities.Count];
             for (int quality = 0; quality < Qualities.Count; quality++)

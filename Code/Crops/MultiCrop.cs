@@ -39,12 +39,12 @@ namespace StardewValleyStonks
         public MultiCrop(CropDIO crop, Source buySource)
         {
             Name = crop.Name;
-            Grow = crop.Grow;
-			SpeedMultiplier = crop.SpeedMultipliers
+            //Grow = crop.Grow;
+			SpeedMultiplier = crop.GrowthMultipliers
 				.Where(m => m.Active)
 				.Sum(m => m.Value);
             BuySource = buySource; //needs to be a copy from factory
-			CropItem = crop.Crop;
+			//CropItem = crop.Crop;
             QualityCrops = crop.QualityCrops;
             NormalCrops = crop.NormalCrops;
 			//InputAmounts = crop.HarvestedItems.ToDictionary
@@ -57,18 +57,18 @@ namespace StardewValleyStonks
 				.ToArray();
 
 			EqualAlternativesTo = new Dictionary<MultiProcess, List<MultiProcess>>();
-			LinkedList<MultiProcess> processes = new LinkedList<MultiProcess>
-				(crop.Processes
-				.Where(p => p.Active))
-				.DoComparisons(EqualAlternativesTo);
+			//LinkedList<MultiProcess> processes = new LinkedList<MultiProcess>
+			//	(crop.Processes
+			//	.Where(p => p.Active))
+			//	.DoComparisons(EqualAlternativesTo);
 			//ProcessesWith = crop.Normals.ToDictionary
 			//	(item => item, item => processes.TakeRemove(p => p.HasInput(item)));
 
 			List<SoldItems> soldItems = SoldItemsCalc(InputOrder, InputAmounts);
 
-			Replants = crop.Replants
-				.Where(r => r.Active)
-				.ToArray();
+			//Replants = crop.Replants
+			//	.Where(r => r.Active)
+			//	.ToArray();
 		}
 
         private readonly List<IItem> InputOrder;

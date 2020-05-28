@@ -1,33 +1,19 @@
-﻿using ExtentionsLibrary.Limits;
+﻿using System.Collections.Generic;
+using System.Linq;
+using ExtentionsLibrary.Limits;
 
 namespace StardewValleyStonks
 {
     public class Date
     {
-        public Seasons Seasons { get; private set; }
+        public Seasons Seasons => (Seasons)SeasonsToInts().Sum();
         public int Year
         {
             get => _Year;
             set => _Year = value.WithMin(1);
         }
-        public Seasons StartSeason
-        {
-            get => _StartSeason;
-            set
-            {
-                _StartSeason = value;
-                UpdateSeasons();
-            }
-        }
-        public Seasons EndSeason
-        {
-            get => _EndSeason;
-            set
-            {
-                _EndSeason = value;
-                UpdateSeasons();
-            }
-        }
+        public Seasons StartSeason { get; set; }
+        public Seasons EndSeason { get; set; }
         public int StartDay
         {
             get => _StartDay;
@@ -38,16 +24,46 @@ namespace StardewValleyStonks
             get => _EndDay;
             set => _EndDay = value.InRange(1, 28);
         }
+        public bool Valid
+        => StartSeason > EndSeason
+            || StartSeason == EndSeason && StartDay >= EndDay;
 
-        private Seasons _StartSeason, _EndSeason;
-        private int _Year, _StartDay, _EndDay;
+        int _Year, _StartDay, _EndDay;
 
-        private void UpdateSeasons()
+        public int DaysInSeason(Seasons season)
         {
-            Seasons = 0;
+            if (Seasons.HasFlag(season))
+            {
+                if (StartSeason == EndSeason)
+                {
+                    return EndDay - StartDay;
+                }
+                else if (season == StartSeason)
+                {
+                    return 29 - StartDay;
+                }
+                else if (season == EndSeason)
+                {
+                    return EndDay;
+                }
+                return 28;
+            }
+            return 0;
+        }
+
+        public IEnumerable<Seasons> SingleSeasons()
+        {
             for (int season = (int)StartSeason; season < (int)EndSeason << 1; season <<= 1)
             {
-                Seasons += season;
+                yield return (Seasons)season;
+            }
+        }
+
+        IEnumerable<int> SeasonsToInts()
+        {
+            for (int season = (int)StartSeason; season < (int)EndSeason << 1; season <<= 1)
+            {
+                yield return season;
             }
         }
 
@@ -58,7 +74,6 @@ namespace StardewValleyStonks
             EndSeason = Seasons.Fall;
             _StartDay = 1;
             _EndDay = 28;
-            UpdateSeasons();
         }
     }
 }

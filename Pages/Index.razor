@@ -9,32 +9,85 @@
 	<div class="editor">
 		<TabGroup Class="tabgroup" ActiveTab="editor-tab-active" InactiveTab="editor-tab">
 			<Tab Name="Crop">
-				@*<table class="data-table">
+				<table class="data-table">
 					<tr>
 						<th></th>
-						<th>Image and Name</th>
+						<th>Image</th>
+						<th>Name</th>
+						<th>Growth Time</th>
+						<th>Regrow Time</th>
+						<th>Speed Multipliers</th>
+						<th>Crop Amounts</th>
+						<th>Processes</th>
 						<th>Seed Price and Source</th>
 					</tr>
-					<tr>
-						<td><label class="entry-checkbox-label"><input type="checkbox" class="entry-checkbox" checked><span class="entry-checkbox-background"></span></label></td>
-						<td>Image and Name</td>
-						<td>
-							<select class="source-selector">
-								<option value="Pierre" class="source-option">Pierre</option>
-								<option value="Jojo" class="source-option">Jojo</option>
-								<option value="Oasis" class="source-option">Oasis</option>
-							</select>
-						</td>
-					</tr>
-				</table>*@
+					@foreach (CropDIO crop in Data.Crops)
+					{
+						<tr>
+							<td>
+								<label class="entry-checkbox-label">
+									<input type="checkbox" class="entry-checkbox" checked>
+									<span class="entry-checkbox-background"></span>
+								</label>
+							</td>
+							<td>Image</td>
+							<td>@crop.Name</td>
+							<td>@crop.GrowthTime</td>
+							<td>
+								@if (crop.Regrows)
+								{
+									<span>@crop.RegrowTime</span>
+								}
+								else
+								{
+									<span></span>
+								}
+							</td>
+							<td>
+								<ul>
+									@foreach (IMultiplier multiplier in crop.GrowthMultipliers)
+									{
+										<li>
+											@multiplier.Name
+										</li>
+									}
+								</ul>
+							</td>
+							<td>
+								@crop.QualityCrops
+								@crop.NormalCrops
+							</td>
+							<td>
+								<ul>
+									@foreach (Process process in crop._Processes)
+									{
+										<li>
+											@process.Input.Name
+											=>
+											@process.Source.Name
+											=>
+											@process.OutputItem.Name
+										</li>
+									}
+								</ul>
+							</td>
+							<td>
+								@if (crop.HasPrice)
+								{
+									<span>
+										@crop.Price
+										(@crop.BestPrices[0].Source.Name)
+									</span>
+								}
+								else
+								{
+									<span>???</span>
+								}
+							</td>
+						</tr>
+					}
+				</table>
 				<!--
-					summary:
-						select
-						name
-						image
-						growth time
-						regrow time
-						seed price and source
 					edit:
 						selected seasons
 						selected seed sources
@@ -78,18 +131,11 @@
 							</td>
 							<td>@fertilizer.Quality</td>
 							<td>@fertilizer.Speed</td>
-							<td><pre>@fertilizer.DisplayWarnings</pre></td>
+							<td>@((MarkupString)fertilizer.Warnings)</td>
 						</tr>
 					}
 				</table>
 				<!---
-					fert:
-						select
-						name
-						image
-						quality
-						speed
-						price and source
 					edit:
 						quality, speed?
 						price? and selected sources
@@ -102,6 +148,15 @@
 		<button class="switch-calc-mode">
 			Greenhouse Mode
 		</button>
+		<ToggleButton ToggledClass="toggled-button" UntoggledClass="toggle-button" @bind-Value=Data.MatchSources[0].Match>
+			Joja Membership
+		</ToggleButton>
+		<ToggleButton ToggledClass="toggled-button" UntoggledClass="toggle-button" @bind-Value=Settings.SpecialCharm>
+			Special Charm
+		</ToggleButton>
+		<ToggleButton ToggledClass="toggled-button" UntoggledClass="toggle-button" @bind-Value=Data.ShowOutOFSeasonCrops>
+			Show out of season crops
+		</ToggleButton>
 	</div>
 	<div class="skills">
 		<span class="input-header">Skills</span>
@@ -167,9 +222,9 @@
 		}
 	</div>
 	<div class="date">
-		@if (Date.StartSeason > Date.EndSeason || Date.StartSeason == Date.EndSeason && Date.StartDay >= Date.EndDay)
+		@if (!Date.Valid)
 		{
-			<span>The start date cannot be on or after the end date.</span>
+			<span>The end date cannot be before or the same as the start date.</span>
 		}
 		<label class="input-header">
 			Start Date:

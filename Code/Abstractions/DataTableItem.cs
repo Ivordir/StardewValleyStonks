@@ -1,5 +1,5 @@
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using ExtentionsLibrary.Collections;
 
 namespace StardewValleyStonks
@@ -11,8 +11,8 @@ namespace StardewValleyStonks
 		public abstract bool Active { get; }
 		public bool HasPrice => BestPrices.Count > 0;
 		public int Price => BestPrices[0].Value;
-		public bool HasPriceFrom(Source source) => _PriceFrom.ContainsKey(source);
-		public Price PriceFrom(Source source) => _PriceFrom[source];
+		//public bool HasPriceFrom(Source source) => _PriceFrom.ContainsKey(source);
+		//public Price PriceFrom(Source source) => _PriceFrom[source];
 		public Dictionary<Source, Price>.KeyCollection Sources => _PriceFrom.Keys;
 		public Dictionary<Source, Price>.ValueCollection Prices => _PriceFrom.Values;
 		public List<Price> BestPrices
@@ -25,20 +25,8 @@ namespace StardewValleyStonks
 					MaxElements(_BestPrices);
 			}
 		}
-        public abstract List<Warning> Warnings { get; }
-		public string DisplayWarnings
-		{
-			get
-			{
-				string display = string.Empty;
-				foreach (Warning warning in Warnings)
-				{
-					display += warning.Display() + "\n";
-				}
-				return display;
-			}
-		}
-        public virtual string Image => Name + ".png";
+        public abstract string Warnings { get; }
+		public virtual string Image => Name + ".png";
 
         readonly Dictionary<Source, Price> _PriceFrom;
         readonly List<Price> _BestPrices;

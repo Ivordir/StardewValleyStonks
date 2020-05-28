@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace StardewValleyStonks
 {
@@ -9,8 +9,8 @@ namespace StardewValleyStonks
 		public Seasons Seasons { get; }
 		public Seasons SelectedSeasons { get; set; }
 
-		public int GrowthTime => Grow.TotalTime;
-		public IMultiplier[] SpeedMultipliers { get; }
+		public int GrowthTime => Grow.DaysPerHarvest(GrowthMultipliers.Where(m => m.Active).Sum(m => m.Value));
+		public IMultiplier[] GrowthMultipliers { get; }
 		public bool Regrows => Grow.Regrows;
 		public int RegrowTime => Grow.RegrowTime;
 		public bool DestroysFertilizer { get; }
@@ -22,7 +22,11 @@ namespace StardewValleyStonks
 		{
 			get
 			{
-				if ((Date.Seasons & SelectedSeasons) == 0)
+				if (!IsInSeason)
+				{
+					return false;
+				}
+				else if (!CanGiveOneHarvest)
 				{
 					return false;
 				}
@@ -31,39 +35,120 @@ namespace StardewValleyStonks
 				throw new NotImplementedException();
 			}
 		}
-		public override List<Warning> Warnings => throw new NotImplementedException();
+		public override string Warnings
+		{
+			get
+			{
+				if (!Active)
+				{
+					if (!IsInSeason)
+					{
 
-		internal Grow Grow { get; }
-		internal Item Crop { get; }
-		internal Dictionary<Item, IValue[]> HarvestedItems { get; }
-		internal MultiProcess[] Processes { get; }
-		internal MultiProcess[] Replants { get; }
+					}
+					else if (!CanGiveOneHarvest)
+					{
 
-		private readonly double ExtraCrops;
-		private readonly bool Giant, DoubleCrops;
-		private double GiantCrops => 2 * (1 - NoGiantCropProb);
-		private double NoGiantCropProb => Giant ? Settings.NoGiantCropProb : 1;
+					}
+				}
+				return "";
+			}
+		}
 
-		private readonly Settings Settings;
-		private readonly Date Date;
-		private readonly bool Indoors;
+		public bool GrowsIn(Seasons seasons)
+		=> (Seasons & seasons) > 0;
+		public bool IsInSeason => GrowsIn(Date.Seasons);
+		bool CanGiveOneHarvest
+		{
+			get
+			{
+				if (GrowsIn(Date.Seasons))
+				{
+					int adjacentSum = 0;
+					foreach (Seasons season in Date.SingleSeasons())
+					{
+						if (GrowsIn(season))
+						{
+							adjacentSum += Date.DaysInSeason(season);
+							if (adjacentSum >= GrowthTime)
+							{
+								return true;
+							}
+						}
+						else
+						{
+							adjacentSum = 0;
+						}
+					}
+				}
+				return false;
+			}
+		}
+
+		//public Crop ToCrop() => new Crop(
+		//	Name,
+		//	Grow,
+		//	SpeedMultipliers.
+		//		Where(m => m.Active).
+		//		Sum(m => m.Value),
+		//	Crop,
+		//	QualityCrops,
+		//	NormalCrops,
+		//	Price,
+		//	BestPrices.
+		//		Select(p => p.Source).
+		//		ToArray(),
+		//	HarvestedItems.ToDictionary
+		//		(kvp => kvp.Key, kvp => (QualityDist)kvp.Value.Select(v => v.Value).ToArray()),
+		//	Processes.ToDictionary
+		//		(kvp => kvp.Input, kvp => new Process[] { kvp }),
+		//	Replants.ToDictionary
+		//		(kvp => kvp.Input, kvp => new Process[] { kvp }));
+
+		readonly Grow Grow;
+		readonly Dictionary<Item, IValue[]> HarvestedItems;
+		public Process[] _Processes => Processes;
+		readonly Process[] Processes;
+		readonly Process[] Replants;
+
+		readonly Item CropItem;
+		readonly double ExtraCrops;
+		readonly bool Giant, DoubleCrops;
+		double GiantCrops => 2 * (1 - NoGiantCropProb);
+		double NoGiantCropProb => Giant ? Settings.NoGiantCropProb : 1;
+
+		readonly Settings Settings;
+		readonly Date Date;
+		readonly bool Indoors;
 
 		public CropDIO(
 			string name,
 			Seasons seasons,
 			Grow grow,
-			Dictionary<Item, IValue[]> harvestedItems,
-			MultiProcess[] processes,
-			MultiProcess[] replants,
-			Dictionary<Source, Price> priceFrom)
-			: base(name, priceFrom)
+			IMultiplier[] growthMultipliers,
+			Item cropItem,
+			double extraCropChance,
+			int yield,
+			bool giant,
+			bool doubleCrop,
+			Settings settings,
+			Date date,
+			Process[] processes,
+			Dictionary<Source, Price> priceFrom,
+			Dictionary<Item, IValue[]> harvestedItems = null)
+			: base (name, priceFrom)
 		{
 			Seasons = seasons;
 			SelectedSeasons = Seasons;
 			Grow = grow;
-			HarvestedItems = harvestedItems;
+			GrowthMultipliers = growthMultipliers;
+			CropItem = cropItem;
+			ExtraCrops = 1 / (1 - extraCropChance) + yield - 2;
+			Giant = giant;
+			DoubleCrops = doubleCrop;
+			Settings = settings;
+			Date = date;
 			Processes = processes;
-			Replants = replants;
+			HarvestedItems = harvestedItems ?? new Dictionary<Item, IValue[]>();
 		}
 	}
 }
