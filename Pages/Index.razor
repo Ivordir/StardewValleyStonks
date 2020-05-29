@@ -16,10 +16,11 @@
 						<th>Name</th>
 						<th>Growth Time</th>
 						<th>Regrow Time</th>
-						<th>Speed Multipliers</th>
+						<th>Seed</th>
 						<th>Crop Amounts</th>
 						<th>Processes</th>
 						<th>Seed Price and Source</th>
+						<th>Warnings</th>
 					</tr>
 					@foreach (CropDIO crop in Data.Crops)
 					{
@@ -45,12 +46,7 @@
 							</td>
 							<td>
 								<ul>
-									@foreach (IMultiplier multiplier in crop.GrowthMultipliers)
-									{
-										<li>
-											@multiplier.Name
-										</li>
-									}
+
 								</ul>
 							</td>
 							<td>
@@ -58,18 +54,20 @@
 								@crop.NormalCrops
 							</td>
 							<td>
-								<ul>
-									@foreach (Process process in crop._Processes)
-									{
-										<li>
-											@process.Input.Name
-											=>
-											@process.Source.Name
-											=>
-											@process.OutputItem.Name
-										</li>
-									}
-								</ul>
+								<Collapsible Collapsed=true Text="Show">
+									<ul>
+										@foreach (Process process in crop._Processes)
+										{
+											<li>
+												@process.Input.Name
+												=>
+												@process.Source.Name
+												=>
+												@process.OutputItem.Name
+											</li>
+										}
+									</ul>
+								</Collapsible>
 							</td>
 							<td>
 								@if (crop.HasPrice)
@@ -84,6 +82,7 @@
 									<span>???</span>
 								}
 							</td>
+							<td>@((MarkupString)crop.Warnings)</td>
 						</tr>
 					}
 				</table>
@@ -245,6 +244,10 @@
 				}
 			</select>
 			<input type="number" class="number-input" @bind=Date.EndDay>
+		</label>
+		<label class="input-header">
+			Year:
+			<input type="number" class="number-input" @bind=Date.Year>
 		</label>
 	</div>
 	<div class="bottom-row">

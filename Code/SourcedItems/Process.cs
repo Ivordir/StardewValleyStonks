@@ -16,25 +16,24 @@ namespace StardewValleyStonks
         }
 
         public Item Input { get; }
-        public int InputAmount => 1;
+        public virtual int InputAmount => 1;
         public Processor Source { get; }
         public Item OutputItem { get; }
-        public double OutputAmount => 1;
         public override bool Active => base.Active && Source.Active;
 
         public IItem Output(IItem input) => Output(input.Quality);
-        public double ProfitPerInput(int quality) => Output(quality).Price;
-        public int CompareTo(IProcess other, int quality) =>
-            ProfitPerInput(quality).CompareTo(other.ProfitPerInput(quality));
+        public int CompareTo(IProcess other, int quality)
+        => ProfitPerInput(quality).CompareTo(other.ProfitPerInput(quality));
 
         //public double Profit(double output) => Output.Price * output;
-        public double MaxOutput(QualityDist inputs)
-            => inputs.AllQualities / InputAmount * OutputAmount;
+        public virtual double OutputAmount(IItem input) => 1;
+        public virtual double ProfitPerInput(int quality) => Output(quality).Price;
+        public virtual double MaxOutput(QualityDist inputs) => inputs.Value;
 
-        private IItem Output(int quality) =>
-            Source.PreservesQuality ?
-            OutputItem.WithQuality[quality] :
-            OutputItem.Normal;
+        protected IItem Output(int quality)
+        => Source.PreservesQuality
+            ? OutputItem.WithQuality[quality]
+            : OutputItem.Normal;
 
         public Process(
             Item item,

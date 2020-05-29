@@ -1,12 +1,22 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using ExtentionsLibrary.Limits;
 
 namespace StardewValleyStonks
 {
     public class Date
     {
-        public Seasons Seasons => (Seasons)SeasonsToInts().Sum();
+        public Seasons Seasons
+        {
+            get
+            {
+                Seasons seasons = 0;
+                for (int season = (int)StartSeason; season < (int)EndSeason << 1; season <<= 1)
+                {
+                    seasons += season;
+                }
+                return seasons;
+            }
+        }
         public int Year
         {
             get => _Year;
@@ -25,8 +35,8 @@ namespace StardewValleyStonks
             set => _EndDay = value.InRange(1, 28);
         }
         public bool Valid
-        => StartSeason > EndSeason
-            || StartSeason == EndSeason && StartDay >= EndDay;
+        => StartSeason < EndSeason
+            || StartSeason == EndSeason && StartDay < EndDay;
 
         int _Year, _StartDay, _EndDay;
 

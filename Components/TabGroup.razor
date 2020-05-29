@@ -1,5 +1,5 @@
-﻿<CascadingValue Value="this">
-	<div class="btn-group">
+﻿<CascadingValue Value=this>
+	<div>
 		@foreach (Tab tab in Tabs)
 		{
 			<button type="button" class=@ButtonClass(tab) @onclick=@( () => SwitchTab(tab) )>
@@ -23,9 +23,9 @@
 	[Parameter]
 	public string InactiveTab { get; set; }
 
-	public Tab Tab { get; set; }
+	public Tab Tab { get; private set; }
 
-	private readonly List<Tab> Tabs = new List<Tab>();
+	readonly List<Tab> Tabs = new List<Tab>();
 
 	internal void AddTab(Tab tab)
 	{
@@ -37,7 +37,7 @@
 		}
 	}
 
-	private string ButtonClass(Tab tab) => tab == Tab ? ActiveTab : InactiveTab;
+	string ButtonClass(Tab tab) => tab == Tab ? ActiveTab : InactiveTab;
 
-	private void SwitchTab(Tab tab) => Tab = tab;
+	void SwitchTab(Tab tab) => Tab = tab;
 }

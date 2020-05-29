@@ -18,6 +18,7 @@ namespace StardewValleyStonks
 		public double NormalCrops =>
 			((DoubleCrops ? ExtraCrops * Settings.DoubleCropProb + Settings.DoubleCropProb : 0)
 			+ ExtraCrops) * NoGiantCropProb + GiantCrops;
+		public bool BuySeeds { get; set; }
 		public override bool Active
 		{
 			get
@@ -32,25 +33,26 @@ namespace StardewValleyStonks
 				}
 				// no products
 				// no replant
-				throw new NotImplementedException();
+				return true;
 			}
 		}
 		public override string Warnings
 		{
 			get
 			{
+				string warnings = string.Empty;
 				if (!Active)
 				{
 					if (!IsInSeason)
 					{
-
+						warnings += $"{Name} is not in season.".WrapTag("li");
 					}
 					else if (!CanGiveOneHarvest)
 					{
-
+						warnings += $"There are not enough days for {Name} to give at least one harvest.".WrapTag("li");
 					}
 				}
-				return "";
+				return warnings;
 			}
 		}
 
@@ -109,6 +111,7 @@ namespace StardewValleyStonks
 		public Process[] _Processes => Processes;
 		readonly Process[] Processes;
 		readonly Process[] Replants;
+		readonly Source BuySeedsSource;
 
 		readonly Item CropItem;
 		readonly double ExtraCrops;

@@ -4,19 +4,16 @@ namespace StardewValleyStonks
 {
     public readonly struct QualityItem : IItem
     {
-        public readonly string Name => $"{Item.Name} ({_Quality.Name})";
-        public readonly int Price => _Quality * Item.Price;
+        public readonly string Name => $"{Normal.Name} ({Get(Quality).Name})";
+        public readonly int Price => Get(Quality) * Normal.Price;
         public readonly int Quality { get; }
-        public readonly Item Normal => Item;
-
-        readonly Item Item;
-        readonly Quality _Quality => Get(Quality);
+        public readonly Item Normal { get; }
 
         public QualityItem(
             Item item,
             int quality)
         {
-            Item = item;
+            Normal = item;
             Quality = quality;
         }
     }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 using ExtentionsLibrary.Collections;
+using System.Net.Http.Headers;
 
 namespace StardewValleyStonks
 {
@@ -139,6 +140,10 @@ namespace StardewValleyStonks
             Dictionary<string, Source> buySources = BuySources.ToDictionary(s => s.Name);
             Dictionary<string, Source> replantMethods = ReplantMethods.ToDictionary(s => s.Name);
             Dictionary<string, Skill> skillDict = skills.ToDictionary(s => s.Name);
+            Dictionary<string, Item> products = (
+                from product in config.GetSection("Products").GetChildren()
+                select ParseItem(product, multiplierDict)).
+                ToDictionary(p => p.Name);
 
             IMultiplier[] agri = new IMultiplier[] { skills.Agriculturist };
             _Crops = (
@@ -151,6 +156,8 @@ namespace StardewValleyStonks
                 let cropItem = cropItemSection.Exists()
                     ? ParseItem(cropItemSection, multiplierDict)
                     : new Item(name, crop.GetValue<int>("Price"), skills.Tiller)
+
+                let harvestedItems = ParseItemAmounts(crop.GetSection("Harvested Items"), multiplierDict)
 
                 let seedSection = crop.GetSection("Seed")
                 let seed = cropItemSection.Exists() && cropItemSection.GetValue("Seed", false) ? cropItem
@@ -184,7 +191,16 @@ namespace StardewValleyStonks
                     crop.GetValue("Double Crop Chance", true),
                     settings,
                     date,
-                    ParseProcesses(cropItem, generate, sellSources, multiplierDict),
+                    ParseProcesses(
+                        cropItem,
+                        harvestedItems,
+                        crop.GetSection("Processes"),
+                        generate,
+                        sellSources,
+                        multiplierDict,
+                        skillDict,
+                        date,
+                        products),
                     //null,
                     ParsePrices(seed, generate, crop.GetSection("Seed Prices"), buySources, skillDict, date))).
                 ToArray();
@@ -202,20 +218,6 @@ namespace StardewValleyStonks
                         date))).
                 ToArray();
         }
-
-        private static Dictionary<Source, Price> ParsePrices(
-            IConfigurationSection prices,
-            Dictionary<string, Source> sources,
-            Dictionary<string, Skill> skillDict,
-            Date date)
-        => prices.Exists()
-            ? (from price in prices.GetChildren()
-               select new Price(
-                  price.GetValue<int>("Price"),
-                  sources[price.GetValue<string>("Name")],
-                  ParseConditions(price.GetSection("Conditions"), skillDict, date))).
-                ToDictionary(price => price.Source)
-            : new Dictionary<Source, Price>();
 
         private static ICondition[] ParseConditions(
             IConfigurationSection conditions,
@@ -240,12 +242,18 @@ namespace StardewValleyStonks
         => new Item(
             item.GetValue<string>("Name"),
             item.GetValue<int>("Price"),
-            multiplierDict.GetOrDefault(item.GetValue<string>("Multiplier")));
+            multiplierDict.GetOrDefault(item.GetValue("Multiplier", string.Empty)));
+
         private static Process[] ParseProcesses(
             Item cropItem,
+            Dictionary<Item, double> harvestedItems,
+            IConfigurationSection processData,
             HashSet<string> flags,
             Dictionary<string, Processor> sellSources,
-            Dictionary<string, IMultiplier> multipliers)
+            Dictionary<string, IMultiplier> multipliers,
+            Dictionary<string, Skill> skillDict,
+            Date date,
+            Dictionary<string, Item> products)
         {
             List<Process> processes = new List<Process>
             {
@@ -295,8 +303,63 @@ namespace StardewValleyStonks
             {
                 //wip
             }
+            if(processData.Exists())
+            {
+                Dictionary<string, Item> harvestedItemWith = harvestedItems.ToDictionary(i => i.Key.Name);
+                foreach (var process in processData.GetChildren())
+                {
+                    Item input = cropItem;
+                    int inputAmount = process.GetValue("Input Amount", 1);
+                    var inputSection = process.GetSection("Input");
+                    if (inputSection.Exists())
+                    {
+                        input = ParseItem(inputSection, multipliers);
+                        inputAmount = inputSection.GetValue("Amount", 1);
+                    }
+
+                    var outputSection = process.GetSection("Output");
+                    double outputAmount = outputSection.GetValue("Amount", 1.0);
+                    string outputName = outputSection.GetValue<string>("Name");
+                    Item output = products.ContainsKey(outputName) ? products[outputName]
+                        : 
+                        : ParseItem(outputSection, multipliers);
+
+                    if (inputAmount != 1 || outputAmount != 1)
+                    {
+                        processes.Add(new RatioProcess(
+                            input,
+                            inputAmount,
+                            sellSources[process.GetValue<string>("Processor")],
+                            output,
+                            outputAmount,
+                            ParseConditions(process.GetSection("Conditions"), skillDict, date)));
+                    }
+                    else
+                    {
+                        processes.Add(new Process(
+                            input,
+                            sellSources[process.GetValue<string>("Processor")],
+                            output,
+                            ParseConditions(process.GetSection("Conditions"), skillDict, date)));
+                    }
+                }
+            }
             return processes.ToArray();
         }
+
+        private static Dictionary<Source, Price> ParsePrices(
+            IConfigurationSection prices,
+            Dictionary<string, Source> sources,
+            Dictionary<string, Skill> skillDict,
+            Date date)
+        => prices.Exists()
+            ? (from price in prices.GetChildren()
+               select new Price(
+                  price.GetValue<int>("Price"),
+                  sources[price.GetValue<string>("Name")],
+                  ParseConditions(price.GetSection("Conditions"), skillDict, date))).
+               ToDictionary(price => price.Source)
+            : new Dictionary<Source, Price>();
 
         private static Dictionary<Source, Price> ParsePrices(
             Item seed,
@@ -306,23 +369,42 @@ namespace StardewValleyStonks
             Dictionary<string, Skill> skillDict,
             Date date)
         {
-            Dictionary<Source, Price> priceFrom = ParsePrices(prices, sources, skillDict, date);
-            if (flags.Contains("Pierre") && flags.Contains("Joja"))
+            Dictionary<Source, Price> priceFrom = new Dictionary<Source, Price>();
+            if (flags.Contains("Pierre"))
             {
-                Price pierre = new Price(seed.Price * 2, sources["Pierre"]);
-                priceFrom.Add(sources["Pierre"], pierre);
-                priceFrom.Add(
-                    sources["Joja"],
-                    new MatchPrice(
-                        (int)(pierre.Value * 1.25),
-                        (MatchSource)sources["Joja"],
-                        pierre));
+                priceFrom.Add(sources["Pierre"], new Price(
+                    seed.Price * 2,
+                    sources["Pierre"]));
             }
             else if (flags.Contains("Oasis"))
             {
-                priceFrom.Add(sources["Oasis"], new Price(seed.Price * 2, sources["Oasis"]));
+                priceFrom.Add(sources["Oasis"], new Price(
+                    seed.Price * 2,
+                    sources["Oasis"]));
+            }
+            priceFrom.AddAll(ParsePrices(prices, sources, skillDict, date));
+            if (flags.Contains("Joja"))
+            {
+                priceFrom.Add(sources["Joja"], new MatchPrice(
+                    (int)(priceFrom[sources["Pierre"]].Value * 1.25),
+                    (MatchSource)sources["Joja"],
+                    priceFrom[sources["Pierre"]]));
             }
             return priceFrom;
+        }
+        private static Dictionary<Item, double> ParseItemAmounts(IConfigurationSection itemAmounts, Dictionary<string, IMultiplier> multipliers)
+        {
+            Dictionary<Item, double> amounts = new Dictionary<Item, double>();
+            if (itemAmounts.Exists())
+            {
+                foreach (var itemAmount in itemAmounts.GetChildren())
+                {
+                    amounts.Add(
+                        ParseItem(itemAmount, multipliers),
+                        itemAmount.GetValue("Amount", 1));
+                }
+            }
+            return amounts;
         }
     }
 }

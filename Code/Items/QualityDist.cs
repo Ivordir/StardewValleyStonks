@@ -1,10 +1,21 @@
-﻿using System.Linq;
-
-namespace StardewValleyStonks
+﻿namespace StardewValleyStonks
 {
     public readonly struct QualityDist
     {
-        public double AllQualities => Dist.Sum();
+        public readonly double Value { get; }
+        public readonly int Quality { get; }
+        public readonly double AllQualities
+        {
+            get
+            {
+                double sum = Value;
+                for (int quality = Quality + 1; quality < Dist.Length; quality++)
+                {
+                    sum += Dist[quality];
+                }
+                return sum;
+            }
+        }
 
         public static QualityDist operator -(QualityDist dist, double amount)
             => amount == dist.Value ?
@@ -14,9 +25,7 @@ namespace StardewValleyStonks
         public static implicit operator QualityDist(double[] dist) => new QualityDist(dist);
         public static implicit operator double(QualityDist dist) => dist.Value;
 
-        private readonly double Value;
-        private readonly int Quality;
-        private readonly double[] Dist;
+        readonly double[] Dist;
 
         public QualityDist(double[] dist)
         {

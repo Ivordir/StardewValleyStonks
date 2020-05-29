@@ -19,7 +19,6 @@
 		{
 			throw new ArgumentNullException(nameof(Parent), "A Tab must exist within a TabGroup");
 		}
-
 		base.OnInitialized();
 		Parent.AddTab(this);
 	}

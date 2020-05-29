@@ -1,4 +1,4 @@
-﻿<button class=@ButtonClass @onclick=Toggle>
+﻿<button type="button" class=@Class @onclick=Toggle>
 	@ChildContent
 </button>
 
@@ -12,17 +12,21 @@
 	[Parameter]
 	public string ToggledClass { get; set; }
 
+	//Note: "Value" is intended to be bound to something.
+	//If you are initializing "Value" manually i.e. <ToggleButton Value=true...
+	//Be aware that "Value" will be reset everytime a parent component calls its StageHasChanged() method.
+	//See: https://docs.microsoft.com/en-us/aspnet/core/blazor/components?view=aspnetcore-3.1#dont-create-components-that-write-to-their-own-parameter-properties
 	[Parameter]
 	public bool Value { get; set; }
 
 	[Parameter]
 	public EventCallback<bool> ValueChanged { get; set; }
 
-	private void Toggle()
+	void Toggle()
 	{
 		Value = !Value;
 		ValueChanged.InvokeAsync(Value);
 	}
 
-	private string ButtonClass => Value ? ToggledClass : UntoggledClass;
+	string Class => Value ? ToggledClass : UntoggledClass;
 }
