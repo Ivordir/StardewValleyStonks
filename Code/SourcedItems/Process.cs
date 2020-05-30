@@ -32,7 +32,7 @@ namespace StardewValleyStonks
 
         protected IItem Output(int quality)
         => Source.PreservesQuality
-            ? OutputItem.WithQuality[quality]
+            ? OutputItem.With(quality)
             : OutputItem.Normal;
 
         public Process(

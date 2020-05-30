@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 using ExtentionsLibrary.Collections;
-using System.Net.Http.Headers;
 
 namespace StardewValleyStonks
 {
@@ -126,9 +125,8 @@ namespace StardewValleyStonks
                 new Source("Replant Crop")
             };
 
-
             Multiplier irrigated = new Multiplier("Irrigated", 0.1);
-            Dictionary<string, IMultiplier> multiplierDict = new Dictionary<string, IMultiplier>
+            Dictionary<string, IMultiplier> multipliers = new Dictionary<string, IMultiplier>
             {
                 { skills.Tiller.Name, skills.Tiller },
                 { skills.Agriculturist.Name, skills.Agriculturist },
@@ -142,48 +140,163 @@ namespace StardewValleyStonks
             Dictionary<string, Skill> skillDict = skills.ToDictionary(s => s.Name);
             Dictionary<string, Item> products = (
                 from product in config.GetSection("Products").GetChildren()
-                select ParseItem(product, multiplierDict)).
+                select ParseItem(product, multipliers)).
                 ToDictionary(p => p.Name);
 
             IMultiplier[] agri = new IMultiplier[] { skills.Agriculturist };
-            _Crops = (
-                from crop in config.GetSection("Crops").GetChildren()
-                let name = crop.GetValue<string>("Name")
-                let regrow = crop.GetValue("Regrow", -1)
-                let growthMultipliers = crop.GetSection("Growth Multipliers")
 
-                let cropItemSection = crop.GetSection("Crop Item")
-                let cropItem = cropItemSection.Exists()
-                    ? ParseItem(cropItemSection, multiplierDict)
-                    : new Item(name, crop.GetValue<int>("Price"), skills.Tiller)
+            List<CropDIO> crops = new List<CropDIO>();
+            foreach (var crop in config.GetSection("Crops").GetChildren())
+            {
+                string name = crop.GetValue<string>("Name");
+                int regrow = crop.GetValue("Regrow", -1);
+                var growthMultipliers = crop.GetSection("Growth Multipliers");
 
-                let harvestedItems = ParseItemAmounts(crop.GetSection("Harvested Items"), multiplierDict)
+                Item seed = Item.None;
+                var cropSection = crop.GetSection("Crop Item");
+                Item cropItem = cropSection.Exists()
+                    ? ParseSeedItem(ref seed, cropSection, multipliers)
+                    : new Item(name, crop.GetValue<int>("Sell"), skills.Tiller);
 
-                let seedSection = crop.GetSection("Seed")
-                let seed = cropItemSection.Exists() && cropItemSection.GetValue("Seed", false) ? cropItem
-                    : seedSection.Exists() ? new Item(
-                        seedSection.GetValue<string>("Name"),
-                        seedSection.GetValue<int>("Sell"),
-                        null,
-                        1)
-                    : new Item(
-                        name + " Seeds",
-                        crop.GetValue<int>("Seed Sell"),
-                        null,
-                        1)
+                Dictionary<Item, double> harvestedItems = new Dictionary<Item, double>();
+                var itemAmounts = crop.GetSection("Harvested Items");
+                if (itemAmounts.Exists())
+                {
+                    foreach (var itemAmount in itemAmounts.GetChildren())
+                    {
+                        harvestedItems.Add(
+                            ParseSeedItem(ref seed, itemAmount, multipliers),
+                            itemAmount.GetValue("Amount", 1));
+                    }
+                }
+                if (seed == Item.None)
+                {
+                    var seedSection = crop.GetSection("Seed");
+                    seed = seedSection.Exists()
+                        ? ParseItem(seedSection, multipliers)
+                        : new Item(name + " Seeds", crop.GetValue<int>("Seed Sell"));
+                }
 
-                let generate = new HashSet<string>(crop.GetSection("Generate").RawValues())
-                select new CropDIO(
+                HashSet<string> flags = new HashSet<string>(crop.GetSection("Generate").RawValues());
+                List<Process> processes = new List<Process>
+                {
+                    new Process(cropItem, sellSources["Raw Crop"])
+                };
+                if (flags.Contains("Vegetable") || flags.Contains("Juice"))
+                {
+                    processes.Add(new Process(
+                        cropItem,
+                        sellSources["Keg"],
+                        new Item(
+                            cropItem.Name + " Juice",
+                            (int)(cropItem.Price * 2.25),
+                            multipliers["Artisan"])));
+                }
+                else if (flags.Contains("Fruit") || flags.Contains("Wine"))
+                {
+                    processes.Add(new Process(
+                        cropItem,
+                        sellSources["Keg"],
+                        new Item(
+                            cropItem.Name + " Wine",
+                            cropItem.Price * 3,
+                            multipliers["Artisan"])));
+                }
+                if (flags.Contains("Vegetable") || flags.Contains("Pickle"))
+                {
+                    processes.Add(new Process(
+                        cropItem,
+                        sellSources["Preserves Jar"],
+                        new Item(
+                            "Pickeled " + cropItem.Name,
+                            cropItem.Price * 2 + 50,
+                            multipliers["Artisan"])));
+                }
+                else if (flags.Contains("Fruit") || flags.Contains("Jam"))
+                {
+                    processes.Add(new Process(
+                        cropItem,
+                        sellSources["Preserves Jar"],
+                        new Item(
+                            cropItem.Name + " Jam",
+                            cropItem.Price * 2 + 50,
+                            multipliers["Artisan"])));
+                }
+                if (flags.Contains("Seed Maker"))
+                {
+                    //wip
+                }
+                var processData = crop.GetSection("Processes");
+                if (processData.Exists())
+                {
+                    Dictionary<string, Item> harvestedItemWith = harvestedItems.ToDictionary(i => i.Key.Name, i => i.Key);
+                    foreach (var process in processData.GetChildren())
+                    {
+                        var inputSection = process.GetSection("Input Name");
+                        Item input = inputSection.Exists()
+                            ? harvestedItemWith[inputSection.Value]
+                            : cropItem;
+                        int inputAmount = process.GetValue("Input Amount", 1);
+
+                        var outputSection = process.GetSection("Output");
+                        Item output = outputSection.Exists()
+                            ? ParseItem(outputSection, multipliers)
+                            : products[process.GetValue<string>("Output Name")];
+                        double outputAmount = outputSection.GetValue("Output Amount", 1.0);
+
+                        if (inputAmount != 1 || outputAmount != 1)
+                        {
+                            processes.Add(new RatioProcess(
+                                input,
+                                inputAmount,
+                                sellSources[process.GetValue<string>("Processor")],
+                                output,
+                                outputAmount,
+                                ParseConditions(process.GetSection("Conditions"), skillDict, date)));
+                        }
+                        else
+                        {
+                            processes.Add(new Process(
+                                input,
+                                sellSources[process.GetValue<string>("Processor")],
+                                output,
+                                ParseConditions(process.GetSection("Conditions"), skillDict, date)));
+                        }
+                    }
+                }
+                Dictionary<Source, Price> priceFrom = new Dictionary<Source, Price>();
+                if (flags.Contains("Pierre"))
+                {
+                    priceFrom.Add(buySources["Pierre"], new Price(
+                        seed.Price * 2,
+                        buySources["Pierre"]));
+                }
+                else if (flags.Contains("Oasis"))
+                {
+                    priceFrom.Add(buySources["Oasis"], new Price(
+                        seed.Price * 2,
+                        buySources["Oasis"]));
+                }
+                priceFrom.AddAll(ParsePrices(crop.GetSection("Seed Prices"), buySources, skillDict, date));
+                if (flags.Contains("Joja"))
+                {
+                    priceFrom.Add(buySources["Joja"], new MatchPrice(
+                        (int)(priceFrom[buySources["Pierre"]].Value * 1.25),
+                        (MatchSource)buySources["Joja"],
+                        priceFrom[buySources["Pierre"]]));
+                }
+
+                crops.Add(new CropDIO(
                     name,
                     Enum.Parse<Seasons>(crop.GetValue<string>("Seasons")),
                     regrow == -1
-                    ? new Grow(crop.GetSection("Growth Stages").ToArray())
-                    : new Regrow(crop.GetSection("Growth Stages").ToArray(), regrow),
+                        ? new Grow(crop.GetSection("Growth Stages").ToArray())
+                        : new Regrow(crop.GetSection("Growth Stages").ToArray(), regrow),
                     growthMultipliers.Exists()
-                    ? (from multiplier in growthMultipliers.GetChildren()
-                       select multiplierDict[multiplier.Value]).
-                      ToArray()
-                    : agri,
+                        ? (from multiplier in growthMultipliers.GetChildren()
+                            select multipliers[multiplier.Value]).
+                            ToArray()
+                        : agri,
                     cropItem,
                     crop.GetValue("Extra Crop Chance", 0.0),
                     crop.GetValue("Crop Yield", 1),
@@ -191,19 +304,12 @@ namespace StardewValleyStonks
                     crop.GetValue("Double Crop Chance", true),
                     settings,
                     date,
-                    ParseProcesses(
-                        cropItem,
-                        harvestedItems,
-                        crop.GetSection("Processes"),
-                        generate,
-                        sellSources,
-                        multiplierDict,
-                        skillDict,
-                        date,
-                        products),
-                    //null,
-                    ParsePrices(seed, generate, crop.GetSection("Seed Prices"), buySources, skillDict, date))).
-                ToArray();
+                    processes.ToArray(),
+                    priceFrom,
+                    harvestedItems,
+                    seed));
+            }
+            _Crops = crops.ToArray();
 
             Fertilizers = (
                 from fert in config.GetSection("Fertilizers").GetChildren()
@@ -212,7 +318,7 @@ namespace StardewValleyStonks
                     fert.GetValue("Quality", 0),
                     fert.GetValue("Speed", 0.0),
                     ParsePrices(
-                        fert.GetSection("Sources"),
+                        fert.GetSection("Prices"),
                         buySources,
                         skillDict,
                         date))).
@@ -241,111 +347,8 @@ namespace StardewValleyStonks
             Dictionary<string, IMultiplier> multiplierDict)
         => new Item(
             item.GetValue<string>("Name"),
-            item.GetValue<int>("Price"),
+            item.GetValue<int>("Sell"),
             multiplierDict.GetOrDefault(item.GetValue("Multiplier", string.Empty)));
-
-        private static Process[] ParseProcesses(
-            Item cropItem,
-            Dictionary<Item, double> harvestedItems,
-            IConfigurationSection processData,
-            HashSet<string> flags,
-            Dictionary<string, Processor> sellSources,
-            Dictionary<string, IMultiplier> multipliers,
-            Dictionary<string, Skill> skillDict,
-            Date date,
-            Dictionary<string, Item> products)
-        {
-            List<Process> processes = new List<Process>
-            {
-                new Process(cropItem, sellSources["Raw Crop"])
-            };
-            if (flags.Contains("Vegetable") || flags.Contains("Juice"))
-            {
-                processes.Add(new Process(
-                    cropItem,
-                    sellSources["Keg"],
-                    new Item(
-                        cropItem.Name + " Juice",
-                        (int)(cropItem.Price * 2.25),
-                        multipliers["Artisan"])));
-            }
-            else if (flags.Contains("Fruit") || flags.Contains("Wine"))
-            {
-                processes.Add(new Process(
-                    cropItem,
-                    sellSources["Keg"],
-                    new Item(
-                        cropItem.Name + " Wine",
-                        cropItem.Price * 3,
-                        multipliers["Artisan"])));
-            }
-            if (flags.Contains("Vegetable") || flags.Contains("Pickle"))
-            {
-                processes.Add(new Process(
-                    cropItem,
-                    sellSources["Preserves Jar"],
-                    new Item(
-                        "Pickeled " + cropItem.Name,
-                        cropItem.Price * 2 + 50,
-                        multipliers["Artisan"])));
-            }
-            else if (flags.Contains("Fruit") || flags.Contains("Jam"))
-            {
-                processes.Add(new Process(
-                    cropItem,
-                    sellSources["Preserves Jar"],
-                    new Item(
-                        cropItem.Name + " Jam",
-                        cropItem.Price * 2 + 50,
-                        multipliers["Artisan"])));
-            }
-            if (flags.Contains("Seed Maker"))
-            {
-                //wip
-            }
-            if(processData.Exists())
-            {
-                Dictionary<string, Item> harvestedItemWith = harvestedItems.ToDictionary(i => i.Key.Name);
-                foreach (var process in processData.GetChildren())
-                {
-                    Item input = cropItem;
-                    int inputAmount = process.GetValue("Input Amount", 1);
-                    var inputSection = process.GetSection("Input");
-                    if (inputSection.Exists())
-                    {
-                        input = ParseItem(inputSection, multipliers);
-                        inputAmount = inputSection.GetValue("Amount", 1);
-                    }
-
-                    var outputSection = process.GetSection("Output");
-                    double outputAmount = outputSection.GetValue("Amount", 1.0);
-                    string outputName = outputSection.GetValue<string>("Name");
-                    Item output = products.ContainsKey(outputName) ? products[outputName]
-                        : 
-                        : ParseItem(outputSection, multipliers);
-
-                    if (inputAmount != 1 || outputAmount != 1)
-                    {
-                        processes.Add(new RatioProcess(
-                            input,
-                            inputAmount,
-                            sellSources[process.GetValue<string>("Processor")],
-                            output,
-                            outputAmount,
-                            ParseConditions(process.GetSection("Conditions"), skillDict, date)));
-                    }
-                    else
-                    {
-                        processes.Add(new Process(
-                            input,
-                            sellSources[process.GetValue<string>("Processor")],
-                            output,
-                            ParseConditions(process.GetSection("Conditions"), skillDict, date)));
-                    }
-                }
-            }
-            return processes.ToArray();
-        }
 
         private static Dictionary<Source, Price> ParsePrices(
             IConfigurationSection prices,
@@ -355,56 +358,26 @@ namespace StardewValleyStonks
         => prices.Exists()
             ? (from price in prices.GetChildren()
                select new Price(
-                  price.GetValue<int>("Price"),
+                  price.GetValue<int>("Buy"),
                   sources[price.GetValue<string>("Name")],
                   ParseConditions(price.GetSection("Conditions"), skillDict, date))).
                ToDictionary(price => price.Source)
             : new Dictionary<Source, Price>();
 
-        private static Dictionary<Source, Price> ParsePrices(
-            Item seed,
-            HashSet<string> flags,
-            IConfigurationSection prices,
-            Dictionary<string, Source> sources,
-            Dictionary<string, Skill> skillDict,
-            Date date)
+        private static Item ParseSeedItem(
+            ref Item seed,
+            IConfigurationSection itemData,
+            Dictionary<string, IMultiplier> multiplierDict)
         {
-            Dictionary<Source, Price> priceFrom = new Dictionary<Source, Price>();
-            if (flags.Contains("Pierre"))
+            Item item = new Item(
+                itemData.GetValue<string>("Name"),
+                itemData.GetValue<int>("Sell"),
+                multiplierDict.GetOrDefault(itemData.GetValue("Multiplier", string.Empty)));
+            if (itemData.GetValue("Seed", false))
             {
-                priceFrom.Add(sources["Pierre"], new Price(
-                    seed.Price * 2,
-                    sources["Pierre"]));
+                seed = item;
             }
-            else if (flags.Contains("Oasis"))
-            {
-                priceFrom.Add(sources["Oasis"], new Price(
-                    seed.Price * 2,
-                    sources["Oasis"]));
-            }
-            priceFrom.AddAll(ParsePrices(prices, sources, skillDict, date));
-            if (flags.Contains("Joja"))
-            {
-                priceFrom.Add(sources["Joja"], new MatchPrice(
-                    (int)(priceFrom[sources["Pierre"]].Value * 1.25),
-                    (MatchSource)sources["Joja"],
-                    priceFrom[sources["Pierre"]]));
-            }
-            return priceFrom;
-        }
-        private static Dictionary<Item, double> ParseItemAmounts(IConfigurationSection itemAmounts, Dictionary<string, IMultiplier> multipliers)
-        {
-            Dictionary<Item, double> amounts = new Dictionary<Item, double>();
-            if (itemAmounts.Exists())
-            {
-                foreach (var itemAmount in itemAmounts.GetChildren())
-                {
-                    amounts.Add(
-                        ParseItem(itemAmount, multipliers),
-                        itemAmount.GetValue("Amount", 1));
-                }
-            }
-            return amounts;
+            return item;
         }
     }
 }

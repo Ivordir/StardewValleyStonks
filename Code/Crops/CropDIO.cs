@@ -85,7 +85,7 @@ namespace StardewValleyStonks
 				return false;
 			}
 		}
-
+		public Item Seed { get; }
 		//public Crop ToCrop() => new Crop(
 		//	Name,
 		//	Grow,
@@ -107,7 +107,7 @@ namespace StardewValleyStonks
 		//		(kvp => kvp.Input, kvp => new Process[] { kvp }));
 
 		readonly Grow Grow;
-		readonly Dictionary<Item, IValue[]> HarvestedItems;
+		readonly Dictionary<Item, double> HarvestedItems;
 		public Process[] _Processes => Processes;
 		readonly Process[] Processes;
 		readonly Process[] Replants;
@@ -137,7 +137,8 @@ namespace StardewValleyStonks
 			Date date,
 			Process[] processes,
 			Dictionary<Source, Price> priceFrom,
-			Dictionary<Item, IValue[]> harvestedItems = null)
+			Dictionary<Item, double> harvestedItems,
+			Item seed)
 			: base (name, priceFrom)
 		{
 			Seasons = seasons;
@@ -151,7 +152,8 @@ namespace StardewValleyStonks
 			Settings = settings;
 			Date = date;
 			Processes = processes;
-			HarvestedItems = harvestedItems ?? new Dictionary<Item, IValue[]>();
+			HarvestedItems = harvestedItems;
+			Seed = seed;
 		}
 	}
 }
