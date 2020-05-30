@@ -125,7 +125,7 @@ namespace StardewValleyStonks
                 new Source("Replant Crop")
             };
 
-            Multiplier irrigated = new Multiplier("Irrigated", 0.1);
+            Multiplier irrigated = new Multiplier("Irrigated", 0.25);
             Dictionary<string, IMultiplier> multipliers = new Dictionary<string, IMultiplier>
             {
                 { skills.Tiller.Name, skills.Tiller },

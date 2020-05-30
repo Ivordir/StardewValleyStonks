@@ -10,6 +10,7 @@ namespace StardewValleyStonks
 		public Seasons SelectedSeasons { get; set; }
 
 		public int GrowthTime => Grow.DaysPerHarvest(GrowthMultipliers.Where(m => m.Active).Sum(m => m.Value));
+		public int GrowthTimeWith(double speed) => Grow.DaysPerHarvest(speed);
 		public IMultiplier[] GrowthMultipliers { get; }
 		public bool Regrows => Grow.Regrows;
 		public int RegrowTime => Grow.RegrowTime;
