@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace StardewValleyStonks
@@ -10,7 +9,6 @@ namespace StardewValleyStonks
 		public Seasons SelectedSeasons { get; set; }
 
 		public int GrowthTime => Grow.DaysPerHarvest(GrowthMultipliers.Where(m => m.Active).Sum(m => m.Value));
-		public int GrowthTimeWith(double speed) => Grow.DaysPerHarvest(speed);
 		public IMultiplier[] GrowthMultipliers { get; }
 		public bool Regrows => Grow.Regrows;
 		public int RegrowTime => Grow.RegrowTime;
@@ -111,6 +109,7 @@ namespace StardewValleyStonks
 		readonly Dictionary<Item, double> HarvestedItems;
 		public Process[] _Processes => Processes;
 		readonly Process[] Processes;
+		public Process[] _Replants => Replants;
 		readonly Process[] Replants;
 		readonly Source BuySeedsSource;
 
@@ -137,6 +136,7 @@ namespace StardewValleyStonks
 			Settings settings,
 			Date date,
 			Process[] processes,
+			Process[] replants,
 			Dictionary<Source, Price> priceFrom,
 			Dictionary<Item, double> harvestedItems,
 			Item seed)
@@ -153,6 +153,7 @@ namespace StardewValleyStonks
 			Settings = settings;
 			Date = date;
 			Processes = processes;
+			Replants = replants;
 			HarvestedItems = harvestedItems;
 			Seed = seed;
 		}

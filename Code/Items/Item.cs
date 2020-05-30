@@ -1,21 +1,11 @@
 ﻿namespace StardewValleyStonks
 {
-    //potentially should instead be a class
-    public readonly struct Item : IItem
+    public class Item
     {
-        public static Item None = new Item();
-
-        //eh.....
-        public static bool operator ==(Item a, Item b)
-        => a.Name == b.Name;
-        public static bool operator !=(Item a, Item b)
-        => a.Name != b.Name;
-
-        public readonly string Name { get; }
-        public readonly int Price => Multiplier != null && Multiplier.Active ? (int)(Multiplier.Value * BasePrice) : BasePrice;
-        public readonly Item Normal => this;
-        public readonly IItem With(int quality) => quality == 0 ? this : (IItem)new QualityItem(this, quality);
-        public readonly int Quality => 0;
+        public string Name { get; }
+        public int Price => Multiplier != null && Multiplier.Active ? (int)(Multiplier.Value * BasePrice) : BasePrice;
+        public QualityItem With(int quality) => new QualityItem(this, quality);
+        public QualityItem Normal => new QualityItem(this, 0);
 
         readonly int BasePrice;
         readonly IMultiplier Multiplier;

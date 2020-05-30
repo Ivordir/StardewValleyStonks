@@ -6,7 +6,7 @@
 
         readonly double _OutputAmount;
 
-        public override double OutputAmount(IItem input) => _OutputAmount;
+        public override double OutputAmount(QualityItem input) => _OutputAmount;
         public override double ProfitPerInput(int quality) => Output(quality).Price * _OutputAmount / InputAmount;
         public override double MaxOutput(QualityDist inputs)
         => inputs / InputAmount * _OutputAmount;

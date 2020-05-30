@@ -21,16 +21,16 @@ namespace StardewValleyStonks
         public Item OutputItem { get; }
         public override bool Active => base.Active && Source.Active;
 
-        public IItem Output(IItem input) => Output(input.Quality);
+        public QualityItem Output(QualityItem input) => Output(input.Quality);
         public int CompareTo(IProcess other, int quality)
         => ProfitPerInput(quality).CompareTo(other.ProfitPerInput(quality));
 
         //public double Profit(double output) => Output.Price * output;
-        public virtual double OutputAmount(IItem input) => 1;
+        public virtual double OutputAmount(QualityItem input) => 1;
         public virtual double ProfitPerInput(int quality) => Output(quality).Price;
         public virtual double MaxOutput(QualityDist inputs) => inputs.Value;
 
-        protected IItem Output(int quality)
+        protected QualityItem Output(int quality)
         => Source.PreservesQuality
             ? OutputItem.With(quality)
             : OutputItem.Normal;

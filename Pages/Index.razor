@@ -19,70 +19,87 @@
 						<th>Seed</th>
 						<th>Crop Amounts</th>
 						<th>Processes</th>
+						<th>Replants</th>
 						<th>Seed Price and Source</th>
 						<th>Warnings</th>
 					</tr>
 					@foreach (CropDIO crop in Data.Crops)
 					{
-						<tr>
-							<td>
-								<label class="entry-checkbox-label">
-									<input type="checkbox" class="entry-checkbox" checked>
-									<span class="entry-checkbox-background"></span>
-								</label>
-							</td>
-							<td>Image</td>
-							<td>@crop.Name</td>
-							<td>@crop.GrowthTime</td>
-							<td>
-								@if (crop.Regrows)
+				<tr>
+					<td>
+						<label class="entry-checkbox-label">
+							<input type="checkbox" class="entry-checkbox" checked>
+							<span class="entry-checkbox-background"></span>
+						</label>
+					</td>
+					<td>Image</td>
+					<td>@crop.Name</td>
+					<td>@crop.GrowthTime</td>
+					<td>
+						@if (crop.Regrows)
+						{
+							<span>@crop.RegrowTime</span>
+						}
+						else
+						{
+							<span></span>
+						}
+					</td>
+					<td>
+						@crop.Seed.Name
+						@crop.Seed.Price
+					</td>
+					<td>
+						@crop.QualityCrops
+						@crop.NormalCrops
+					</td>
+					<td>
+						<Expander Text="Show">
+							<ul>
+								@foreach (Process process in crop._Processes)
 								{
-									<span>@crop.RegrowTime</span>
+									<li>
+										@process.Input.Name
+										=>
+										@process.Source.Name
+										=>
+										@process.OutputItem.Name
+									</li>
 								}
-								else
+							</ul>
+						</Expander>
+					</td>
+					<td>
+						<Expander Text="Show">
+							<ul>
+								@foreach (Process replant in crop._Replants)
 								{
-									<span></span>
+									<li>
+										@replant.Input.Name
+										=>
+										@replant.Source.Name
+										=>
+										@replant.OutputItem.Name
+									</li>
 								}
-							</td>
-							<td>
-								@crop.Seed.Name
-								@crop.Seed.Price
-							</td>
-							<td>
-								@crop.QualityCrops
-								@crop.NormalCrops
-							</td>
-							<td>
-								<Collapsible Collapsed=true Text="Show">
-									<ul>
-										@foreach (Process process in crop._Processes)
-										{
-											<li>
-												@process.Input.Name
-												=>
-												@process.Source.Name
-												=>
-												@process.OutputItem.Name
-											</li>
-										}
-									</ul>
-								</Collapsible>
-							</td>
-							<td>
-								@if (crop.HasPrice)
-								{
-									<span>
-										@crop.Price
-										(@crop.BestPrices[0].Source.Name)
-									</span>
-								}
-								else
-								{
-									<span>???</span>
-								}
-							</td>
-							<td>@((MarkupString)crop.Warnings)</td>
-						</tr>
+							</ul>
+						</Expander>
+					</td>
+					<td>
+						@if (crop.HasPrice)
+						{
+							<span>
+								@crop.Price
+								(@crop.BestPrices[0].Source.Name)
+							</span>
+						}
+						else
+						{
+							<span>???</span>
+						}
+					</td>
+					<td>@((MarkupString)crop.Warnings)</td>
+				</tr>
 					}
 				</table>
 				<!--

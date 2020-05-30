@@ -32,7 +32,7 @@ namespace StardewValleyStonks
         private readonly Grow Grow;
         private readonly double SpeedMultiplier;
         private readonly Source BuySource;
-        private readonly IItem CropItem;
+        private readonly Item CropItem;
         private readonly double QualityCrops;
         private readonly double NormalCrops;
 
@@ -49,7 +49,7 @@ namespace StardewValleyStonks
             NormalCrops = crop.NormalCrops;
 			//InputAmounts = crop.HarvestedItems.ToDictionary
 			//	(kvp => kvp.Key, kvp => kvp.Value.Select(v => (double)v).ToList());
-			InputOrder = new List<IItem>(InputAmounts.Keys
+			InputOrder = new List<Item>(InputAmounts.Keys
 				.OrderBy(i => i.Name));
 			Price = crop.Price;
 			Sources = crop.BestPrices
@@ -71,13 +71,13 @@ namespace StardewValleyStonks
 			//	.ToArray();
 		}
 
-        private readonly List<IItem> InputOrder;
-        private readonly Dictionary<IItem, List<double>> InputAmounts;
+        private readonly List<Item> InputOrder;
+        private readonly Dictionary<Item, List<double>> InputAmounts;
 
 		private readonly Dictionary<MultiProcess, List<MultiProcess>> EqualAlternativesTo;
-		private readonly Dictionary<IItem, List<MultiProcess>> ProcessesWith;
+		private readonly Dictionary<Item, List<MultiProcess>> ProcessesWith;
 
-		public List<SoldItems> SoldItemsCalc(List<IItem> inputs, Dictionary<IItem, List<double>> amounts)
+		public List<SoldItems> SoldItemsCalc(List<Item> inputs, Dictionary<Item, List<double>> amounts)
 		{
 			if (amounts.Count == 0)
 			{
@@ -86,13 +86,13 @@ namespace StardewValleyStonks
 			List<SoldItems> soldItems = new List<SoldItems>();
 			foreach (MultiProcess process in ProcessesWith[inputs[^1]])
 			{
-				Dictionary<IItem, List<double>> leftOver = amounts.ToDictionary
+				Dictionary<Item, List<double>> leftOver = amounts.ToDictionary
 					(kvp => kvp.Key, kvp => new List<double>(kvp.Value));
-				List<IItem> newInputs = new List<IItem>(inputs);
+				List<Item> newInputs = new List<Item>(inputs);
 
 				double output = process.MaxOutput(amounts);
-				Dictionary<IItem, List<(double, MultiProcess)>> consumed = new Dictionary<IItem, List<(double, MultiProcess)>>();
-				foreach (IItem item in process.Inputs.Keys)
+				Dictionary<Item, List<(double, MultiProcess)>> consumed = new Dictionary<Item, List<(double, MultiProcess)>>();
+				foreach (Item item in process.Inputs.Keys)
 				{
 					List<double> qualities = leftOver[item];
 					qualities[^1] -= output * process.Inputs[item];
@@ -135,7 +135,7 @@ namespace StardewValleyStonks
 
 		private readonly MultiProcess[] Replants;
 
-		private List<ReplantMethod> ReplantMethods(Dictionary<IItem, List<double>> inputs, double seeds = 1)
+		private List<ReplantMethod> ReplantMethods(Dictionary<Item, List<double>> inputs, double seeds = 1)
 		{
 			if (inputs.Count == 0 || seeds == 0)
 			{
@@ -147,10 +147,10 @@ namespace StardewValleyStonks
 				if (replant.HasOutput(inputs))
 				{
 					double output = replant.MaxOutput(inputs).WithMax(seeds);
-					Dictionary<IItem, List<double>> leftOver = inputs.ToDictionary
+					Dictionary<Item, List<double>> leftOver = inputs.ToDictionary
 						(kvp => kvp.Key, kvp => new List<double>(kvp.Value));
-					Dictionary<IItem, List<(double, MultiProcess)>> consumed = new Dictionary<IItem, List<(double, MultiProcess)>>();
-					foreach (IItem item in replant.Inputs.Keys)
+					Dictionary<Item, List<(double, MultiProcess)>> consumed = new Dictionary<Item, List<(double, MultiProcess)>>();
+					foreach (Item item in replant.Inputs.Keys)
 					{
 						List<double> qualities = leftOver[item];
 						qualities[^1] -= output * replant.Inputs[item];
@@ -240,14 +240,14 @@ namespace StardewValleyStonks
 
 		public class ReplantMethod
 		{
-			public Dictionary<IItem, List<(double, MultiProcess)>> Usages { get; }
+			public Dictionary<Item, List<(double, MultiProcess)>> Usages { get; }
 			public double BoughtSeeds { get; }
-			public Dictionary<IItem, List<double>> LeftOver { get; }
+			public Dictionary<Item, List<double>> LeftOver { get; }
 
 			public ReplantMethod(
-				Dictionary<IItem, List<(double, MultiProcess)>> usages,
+				Dictionary<Item, List<(double, MultiProcess)>> usages,
 				double seeds,
-				Dictionary<IItem, List<double>> leftOver)
+				Dictionary<Item, List<double>> leftOver)
 			{
 				Usages = usages;
 				BoughtSeeds = seeds;
@@ -257,13 +257,13 @@ namespace StardewValleyStonks
 
 		public class SoldItems
 		{
-			public Dictionary<IItem, List<(double, MultiProcess)>> Products { get; }
+			public Dictionary<Item, List<(double, MultiProcess)>> Products { get; }
 			public double Profit { get; set; }
 
 			public void Add(SoldItems items)
 			{
 				Profit += items.Profit;
-				foreach(IItem item in items.Products.Keys)
+				foreach(Item item in items.Products.Keys)
 				{
 					if (Products.ContainsKey(item))
 					{
@@ -276,12 +276,12 @@ namespace StardewValleyStonks
 				}
 			}
 
-			public SoldItems(double profit, Dictionary<IItem, List<(double, MultiProcess)>> products)
+			public SoldItems(double profit, Dictionary<Item, List<(double, MultiProcess)>> products)
 			{
 				Profit = profit;
 				Products = products;
 			}
-			public SoldItems() : this(0, new Dictionary<IItem, List<(double, MultiProcess)>>()) { }
+			public SoldItems() : this(0, new Dictionary<Item, List<(double, MultiProcess)>>()) { }
 		}
 	}
 }

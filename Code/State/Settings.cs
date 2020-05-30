@@ -11,6 +11,7 @@ namespace StardewValleyStonks
             get => _LuckBuff;
             set => _LuckBuff = value.WithMin(0);
         }
+        //not sure if the "0.0001" is intended by Concerned Ape, or just something that the (de)compiler threw in there
         public double DoubleCropProb => 0.0001 + _LuckBuff / 1500 + (SpecialCharm ? 0.025 : 0);
 
         public bool QualitySeedMaker { get; set; }

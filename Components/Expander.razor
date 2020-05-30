@@ -1,7 +1,7 @@
 ﻿<button type="button" class=@Class @onclick=Toggle>
 	@Text
 </button>
-@if(!Display)
+@if(_Expanded)
 {
 	@ChildContent
 }
@@ -14,26 +14,26 @@
 	public string Text { get; set; }
 
 	[Parameter]
-	public string CollapsedClass { get; set; }
+	public string ExpandedClass { get; set; }
 
 	[Parameter]
-	public string UncollapsedClass { get; set; }
+	public string UnexpandedClass { get; set; }
 
 	[Parameter]
-	public bool Collapsed { get; set; }
+	public bool Expanded { get; set; }
 
-	bool Display;
+	bool _Expanded;
 
 	void Toggle()
 	{
-		Display = !Display;
+		_Expanded = !_Expanded;
 	}
 
-	string Class => Display ? CollapsedClass : UncollapsedClass;
+	string Class => _Expanded ? ExpandedClass : UnexpandedClass;
 
 	protected override void OnInitialized()
 	{
-		Display = Collapsed;
+		_Expanded = Expanded;
 		base.OnInitialized();
 	}
 }

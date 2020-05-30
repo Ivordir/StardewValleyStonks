@@ -16,7 +16,7 @@ namespace StardewValleyStonks
         {
             Qualities = Array.AsReadOnly(new Quality[]
             {
-                new Quality("Normal", 0), //no reason to be accessing normal quality, but it's here in case.
+                new Quality("Normal", 0),
                 new Quality("Silver", 1),
                 new Quality("Gold", 2),
                 new Quality("Iridium", 4)

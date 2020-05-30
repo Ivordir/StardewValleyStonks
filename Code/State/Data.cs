@@ -17,7 +17,7 @@ namespace StardewValleyStonks
         public Processor[] QualityProducts { get; }
         public Source[] BuySources { get; }
         public MatchSource[] MatchSources { get; }
-        public Source[] ReplantMethods { get; }
+        public Processor[] ReplantMethods { get; }
         public bool ShowOutOFSeasonCrops { get; set; }
 
         private readonly RefValue[] ForageDistribution;
@@ -118,11 +118,11 @@ namespace StardewValleyStonks
             };
 
             Processor SeedMakerForSeeds = new Processor("Seed Maker", new ICondition[] { new SkillLvlCondition(skills.Farming, 9) });
-            ReplantMethods = new Source[]
+            ReplantMethods = new Processor[]
             {
-                new Source("Buy Seeds"),
+                new Processor("Buy Seeds"),
                 SeedMakerForSeeds,
-                new Source("Replant Crop")
+                new Processor("Replant Crop")
             };
 
             Multiplier irrigated = new Multiplier("Irrigated", 0.25);
@@ -136,7 +136,7 @@ namespace StardewValleyStonks
             };
             Dictionary<string, Processor> sellSources = SellSources.ToDictionary(s => s.Name);
             Dictionary<string, Source> buySources = BuySources.ToDictionary(s => s.Name);
-            Dictionary<string, Source> replantMethods = ReplantMethods.ToDictionary(s => s.Name);
+            Dictionary<string, Processor> replantMethods = ReplantMethods.ToDictionary(s => s.Name);
             Dictionary<string, Skill> skillDict = skills.ToDictionary(s => s.Name);
             Dictionary<string, Item> products = (
                 from product in config.GetSection("Products").GetChildren()
@@ -152,11 +152,19 @@ namespace StardewValleyStonks
                 int regrow = crop.GetValue("Regrow", -1);
                 var growthMultipliers = crop.GetSection("Growth Multipliers");
 
-                Item seed = Item.None;
+                List<Process> replants = new List<Process>();
+                Item seed = null;
                 var cropSection = crop.GetSection("Crop Item");
                 Item cropItem = cropSection.Exists()
-                    ? ParseSeedItem(ref seed, cropSection, multipliers)
+                    ? ParseItem(cropSection, multipliers)
                     : new Item(name, crop.GetValue<int>("Sell"), skills.Tiller);
+                if (cropSection.GetValue("Seed", false))
+                {
+                    seed = cropItem;
+                    replants.Add(new Process(
+                        seed,
+                        replantMethods["Replant Crop"]));
+                }
 
                 Dictionary<Item, double> harvestedItems = new Dictionary<Item, double>();
                 var itemAmounts = crop.GetSection("Harvested Items");
@@ -164,12 +172,20 @@ namespace StardewValleyStonks
                 {
                     foreach (var itemAmount in itemAmounts.GetChildren())
                     {
+                        Item item = ParseItem(itemAmount, multipliers);
                         harvestedItems.Add(
-                            ParseSeedItem(ref seed, itemAmount, multipliers),
+                            item,
                             itemAmount.GetValue("Amount", 1));
+                        if (itemAmount.GetValue("Seed", false))
+                        {
+                            seed = item;
+                            replants.Add(new Process(
+                                seed,
+                                replantMethods["Replant Crop"]));
+                        }
                     }
                 }
-                if (seed == Item.None)
+                if (seed == null)
                 {
                     var seedSection = crop.GetSection("Seed");
                     seed = seedSection.Exists()
@@ -224,7 +240,8 @@ namespace StardewValleyStonks
                 }
                 if (flags.Contains("Seed Maker"))
                 {
-                    //wip
+                    
+                    //add seed maker to processes and replants
                 }
                 var processData = crop.GetSection("Processes");
                 if (processData.Exists())
@@ -264,6 +281,7 @@ namespace StardewValleyStonks
                         }
                     }
                 }
+                //check for replant section
                 Dictionary<Source, Price> priceFrom = new Dictionary<Source, Price>();
                 if (flags.Contains("Pierre"))
                 {
@@ -305,6 +323,7 @@ namespace StardewValleyStonks
                     settings,
                     date,
                     processes.ToArray(),
+                    replants.ToArray(),
                     priceFrom,
                     harvestedItems,
                     seed));
@@ -363,21 +382,5 @@ namespace StardewValleyStonks
                   ParseConditions(price.GetSection("Conditions"), skillDict, date))).
                ToDictionary(price => price.Source)
             : new Dictionary<Source, Price>();
-
-        private static Item ParseSeedItem(
-            ref Item seed,
-            IConfigurationSection itemData,
-            Dictionary<string, IMultiplier> multiplierDict)
-        {
-            Item item = new Item(
-                itemData.GetValue<string>("Name"),
-                itemData.GetValue<int>("Sell"),
-                multiplierDict.GetOrDefault(itemData.GetValue("Multiplier", string.Empty)));
-            if (itemData.GetValue("Seed", false))
-            {
-                seed = item;
-            }
-            return item;
-        }
     }
 }

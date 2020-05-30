@@ -6,8 +6,8 @@
         public int InputAmount { get; }
         public Processor Source { get; }
 
-        public IItem Output(IItem input);
-        public double OutputAmount(IItem input);
+        public QualityItem Output(QualityItem input);
+        public double OutputAmount(QualityItem input);
         public double ProfitPerInput(int quality);
         public int CompareTo(IProcess other, int quality);
     }

@@ -7,8 +7,8 @@ namespace StardewValleyStonks
     public class MultiProcess : Selectable, INullComparable<MultiProcess>
     {
         public Processor Source { get; }
-        public Dictionary<IItem, int> Inputs { get; }
-        public IItem OutputItem => Source.PreservesQuality ? _OutputItem : _OutputItem.Normal;
+        public Dictionary<Item, int> Inputs { get; }
+        public Item OutputItem => Source.PreservesQuality ? _OutputItem : _OutputItem;
         public double OutputAmount { get; }
         public override bool Active => base.Active && Source.Active;
 
@@ -20,7 +20,7 @@ namespace StardewValleyStonks
             {
                 bool anyBetter = OutputAmount * OutputItem.Price > other.OutputAmount * other.OutputItem.Price;
                 bool anyWorse = OutputAmount * OutputItem.Price < other.OutputAmount * other.OutputItem.Price;
-                foreach (IItem item in Inputs.Keys)
+                foreach (Item item in Inputs.Keys)
                 {
                     if (Inputs[item] > other.Inputs[item])
                     {
@@ -65,19 +65,19 @@ namespace StardewValleyStonks
             }
             return null;
         }
-        public bool HasInput(IItem item) => Inputs.ContainsKey(item);
+        //public bool HasInput(IItem item) => Inputs.ContainsKey(item);
         public double Profit(double output) => OutputItem.Price * output;
-        public bool HasOutput(Dictionary<IItem, List<double>> inputs)
+        public bool HasOutput(Dictionary<Item, List<double>> inputs)
             => Inputs.IsSubSetOf(inputs);
-        public double MaxOutput(Dictionary<IItem, List<double>> inputs)
+        public double MaxOutput(Dictionary<Item, List<double>> inputs)
             => OutputAmount * Inputs.Min(i => inputs[i.Key][^1] / i.Value);
 
-        private readonly IItem _OutputItem;
+        private readonly Item _OutputItem;
 
         public MultiProcess(
             Processor processor,
-            Dictionary<IItem, int> inputs,
-            IItem outputItem,
+            Dictionary<Item, int> inputs,
+            Item outputItem,
             double outputAmount,
             ICondition[] conditions = null)
             : base(true, conditions)
