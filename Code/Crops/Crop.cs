@@ -24,8 +24,8 @@ namespace StardewValleyStonks
         readonly double NormalCrops;
 
         readonly Dictionary<Item, QualityDist> InputAmounts;
-        readonly Dictionary<Item, Process[]> Processes;
-        readonly Dictionary<Item, Process[]> Replants;
+        readonly Dictionary<Item, Process[][]> Processes;
+        readonly Dictionary<Item, Process[][]> Replants;
 
         public int GrowthTimeWith(double speed) =>
             Grow.DaysPerHarvest(SpeedMultiplier + speed);
@@ -66,11 +66,12 @@ namespace StardewValleyStonks
             Item cropItem,
             double qualityCrops,
             double normalCrops,
-            int price,
-            Source[] sources,
             Dictionary<Item, QualityDist> harvestItems,
-            Dictionary<Item, Process[]> processes,
-            Dictionary<Item, Process[]> replants)
+            Dictionary<Item, Process[][]> processes,
+            Dictionary<Item, Process[][]> replants,
+            bool buySeeds = false,
+            int price = -1,
+            Source[] sources = null)
         {
             Name = name;
             Grow = grow;

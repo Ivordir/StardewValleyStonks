@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using ExtentionsLibrary.Collections;
 
 namespace StardewValleyStonks
 {
@@ -85,32 +86,48 @@ namespace StardewValleyStonks
 			}
 		}
 		public Item Seed { get; }
-		//public Crop ToCrop() => new Crop(
-		//	Name,
-		//	Grow,
-		//	SpeedMultipliers.
-		//		Where(m => m.Active).
-		//		Sum(m => m.Value),
-		//	Crop,
-		//	QualityCrops,
-		//	NormalCrops,
-		//	Price,
-		//	BestPrices.
-		//		Select(p => p.Source).
-		//		ToArray(),
-		//	HarvestedItems.ToDictionary
-		//		(kvp => kvp.Key, kvp => (QualityDist)kvp.Value.Select(v => v.Value).ToArray()),
-		//	Processes.ToDictionary
-		//		(kvp => kvp.Input, kvp => new Process[] { kvp }),
-		//	Replants.ToDictionary
-		//		(kvp => kvp.Input, kvp => new Process[] { kvp }));
+		public Crop ToCrop()
+		{
+			Dictionary<Item, Process[][]> processes = new Dictionary<Item, Process[][]>();
+			foreach(Item item in Processes.Keys)
+			{
+				for (int quality = 0; quality < HarvestedItems[item].Length; quality++)
+				{
+					processes[item][quality] = Processes[item].MaxElements(Process.Comparers[quality]).ToArray();
+				}
+			}
+			Dictionary<Item, Process[][]> replants = new Dictionary<Item, Process[][]>();
+			foreach (Item item in Replants.Keys)
+			{
+				for (int quality = 0; quality < HarvestedItems[item].Length; quality++)
+				{
+					replants[item][quality] = Replants[item].MaxElements(Process.Comparers[quality]).ToArray();
+				}
+			}
+			return new Crop(
+			Name,
+			Grow,
+			GrowthMultipliers.
+				Where(m => m.Active).
+				Sum(m => m.Value),
+			CropItem,
+			QualityCrops,
+			NormalCrops,
+			HarvestedItems.ToDictionary
+				(kvp => kvp.Key, kvp => (QualityDist)kvp.Value),
+			processes,
+			replants,
+			BuySeeds,
+			Price,
+			BestPrices.
+				Select(p => p.Source).
+				ToArray());
+		}
 
 		readonly Grow Grow;
 		readonly Dictionary<Item, double[]> HarvestedItems;
-		public Process[] _Processes => Processes;
-		readonly Process[] Processes;
-		public Process[] _Replants => Replants;
-		readonly Process[] Replants;
+		readonly Dictionary<Item, Process[]> Processes;
+		readonly Dictionary<Item, Process[]> Replants;
 		readonly Source BuySeedsSource;
 
 		readonly Item CropItem;
@@ -135,8 +152,8 @@ namespace StardewValleyStonks
 			bool doubleCrop,
 			Settings settings,
 			Date date,
-			Process[] processes,
-			Process[] replants,
+			Dictionary<Item, Process[]> processes,
+			Dictionary<Item, Process[]> replants,
 			Dictionary<Source, Price> priceFrom,
 			Dictionary<Item, double[]> harvestedItems,
 			Item seed)

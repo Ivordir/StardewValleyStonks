@@ -4,7 +4,7 @@ namespace StardewValleyStonks
 {
     public class Process : Selectable, IProcess
     {
-        public static Func<IProcess, IProcess, int>[] Comparers { get; }
+        public static Func<Process, Process, int>[] Comparers { get; }
 
         static Process()
         {

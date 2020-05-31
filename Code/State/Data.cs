@@ -151,18 +151,24 @@ namespace StardewValleyStonks
                 int regrow = crop.GetValue("Regrow", -1);
                 var growthMultipliers = crop.GetSection("Growth Multipliers");
 
-                List<Process> replants = new List<Process>();
+                HashSet<string> flags = new HashSet<string>(crop.GetSection("Generate").RawValues());
+                Dictionary<Item, List<Process>> processes = new Dictionary<Item, List<Process>>();
+                Dictionary<Item, List<Process>> replants = new Dictionary<Item, List<Process>>();
+
                 Item seed = null;
                 var cropSection = crop.GetSection("Crop Item");
-                Item cropItem = cropSection.Exists()
-                    ? ParseItem(cropSection, multipliers)
-                    : new Item(name, crop.GetValue<int>("Sell"), skills.Tiller);
+                Item cropItem = cropSection.Exists() ? ParseItem(cropSection, multipliers)
+                    : !flags.Contains("Forage") ? new Item(name, crop.GetValue<int>("Sell"), skills.Tiller)
+                    : null;
+                if (cropItem != null)
+                {
+                    processes.Add(cropItem, new List<Process>());
+                    replants.Add(cropItem, new List<Process>());
+                }
                 if (cropSection.GetValue("Seed", false))
                 {
                     seed = cropItem;
-                    replants.Add(new Process(
-                        seed,
-                        replantMethods["Replant Crop"]));
+                    replants[cropItem].Add(new Process(seed, replantMethods["Replant Crop"]));
                 }
 
                 Dictionary<Item, double[]> harvestedItems = new Dictionary<Item, double[]>();
@@ -175,12 +181,12 @@ namespace StardewValleyStonks
                         harvestedItems.Add(
                             item,
                             new double[] { itemAmount.GetValue("Amount", 1) });
+                        processes.Add(item, new List<Process>());
+                        replants.Add(item, new List<Process>());
                         if (itemAmount.GetValue("Seed", false))
                         {
                             seed = item;
-                            replants.Add(new Process(
-                                seed,
-                                replantMethods["Replant Crop"]));
+                            replants[item].Add(new Process(seed, replantMethods["Replant Crop"]));
                         }
                     }
                 }
@@ -192,14 +198,9 @@ namespace StardewValleyStonks
                         : new Item(name + " Seeds", crop.GetValue<int>("Seed Sell"));
                 }
 
-                HashSet<string> flags = new HashSet<string>(crop.GetSection("Generate").RawValues());
-                List<Process> processes = new List<Process>
-                {
-                    new Process(cropItem, sellSources["Raw Crop"])
-                };
                 if (flags.Contains("Vegetable") || flags.Contains("Juice"))
                 {
-                    processes.Add(new Process(
+                    processes[cropItem].Add(new Process(
                         cropItem,
                         sellSources["Keg"],
                         new Item(
@@ -209,7 +210,7 @@ namespace StardewValleyStonks
                 }
                 else if (flags.Contains("Fruit") || flags.Contains("Wine"))
                 {
-                    processes.Add(new Process(
+                    processes[cropItem].Add(new Process(
                         cropItem,
                         sellSources["Keg"],
                         new Item(
@@ -219,7 +220,7 @@ namespace StardewValleyStonks
                 }
                 if (flags.Contains("Vegetable") || flags.Contains("Pickle"))
                 {
-                    processes.Add(new Process(
+                    processes[cropItem].Add(new Process(
                         cropItem,
                         sellSources["Preserves Jar"],
                         new Item(
@@ -229,7 +230,7 @@ namespace StardewValleyStonks
                 }
                 else if (flags.Contains("Fruit") || flags.Contains("Jam"))
                 {
-                    processes.Add(new Process(
+                    processes[cropItem].Add(new Process(
                         cropItem,
                         sellSources["Preserves Jar"],
                         new Item(
@@ -240,13 +241,13 @@ namespace StardewValleyStonks
                 if (flags.Contains("Seed Maker"))
                 {
                     double[] seeds = name == "Ancient Fruit" ? settings.AncientFruitSeeds : settings.Seeds;
-                    processes.Add(new QualityProcess(
+                    processes[cropItem].Add(new QualityProcess(
                         cropItem,
                         1,
                         sellSources["Seed Maker"],
                         seed,
                         seeds));
-                    replants.Add(new QualityProcess(
+                    replants[cropItem].Add(new QualityProcess(
                         cropItem,
                         1,
                         replantMethods["Seed Maker"],
@@ -273,7 +274,7 @@ namespace StardewValleyStonks
 
                         if (inputAmount != 1 || outputAmount != 1)
                         {
-                            processes.Add(new RatioProcess(
+                            processes[cropItem].Add(new RatioProcess(
                                 input,
                                 inputAmount,
                                 sellSources[process.GetValue<string>("Processor")],
@@ -283,7 +284,7 @@ namespace StardewValleyStonks
                         }
                         else
                         {
-                            processes.Add(new Process(
+                            processes[cropItem].Add(new Process(
                                 input,
                                 sellSources[process.GetValue<string>("Processor")],
                                 output,
@@ -332,8 +333,10 @@ namespace StardewValleyStonks
                     crop.GetValue("Double Crop Chance", true),
                     settings,
                     date,
-                    processes.ToArray(),
-                    replants.ToArray(),
+                    processes.ToDictionary
+                    (kvp => kvp.Key, kvp => kvp.Value.ToArray()),
+                    replants.ToDictionary
+                    (kvp => kvp.Key, kvp => kvp.Value.ToArray()),
                     priceFrom,
                     harvestedItems,
                     seed));

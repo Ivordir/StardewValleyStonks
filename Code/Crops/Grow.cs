@@ -16,10 +16,9 @@ namespace StardewValleyStonks
 			{
 				return TotalTime;
 			}
-			float speedF = (float)speed;
-			//cast to add a very small decimal to mimic the behavior in the game.
+			//cast to float and then back to add a very small decimal to mimic the behavior in the game.
 			//sometimes results in an extra day being reduced, as the ceiling funtion will come into effect.
-			int maxReduction = (int)Math.Ceiling(TotalTime * (double)speedF);
+			int maxReduction = (int)Math.Ceiling(TotalTime * (double)(float)speed);
 			int daysReduced = 0;
 			int firstStage = GrowthStages[0];
 			for (int traverses = 0; daysReduced < maxReduction && traverses < 3; traverses++)
@@ -56,6 +55,30 @@ namespace StardewValleyStonks
 		{
 			days -= days / DaysPerHarvest(speed) * DaysPerHarvest(speed);
 			return days / DaysPerHarvest(speed);
+		}
+		public int[] GrowthStagesWith(double speed)
+		{
+
+			if (speed == 0)
+			{
+				return GrowthStages;
+			}
+			int[] growthStages = GrowthStages[..];
+			int maxReduction = (int)Math.Ceiling(TotalTime * (double)(float)speed);
+			int daysReduced = 0;
+			for (int traverses = 0; daysReduced < maxReduction && traverses < 3; traverses++)
+			{
+				for (int stage = 0; daysReduced < maxReduction && stage < GrowthStages.Length; stage++)
+				{
+					if (stage > 0 || growthStages[0] > 1)
+					{
+						daysReduced++;
+						growthStages[stage]--;
+					}
+				}
+				maxReduction--;
+			}
+			return growthStages;
 		}
 
 		public Grow(int[] growthStages)
