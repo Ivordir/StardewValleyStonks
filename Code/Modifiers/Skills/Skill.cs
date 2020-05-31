@@ -18,7 +18,7 @@ namespace StardewValleyStonks
         }
         public int BuffedLevel => _Level + _Buff;
 
-        private int _Level, _Buff;
+        int _Level, _Buff;
 
         public Skill(
             string name,

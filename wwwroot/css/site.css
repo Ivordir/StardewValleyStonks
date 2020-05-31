@@ -5,12 +5,47 @@
   font-weight: bold;
   color: #ffd400;
   text-align: center;
-  word-spacing: 8px; }
+  word-spacing: 8px;
+  margin-top: -21px; }
 
 body {
+  --checkbox-height: 25px;
+  --checkbox-text-offset: 5px;
+  --checkmark-length: 12px;
+  --checkmark-width: 6px;
+  --checkmark-thickness: 4px;
+  --checkmark-height: calc(var(--checkmark-length) + var(--checkmark-thickness));
+  --checkmark-margin-top: calc((var(--checkbox-height) - var(--checkmark-thickness) - var(--checkmark-height)) / 2);
+  --checkmark-margin-bottom: calc(var(--checkmark-margin-top) + var(--checkmark-thickness));
   background-color: antiquewhite;
   margin: 0px;
-  font-family: 'Times New Roman', Times, serif; }
+  font-family: Georgia, Times, serif; }
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  text-align: start;
+  padding-top: var(--checkbox-text-offset); }
+
+.checkbox {
+  display: inline-block;
+  flex-shrink: 0;
+  width: var(--checkbox-height);
+  height: var(--checkbox-height);
+  background-color: lemonchiffon;
+  border: 1px solid black;
+  border-radius: 3px;
+  margin-top: calc(-1 * var(--checkbox-text-offset)); }
+
+.checkmark {
+  display: block;
+  margin: var(--checkmark-margin-top) auto var(--checkmark-margin-bottom);
+  width: var(--checkmark-width);
+  height: var(--checkmark-length);
+  border: solid black;
+  border-width: 0 var(--checkmark-thickness) var(--checkmark-thickness) 0;
+  transform: rotate(45deg); }
 
 footer {
   background: black; }
@@ -207,7 +242,7 @@ footer {
   padding-left: 25px;
   margin: 1px; }
 
-.input-checkbox-label:hover input ~ .input-checkbox-background {
+.input-checkbox-label:hover input:active ~ .input-checkbox-background {
   background-color: gray; }
 
 .input-checkbox-label input:active ~ .input-checkbox-background {

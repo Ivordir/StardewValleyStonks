@@ -4,6 +4,7 @@
 @inject Skills Skills
 @inject Data Data 
 @inject Settings Settings
+@inject Output Output
 
 <div class="input-grid">
 	<div class="editor">
@@ -59,11 +60,11 @@
 								@foreach (Process process in crop._Processes)
 								{
 									<li>
-										@process.Input.Name
+										@process.Input.Name @process.InputAmount
 										=>
 										@process.Source.Name
 										=>
-										@process.OutputItem.Name
+										@process.OutputItem.Name @process.OutputAmount(process.Input.Normal)
 									</li>
 								}
 							</ul>
@@ -74,13 +75,13 @@
 							<ul>
 								@foreach (Process replant in crop._Replants)
 								{
-									<li>
-										@replant.Input.Name
-										=>
-										@replant.Source.Name
-										=>
-										@replant.OutputItem.Name
-									</li>
+								<li>
+									@replant.Input.Name @replant.InputAmount
+									=>
+									@replant.Source.Name
+									=>
+									@replant.OutputItem.Name @replant.OutputAmount(replant.Input.Normal)
+								</li>
 								}
 							</ul>
 						</Expander>
@@ -124,10 +125,9 @@
 					{
 						<tr>
 							<td>
-								<label class="entry-checkbox-label">
-									<input type="checkbox" class="entry-checkbox" @bind=fertilizer.Selected>
-									<span class="entry-checkbox-background"></span>
-								</label>
+								<Checkbox @bind-Value=fertilizer.Selected
+										  CheckboxClass="checkbox"
+										  CheckmarkClass="checkmark"/>
 							</td>
 							<td>Image</td>
 							<td>@fertilizer.Name</td>
@@ -181,6 +181,7 @@
 				<Tab Name=@skill.Name>
 					<label class="input-label">
 						@skill.Name Level:
+						<input type="range" min=1 max=10 step=1 class="number-input" @bind=skill.Level @bind:event="oninput">
 						<input type="number" class="number-input" @bind=skill.Level>
 					</label>
 					@foreach (Profession[] professions in skill.Professions)
@@ -196,11 +197,9 @@
 					}
 				</Tab>
 			}
-			<label class="entry-checkbox-label">
+			<Checkbox CheckboxClass="checkbox" CheckmarkClass="checkmark" LabelClass="checkbox-label" @bind-Value=Skills.IgnoreConflicts>
 				Ignore Profession Conflicts
-				<input type="checkbox" class="entry-checkbox" @bind=Skills.IgnoreConflicts>
-				<span class="entry-checkbox-background"></span>
-			</label>
+			</Checkbox>
 		</TabGroup>
 	</div>
 	<div class="products">
@@ -267,13 +266,13 @@
 		</label>
 	</div>
 	<div class="bottom-row">
-		<button class="switch-input-output" @onclick="@(() => Nav.NavigateTo("output"))">
+		<button class="switch-input-output" @onclick=@(() => Nav.NavigateTo("output"))>
 			View Plans
 		</button>
-		<button class="calculate">
+		<button class="calculate" @onclick=@(() => Output.Calculate())>
 			Calculate Plans
 		</button>
-		<button class="help-button" @onclick="@(() => Nav.NavigateTo("help"))">
+		<button class="help-button" @onclick=@(() => Nav.NavigateTo("help"))>
 			Help
 		</button>
 	</div>

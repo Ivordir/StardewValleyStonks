@@ -106,7 +106,7 @@ namespace StardewValleyStonks
 		//		(kvp => kvp.Input, kvp => new Process[] { kvp }));
 
 		readonly Grow Grow;
-		readonly Dictionary<Item, double> HarvestedItems;
+		readonly Dictionary<Item, double[]> HarvestedItems;
 		public Process[] _Processes => Processes;
 		readonly Process[] Processes;
 		public Process[] _Replants => Replants;
@@ -138,7 +138,7 @@ namespace StardewValleyStonks
 			Process[] processes,
 			Process[] replants,
 			Dictionary<Source, Price> priceFrom,
-			Dictionary<Item, double> harvestedItems,
+			Dictionary<Item, double[]> harvestedItems,
 			Item seed)
 			: base (name, priceFrom)
 		{

@@ -16,10 +16,14 @@ namespace StardewValleyStonks
 
         public bool QualitySeedMaker { get; set; }
         public int SeedsByQuality(int quality)
-            => (int)_Seeds[quality].Value;
+            => SeedAmounts[quality];
         public void SetSeedsByQuality(int quality, int value)
-            => _Seeds[quality].Value = value.WithMin(0);
-        public IValue[] SeedAmounts { get; }
+        {
+            SeedAmounts[quality] = value.WithMin(0);
+            SeedsDIO[quality] = SeedAmounts[quality] * SeedProb;
+        }
+        public double[] Seeds { get; }
+        public double[] SeedsDIO { get; }
 
         public double GiantCropChecksPerTile
         {
@@ -38,26 +42,35 @@ namespace StardewValleyStonks
         double _GiantCropChecksPerTile;
 
         readonly double GiantCropChance;
-        readonly RefValue SeedProb;
-        readonly RefValue[] _Seeds;
+        readonly double SeedProb;
+        readonly int[] SeedAmounts;
+
+        public void Save()
+        {
+            for (int quality = 0; quality < Qualities.Count; quality++)
+            {
+                Seeds[quality] = SeedsDIO[quality];
+            }
+        }
 
         public Settings()
         {
             GiantCropChance = 0.01;
             _GiantCropChecksPerTile = 8;
 
-            _Seeds = new RefValue[Qualities.Count];
+            SeedAmounts = new int[Qualities.Count];
             for (int quality = 0; quality < Qualities.Count; quality++)
             {
-                _Seeds[quality] = (RefValue)2;
+                SeedAmounts[quality] = 2;
             }
-            SeedProb = new RefValue(0.975);
-            SeedAmounts = new IValue[Qualities.Count];
+            SeedProb = 0.975;
+            SeedsDIO = new double[Qualities.Count];
             for (int quality = 0; quality < Qualities.Count; quality++)
             {
-                SeedAmounts[quality] = new Term(SeedProb, _Seeds[quality]);
+                SeedsDIO[quality] = SeedAmounts[quality] * SeedProb;
             }
-
+            Seeds = new double[Qualities.Count];
+            Save();
             StaringFert = null;
         }
     }

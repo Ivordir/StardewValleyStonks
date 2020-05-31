@@ -1,0 +1,33 @@
+﻿<label class=@LabelClass>
+	<input type="checkbox" style="visibility: hidden; position:absolute;" @oninput=Toggle />
+	<span class=@CheckboxClass>
+		@if (Value)
+		{
+			<span class=@CheckmarkClass></span>
+		}
+	</span>
+	@ChildContent
+</label>
+
+@code {
+	[Parameter]
+	public RenderFragment ChildContent { get; set; }
+
+	[Parameter]
+	public string LabelClass { get; set; }
+	[Parameter]
+	public string CheckboxClass { get; set; }
+	[Parameter]
+	public string CheckmarkClass { get; set; }
+
+	[Parameter]
+	public bool Value { get; set; }
+	[Parameter]
+	public EventCallback<bool> ValueChanged { get; set; }
+
+	void Toggle()
+	{
+		Value = !Value;
+		ValueChanged.InvokeAsync(Value);
+	}
+}

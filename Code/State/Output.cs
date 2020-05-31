@@ -10,7 +10,9 @@ namespace StardewValleyStonks
         //StaticFertilizer[] Fertilizers;
         //List<PlanNode> Plans;
 
-        private readonly Dictionary<Fertilizer, List<Fertilizer>> EqualAlternatesTo;
+        readonly Dictionary<Fertilizer, List<Fertilizer>> EqualAlternatesTo;
+        readonly Data Data;
+        readonly Skills Skills;
         Fertilizer[] Fertilizers;
 
         public Output()
@@ -18,12 +20,12 @@ namespace StardewValleyStonks
             EqualAlternatesTo = new Dictionary<Fertilizer, List<Fertilizer>>();
         }
 
-        public void Calculate(Data data, Skills skills)
+        public void Calculate()
         {
             EqualAlternatesTo.Clear();
             Fertilizers = new LinkedList<Fertilizer>(
-                data.Fertilizers.
-                Select(f => f.ToFertilizer(skills.Farming.BuffedLevel))).
+                Data.Fertilizers.
+                Select(f => f.ToFertilizer(Skills.Farming.BuffedLevel))).
                 DoComparisons(EqualAlternatesTo).
                 ToArray();
         }

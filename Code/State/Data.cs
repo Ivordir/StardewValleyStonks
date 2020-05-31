@@ -20,7 +20,7 @@ namespace StardewValleyStonks
         public Processor[] ReplantMethods { get; }
         public bool ShowOutOFSeasonCrops { get; set; }
 
-        private readonly RefValue[] ForageDistribution;
+        private readonly double[] ForageDistribution;
         //private readonly Func<int, RefValue[], IValue[]> ForageAmounts =
         //    new Func<int, RefValue[], IValue[]>((NumChoices, ForageDistribution) =>
         //{
@@ -117,12 +117,11 @@ namespace StardewValleyStonks
                 new Source("Crafting")
             };
 
-            Processor SeedMakerForSeeds = new Processor("Seed Maker", new ICondition[] { new SkillLvlCondition(skills.Farming, 9) });
             ReplantMethods = new Processor[]
             {
                 new Processor("Buy Seeds"),
-                SeedMakerForSeeds,
-                new Processor("Replant Crop")
+                new Processor("Seed Maker", new ICondition[] { new SkillLvlCondition(skills.Farming, 9) }),
+            new Processor("Replant Crop")
             };
 
             Multiplier irrigated = new Multiplier("Irrigated", 0.25);
@@ -166,7 +165,7 @@ namespace StardewValleyStonks
                         replantMethods["Replant Crop"]));
                 }
 
-                Dictionary<Item, double> harvestedItems = new Dictionary<Item, double>();
+                Dictionary<Item, double[]> harvestedItems = new Dictionary<Item, double[]>();
                 var itemAmounts = crop.GetSection("Harvested Items");
                 if (itemAmounts.Exists())
                 {
@@ -175,7 +174,7 @@ namespace StardewValleyStonks
                         Item item = ParseItem(itemAmount, multipliers);
                         harvestedItems.Add(
                             item,
-                            itemAmount.GetValue("Amount", 1));
+                            new double[] { itemAmount.GetValue("Amount", 1) });
                         if (itemAmount.GetValue("Seed", false))
                         {
                             seed = item;
@@ -240,8 +239,14 @@ namespace StardewValleyStonks
                 }
                 if (flags.Contains("Seed Maker"))
                 {
-                    
-                    //add seed maker to processes and replants
+                    processes.Add(new QualityProcess(
+                        cropItem, 1,
+                        sellSources["Seed Maker"],
+                        seed, settings.Seeds));
+                    replants.Add(new QualityProcess(
+                        cropItem, 1,
+                        replantMethods["Seed Maker"],
+                        seed, settings.Seeds));
                 }
                 var processData = crop.GetSection("Processes");
                 if (processData.Exists())
@@ -259,7 +264,7 @@ namespace StardewValleyStonks
                         Item output = outputSection.Exists()
                             ? ParseItem(outputSection, multipliers)
                             : products[process.GetValue<string>("Output Name")];
-                        double outputAmount = outputSection.GetValue("Output Amount", 1.0);
+                        double outputAmount = process.GetValue("Output Amount", 1.0);
 
                         if (inputAmount != 1 || outputAmount != 1)
                         {
