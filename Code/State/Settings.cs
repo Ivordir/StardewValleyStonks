@@ -1,4 +1,5 @@
 ﻿using ExtentionsLibrary.Limits;
+using ExtentionsLibrary.Collections;
 using static StardewValleyStonks.Quality;
 
 namespace StardewValleyStonks
@@ -14,16 +15,15 @@ namespace StardewValleyStonks
         //not sure if the "0.0001" is intended by Concerned Ape, or just something that the (de)compiler threw in there
         public double DoubleCropProb => 0.0001 + _LuckBuff / 1500 + (SpecialCharm ? 0.025 : 0);
 
+        public double[] Seeds { get; }
+        //heccing ancient fruit exception
+        public double[] AncientFruitSeeds { get; }
         public bool QualitySeedMaker { get; set; }
         public int SeedsByQuality(int quality)
-            => SeedAmounts[quality];
+            => QualitySeeds[quality];
         public void SetSeedsByQuality(int quality, int value)
-        {
-            SeedAmounts[quality] = value.WithMin(0);
-            SeedsDIO[quality] = SeedAmounts[quality] * SeedProb;
-        }
-        public double[] Seeds { get; }
-        public double[] SeedsDIO { get; }
+            => QualitySeeds[quality] = value.WithMin(0);
+
 
         public double GiantCropChecksPerTile
         {
@@ -43,13 +43,23 @@ namespace StardewValleyStonks
 
         readonly double GiantCropChance;
         readonly double SeedProb;
-        readonly int[] SeedAmounts;
+        readonly int[] QualitySeeds;
+        readonly double AncientFruitBonusSeeds;
 
         public void Save()
         {
-            for (int quality = 0; quality < Qualities.Count; quality++)
+            if (QualitySeedMaker)
             {
-                Seeds[quality] = SeedsDIO[quality];
+                for (int quality = 0; quality < Qualities.Count; quality++)
+                {
+                    Seeds[quality] = SeedProb * QualitySeeds[quality];
+                    AncientFruitSeeds[quality] = SeedProb * QualitySeeds[quality] + AncientFruitBonusSeeds;
+                }
+            }
+            else
+            {
+                Seeds.SetAll(2 * SeedProb);
+                AncientFruitSeeds.SetAll(2 * SeedProb + AncientFruitBonusSeeds);
             }
         }
 
@@ -58,19 +68,15 @@ namespace StardewValleyStonks
             GiantCropChance = 0.01;
             _GiantCropChecksPerTile = 8;
 
-            SeedAmounts = new int[Qualities.Count];
+            QualitySeeds = new int[Qualities.Count];
             for (int quality = 0; quality < Qualities.Count; quality++)
             {
-                SeedAmounts[quality] = 2;
+                QualitySeeds[quality] = 2 + quality;
             }
             SeedProb = 0.975;
-            SeedsDIO = new double[Qualities.Count];
-            for (int quality = 0; quality < Qualities.Count; quality++)
-            {
-                SeedsDIO[quality] = SeedAmounts[quality] * SeedProb;
-            }
             Seeds = new double[Qualities.Count];
-            Save();
+            AncientFruitBonusSeeds = 0.005;
+
             StaringFert = null;
         }
     }

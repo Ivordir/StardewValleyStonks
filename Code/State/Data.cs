@@ -239,14 +239,19 @@ namespace StardewValleyStonks
                 }
                 if (flags.Contains("Seed Maker"))
                 {
+                    double[] seeds = name == "Ancient Fruit" ? settings.AncientFruitSeeds : settings.Seeds;
                     processes.Add(new QualityProcess(
-                        cropItem, 1,
+                        cropItem,
+                        1,
                         sellSources["Seed Maker"],
-                        seed, settings.Seeds));
+                        seed,
+                        seeds));
                     replants.Add(new QualityProcess(
-                        cropItem, 1,
+                        cropItem,
+                        1,
                         replantMethods["Seed Maker"],
-                        seed, settings.Seeds));
+                        seed,
+                        seeds));
                 }
                 var processData = crop.GetSection("Processes");
                 if (processData.Exists())
@@ -286,7 +291,7 @@ namespace StardewValleyStonks
                         }
                     }
                 }
-                //check for replant section
+
                 Dictionary<Source, Price> priceFrom = new Dictionary<Source, Price>();
                 if (flags.Contains("Pierre"))
                 {

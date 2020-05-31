@@ -44,11 +44,11 @@ namespace StardewValleyStonks
 				{
 					if (!IsInSeason)
 					{
-						warnings += $"{Name} is not in season.".WrapTag("li");
+						warnings += $"{Name} is not in season.";
 					}
 					else if (!CanGiveOneHarvest)
 					{
-						warnings += $"There are not enough days for {Name} to give at least one harvest.".WrapTag("li");
+						warnings += $"There are not enough days for {Name} to give at least one harvest.";
 					}
 				}
 				return warnings;
