@@ -1,6 +1,7 @@
-﻿using ExtentionsLibrary.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using ExtentionsLibrary.Collections;
+using ExtentionsLibrary.Permutations;
 
 namespace StardewValleyStonks
 {
@@ -53,9 +54,9 @@ namespace StardewValleyStonks
 
         private double Calculate(int harvests, bool Regrows) => 0;
             //also needs processes, replants, inputAmounts, and canBuy
-        private double Replant()
+        private List<CropUsage> Replant()
         {
-            List<CropUsage> plans = new List<CropUsage>();
+            List<CropUsage> usages = new List<CropUsage>();
             double seeds = 0;
             Dictionary<Item, QualityDist> inputs = new Dictionary<Item, QualityDist>(InputAmounts);
 
@@ -66,67 +67,90 @@ namespace StardewValleyStonks
             {
                 foreach (Item item in noCost)
                 {
-                    QualityDist itemAmount = inputs[item];
-                    while(!itemAmount.Empty)
+                    QualityDist quality = inputs[item];
+                    while(!quality.Empty)
                     {
-                        seeds += Replants[item][itemAmount.Quality].OutputConsume(ref itemAmount);
+                        seeds += Replants[item][quality].OutputConsume(ref quality);
                     }
                 }
                 inputs.RemoveAll(noCost);
                 noCostSeeds = seeds;
             }
+            //add noCostSeeds to plans;
 
+            //now go through all items that can be for seeds or can be sold.
             while (seeds < 1)
             {
-                List<Item> cheapestReplants = new List<Item>();
+                List<QualityItem> cheapestReplants = new List<QualityItem>();
                 double lowestLoss = double.MaxValue;
                 foreach(Item item in inputs.Keys)
                 {
-                    int quality = inputs[item].Quality;
-                    double profitLossPerSeed =
-                        Processes[item][quality].Profit(quality)
-                        / Replants[item][quality].OutputAmount(quality);
-                    if (profitLossPerSeed == lowestLoss)
+                    for (int quality = 0; quality < inputs[item].Length; quality++)
                     {
-                        cheapestReplants.Add(item);
-                    }
-                    else if (profitLossPerSeed < lowestLoss)
-                    {
-                        cheapestReplants.Clear();
-                        cheapestReplants.Add(item);
-                    }
-                }
-                double seedsToAdd = cheapestReplants.
-                    Sum(i => Replants[i][inputs[i].Quality].OutputAmount(inputs[i].Quality));
-                if (seedsToAdd > (1 - seeds))
-                {
-                    seedsToAdd = 1 - seeds;
-                    //order matters.
-                    for (int i = 0; i < cheapestReplants.Count; i++)
-                    {
-
-                        for (int j = i; j < cheapestReplants.Count; j++)
+                        double profitLossPerSeed =
+                           Processes[item][quality].Profit(quality)
+                           / Replants[item][quality].OutputAmount(quality);
+                        if (profitLossPerSeed == lowestLoss)
                         {
-
+                            cheapestReplants.Add(item.With(quality));
+                        }
+                        else if (profitLossPerSeed < lowestLoss)
+                        {
+                            cheapestReplants.Clear();
+                            cheapestReplants.Add(item.With(quality));
                         }
                     }
                 }
-                else //order doesn't matter
+
+                double totalSeedsCanAdd = cheapestReplants.
+                    Sum(qi => Replants[qi][qi].OutputAmount(qi));
+                if (totalSeedsCanAdd + seeds > 1)
                 {
-
+                    foreach (var permutation in ReplantPermutations(cheapestReplants, 1 - seeds))
+                    {
+                        foreach (QualityItem item in permutation)
+                        {
+                            //create a cropusage with this item as the last item used for seeds,
+                            //so it is not fully used, some will also be sold.
+                        }
+                    }
                 }
+                //else if equal
+                    //create one usage with all cheapestReplants
+                //else 
+                    //permute this with next cheapestReplants
 
-
-                seeds += seedsToAdd;
+                seeds += totalSeedsCanAdd;
             }
+            return usages;
         }
 
-
-
-        private double Sold(Process[] processes, Dictionary<Item, QualityDist> inputs)
+        List<IEnumerable<QualityItem>> ReplantPermutations(List<QualityItem> order, double seeds, int index = 0)
         {
-            return 0;
+            List<IEnumerable<QualityItem>> usages = new List<IEnumerable<QualityItem>>();
+            for (int i = index; i < order.Count; i++)
+            {
+                QualityItem item = order[i];
+                double seedsCreated = Replants[item][item].OutputAmount(item);
+                if (seedsCreated < seeds)
+                {
+                    foreach(var permutation in ReplantPermutations(order, seeds - seedsCreated, i + 1))
+                    {
+                        usages.Add(permutation.Prepend(item));
+                    }
+                }
+                else
+                {
+                    usages.Add(new QualityItem[] { item });
+                }
+            }
+            //if (usages.Count == 0)
+            //{
+            //    usages.Add()
+            //}
+            return usages;
         }
+     
         private void Apply(double[] dist)
         {
             InputAmounts[CropItem] = new double[]

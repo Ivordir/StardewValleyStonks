@@ -4,6 +4,9 @@ namespace StardewValleyStonks
 {
     public readonly struct QualityItem
     {
+        public static implicit operator int(QualityItem qi) => qi.Quality;
+        public static implicit operator Item(QualityItem qi) => qi.Item;
+
         public readonly string Name
         => Quality == 0 
             ? Item.Name

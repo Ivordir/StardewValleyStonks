@@ -5,10 +5,6 @@ namespace StardewValleyStonks
 {
     public class Output
     {
-        //StaticCrop[] Crops;
-        //StaticRegrowCrop[] RegrowCrops;
-        //StaticFertilizer[] Fertilizers;
-        //List<PlanNode> Plans;
         Crop[] Crops;
         Fertilizer[] Fertilizers;
         readonly List<Plan> Plans;
@@ -63,18 +59,18 @@ namespace StardewValleyStonks
             return plans;
         }
 
-        List<PlanNode> FirstDraftHelper(Seasons season, Fertilizer fert, int days)
+        List<PlanNode> FirstDraftHelper(Seasons season, Fertilizer fert, int days, bool oneRegrow = false)
         {
             List<PlanNode> plans = new List<PlanNode>(); 
             foreach (Crop crop in CropIn[season])
             {
-                //Growth time cannot be equal days; must be less tahn.
+                //Growth time cannot be equal days; must be less than days.
                 //E.g. a crop that grows in 28 days cannot give one harvest within a season (ancient fruit).
-                if (crop.GrowthTimeWith(fert) < days)
+                if (crop.GrowthTimeWith(fert) < days && (!crop.Regrows || !oneRegrow))
                 {
                     int daysNotUsed = days;
                     PlanSection section = new PlanSection(crop, fert, crop.HarvestsWithin(ref daysNotUsed, fert));
-                    plans.AddRange(FirstDraftHelper(season, fert, daysNotUsed).
+                    plans.AddRange(FirstDraftHelper(season, fert, daysNotUsed, crop.Regrows || oneRegrow).
                         Select(n => new PlanNode(section, n)));
                 }
             }

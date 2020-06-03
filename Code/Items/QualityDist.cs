@@ -16,6 +16,8 @@
                 return sum;
             }
         }
+        public readonly int Length => Dist.Length;
+        //public readonly int QualitiesLeft => Dist.Length - Quality;
         public readonly bool Empty => Quality == Dist.Length;
 
         public static QualityDist operator -(QualityDist dist, double amount)
@@ -25,6 +27,7 @@
 
         public static implicit operator QualityDist(double[] dist) => new QualityDist(dist);
         public static implicit operator double(QualityDist dist) => dist.Value;
+        public static implicit operator int(QualityDist dist) => dist.Quality;
 
         readonly double[] Dist;
 
