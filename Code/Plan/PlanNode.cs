@@ -1,22 +1,18 @@
 ﻿namespace StardewValleyStonks
 {
-    public class PlanNode
+    public class PlanNode //: IEnumerable<PlanNode>?
     {
-        public int NumHarvests { get; }
-        public Crop Crop { get; }
-        public Fertilizer Fertilizer { get; }
+        public PlanSection Section { get; }
+        public PlanNode Next { get; }
 
-        readonly PlanNode PrevNode;
-
-        public PlanNode(Crop crop, Fertilizer fertilizer, PlanNode node = null)
+        public PlanNode(PlanSection section, PlanNode next)
         {
-            Crop = crop;
-            Fertilizer = fertilizer;
-            PrevNode = node;
+            Section = section;
+            Next = next;
         }
-        public double TotalProfit => (PrevNode == null ? 0 : PrevNode.TotalProfit) + Profit;
+        //public double TotalProfit => (Next == null ? 0 : Next.TotalProfit) + Profit;
 
-        public double Profit => 0;// Crop.Profit(Fertilizer.Quality, NumHarvests);
+        //public double Profit => 0;// Crop.Profit(Fertilizer.Quality, NumHarvests);
 
         public Item[] Products
         {

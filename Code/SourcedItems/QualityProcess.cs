@@ -6,13 +6,10 @@
 
         readonly double[] _OutputAmounts;
 
-        public override double OutputAmount(QualityItem input) => _OutputAmounts[input.Quality];
-        public override double ProfitPerInput(int quality) => Output(quality).Price * _OutputAmounts[quality] / InputAmount;
-        public override double MaxOutput(QualityDist inputs)
+        public override double OutputAmount(int quality) => _OutputAmounts[quality] / InputAmount;
+        public override double Profit(int quality) => Output(quality).Price * _OutputAmounts[quality] / InputAmount;
+        public override double DoProcess(QualityDist inputs)
         => inputs / InputAmount * _OutputAmounts[inputs.Quality];
-
-        //double OutputAmount(int quality) => AmountWith[quality];
-        //public double Profit(double output) => Output.Price * output;
 
         public QualityProcess(
            Item input,

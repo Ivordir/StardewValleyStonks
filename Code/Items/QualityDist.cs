@@ -16,6 +16,7 @@
                 return sum;
             }
         }
+        public readonly bool Empty => Quality == Dist.Length;
 
         public static QualityDist operator -(QualityDist dist, double amount)
             => amount == dist.Value ?

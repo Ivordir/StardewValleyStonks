@@ -88,20 +88,48 @@ namespace StardewValleyStonks
 		public Item Seed { get; }
 		public Crop ToCrop()
 		{
-			Dictionary<Item, Process[][]> processes = new Dictionary<Item, Process[][]>();
+			Dictionary<Item, Process[]> processes = Processes.ToDictionary
+				(kvp => kvp.Key, kvp => kvp.Value.Where(p => p.Active).ToArray());
+			Dictionary<Item, Process[]> bestProcesses = new Dictionary<Item, Process[]>();
+			Dictionary<QualityItem, Process[]> equalProcesses = new Dictionary<QualityItem, Process[]>();
 			foreach(Item item in Processes.Keys)
 			{
+				if (processes[item].Length == 0)
+				{
+					bestProcesses.Add(item, processes[item]);
+					break;
+				}
+				bestProcesses.Add(item, new Process[HarvestedItems[item].Length]);
 				for (int quality = 0; quality < HarvestedItems[item].Length; quality++)
 				{
-					processes[item][quality] = Processes[item].MaxElements(Process.Comparers[quality]).ToArray();
+					Process[] qualityProcesses = processes[item].MaxElements(Process.Comparers[quality]).ToArray();
+					bestProcesses[item][quality] = qualityProcesses[0];
+					if (qualityProcesses.Length > 1)
+					{
+						equalProcesses.Add(item.With(quality), qualityProcesses[1..]);
+					}
 				}
 			}
-			Dictionary<Item, Process[][]> replants = new Dictionary<Item, Process[][]>();
+			Dictionary<Item, Process[]> replants = Replants.ToDictionary
+				(kvp => kvp.Key, kvp => kvp.Value.Where(p => p.Active).ToArray());
+			Dictionary<Item, Process[]> bestReplants = new Dictionary<Item, Process[]>();
+			Dictionary<QualityItem, Process[]> equalReplants = new Dictionary<QualityItem, Process[]>();
 			foreach (Item item in Replants.Keys)
 			{
+				if (replants[item].Length == 0)
+				{
+					bestReplants.Add(item, replants[item]);
+					break;
+				}
+				bestReplants.Add(item, new Process[HarvestedItems[item].Length]);
 				for (int quality = 0; quality < HarvestedItems[item].Length; quality++)
 				{
-					replants[item][quality] = Replants[item].MaxElements(Process.Comparers[quality]).ToArray();
+					Process[] qualityReplants = replants[item].MaxElements(Process.Comparers[quality]).ToArray();
+					bestReplants[item][quality] = qualityReplants[0];
+					if (qualityReplants.Length > 1)
+					{
+						equalReplants.Add(item.With(quality), qualityReplants[1..]);
+					}
 				}
 			}
 			return new Crop(
@@ -117,7 +145,9 @@ namespace StardewValleyStonks
 				(kvp => kvp.Key, kvp => (QualityDist)kvp.Value),
 			processes,
 			replants,
-			BuySeeds,
+			equalProcesses,
+			equalReplants,
+			BuySeeds && BuySeedsSource.Active,
 			Price,
 			BestPrices.
 				Select(p => p.Source).
