@@ -33,7 +33,7 @@ namespace StardewValleyStonks
             inputs -= output;
             return output;
         }
-        //public double InputUsed(QualityDist inputs) => OutputFrom(inputs) / OutputAmount(inputs.Quality) * InputAmount;
+        public virtual QualityDist Consume(QualityDist inputs, double output) => inputs - output;
         public int CompareTo(IProcess other, int quality)
         => Profit(quality).CompareTo(other.Profit(quality));
 

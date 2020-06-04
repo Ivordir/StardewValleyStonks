@@ -19,11 +19,12 @@
         public readonly int Length => Dist.Length;
         //public readonly int QualitiesLeft => Dist.Length - Quality;
         public readonly bool Empty => Quality == Dist.Length;
+        public readonly QualityDist Next => new QualityDist(Quality + 1, Dist);
 
         public static QualityDist operator -(QualityDist dist, double amount)
-            => amount == dist.Value ?
-                new QualityDist(dist.Quality + 1, dist.Dist)
-                : new QualityDist(dist.Value - amount, dist.Quality, dist.Dist);
+        => amount == dist.Value
+            ? dist.Next
+            : new QualityDist(dist - amount, dist, dist.Dist);
 
         public static implicit operator QualityDist(double[] dist) => new QualityDist(dist);
         public static implicit operator double(QualityDist dist) => dist.Value;
@@ -31,19 +32,19 @@
 
         readonly double[] Dist;
 
-        public QualityDist(double[] dist)
+        QualityDist(double[] dist)
         {
             Value = dist[0];
             Quality = 0;
             Dist = dist;
         }
-        private QualityDist(double value, int quality, double[] dist)
+        QualityDist(double value, int quality, double[] dist)
         {
             Value = value;
             Quality = quality;
             Dist = dist;
         }
-        private QualityDist(int quality, double[] dist)
+        QualityDist(int quality, double[] dist)
         {
             Value = quality == dist.Length ? 0 : dist[quality];
             Quality = quality;
