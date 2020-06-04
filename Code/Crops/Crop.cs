@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using ExtentionsLibrary.Collections;
 
 namespace StardewValleyStonks
 {
@@ -53,27 +52,97 @@ namespace StardewValleyStonks
         => (Seasons & seasons) > 0;
 
         private double Calculate(int harvests, bool Regrows) => 0;
-        //also needs processes, replants, inputAmounts, and canBuy
 
-        List<CropUsage> Calc()
+        CropUsage[] Calc()
         {
-            List<CropUsage> usages = new List<CropUsage>();
-            foreach(var sequence in SecondDraft(new Dictionary<Item, QualityDist>(InputAmounts.Where(kvp => Replants.ContainsKey(kvp.Key)))))
+            List<CropUsage> cropUsages = new List<CropUsage>();
+            foreach (var sequence in SecondDraft(new Dictionary<Item, QualityDist>(InputAmounts.Where(kvp => Replants.ContainsKey(kvp.Key)))))
             {
-                Dictionary<Item, QualityDist> leftOver = new Dictionary<Item, QualityDist>();
-                double seeds = 0;
-                foreach(QualityItem replantItem in sequence)
+                Dictionary<(Item, Process), Usage> usages = new Dictionary<(Item, Process), Usage>();
+                Dictionary<Item, QualityDist> leftOver = new Dictionary<Item, QualityDist>(InputAmounts);
+                double seedsToCreate = 1;
+                foreach (QualityItem replantItem in sequence.SkipLast(1))
                 {
-                    //remove amounts of items used to makes seeds;
-                    //seeds += seed made;
+                    QualityDist dist = leftOver[replantItem];
+                    double seedsMade = Replants[replantItem][replantItem].OutputConsume(ref dist);
+                    var key = (replantItem, Replants[replantItem][replantItem]);
+                    if (usages.ContainsKey(key))
+                    {
+                        usages[key].Inputs[replantItem] = leftOver[replantItem];
+                        usages[key].Seeds += seedsMade;
+                    }
+                    else
+                    {
+                        double[] inputs = new double[leftOver[replantItem].Length];
+                        inputs[replantItem] = leftOver[replantItem];
+                        usages.Add(key, new Usage(
+                            inputs,
+                            Replants[replantItem][replantItem],
+                            seedsMade));
+                    }
+                    seedsToCreate -= seedsMade;
+                    if (dist.Empty)
+                    {
+                        leftOver.Remove(replantItem);
+                    }
+                    else
+                    {
+                        leftOver[replantItem] = dist;
+                    }
                 }
-                if (seeds < 1)
+                QualityItem last = sequence.Last();
+                QualityDist lastDist = leftOver[last];
+                double lastSeedsMade = Replants[last][last].OutputConsume(ref lastDist, seedsToCreate);
+                var lastKey = (last, Replants[last][last]);
+                if (usages.ContainsKey(lastKey))
                 {
-                    //add amount of bought seeds
+                    usages[lastKey].Inputs[last] = leftOver[last];
+                    usages[lastKey].Seeds += lastSeedsMade;
                 }
-                //add products using item amounts in {leftover}
+                else
+                {
+                    double[] inputs = new double[leftOver[last].Length];
+                    inputs[leftOver[last]] = leftOver[last];
+                    usages.Add(lastKey, new Usage(
+                        inputs,
+                        Replants[last][last],
+                        lastSeedsMade));
+                }
+                seedsToCreate -= lastSeedsMade;
+                if (lastDist.Empty)
+                {
+                    leftOver.Remove(last);
+                }
+                else
+                {
+                    leftOver[last] = lastDist;
+                }
+
+                foreach (Item item in leftOver.Keys)
+                {
+                    while (!leftOver[item].Empty)
+                    {
+                        var key = (item, Processes[item][leftOver[item]]);
+                        if (usages.ContainsKey(key))
+                        {
+                            usages[key].Inputs[leftOver[item]] = leftOver[item];
+                        }
+                        else
+                        {
+                            double[] inputs = new double[leftOver[item].Length];
+                            inputs[leftOver[item]] = leftOver[item];
+                            usages.Add(key, new Usage(
+                                inputs,
+                                Processes[item][leftOver[item]]));
+                        }
+                        leftOver[item] = leftOver[item].Next;
+                    }
+                }
+                cropUsages.Add(new CropUsage(
+                    seedsToCreate,
+                    usages.Values.ToArray()));
             }
-            return usages;
+            return cropUsages.ToArray();
         }
 
         List<IEnumerable<QualityItem>> SecondDraft(Dictionary<Item, QualityDist> inputs, double seedsToCreate = 1)
@@ -145,7 +214,8 @@ namespace StardewValleyStonks
             }
             else if (seedsCreated == seedsToCreate)
             {
-                return new List<IEnumerable<QualityItem>> { cheapestReplants };
+                usages.Add(cheapestReplants);
+                return usages;
             }
             foreach (QualityItem item in cheapestReplants)
             {
@@ -250,7 +320,7 @@ namespace StardewValleyStonks
                 double seedsCreated = Replants[item][item].OutputAmount(item);
                 if (seedsCreated < seedsToCreate)
                 {
-                    foreach(var permutation in ReplantPermutations(order, seedsToCreate - seedsCreated, i + 1))
+                    foreach (var permutation in ReplantPermutations(order, seedsToCreate - seedsCreated, i + 1))
                     {
                         usages.Add(permutation.Prepend(item));
                     }
@@ -312,14 +382,27 @@ namespace StardewValleyStonks
 
     public class CropUsage
     {
+        public CropUsage(double boughtSeeds, Usage[] usages)
+        {
+            BoughtSeeds = boughtSeeds;
+            Usages = usages;
+        }
+
         public double BoughtSeeds { get; }
-        public List<Usage> Usages { get; }
+        public Usage[] Usages { get; }
     }
 
     public class Usage
     {
+        public Usage(double[] inputs, Process process, double seeds = 0)
+        {
+            Inputs = inputs;
+            Process = process;
+            Seeds = seeds;
+        }
+
         public double[] Inputs { get; }
         public Process Process { get; }
-        public double Seeds { get; }
+        public double Seeds { get; set; }
     }
 }

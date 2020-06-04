@@ -8,8 +8,6 @@
 
         public override double OutputAmount(int quality) => _OutputAmounts[quality] / InputAmount;
         public override double Profit(int quality) => Output(quality).Price * _OutputAmounts[quality] / InputAmount;
-        public override double DoProcess(QualityDist inputs)
-        => inputs / InputAmount * _OutputAmounts[inputs.Quality];
 
         public QualityProcess(
            Item input,

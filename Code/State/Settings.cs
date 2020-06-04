@@ -24,7 +24,6 @@ namespace StardewValleyStonks
         public void SetSeedsByQuality(int quality, int value)
             => QualitySeeds[quality] = value.WithMin(0);
 
-
         public double GiantCropChecksPerTile
         {
             get => _GiantCropChecksPerTile;

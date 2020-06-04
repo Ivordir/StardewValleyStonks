@@ -27,13 +27,19 @@ namespace StardewValleyStonks
             : OutputItem.Normal;
         public virtual double OutputAmount(int quality) => 1;
         public virtual double Profit(int quality) => Output(quality).Price;
-        public virtual double OutputConsume(ref QualityDist inputs)
+        public double OutputConsume(ref QualityDist inputs)
         {
-            double output = inputs;
-            inputs -= output;
+            double output = inputs * OutputAmount(inputs);
+            inputs -= output / OutputAmount(inputs);
             return output;
         }
-        public virtual QualityDist Consume(QualityDist inputs, double output) => inputs - output;
+        public double OutputConsume(ref QualityDist inputs, double maxOutput)
+        {
+            double output = inputs * OutputAmount(inputs);
+            output = Math.Min(output, maxOutput);
+            inputs -= output / OutputAmount(inputs);
+            return output;
+        }
         public int CompareTo(IProcess other, int quality)
         => Profit(quality).CompareTo(other.Profit(quality));
 

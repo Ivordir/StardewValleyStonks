@@ -26,6 +26,7 @@
             ? dist.Next
             : new QualityDist(dist - amount, dist, dist.Dist);
 
+        //public static implicit operator double[](QualityDist dist) => dist.Dist[..];
         public static implicit operator QualityDist(double[] dist) => new QualityDist(dist);
         public static implicit operator double(QualityDist dist) => dist.Value;
         public static implicit operator int(QualityDist dist) => dist.Quality;

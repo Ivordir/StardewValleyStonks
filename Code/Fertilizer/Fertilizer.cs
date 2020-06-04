@@ -5,7 +5,7 @@ namespace StardewValleyStonks
 {
     public class Fertilizer : INullComparable<Fertilizer>
     {
-        readonly static Func<int, int, double[]> CropQualityDist =
+        static readonly Func<int, int, double[]> CropQualityDist =
            new Func<int, int, double[]>((fertQuality, FarmBuffLevel) =>
            {
                double[] dist = new double[3];

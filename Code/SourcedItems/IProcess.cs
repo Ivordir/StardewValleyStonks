@@ -10,7 +10,7 @@
         public double OutputAmount(int quality);
         public double Profit(int quality);
         public double OutputConsume(ref QualityDist inputs);
-        public QualityDist Consume(QualityDist inputs, double output);
+        public double OutputConsume(ref QualityDist inputs, double maxOutput);
         public int CompareTo(IProcess other, int quality);
     }
 }

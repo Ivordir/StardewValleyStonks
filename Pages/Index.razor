@@ -57,32 +57,14 @@
 					<td>
 						<Expander Text="Show">
 							<ul>
-								@foreach (Process process in crop._Processes)
-								{
-									<li>
-										@process.Input.Name @process.InputAmount
-										=>
-										@process.Source.Name
-										=>
-										@process.OutputItem.Name @process.OutputAmount(process.Input.Normal)
-									</li>
-								}
+								
 							</ul>
 						</Expander>
 					</td>
 					<td>
 						<Expander Text="Show">
 							<ul>
-								@foreach (Process replant in crop._Replants)
-								{
-								<li>
-									@replant.Input.Name @replant.InputAmount
-									=>
-									@replant.Source.Name
-									=>
-									@replant.OutputItem.Name @replant.OutputAmount(replant.Input.Normal)
-								</li>
-								}
+								
 							</ul>
 						</Expander>
 					</td>
