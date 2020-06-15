@@ -160,6 +160,10 @@ namespace StardewValleyStonks
 		readonly Dictionary<Item, Process[]> Replants;
 		readonly Source BuySeedsSource;
 
+		//temp for debug... I guess
+		public Process[] _Processes => Processes[CropItem];
+		public Process[] _Replants => Replants[CropItem];
+
 		readonly Item CropItem;
 		readonly double ExtraCrops;
 		readonly bool Giant, DoubleCrops;

@@ -74,9 +74,12 @@ namespace StardewValleyStonks
             }
             SeedProb = 0.975;
             Seeds = new double[Qualities.Count];
+            AncientFruitSeeds = new double[Qualities.Count];
             AncientFruitBonusSeeds = 0.005;
 
             StaringFert = null;
+
+            Save();
         }
     }
 }

@@ -28,10 +28,9 @@
 					{
 				<tr>
 					<td>
-						<label class="entry-checkbox-label">
-							<input type="checkbox" class="entry-checkbox" checked>
-							<span class="entry-checkbox-background"></span>
-						</label>
+						<Checkbox @bind-Value=crop.Selected
+								  CheckboxClass="checkbox"
+								  CheckmarkClass="checkmark" />
 					</td>
 					<td>Image</td>
 					<td>@crop.Name</td>
@@ -51,20 +50,38 @@
 						@crop.Seed.Price
 					</td>
 					<td>
-						@crop.QualityCrops
+						@crop.QualityCrops,
 						@crop.NormalCrops
 					</td>
 					<td>
 						<Expander Text="Show">
 							<ul>
-								
+								@foreach (Process process in crop._Processes)
+								{
+									<li>
+										@process.Input.Name @process.InputAmount
+										=>
+										@process.Source.Name
+										=>
+										@process.OutputItem.Name @process.OutputAmount(process.Input.Normal)
+									</li>
+								}
 							</ul>
 						</Expander>
 					</td>
 					<td>
 						<Expander Text="Show">
 							<ul>
-								
+								@foreach (Process replant in crop._Replants)
+								{
+									<li>
+										@replant.Input.Name @replant.InputAmount
+										=>
+										@replant.Source.Name
+										=>
+										@replant.OutputItem.Name @replant.OutputAmount(replant.Input.Normal)
+									</li>
+								}
 							</ul>
 						</Expander>
 					</td>
@@ -179,42 +196,42 @@
 					}
 				</Tab>
 			}
-			<Checkbox CheckboxClass="checkbox" CheckmarkClass="checkmark" LabelClass="checkbox-label" @bind-Value=Skills.IgnoreConflicts>
+			<Checkbox CheckboxClass="other-checkbox" CheckmarkClass="checkmark" LabelClass="other-checkbox-label" @bind-Value=Skills.IgnoreConflicts>
 				Ignore Profession Conflicts
 			</Checkbox>
 		</TabGroup>
 	</div>
 	<div class="products">
 		<span class="input-header">Sell</span>
+		<br />
 		@foreach (Source processor in Data.SellSources)
 		{
-			<label class="input-checkbox-label">
+			<Checkbox @bind-Value=processor.Selected CheckboxClass="checkbox" CheckmarkClass="checkmark" LabelClass="checkbox-label">
 				@processor.Name
-				<input type="checkbox" class="input-checkbox" @bind=processor.Selected>
-				<span class="input-checkbox-background"></span>
-			</label>
+			</Checkbox>
+			<br />
 		}
 	</div>
 	<div class="sources">
 		<span class="input-header">Sources</span>
+		<br />
 		@foreach (Source source in Data.BuySources)
 		{
-			<label class="input-checkbox-label">
+			<Checkbox @bind-Value=source.Selected CheckboxClass="checkbox" CheckmarkClass="checkmark" LabelClass="checkbox-label">
 				@source.Name
-				<input type="checkbox" class="input-checkbox" @bind=source.Selected>
-				<span class="input-checkbox-background"></span>
-			</label>
+			</Checkbox>
+			<br />
 		}
 	</div>
 	<div class="replant">
 		<span class="input-header">Replant</span>
+		<br />
 		@foreach (Source replant in Data.ReplantMethods)
 		{
-			<label class="input-checkbox-label">
+			<Checkbox @bind-Value=replant.Selected CheckboxClass="checkbox" CheckmarkClass="checkmark" LabelClass="checkbox-label">
 				@replant.Name
-				<input type="checkbox" class="input-checkbox" @bind=replant.Selected>
-				<span class="input-checkbox-background"></span>
-			</label>
+			</Checkbox>
+			<br />
 		}
 	</div>
 	<div class="date">
@@ -232,6 +249,7 @@
 			</select>
 			<input type="number" class="number-input" @bind=Date.StartDay>
 		</label>
+		<br />
 		<label class="input-header">
 			End Date:
 			<select class="season-selector" @bind=Date.EndSeason>
@@ -242,6 +260,7 @@
 			</select>
 			<input type="number" class="number-input" @bind=Date.EndDay>
 		</label>
+		<br />
 		<label class="input-header">
 			Year:
 			<input type="number" class="number-input" @bind=Date.Year>

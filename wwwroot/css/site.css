@@ -21,22 +21,34 @@ body {
   margin: 0px;
   font-family: Georgia, Times, serif; }
 
-.checkbox-label {
+.other-checkbox-label {
   display: flex;
   align-items: flex-start;
   flex-wrap: nowrap;
   text-align: start;
   padding-top: var(--checkbox-text-offset); }
 
+.other-checkbox {
+  display: inline-block;
+  flex-shrink: 0;
+  width: var(--checkbox-height);
+  height: var(--checkbox-height);
+  background-color: white;
+  border: 1px solid black;
+  border-radius: 3px;
+  margin-top: calc(-1 * var(--checkbox-text-offset)); }
+
+.checkbox-label {
+  vertical-align: middle; }
+
 .checkbox {
   display: inline-block;
   flex-shrink: 0;
   width: var(--checkbox-height);
   height: var(--checkbox-height);
-  background-color: lemonchiffon;
+  background-color: white;
   border: 1px solid black;
-  border-radius: 3px;
-  margin-top: calc(-1 * var(--checkbox-text-offset)); }
+  border-radius: 3px; }
 
 .checkmark {
   display: block;
@@ -75,7 +87,7 @@ footer {
   background-color: burlywood; }
 
 .editor {
-  background-color: red;
+  background-color: antiquewhite;
   grid-column: 1;
   grid-row: 1/span 4; }
 
@@ -284,6 +296,3 @@ footer {
 
 .source-option {
   background-color: gray; }
-
-.number-input {
-  float: left; }

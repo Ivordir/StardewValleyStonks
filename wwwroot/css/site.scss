@@ -1,6 +1,4 @@
-﻿$phi: 1.61803;
-
-header {
+﻿header {
 	background-color: cornsilk;
 	font-family: Stencil;
 	font-size: 32px;
@@ -26,22 +24,34 @@ body {
 	font-family: Georgia, Times, serif;
 }
 
-.checkbox-label {
+.other-checkbox-label {
 	display: flex;
 	align-items: flex-start;
 	flex-wrap: nowrap;
 	text-align: start;
 	padding-top: var(--checkbox-text-offset);
 }
+.other-checkbox {
+	display: inline-block;
+	flex-shrink: 0;
+	width: var(--checkbox-height);
+	height: var(--checkbox-height);
+	background-color: white;
+	border: 1px solid black;
+	border-radius: 3px;
+	margin-top: calc(-1 * var(--checkbox-text-offset));
+}
+.checkbox-label {
+	vertical-align: middle;
+}
 .checkbox {
 	display: inline-block;
 	flex-shrink: 0;
 	width: var(--checkbox-height);
 	height: var(--checkbox-height);
-	background-color: lemonchiffon;
+	background-color: white;
 	border: 1px solid black;
 	border-radius: 3px;
-	margin-top: calc(-1 * var(--checkbox-text-offset));
 }
 .checkmark {
 	display: block;
@@ -89,7 +99,7 @@ footer {
 }
 
 .editor {
-	background-color: red;
+	background-color: antiquewhite;
 	grid-column: 1;
 	grid-row: 1/span 4;
 }
@@ -350,5 +360,5 @@ $checkmark-total-width: ($checkmark-width + $checkmark-thickness) * 1.4142135623
 }
 
 .number-input {
-	float: left;
+	
 }
