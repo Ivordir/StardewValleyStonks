@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using ExtentionsLibrary.Limits;
+using static System.Math;
 
 namespace StardewValleyStonks
 {
@@ -20,19 +20,19 @@ namespace StardewValleyStonks
         public int Year
         {
             get => _Year;
-            set => _Year = value.WithMin(1);
+            set => _Year = Max(value, 1);
         }
         public Seasons StartSeason { get; set; }
         public Seasons EndSeason { get; set; }
         public int StartDay
         {
             get => _StartDay;
-            set => _StartDay = value.InRange(1, 28);
+            set => _StartDay = Clamp(value, 1, 28);
         }
         public int EndDay
         {
             get => _EndDay;
-            set => _EndDay = value.InRange(1, 28);
+            set => _EndDay = Clamp(value, 1, 28);
         }
         public bool Valid
         => StartSeason < EndSeason

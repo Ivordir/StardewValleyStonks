@@ -1,4 +1,4 @@
-﻿using ExtentionsLibrary.Limits;
+﻿using static System.Math;
 
 namespace StardewValleyStonks
 {
@@ -9,12 +9,12 @@ namespace StardewValleyStonks
         public int Level
         {
             get => _Level;
-            set => _Level = value.InRange(0, 10);
+            set => _Level = Clamp(value, 0, 10);
         }
         public int Buff
         {
             get => _Buff;
-            set => _Buff = value.WithMin(0);
+            set => _Buff = Max(value, 0);
         }
         public int BuffedLevel => _Level + _Buff;
 

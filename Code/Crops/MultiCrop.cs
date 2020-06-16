@@ -1,7 +1,7 @@
-﻿using ExtentionsLibrary.Collections;
-using ExtentionsLibrary.Limits;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ExtentionsLibrary.Collections;
 
 namespace StardewValleyStonks
 {
@@ -146,7 +146,7 @@ namespace StardewValleyStonks
 			{
 				if (replant.HasOutput(inputs))
 				{
-					double output = replant.MaxOutput(inputs).WithMax(seeds);
+					double output = Math.Min(seeds, replant.MaxOutput(inputs));
 					Dictionary<Item, List<double>> leftOver = inputs.ToDictionary
 						(kvp => kvp.Key, kvp => new List<double>(kvp.Value));
 					Dictionary<Item, List<(double, MultiProcess)>> consumed = new Dictionary<Item, List<(double, MultiProcess)>>();

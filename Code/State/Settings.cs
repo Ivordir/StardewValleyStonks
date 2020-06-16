@@ -1,6 +1,7 @@
-﻿using ExtentionsLibrary.Limits;
-using ExtentionsLibrary.Collections;
+﻿using System;
+using static System.Math;
 using static StardewValleyStonks.Quality;
+
 
 namespace StardewValleyStonks
 {
@@ -10,7 +11,7 @@ namespace StardewValleyStonks
         public int LuckBuff
         {
             get => _LuckBuff;
-            set => _LuckBuff = value.WithMin(0);
+            set => _LuckBuff = Max(value, 0);
         }
         //not sure if the "0.0001" is intended by Concerned Ape, or just something that the (de)compiler threw in there
         public double DoubleCropProb => 0.0001 + _LuckBuff / 1500 + (SpecialCharm ? 0.025 : 0);
@@ -22,17 +23,17 @@ namespace StardewValleyStonks
         public int SeedsByQuality(int quality)
             => QualitySeeds[quality];
         public void SetSeedsByQuality(int quality, int value)
-            => QualitySeeds[quality] = value.WithMin(0);
+            => QualitySeeds[quality] = Max(value, 0);
 
         public double GiantCropChecksPerTile
         {
             get => _GiantCropChecksPerTile;
             set
             {
-                _GiantCropChecksPerTile = value.InRange(0, 9);
+                _GiantCropChecksPerTile = Clamp(value, 0, 9);
             }
         }
-        public double NoGiantCropProb => System.Math.Pow(1 - GiantCropChance, _GiantCropChecksPerTile);
+        public double NoGiantCropProb => Pow(1 - GiantCropChance, _GiantCropChecksPerTile);
 
         public bool GreenhouseMode { get; set; }
         public FertilizerDIO StaringFert { get; set; }
@@ -57,8 +58,8 @@ namespace StardewValleyStonks
             }
             else
             {
-                Seeds.SetAll(2 * SeedProb);
-                AncientFruitSeeds.SetAll(2 * SeedProb + AncientFruitBonusSeeds);
+                Array.Fill(Seeds, 2 * SeedProb);
+                Array.Fill(AncientFruitSeeds, 2 * SeedProb + AncientFruitBonusSeeds);
             }
         }
 

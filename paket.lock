@@ -1,0 +1,6 @@
+STORAGE: NONE
+RESTRICTION: || (== netcoreapp3.1) (== netstandard2.0) (== netstandard2.1)
+GITHUB
+  remote: Ivordir/ExtensionsLibrary
+    Collections.cs (296a88641a0763f9f616092c07581fa80a67185e)
+    Memoization.cs (296a88641a0763f9f616092c07581fa80a67185e)
