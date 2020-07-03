@@ -1,4 +1,4 @@
-name: gh-pages
+name: Node.js CI
 
 on: [push]
 
@@ -7,22 +7,18 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        node-version: [10.x, 12.x, 14.x]
+
     steps:
-    - uses: actions/checkout@v1
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
+    - uses: actions/checkout@v2
+    - name: Deploy using Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
       with:
-        dotnet-version: 3.1.201
-    - name: Publish with dotnet
-      run: |
-        dotnet tool restore
-        dotnet paket restore
-        dotnet publish --configuration Release --output build
-    - name: Deploy to Github Pages
-      uses: JamesIves/github-pages-deploy-action@releases/v3
-      with:
-        ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-        BASE_BRANCH: master # The branch the action should deploy from.
-        BRANCH: gh-pages # The branch the action should deploy to.
-        FOLDER: build/wwwroot # The folder the action should deploy.
-        CLEAN: true
+        node-version: ${{ matrix.node-version }}
+    - run: npm ci
+    - run: npm run build --if-present
+    - run: npm test
+      env:
+        CI: true
