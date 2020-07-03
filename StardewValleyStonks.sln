@@ -1,9 +1,7 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29709.97
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StardewValleyStonks", "StardewValleyStonks.csproj", "{5B1E8580-2E66-4433-91CF-DB62D8F0D4D9}"
+# Visual Studio 2012
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "StardewValleyStonks", "src/StardewValleyStonks.fsproj", "{E5DEFC96-37CF-4844-9C9E-CFA0A9A8AED3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +9,9 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5B1E8580-2E66-4433-91CF-DB62D8F0D4D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5B1E8580-2E66-4433-91CF-DB62D8F0D4D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5B1E8580-2E66-4433-91CF-DB62D8F0D4D9}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{5B1E8580-2E66-4433-91CF-DB62D8F0D4D9}.Release|Any CPU.Build.0 = Debug|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {A1146B05-4190-4CAD-A4D5-9FAAF208B635}
+		{E5DEFC96-37CF-4844-9C9E-CFA0A9A8AED3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E5DEFC96-37CF-4844-9C9E-CFA0A9A8AED3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E5DEFC96-37CF-4844-9C9E-CFA0A9A8AED3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E5DEFC96-37CF-4844-9C9E-CFA0A9A8AED3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
