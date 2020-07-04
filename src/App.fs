@@ -1,8 +1,8 @@
 module App
 
-open Elmish
 open Fable.Core
 open Fable.Core.JsInterop
+open Elmish
 
 importAll "../sass/main.sass"
 
@@ -388,7 +388,6 @@ let view model dispatch =
 //--App--
 open Elmish.React
 open Elmish.Debug
-open Elmish.HMR
 
 Program.mkSimple (fun _ -> initialModel) update view
 #if DEBUG

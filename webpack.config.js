@@ -29,7 +29,6 @@ var CONFIG = {
     babel: {
         presets: [
             ["@babel/preset-env", {
-                "targets": "> 0.25%, not dead",
                 "modules": false,
                 // This adds polyfills when needed. Requires core-js dependency.
                 // See https://babeljs.io/docs/en/babel-preset-env#usebuiltins
@@ -88,16 +87,12 @@ module.exports = {
     //      - MiniCssExtractPlugin: Extracts CSS from bundle to a different file
     //          To minify CSS, see https://github.com/webpack-contrib/mini-css-extract-plugin#minimizing-for-production
     //      - CopyWebpackPlugin: Copies static assets to output directory
-    // DEVELOPMENT
-    //      - HotModuleReplacementPlugin: Enables hot reloading when code changes without refreshing
     plugins: isProduction ?
         commonPlugins.concat([
             new MiniCssExtractPlugin({ filename: 'style.css' }),
             new CopyWebpackPlugin([{ from: resolve(CONFIG.assetsDir) }]),
         ])
-        : commonPlugins.concat([
-            new webpack.HotModuleReplacementPlugin(),
-        ]),
+        : commonPlugins,
     resolve: {
         // See https://github.com/fable-compiler/Fable/issues/1490
         symlinks: false
@@ -108,7 +103,7 @@ module.exports = {
         contentBase: resolve(CONFIG.assetsDir),
         port: CONFIG.devServerPort,
         proxy: CONFIG.devServerProxy,
-        hot: true,
+        hot: false,
         inline: true
     },
     // - fable-loader: transforms F# into JS
