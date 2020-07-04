@@ -403,3 +403,5 @@ Program.mkSimple (fun _ -> initialModel) update view
 #endif
 |> Program.withReactBatched "elmish-app"
 |> Program.run
+
+console.log("test")
