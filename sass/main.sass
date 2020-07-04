@@ -2,6 +2,95 @@
   font-family: StardewValley
   src: url('/Stardew Valley.woff') format('woff')
 
+@supports(-webkit-appearance: none) or (-moz-appearance: none)
+  input[type='checkbox']
+    --active: #275EFE
+    --active-inner: #fff
+    --focus: 2px rgba(39, 94, 254, .3)
+    --border: #BBC1E1
+    --border-hover: #275EFE
+    --background: #fff
+    --disabled: #F6F8FF
+    --disabled-inner: #E1E6F9
+    -webkit-appearance: none
+    -moz-appearance: none
+    height: 21px
+    outline: none
+    display: inline-block
+    vertical-align: top
+    position: relative
+    margin: 0
+    cursor: pointer
+    border: 1px solid var(--bc, var(--border))
+    background: var(--b, var(--background))
+    transition: background .3s, border-color .3s, box-shadow .2s
+    &:after
+      content: ''
+      display: block
+      left: 0
+      top: 0
+      position: absolute
+      transition: transform var(--d-t, .3s) var(--d-t-e, ease), opacity var(--d-o, .2s)
+
+    &:checked 
+      --b: var(--active)
+      --bc: var(--active)
+      --d-o: .3s
+      --d-t: .6s
+      --d-t-e: cubic-bezier(.2, .85, .32, 1.2)
+
+    &:disabled 
+      --b: var(--disabled)
+      cursor: not-allowed
+      opacity: .9
+      &:checked
+        --b: var(--disabled-inner)
+        --bc: var(--border)
+
+      & + label 
+        cursor: not-allowed
+
+
+    &:hover
+      &:not(:checked)
+        &:not(:disabled)
+          --bc: var(--border-hover)
+
+    &:focus 
+      box-shadow: 0 0 0 var(--focus)
+
+    &:not(.switch)
+      width: 21px
+      &:after
+        opacity: var(--o, 0)
+
+      &:checked 
+        --o: 1
+
+    & + label
+      font-size: 14px
+      line-height: 21px
+      display: inline-block
+      vertical-align: top
+      cursor: pointer
+      margin-left: 4px
+
+  input[type='checkbox']
+    &:not(.switch)
+      border-radius: 7px
+      &:after
+        width: 5px
+        height: 9px
+        border: 2px solid var(--active-inner)
+        border-top: 0
+        border-left: 0
+        left: 7px
+        top: 4px
+        transform: rotate(var(--r, 20deg))
+
+      &:checked
+        --r: 43deg
+
 header
   background-color: cornsilk
   font-family: Stencil
@@ -45,6 +134,7 @@ body
 
 .checkbox-label
   vertical-align: middle
+  text-align: center
 
 .checkbox
   display: inline-block
@@ -68,13 +158,6 @@ body
     @extend .checkmark
     display: block
 
-.input-header
-  color: blue
-
-.input-label
-  color: brown
-  float: left
-
 //--Finished Styles--
 
 %list
@@ -84,6 +167,23 @@ body
 
 footer
   background: black
+
+.cover
+  position: fixed
+  left: 0
+  top: 0
+  width: 100%
+  height: 100%
+  background-color: rgba(0, 0, 0, 0.5)
+  opacity: 0
+  visibility: hidden
+  transition: opacity var(--sidebar-transition-speed), visibility var(--sidebar-transition-speed)
+
+  &--open
+    @extend .cover
+    opacity: 1
+    visibility: visible
+
 
 .sidebar
   background-color: lightblue
@@ -100,28 +200,16 @@ footer
     transform: translateX(0%)
 
 .sidebar-content
+  display: flex
+  height: 100%
+  flex-direction: column
+  justify-content: space-around
   opacity: 1
   visibility: hidden
   transition: opacity var(--sidebar-transition-speed), visibility var(--sidebar-transition-speed)
 
   &--open
     @extend .sidebar-content
-    opacity: 1
-    visibility: visible
-
-.cover
-  position: fixed
-  left: 0
-  top: 0
-  width: 100%
-  height: 100%
-  background-color: rgba(0, 0, 0, 0.5)
-  opacity: 0
-  visibility: hidden
-  transition: opacity var(--sidebar-transition-speed), visibility var(--sidebar-transition-speed)
-
-  &--open
-    @extend .cover
     opacity: 1
     visibility: visible
 
@@ -150,28 +238,41 @@ footer
   &:hover
     width: 4.5em
 
-.skill-tabs
-  @extend %list
+.skill
   display: flex
+  flex-direction: column
+  text-align: center
 
-.skill-tab
-  flex-grow: 1
+  &-inputs
+    display: flex
+    flex-direction: column
+    text-align: left
+
+  &-number-input
+    font-family: Stardew Valley
+
+  &-range-input
+    font-family: Stardew Valley
+
+  &-input-label
+    color: brown
+
+
+.professions
   display: flex
-  justify-content: center
+  flex-direction: column
   align-items: center
-  color: white
-  background-color: green
-  border: 1px solid black
-  //padding: 5px 10px 5px 10px
-  cursor: pointer
-  //height: 2.5em
 
-  &--active
-    @extend .skill-tab
-    color: black
+.profession-row
+  display: flex
 
 .profession
+  width: 6em
+  height: 2em
+  font-size: 0.75em
   color: purple
+  border-radius: 10px
+  font-family: inherit
 
   &--active
     @extend .profession

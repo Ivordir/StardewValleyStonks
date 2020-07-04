@@ -7,6 +7,7 @@ type Name<'t> =
         match this with Name name -> name
     static member ValueOf name =
         match name with Name str -> str
+    override this.ToString() = this.Value
 
 type Season =
     | Spring

@@ -29,13 +29,14 @@ type SidebarTab =
 type SourceTab =
     | Global
     | Individual
+    static member List = [ Global; Individual ]
 
 type Model =
     { Page: Page
       SidebarTab: SidebarTab
       SidebarOpen: bool
       Skills: Map<Name<Skill>, Skill>
-      SkillTab: Name<Skill>
+      SkillList: Name<Skill> list
       IgnoreConflicts: bool
       BuySources: Map<Name<Source>, Source>
       BuySourceList: Name<Source> list
@@ -45,7 +46,6 @@ type Model =
       SellTab: SourceTab
       ReplantTab: SourceTab
       Test: bool }
-    member this.Skill = this.Skills.[this.SkillTab]
 
 let init () =
     let farmingProfessions =
@@ -127,7 +127,7 @@ let init () =
         skillList
         |> List.map (fun s -> (Name s.Name, s))
         |> Map.ofList
-      SkillTab = Name skillList.Head.Name
+      SkillList = List.map (fun (s: Skill) -> Name s.Name) skillList
       IgnoreConflicts = false
       BuySourceList = List.map (fun (s: Source) -> Name s.Name) buySourceList
       BuySources =
@@ -155,9 +155,9 @@ type Message =
     | CloseSidebar
     | SetSkillTab of Name<Skill>
     | ToggleIgnoreConflicts
-    | SetSkillLevel of int
-    | SetSkillBuff of int
-    | ToggleProfession of Name<Profession>
+    | SetSkillLevel of Name<Skill> * int
+    | SetSkillBuff of Name<Skill> * int
+    | ToggleProfession of Skill * Name<Profession>
     | SetSourceTab of SourceTab
     | ToggleBuySource of Name<Source>
     | ToggleSellSource of Name<Processor>
@@ -172,14 +172,13 @@ let update message model =
         else
             { model with SidebarTab = tab; SidebarOpen = true }
     | CloseSidebar -> { model with SidebarOpen = false }
-    | SetSkillTab tab -> { model with SkillTab = tab }
     | ToggleIgnoreConflicts -> { model with IgnoreConflicts = not model.IgnoreConflicts }
-    | SetSkillLevel level ->
-        { model with Skills = model.Skills.Add(model.SkillTab, { model.Skill with Level = min (max level 0) 10 } ) }
-    | SetSkillBuff buff ->
-        { model with Skills = model.Skills.Add(model.SkillTab, { model.Skill with Buff = max buff 0 } ) }
-    | ToggleProfession name ->
-        { model with Skills = model.Skills.Add(model.SkillTab, model.Skill.ToggleProfession name model.IgnoreConflicts) }
+    | SetSkillLevel (skill, level) ->
+        { model with Skills = model.Skills.Add(skill, { model.Skills.[skill] with Level = min (max level 0) 10 } ) }
+    | SetSkillBuff (skill, buff) ->
+        { model with Skills = model.Skills.Add(skill, { model.Skills.[skill] with Buff = max buff 0 } ) }
+    | ToggleProfession (skill, name) ->
+        { model with Skills = model.Skills.Add(Name skill.Name, model.Skills.[Name skill.Name].ToggleProfession name model.IgnoreConflicts) }
     | SetSourceTab tab ->
         match model.SidebarTab with
         | Buy -> { model with BuyTab = tab }
@@ -198,16 +197,10 @@ open Fable.React.Props
 open Elmish.React.Common
 open Elmish.React.Helpers
 
-let classes list =
-    list
-    |> Seq.fold (fun state name -> state + " " + name) ""
-    |> ClassName
-
-let classFlag baseClass modifier apply =
+let classModifier baseClass modifier apply =
     ClassName (if apply then baseClass + "--" + modifier else baseClass)
-//Here begins the over-optimised lazyViews...
 
-let checkbox message text isChecked dispatch =
+let checkbox text message isChecked dispatch =
     label [ ClassName "checkbox-label" ]
         [ input
             [ Type "checkbox"
@@ -215,169 +208,105 @@ let checkbox message text isChecked dispatch =
               Checked isChecked
               OnChange (fun _ -> dispatch message) ]
           span [ ClassName "checkbox" ]
-            [ span [ classFlag "checkmark" "active" isChecked ] [] ]
-          text ]
+            [ span [ classModifier "checkmark" "active" isChecked ] [] ]
+          str text ]
 
-//A custom, slow? font is being used, so let's lazyView the text as well cause we can.
-let lazyStr = lazyView str
+let sameTabAs tab currentTab = tab = currentTab
 
-let lazyCover =
-    let cover sidebarOpen dispatch =
-        div
-            [ classFlag "cover" "open" sidebarOpen
-              OnClick (fun _ -> dispatch CloseSidebar) ]
-            []
-    lazyView2 cover
-  
-let lazySidebar =
-    let lazySidebarContent =
+let viewTabs css message list activeFun dispatch =
+    let viewTab css message tab active dispatch =
+        li
+            [ classModifier (css + "-tab") "active" active
+              OnClick (fun _ -> dispatch <| message tab) ]
+            [ str (tab.ToString()) ]
+    ul [ ClassName (css + "-tabs") ]
+        [ for tab in list do
+            viewTab css message tab (activeFun tab) dispatch ]
 
-        let lazySkillTabs =
-            let lazySkillTab =
-                let skillTab name active dispatch =
-                    li 
-                        [ classFlag "skill-tab" "active" active
-                          OnClick (fun _ -> if active then () else dispatch <| SetSkillTab name)]
-                        [ lazyStr name.Value ]
-                lazyView3 skillTab
-            let skillTabs currentSkillTab dispatch =
-                ul [ ClassName "skill-tabs" ]
-                    [ for KeyValue(tab, _) in initialModel.Skills do
-                        lazySkillTab tab (tab = currentSkillTab) dispatch]
-            lazyView2 skillTabs
+let lazySidebarContent =
 
-        let lazySkillLevelInput =
-            console.log("fun")
-            let levelInput mode level dispatch =
-                input
-                    [ Type mode
-                      Min 0
-                      Max 10
-                      valueOrDefault level
-                      ClassName "number-input"
-                      OnChange (fun l -> dispatch <| SetSkillLevel !!l.Value) ]
-            let lazyRangeInput = lazyView2 (levelInput "range")
-            let lazyNumberInput = lazyView2 (levelInput "number")
-            let skillLevelInput (skill: Skill) dispatch =
-                label [ ClassName "input-label" ]
-                    [ lazyStr (skill.Name + " Level: ")
-                      lazyRangeInput skill.Level dispatch
-                      lazyNumberInput skill.Level dispatch ]
-            lazyView2 skillLevelInput
+    let skillLevelInput name level dispatch =
+        let levelInput mode name level dispatch =
+            input
+                [ Type mode
+                  Min 0
+                  Max 10
+                  valueOrDefault level
+                  ClassName ("skill-" + mode + "-input")
+                  OnChange (fun l -> dispatch <| SetSkillLevel (name, !!l.Value)) ]
+        label [ ClassName "skill-input-label" ]
+            [ str "Level: "
+              levelInput "range" name level dispatch
+              levelInput "number" name level dispatch ]
 
-        let lazySkillBuffInput =
-            let lazyBuffInput =
-                let buffInput buff dispatch =
-                    input
-                        [ Type "number"
-                          Min 0
-                          valueOrDefault buff
-                          ClassName "number-input"
-                          OnChange (fun b -> dispatch <| SetSkillBuff !!b.Value) ]
-                lazyView2 buffInput
-            let skillBuffInput (skill: Skill) dispatch =
-                label [ ClassName "input-label" ]
-                    [ lazyStr (skill.Name + " Buff: ")
-                      lazyBuffInput skill.Buff dispatch ]
-            lazyView2 skillBuffInput
+    let skillBuffInput name buff dispatch =
+        label [ ClassName "skill-input-label" ]
+            [ str "Buff: "
+              input
+                [ Type "number"
+                  Min 0
+                  valueOrDefault buff
+                  ClassName "skill-number-input"
+                  OnChange (fun b -> dispatch <| SetSkillBuff (name, !!b.Value)) ] ]
 
-        let lazyProfessions =
-            let lazyProfession = 
-                let profession name selected dispatch =
-                    button
-                        [ classFlag "profession" "active" selected
-                          OnClick (fun _ -> dispatch <| ToggleProfession name) ]
-                        [ lazyStr name.Value ]
-                lazyView3 profession
-            let professions (layout: Name<Profession> list list) professions dispatch =
-                let professionRow list (professions: Map<Name<Profession>, Profession>) dispatch =
-                    div []
-                        [ for name in list do
-                            lazyProfession name professions.[name].Selectable.Selected dispatch ]
-                div []
-                    [ for list in layout do
-                        professionRow list professions dispatch ]
-            lazyView3 professions
+    let viewProfessions skill dispatch =
+        let professionRow skill row dispatch =
+            let profession name selected dispatch =
+                button
+                    [ classModifier "profession" "active" selected
+                      OnClick (fun _ -> dispatch <| ToggleProfession (skill, name)) ]
+                    [ str name.Value ]
+            div [ ClassName "profession-row" ]
+                [ for name in row do
+                    profession name skill.Professions.[name].Selectable.Selected dispatch ]
+        div [ ClassName "professions" ]
+            [ for row in skill.ProfessionLayout do
+                professionRow skill row dispatch ]
 
-        let lazyIgnoreConflicts = lazyView2 (checkbox ToggleIgnoreConflicts (lazyStr "Ignore Profession Conflicts"))
+    let viewSources message lens list sourceTab (map: Map<Name<'t>, 't>) dispatch =
+        let source message (name: Name<'t>) active dispatch =
+            li []
+                [ checkbox name.Value (message name) active dispatch ]
+        match sourceTab with
+        | Global ->
+            ul [ ClassName "source-list" ]
+                [ for name in list do
+                    source message name (lens map.[name]) dispatch ]
+        | Individual ->
+            span [] [ str "Todo" ]
 
-        let lazySourceTabs =
-            let lazySourceTab =
-                let sourceTab tab active dispatch =
-                    li
-                        [ classFlag "source-tab" "active" active
-                          OnClick (fun _ -> if active then () else dispatch <| SetSourceTab tab) ]
-                        [ lazyStr (string tab) ]
-                lazyView3 sourceTab
-            let sourceTabs currentTab dispatch =
-                ul [ ClassName "source-tabs" ]
-                    [ lazySourceTab Global (Global = currentTab) dispatch
-                      lazySourceTab Individual (Individual = currentTab) dispatch ]
-            lazyView2 sourceTabs
+    let sidebarContent model dispatch =
+        div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
+            ( match model.SidebarTab with
+            | Skills ->
+              [ for skill in model.SkillList do
+                    div [ ClassName "skill" ]
+                        [ str model.Skills.[skill].Name
+                          div [ ClassName "skill-inputs" ]
+                              [ skillLevelInput skill model.Skills.[skill].Level dispatch
+                                skillBuffInput skill model.Skills.[skill].Buff dispatch ]
+                          viewProfessions model.Skills.[skill] dispatch ]
+                checkbox "Ignore Profession Conflicts" ToggleIgnoreConflicts model.IgnoreConflicts dispatch ]
+            | Buy ->
+              [ viewTabs "source" SetSourceTab SourceTab.List (sameTabAs model.BuyTab) dispatch
+                viewSources ToggleBuySource Source.Selected model.BuySourceList model.BuyTab model.BuySources dispatch ]
+            | Sell ->
+               [ viewTabs "source" SetSourceTab SourceTab.List (sameTabAs model.SellTab) dispatch 
+                 viewSources ToggleSellSource Processor.Selected model.SellSourceList model.SellTab model.SellSources dispatch ]
+            | Replant
+            | Settings -> [ span [] [] ] )
+    lazyView2With (fun oldModel newModel -> (not oldModel.SidebarOpen && not newModel.SidebarOpen) || oldModel = newModel) sidebarContent
 
-        let lazySources message lens list =
-            let lazySource message =
-                let source message (name: Name<'t>) active dispatch =
-                    li []
-                        [ checkbox (message name) (lazyStr name.Value) active dispatch ]
-                lazyView3 (source message)
-            let sources message lens list sourceTab (map: Map<Name<'t>, 't>) dispatch =
-                match sourceTab with
-                | Global ->
-                    ul [ ClassName "source-list" ]
-                        [ for name in list do
-                            lazySource message name (lens map.[name]) dispatch ]
-                | Individual ->
-                    span [] [ str "Todo" ]
-            lazyView3 (sources message lens list)
+let cover sidebarOpen dispatch =
+    div
+        [ classModifier "cover" "open" sidebarOpen
+          OnClick (fun _ -> dispatch CloseSidebar) ]
+        []
 
-        let lazyBuySources = lazySources ToggleBuySource Source.Selected initialModel.BuySourceList
-        let lazySellSources = lazySources ToggleSellSource Processor.Selected initialModel.SellSourceList
-
-        let sidebarContent model dispatch =
-            div [ classFlag "sidebar-content" "open" model.SidebarOpen ]
-                ( match model.SidebarTab with
-                | Skills ->
-                  [ lazySkillTabs model.SkillTab dispatch
-                    br []
-                    lazySkillLevelInput model.Skill dispatch
-                    br []
-                    lazySkillBuffInput model.Skill dispatch
-                    br []
-                    lazyProfessions model.Skill.ProfessionLayout model.Skill.Professions dispatch
-                    br []
-                    lazyIgnoreConflicts model.IgnoreConflicts dispatch ]
-                | Buy ->
-                  [ lazySourceTabs model.BuyTab dispatch
-                    br []
-                    lazyBuySources model.BuyTab model.BuySources dispatch ]
-                | Sell ->
-                   [ lazySourceTabs model.SellTab dispatch 
-                     br []
-                     lazySellSources model.SellTab model.SellSources dispatch ]
-                | Replant
-                | Settings -> [ span [] [] ] )
-        lazyView2With (fun oldModel newModel -> (not oldModel.SidebarOpen && not newModel.SidebarOpen) || oldModel = newModel) sidebarContent
-
-    let lazySidebarTabs =
-        let lazySidebarTab =
-            let sidebarTab tab active dispatch =
-                li
-                    [ classFlag "sidebar-tab" "active" active
-                      OnClick (fun _ -> dispatch <| SetSidebarTab tab) ]
-                    [ lazyStr (string tab) ]
-            lazyView3 sidebarTab
-        let sidebarTabs sidebarOpen currentTab dispatch =
-            ul [ ClassName "sidebar-tabs" ]
-                [ for tab in SidebarTab.List do
-                    lazySidebarTab tab (sidebarOpen && tab = currentTab) dispatch ]
-        lazyView3 sidebarTabs
-
-    let sidebar model dispatch =
-        div [ classFlag "sidebar" "open" model.SidebarOpen ]
-            [ lazySidebarContent model dispatch
-              lazySidebarTabs model.SidebarOpen model.SidebarTab dispatch ]
-    lazyView2 sidebar
+let sidebar model dispatch =
+    div [ classModifier "sidebar" "open" model.SidebarOpen ]
+        [ lazySidebarContent model dispatch
+          viewTabs "sidebar" SetSidebarTab SidebarTab.List (fun t -> model.SidebarOpen && t = model.SidebarTab) dispatch ]
 
 let view model dispatch =
     match model.Page with
@@ -390,8 +319,8 @@ let view model dispatch =
               button []
                 [ str "Help" ]
               input [ Type "checkbox"; Checked model.Test; OnChange (fun _ -> dispatch TestToggle) ]
-              lazyCover model.SidebarOpen dispatch
-              lazySidebar model dispatch ]
+              cover model.SidebarOpen dispatch
+              sidebar model dispatch ]
 
 //--App--
 open Elmish.React
@@ -403,5 +332,3 @@ Program.mkSimple (fun _ -> initialModel) update view
 #endif
 |> Program.withReactBatched "elmish-app"
 |> Program.run
-
-console.log("test")
