@@ -43,7 +43,8 @@ type Model =
       SellSources: Map<Name<Processor>, Processor>
       SellSourceList: Name<Processor> list
       SellTab: SourceTab
-      ReplantTab: SourceTab }
+      ReplantTab: SourceTab
+      Test: bool }
     member this.Skill = this.Skills.[this.SkillTab]
 
 let init () =
@@ -140,7 +141,8 @@ let init () =
         |> List.map (fun s -> (Name s.Name, s))
         |> Map.ofList
       SellTab = Global
-      ReplantTab = Global }
+      ReplantTab = Global
+      Test = false }
 
 let initialModel = init ()
 
@@ -159,6 +161,7 @@ type Message =
     | SetSourceTab of SourceTab
     | ToggleBuySource of Name<Source>
     | ToggleSellSource of Name<Processor>
+    | TestToggle
 
 let update message model =
     match message with
@@ -187,6 +190,7 @@ let update message model =
             model
     | ToggleBuySource source -> { model with BuySources = model.BuySources.Add(source, model.BuySources.[source].Toggle) }
     | ToggleSellSource source -> { model with SellSources = model.SellSources.Add(source, model.SellSources.[source].Toggle) }
+    | TestToggle -> { model with Test = not model.Test }
 
 //--View--
 open Fable.React
@@ -199,9 +203,8 @@ let classes list =
     |> Seq.fold (fun state name -> state + " " + name) ""
     |> ClassName
 
-let toggleClass baseClass activeClass active =
-    ClassName (if active then activeClass + " " + baseClass else baseClass)
-
+let classFlag baseClass modifier apply =
+    ClassName (if apply then baseClass + "--" + modifier else baseClass)
 //Here begins the over-optimised lazyViews...
 
 let checkbox message text isChecked dispatch =
@@ -212,7 +215,7 @@ let checkbox message text isChecked dispatch =
               Checked isChecked
               OnChange (fun _ -> dispatch message) ]
           span [ ClassName "checkbox" ]
-            [ span [ toggleClass "checkmark" "hidden" (not isChecked) ] [] ]
+            [ span [ classFlag "checkmark" "active" isChecked ] [] ]
           text ]
 
 //A custom, slow? font is being used, so let's lazyView the text as well cause we can.
@@ -221,7 +224,7 @@ let lazyStr = lazyView str
 let lazyCover =
     let cover sidebarOpen dispatch =
         div
-            [ toggleClass "cover" "cover-hidden" (not sidebarOpen)
+            [ classFlag "cover" "open" sidebarOpen
               OnClick (fun _ -> dispatch CloseSidebar) ]
             []
     lazyView2 cover
@@ -233,7 +236,7 @@ let lazySidebar =
             let lazySkillTab =
                 let skillTab name active dispatch =
                     li 
-                        [ toggleClass "skill-tab" "skill-tab-active" active
+                        [ classFlag "skill-tab" "active" active
                           OnClick (fun _ -> if active then () else dispatch <| SetSkillTab name)]
                         [ lazyStr name.Value ]
                 lazyView3 skillTab
@@ -244,6 +247,7 @@ let lazySidebar =
             lazyView2 skillTabs
 
         let lazySkillLevelInput =
+            console.log("fun")
             let levelInput mode level dispatch =
                 input
                     [ Type mode
@@ -281,7 +285,7 @@ let lazySidebar =
             let lazyProfession = 
                 let profession name selected dispatch =
                     button
-                        [ toggleClass "profession" "profession-active" selected
+                        [ classFlag "profession" "active" selected
                           OnClick (fun _ -> dispatch <| ToggleProfession name) ]
                         [ lazyStr name.Value ]
                 lazyView3 profession
@@ -301,7 +305,7 @@ let lazySidebar =
             let lazySourceTab =
                 let sourceTab tab active dispatch =
                     li
-                        [ toggleClass "source-tab" "source-tab-active" active
+                        [ classFlag "source-tab" "active" active
                           OnClick (fun _ -> if active then () else dispatch <| SetSourceTab tab) ]
                         [ lazyStr (string tab) ]
                 lazyView3 sourceTab
@@ -327,8 +331,11 @@ let lazySidebar =
                     span [] [ str "Todo" ]
             lazyView3 (sources message lens list)
 
+        let lazyBuySources = lazySources ToggleBuySource Source.Selected initialModel.BuySourceList
+        let lazySellSources = lazySources ToggleSellSource Processor.Selected initialModel.SellSourceList
+
         let sidebarContent model dispatch =
-            div [ ClassName "sidebar-content" ]
+            div [ classFlag "sidebar-content" "open" model.SidebarOpen ]
                 ( match model.SidebarTab with
                 | Skills ->
                   [ lazySkillTabs model.SkillTab dispatch
@@ -343,20 +350,20 @@ let lazySidebar =
                 | Buy ->
                   [ lazySourceTabs model.BuyTab dispatch
                     br []
-                    lazySources ToggleBuySource Source.Selected model.BuySourceList model.BuyTab model.BuySources dispatch ]
+                    lazyBuySources model.BuyTab model.BuySources dispatch ]
                 | Sell ->
                    [ lazySourceTabs model.SellTab dispatch 
                      br []
-                     lazySources ToggleSellSource Processor.Selected model.SellSourceList model.SellTab model.SellSources dispatch ]
+                     lazySellSources model.SellTab model.SellSources dispatch ]
                 | Replant
                 | Settings -> [ span [] [] ] )
-        lazyView2With (fun oldModel newModel -> not newModel.SidebarOpen || oldModel = newModel) sidebarContent
+        lazyView2With (fun oldModel newModel -> (not oldModel.SidebarOpen && not newModel.SidebarOpen) || oldModel = newModel) sidebarContent
 
     let lazySidebarTabs =
         let lazySidebarTab =
             let sidebarTab tab active dispatch =
                 li
-                    [ toggleClass "sidebar-tab" "sidebar-tab-active" active
+                    [ classFlag "sidebar-tab" "active" active
                       OnClick (fun _ -> dispatch <| SetSidebarTab tab) ]
                     [ lazyStr (string tab) ]
             lazyView3 sidebarTab
@@ -367,7 +374,7 @@ let lazySidebar =
         lazyView3 sidebarTabs
 
     let sidebar model dispatch =
-        div [ toggleClass "sidebar" "sidebar-open" model.SidebarOpen ]
+        div [ classFlag "sidebar" "open" model.SidebarOpen ]
             [ lazySidebarContent model dispatch
               lazySidebarTabs model.SidebarOpen model.SidebarTab dispatch ]
     lazyView2 sidebar
@@ -382,6 +389,7 @@ let view model dispatch =
                 []
               button []
                 [ str "Help" ]
+              input [ Type "checkbox"; Checked model.Test; OnChange (fun _ -> dispatch TestToggle) ]
               lazyCover model.SidebarOpen dispatch
               lazySidebar model dispatch ]
 
