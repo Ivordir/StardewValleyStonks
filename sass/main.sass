@@ -158,6 +158,16 @@ body
     @extend .checkmark
     display: block
 
+%pixel-art
+  image-rendering: pixelated
+  image-rendering: -moz-crisp-edges
+  image-rendering: crisp-edges
+
+.checkbox-img
+  @extend %pixel-art
+  width: 1em
+  height: 1em
+
 //--Finished Styles--
 
 %list
@@ -237,6 +247,10 @@ footer
 
   &:hover
     width: 4.5em
+
+.skills
+  @extend %list
+  overflow-y: auto
 
 .skill
   display: flex

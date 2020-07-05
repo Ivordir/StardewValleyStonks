@@ -153,7 +153,6 @@ type Message =
     | SetPage of Page
     | SetSidebarTab of SidebarTab
     | CloseSidebar
-    | SetSkillTab of Name<Skill>
     | ToggleIgnoreConflicts
     | SetSkillLevel of Name<Skill> * int
     | SetSkillBuff of Name<Skill> * int
@@ -200,7 +199,7 @@ open Elmish.React.Helpers
 let classModifier baseClass modifier apply =
     ClassName (if apply then baseClass + "--" + modifier else baseClass)
 
-let checkbox text message isChecked dispatch =
+let checkboxOld text message isChecked dispatch =
     label [ ClassName "checkbox-label" ]
         [ input
             [ Type "checkbox"
@@ -209,6 +208,17 @@ let checkbox text message isChecked dispatch =
               OnChange (fun _ -> dispatch message) ]
           span [ ClassName "checkbox" ]
             [ span [ classModifier "checkmark" "active" isChecked ] [] ]
+          str text ]
+
+let checkbox text message isChecked dispatch =
+    label [ ClassName "checkbox-img-label" ]
+        [ input
+            [ Type "checkbox"
+              Style [ Visibility "hidden"; Position PositionOptions.Absolute ]
+              Checked isChecked
+              OnChange (fun _ -> dispatch message) ]
+          img [ ClassName "checkbox-img"
+                Src (if isChecked then "/img/Checkedbox.png" else "/img/Checkbox.png") ]
           str text ]
 
 let sameTabAs tab currentTab = tab = currentTab
@@ -279,13 +289,14 @@ let lazySidebarContent =
         div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
             ( match model.SidebarTab with
             | Skills ->
-              [ for skill in model.SkillList do
-                    div [ ClassName "skill" ]
-                        [ str model.Skills.[skill].Name
-                          div [ ClassName "skill-inputs" ]
-                              [ skillLevelInput skill model.Skills.[skill].Level dispatch
-                                skillBuffInput skill model.Skills.[skill].Buff dispatch ]
-                          viewProfessions model.Skills.[skill] dispatch ]
+              [ ul [ ClassName "skills" ]
+                    [ for skill in model.SkillList do
+                        li [ ClassName "skill" ]
+                            [ str model.Skills.[skill].Name
+                              div [ ClassName "skill-inputs" ]
+                                  [ skillLevelInput skill model.Skills.[skill].Level dispatch
+                                    skillBuffInput skill model.Skills.[skill].Buff dispatch ]
+                              viewProfessions model.Skills.[skill] dispatch ] ]
                 checkbox "Ignore Profession Conflicts" ToggleIgnoreConflicts model.IgnoreConflicts dispatch ]
             | Buy ->
               [ viewTabs "source" SetSourceTab SourceTab.List (sameTabAs model.BuyTab) dispatch
