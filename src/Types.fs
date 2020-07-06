@@ -25,6 +25,16 @@ type Date =
         this.StartSeason < this.EndSeason || 
         this.StartSeason = this.EndSeason && this.StartDay < this.EndDay
 
+type Status =
+    | Valid
+    | Warning
+    | Invalid
+
+type ConditionsDo =
+    | Warn
+    | Override
+    | Nothing
+
 type Condition =
     | SkillLevel of {| Skill: Name<Skill>; Level: int |}
     | Year of int
@@ -118,7 +128,8 @@ type Processor =
 type Price =
     { Value: int
       Source: Source
-      Selectable: Selectable }
+      Override: bool option
+      Conditions: Condition list }
 
 type Multiplier =
     | Multiplier of {| Name: string; Value: float; Selectable: Selectable |}
@@ -180,6 +191,7 @@ type Process =
 
 type FertilizerDIO =
     { Name: string
+      Selected: bool
       Quality: int
       Speed: float
       Prices: Price list
@@ -195,9 +207,9 @@ type Fertilizer =
       Price: int
       Sources: Source list }
 
-type Replant =
-    | Process of Process
-    | BuySeeds of {| Value: int; Sources: Source list |}
+//type Replant =
+//    | Process of Process
+//    | BuySeeds of {| Value: int; Sources: Source list |}
 
  type Crop = 
     { Name: string
@@ -206,8 +218,9 @@ type Replant =
       RegrowTime: int option
       GrowthSpeed: Multiplier list 
       CropItem: Item
+      PriceFrom: Map<Source, Price>
       HarvestedItems: Item list
       HarvestedAmounts: Map<Item, float>
       Processes: Map<Item, Process list>
-      Replants: Map<Item, Replant list>
+      Replants: Map<Item, Process list>
       }
