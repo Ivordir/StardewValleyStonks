@@ -39,12 +39,14 @@ type Model =
     SidebarOpen: bool
     Skills: Map<Name<Skill>, Skill>
     SkillList: Name<Skill> list
-    IgnoreConflicts: bool
+    IgnoreProfessions: bool
     BuySources: Map<Name<Source>, Source>
     BuySourceList: Name<Source> list
     SellSources: Map<Name<Processor>, Processor>
     SellSourceList: Name<Processor> list
-    Fertilizers: Fertilizer list }
+    Fertilizers: Fertilizer list
+    YearConditionsDo: ConditionsDo
+    SkillLevelConditionsDo: ConditionsDo }
   member this.ConditionsMet conditions =
     List.forall
       (fun cond ->
@@ -175,7 +177,7 @@ let init () =
       |> List.map (fun s -> (Name s.Name, s))
       |> Map.ofList
     SkillList = List.map (fun (s: Skill) -> Name s.Name) skillList
-    IgnoreConflicts = false
+    IgnoreProfessions = false
     BuySourceList = List.map (fun (s: Source) -> Name s.Name) buySourceList
     BuySources =
       buySourceList
@@ -186,7 +188,9 @@ let init () =
       sellSourceList
       |> List.map (fun s -> (Name s.Name, s))
       |> Map.ofList
-    Fertilizers = fertilizers }
+    Fertilizers = fertilizers
+    YearConditionsDo = Warn
+    SkillLevelConditionsDo = Warn }
 
 let initialModel = init ()
 
@@ -197,7 +201,7 @@ type Message =
   | SetPage of Page
   | SetSidebarTab of SidebarTab
   | CloseSidebar
-  | ToggleIgnoreConflicts
+  | ToggleIgnoreProfessions
   | SetSkillLevel of Name<Skill> * int
   | SetSkillBuff of Name<Skill> * int
   | ToggleProfession of Skill * Name<Profession>
@@ -205,6 +209,15 @@ type Message =
   | ToggleSellSource of Name<Processor>
   | ToggleFertSelected of Fertilizer
   | SetYear of int
+  | SetYearConditionsDo of string
+  | SetSkillLevelConditionsDo of string
+
+//ran into trouble unboxing input from <select> element, so here we just parse the raw string:
+let parseConditionsDo str =
+  match str with
+  | "Warn" -> Warn
+  | "Override" -> Override
+  | _ -> Ignore
 
 let update message model =
   match message with
@@ -215,17 +228,19 @@ let update message model =
       else
           { model with SidebarTab = tab; SidebarOpen = true }
   | CloseSidebar -> { model with SidebarOpen = false }
-  | ToggleIgnoreConflicts -> { model with IgnoreConflicts = not model.IgnoreConflicts }
+  | ToggleIgnoreProfessions -> { model with IgnoreProfessions = not model.IgnoreProfessions }
   | SetSkillLevel (skill, level) ->
       { model with Skills = model.Skills.Add(skill, { model.Skills.[skill] with Level = min (max level 0) 10 } ) }
   | SetSkillBuff (skill, buff) ->
       { model with Skills = model.Skills.Add(skill, { model.Skills.[skill] with Buff = max buff 0 } ) }
   | ToggleProfession (skill, name) ->
-      { model with Skills = model.Skills.Add(Name skill.Name, model.Skills.[Name skill.Name].ToggleProfession name model.IgnoreConflicts) }
+      { model with Skills = model.Skills.Add(Name skill.Name, model.Skills.[Name skill.Name].ToggleProfession name model.IgnoreProfessions) }
   | ToggleBuySource source -> { model with BuySources = model.BuySources.Add(source, model.BuySources.[source].Toggle) }
   | ToggleSellSource source -> { model with SellSources = model.SellSources.Add(source, model.SellSources.[source].Toggle) }
   | ToggleFertSelected fert -> { model with Fertilizers = List.map (fun f -> if f = fert then f.Toggle else f ) model.Fertilizers}
   | SetYear year -> { model with Date = { model.Date with Year = year } }
+  | SetYearConditionsDo something -> { model with YearConditionsDo = parseConditionsDo something }
+  | SetSkillLevelConditionsDo something -> { model with SkillLevelConditionsDo = parseConditionsDo something }
 
 //--View--
 open Fable.React
@@ -304,101 +319,132 @@ let viewTabs css message list activeFun dispatch =
     [ for tab in list do
         viewTab css message tab (activeFun tab) dispatch ]
 
-let lazySidebarContent =
+//let lazySidebarContent =
 
-  let skillLevelInput name level dispatch =
-    let levelInput mode name level dispatch =
+let skillLevelInput name level dispatch =
+  let levelInput mode name level dispatch =
+    input
+      [ Type mode
+        Min 0
+        Max 10
+        valueOrDefault level
+        ClassName ("skill-" + mode + "-input")
+        OnChange (fun l -> dispatch <| SetSkillLevel (name, !!l.Value)) ]
+  label [ ClassName "skill-input" ]
+    [ str "Level: "
+      levelInput "range" name level dispatch
+      levelInput "number" name level dispatch ]
+
+let skillBuffInput (name: Name<Skill>) buff dispatch =
+  label [ ClassName "skill-input" ]
+    [ str "Buff: "
       input
-        [ Type mode
+        [ Type "number"
           Min 0
-          Max 10
-          valueOrDefault level
-          ClassName ("skill-" + mode + "-input")
-          OnChange (fun l -> dispatch <| SetSkillLevel (name, !!l.Value)) ]
-    label [ ClassName "skill-input-label" ]
-      [ str "Level: "
-        levelInput "range" name level dispatch
-        levelInput "number" name level dispatch ]
+          valueOrDefault buff
+          ClassName "skill-number-input"
+          OnChange (fun b -> dispatch <| SetSkillBuff (name, !!b.Value)) ]
+      ] //img
+        //[ ClassName "buff-img"
+          //Src ("img/Skills/" + name.Value + "Buff.png") ] ]
 
-  let skillBuffInput name buff dispatch =
-    label [ ClassName "skill-input-label" ]
-      [ str "Buff: "
-        input
+let profession conditionsDo name skill dispatch =
+  console.log(conditionsDo)
+  button
+    [ classModifier "profession" "active" skill.Professions.[name].Selected
+      OnClick (fun _ -> dispatch <| ToggleProfession (skill, name)) ]
+    [ img
+        [ ClassName "profession-img"
+          Src ("img/Skills/" + name.Value + ".png")]
+      str name.Value
+      ofOption(
+        if not skill.Professions.[name].Selected || skill.ProfessionUnlocked name then
+          None
+        else
+          match conditionsDo with
+          | Warn -> Some (span [] [ str " warn" ])
+          | Override -> Some (span [] [ str " override"])
+          | Ignore -> None) ]
+let professionRow conditionsDo skill row dispatch =
+  div [ ClassName "profession-row" ]
+    [ for name in row do
+        profession conditionsDo name skill dispatch ]
+let viewProfessions conditionsDo skill dispatch =
+  div [ ClassName "professions" ]
+    [ for row in skill.ProfessionLayout do
+        professionRow conditionsDo skill row dispatch ]
+
+let viewSources message lens list (map: Map<Name<'t>, 't>) dispatch =
+  let source message (name: Name<'t>) active dispatch =
+    li []
+      [ statusCheckbox name.Value (message name) active Status.Valid dispatch ]
+  ul [ ClassName "source-list" ]
+    [ for name in list do
+        source message name (lens map.[name]) dispatch ]
+
+let selectConditionsDo text message value dispatch =
+  label []
+      [ str (text + ": ")
+        select
+          [ valueOrDefault value
+            OnChange (fun x -> dispatch <| message !!x.Value) ]
+          [ for something in ConditionsDo.List do
+              option
+                [ Value something ]
+                [ str (string something) ] ] ]
+
+let sidebarContent model dispatch =
+  div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
+    ( match model.SidebarTab with
+    | Skills ->
+      [ ul [ ClassName "skills" ]
+          [ for skill in model.SkillList do
+              li [ ClassName "skill" ]
+                [ span [ ClassName "skill-header" ]
+                    [ img
+                        [ ClassName "skill-img"
+                          Src ("/img/Skills/" + skill.Value + ".png")]
+                      str model.Skills.[skill].Name ]
+                  skillLevelInput skill model.Skills.[skill].Level dispatch
+                  skillBuffInput skill model.Skills.[skill].Buff dispatch
+                  viewProfessions model.SkillLevelConditionsDo model.Skills.[skill] dispatch ] ]
+        settingCheckbox "Ignore Profession Relationships" ToggleIgnoreProfessions model.IgnoreProfessions dispatch ]
+    | Crops -> [ span [] [] ]
+    | Fertilizers ->
+      [ table [ ClassName "fertilizers" ]
+          [ thead []
+              [ tr []
+                  [ th [] []
+                    th [] [ str "Fertilizer" ]
+                    th [] [ str "Quality" ]
+                    th [] [ str "Speed" ]
+                    th [] [ str "Price" ] ] ]
+            tbody []
+              [ for fert in model.Fertilizers do
+                  tr []
+                    [ td [] [ checkbox (ToggleFertSelected fert) fert.Selected dispatch ] 
+                      td []
+                        [ img
+                            [ ClassName "fertilizer-img"
+                              Src ("/img/Fertilizers/" + fert.Name + ".png") ]
+                          str fert.Name ]
+                      td [] [ ofInt fert.Quality ]
+                      td [] [ ofFloat fert.Speed ]
+                      td [] [ ofOption (match (model.BestPrice fert.Sources fert.PriceFrom) with | None -> None | Some price -> Some (ofInt price.Value)) ] ] ] ] ] //price
+    | Buy ->
+      [ viewSources ToggleBuySource (fun s -> s.Selected) model.BuySourceList model.BuySources dispatch ]
+    | Sell ->
+      [ viewSources ToggleSellSource (fun s -> s.Selected) model.SellSourceList model.SellSources dispatch ]
+    | Replant
+    | Settings ->
+      [ selectConditionsDo "Year Conditions" SetYearConditionsDo model.YearConditionsDo dispatch
+        selectConditionsDo "Skill Level Conditions" SetSkillLevelConditionsDo model.SkillLevelConditionsDo dispatch ]
+    | Debug ->
+      [ input
           [ Type "number"
-            Min 0
-            valueOrDefault buff
-            ClassName "skill-number-input"
-            OnChange (fun b -> dispatch <| SetSkillBuff (name, !!b.Value)) ] ]
-
-  let viewProfessions skill dispatch =
-    let professionRow skill row dispatch =
-      let profession name selected dispatch =
-        button
-          [ classModifier "profession" "active" selected
-            OnClick (fun _ -> dispatch <| ToggleProfession (skill, name)) ]
-          [ str name.Value ]
-      div [ ClassName "profession-row" ]
-        [ for name in row do
-            profession name skill.Professions.[name].Selected dispatch ]
-    div [ ClassName "professions" ]
-      [ for row in skill.ProfessionLayout do
-          professionRow skill row dispatch ]
-
-  let viewSources message lens list (map: Map<Name<'t>, 't>) dispatch =
-    let source message (name: Name<'t>) active dispatch =
-      li []
-        [ statusCheckbox name.Value (message name) active Status.Valid dispatch ]
-    ul [ ClassName "source-list" ]
-      [ for name in list do
-          source message name (lens map.[name]) dispatch ]
-
-  let sidebarContent model dispatch =
-    div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
-      ( match model.SidebarTab with
-      | Skills ->
-        [ ul [ ClassName "skills" ]
-            [ for skill in model.SkillList do
-                li [ ClassName "skill" ]
-                  [ str model.Skills.[skill].Name
-                    div [ ClassName "skill-inputs" ]
-                      [ skillLevelInput skill model.Skills.[skill].Level dispatch
-                        skillBuffInput skill model.Skills.[skill].Buff dispatch ]
-                    viewProfessions model.Skills.[skill] dispatch ] ]
-          settingCheckbox "Ignore Profession Conflicts" ToggleIgnoreConflicts model.IgnoreConflicts dispatch ]
-      | Crops -> [ span [] [] ]
-      | Fertilizers ->
-        [ table [ ClassName "fertilizers" ]
-            [ thead []
-                [ tr []
-                    [ th [] []
-                      th [] [ str "Fertilizer" ]
-                      th [] [ str "Quality" ]
-                      th [] [ str "Speed" ]
-                      th [] [ str "Price" ] ] ]
-              tbody []
-                [ for fert in model.Fertilizers do
-                    tr []
-                      [ td [] [ checkbox (ToggleFertSelected fert) fert.Selected dispatch ] 
-                        td []
-                          [ img
-                              [ ClassName "fertilizer-img"
-                                Src ("/img/Fertilizers/" + fert.Name + ".png") ]
-                            str fert.Name ]
-                        td [] [ ofInt fert.Quality ]
-                        td [] [ ofFloat fert.Speed ]
-                        td [] [ ofInt (match (model.BestPrice fert.Sources fert.PriceFrom) with | None -> -1 | Some price -> price.Value) ] ] ] ] ] //price
-      | Buy ->
-        [ viewSources ToggleBuySource (fun s -> s.Selected) model.BuySourceList model.BuySources dispatch ]
-      | Sell ->
-        [ viewSources ToggleSellSource (fun s -> s.Selected) model.SellSourceList model.SellSources dispatch ]
-      | Replant
-      | Settings -> [ span [] [] ]
-      | Debug ->
-        [ input
-            [ Type "number"
-              OnClick (fun y -> dispatch <| (SetYear !!y.Value) )
-              valueOrDefault model.Date.Year ] ] )
-  lazyView2With (fun oldModel newModel -> (not oldModel.SidebarOpen && not newModel.SidebarOpen) || oldModel = newModel) sidebarContent
+            OnClick (fun y -> dispatch <| (SetYear !!y.Value) )
+            valueOrDefault model.Date.Year ] ] )
+  //lazyView2With (fun oldModel newModel -> (not oldModel.SidebarOpen && not newModel.SidebarOpen) || oldModel = newModel) sidebarContent
 
 let cover sidebarOpen dispatch =
   div
@@ -408,7 +454,8 @@ let cover sidebarOpen dispatch =
 
 let sidebar model dispatch =
   div [ classModifier "sidebar" "open" model.SidebarOpen ]
-    [ lazySidebarContent model dispatch
+    [ //lazySidebarContent model dispatch
+      sidebarContent model dispatch
       viewTabs "sidebar" SetSidebarTab SidebarTab.List (fun t -> model.SidebarOpen && t = model.SidebarTab) dispatch ]
 
 let view model dispatch =

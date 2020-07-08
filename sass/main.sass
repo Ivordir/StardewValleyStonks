@@ -173,6 +173,21 @@ body
   width: 1em
   height: 1em
 
+.profession-img
+  @extend %pixel-art
+  width: 1em
+  height: 1em
+
+.buff-img
+  @extend %pixel-art
+  width: 1em
+  height: 1em
+
+.skill-img
+  @extend %pixel-art
+  width: 1em
+  height: 1em
+
 //--Finished Styles--
 
 %list
@@ -260,11 +275,12 @@ footer
 .skill
   display: flex
   flex-direction: column
-  text-align: center
 
-  &-inputs
-    display: flex
-    flex-direction: column
+  &-header
+    text-align: center
+
+  &-input
+    color: brown
     text-align: left
 
   &-number-input
@@ -272,9 +288,6 @@ footer
 
   &-range-input
     font-family: Stardew Valley
-
-  &-input-label
-    color: brown
 
 
 .professions
@@ -286,8 +299,8 @@ footer
   display: flex
 
 .profession
-  width: 6em
-  height: 2em
+  width: 7.5em
+  height: 2.5em
   font-size: 0.75em
   color: purple
   border-radius: 10px

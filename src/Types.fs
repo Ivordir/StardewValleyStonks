@@ -54,6 +54,8 @@ type Skill =
     Professions: Map<Name<Profession>, Profession>
     ProfessionLayout: Name<Profession> list list }
   member this.BuffedLevel = this.Level + this.Buff
+  member this.ProfessionUnlocked profession =
+    this.Professions.[profession].UnlockLevel <= this.Level
   member this.ToggleProfession name ignoreConflicts =
     let professions = this.Professions.Add(name, this.Professions.[name].Toggle)
     if ignoreConflicts then
@@ -74,8 +76,9 @@ type Skill =
     else
       professions |> Map.map (fun name profession ->
         if set.Contains name then
-          profession.Toggle
-        else profession) //better way to do this?
+          { profession with Selected = value }
+        else
+          profession) //better way to do this?
   static member initial =
     { Name = "initial"
       Level = 0
@@ -86,29 +89,20 @@ type Skill =
 type ConditionsDo =
   | Warn
   | Override
-  | Nothing
+  | Ignore
+  static member List =
+    [ Warn
+      Override
+      Ignore ]
 
 type Condition =
   | SkillLevel of {| Skill: Name<Skill>; Level: int |}
   | Year of int
-  //static member isMet condition =
-  //    match condition with
-  //    | SkillLevel s -> s.Skill.Level >= s.Level
-  //    | Year y -> y.Date.Year >= y.Year
 
 type Status =
   | Valid
   | Warning
   | Invalid
-
-//type Selectable = 
-//  { Selected: bool 
-//    Conditions: Condition list }
-//  member this.Toggle = { this with Selected = not this.Selected }
-//  static member initial =
-//      { Selected = false
-//        Conditions = [] }
-  //member this.Active = this.Selected && List.forall Condition.isMet this.Conditions
 
 type Comparison =
   | Better
