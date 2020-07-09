@@ -112,13 +112,11 @@ type Comparison =
 
 type Source =
   { Name: string
-    Selected: bool
-    Conditions: Condition list }
+    Selected: bool }
   member this.Toggle = { this with Selected = not this.Selected }
   static member initial =
     { Name = "initial"
-      Selected = true
-      Conditions = List.empty }
+      Selected = true }
 
 type Processor = 
   { Name: string

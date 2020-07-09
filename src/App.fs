@@ -54,24 +54,18 @@ type Model =
         | SkillLevel sl -> this.Skills.[sl.Skill].Level >= sl.Level
         | Year y -> y <= this.Date.Year)
       conditions
-  member this.ValidSource (source: Source) =
-    source.Selected && this.ConditionsMet source.Conditions
   member this.ValidPrice price =
     match price.Override with
     | Some true -> true //ignore source conditions but consider local conditions 
     | Some false -> false //false, return display: manually overriden to false
-    | None -> this.ConditionsMet price.Conditions && this.ValidSource this.BuySources.[price.Source] //conditions and source
-  member this.BestPrice sources (priceFrom: Map<Name<Source>, Price>): Price option =
-    let bestSource =
-      sources
-      |> List.filter (fun source -> this.ValidPrice priceFrom.[source]) 
-      |> (fun list ->
-          match list with
-          | [] -> None
-          | _ -> Some (List.minBy (fun source -> priceFrom.[source].Value) list))
-    match bestSource with
-    | None -> None
-    | Some source -> Some priceFrom.[source]
+    | None -> this.ConditionsMet price.Conditions && this.BuySources.[price.Source].Selected //conditions and source
+  member this.BestPrices sources (priceFrom: Map<Name<Source>, Price>) =
+    let validSources = List.filter (fun source -> this.ValidPrice priceFrom.[source]) sources
+    if (validSources.IsEmpty) then
+      []
+    else 
+      let min = priceFrom.[ (List.minBy (fun source -> priceFrom.[source].Value) validSources) ].Value
+      List.filter (fun source -> priceFrom.[source].Value = min) validSources
 
 let init () =
   let farmingProfessions =
@@ -294,17 +288,17 @@ let checkboxImg isChecked status =
   else
     "img/UI/Checkbox.png"
 
-let statusCheckbox text message isChecked status dispatch =
+let statusCheckbox siblings message isChecked status dispatch =
   label [ ClassName "checkbox-img-label" ]
-    [ input
-        [ Type "checkbox"
-          Style [ Visibility "hidden"; Position PositionOptions.Absolute ]
-          Checked isChecked
-          OnChange (fun _ -> dispatch message) ]
-      img
-        [ ClassName "checkbox-img"
-          Src (checkboxImg isChecked status) ]
-      str text ]
+    ( ( [ input
+            [ Type "checkbox"
+              Style [ Visibility "hidden"; Position PositionOptions.Absolute ]
+              Checked isChecked
+              OnChange (fun _ -> dispatch message) ]
+          img
+            [ ClassName "checkbox-img"
+              Src (checkboxImg isChecked status) ] ] )
+      @ siblings)
 
 let sameTabAs tab currentTab = tab = currentTab
 
@@ -343,10 +337,7 @@ let skillBuffInput (name: Name<Skill>) buff dispatch =
           Min 0
           valueOrDefault buff
           ClassName "skill-number-input"
-          OnChange (fun b -> dispatch <| SetSkillBuff (name, !!b.Value)) ]
-      ] //img
-        //[ ClassName "buff-img"
-          //Src ("img/Skills/" + name.Value + "Buff.png") ] ]
+          OnChange (fun b -> dispatch <| SetSkillBuff (name, !!b.Value)) ] ]
 
 let profession conditionsDo name skill dispatch =
   console.log(conditionsDo)
@@ -377,7 +368,15 @@ let viewProfessions conditionsDo skill dispatch =
 let viewSources message lens list (map: Map<Name<'t>, 't>) dispatch =
   let source message (name: Name<'t>) active dispatch =
     li []
-      [ statusCheckbox name.Value (message name) active Status.Valid dispatch ]
+      [ statusCheckbox
+          [ img
+              [ ClassName "source-img" 
+                Src ("img/Sources/" + name.Value + ".png") ]
+            str name.Value ]
+          (message name)
+          active
+          Valid
+          dispatch ]
   ul [ ClassName "source-list" ]
     [ for name in list do
         source message name (lens map.[name]) dispatch ]
@@ -430,7 +429,9 @@ let sidebarContent model dispatch =
                           str fert.Name ]
                       td [] [ ofInt fert.Quality ]
                       td [] [ ofFloat fert.Speed ]
-                      td [] [ ofOption (match (model.BestPrice fert.Sources fert.PriceFrom) with | None -> None | Some price -> Some (ofInt price.Value)) ] ] ] ] ] //price
+                      td [] [ match model.BestPrices fert.Sources fert.PriceFrom with 
+                              | [] -> str "None"
+                              | list -> ofInt fert.PriceFrom.[list.Head].Value ] ] ] ] ] //price
     | Buy ->
       [ viewSources ToggleBuySource (fun s -> s.Selected) model.BuySourceList model.BuySources dispatch ]
     | Sell ->
