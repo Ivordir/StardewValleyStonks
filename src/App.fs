@@ -47,25 +47,47 @@ type Model =
     Fertilizers: Fertilizer list
     YearConditionsDo: ConditionsDo
     SkillLevelConditionsDo: ConditionsDo }
-  member this.ConditionsMet conditions =
-    List.forall
-      (fun cond ->
-        match cond with
-        | SkillLevel sl -> this.Skills.[sl.Skill].Level >= sl.Level
-        | Year y -> y <= this.Date.Year)
-      conditions
-  member this.ValidPrice price =
+  member this.ConditionMet = function
+    | SkillLevel sl -> this.SkillLevelConditionsDo = Ignore || this.Skills.[sl.Skill].Level <= sl.Level
+    | Year y -> this.YearConditionsDo = Ignore || this.Date.Year >= y
+  member this.ConditionsMet = List.forall this.ConditionMet
+  member this.UnmetConditions = List.filter (this.ConditionMet >> not)
+  member private this.StatusHelper condition conditionsDo =
+    match conditionsDo with
+    | Ignore -> Valid
+    | Warn | Invalidate when (this.ConditionMet condition) -> Valid
+    | Warn -> Warning
+    | Invalidate -> Invalid
+  member this.ConditionStatus = function
+    | SkillLevel sl -> this.StatusHelper (SkillLevel sl) this.SkillLevelConditionsDo
+    | Year y -> this.StatusHelper (Year y) this.YearConditionsDo
+  member this.ConditionStatuses = List.map (fun c -> (c, this.ConditionStatus c))
+  member this.PriceStatus price =
     match price.Override with
-    | Some true -> true //ignore source conditions but consider local conditions 
-    | Some false -> false //false, return display: manually overriden to false
-    | None -> this.ConditionsMet price.Conditions && this.BuySources.[price.Source].Selected //conditions and source
+    | Some true -> Valid //true //ignore source conditions but consider local conditions 
+    | Some false -> Invalid //false //false, return display: manually overriden to false
+    | None ->
+        if (this.BuySources.[price.Source].Selected) then
+          let conditionStatuses = this.ConditionStatuses price.Conditions
+          if (List.exists (fun cs -> snd cs = Invalid) conditionStatuses) then
+            Invalid
+          elif (List.exists (fun cs -> snd cs = Warning) conditionStatuses) then
+            Warning
+          else
+            Valid
+        else
+          Invalid
   member this.BestPrices sources (priceFrom: Map<Name<Source>, Price>) =
-    let validSources = List.filter (fun source -> this.ValidPrice priceFrom.[source]) sources
-    if (validSources.IsEmpty) then
-      []
-    else 
-      let min = priceFrom.[ (List.minBy (fun source -> priceFrom.[source].Value) validSources) ].Value
-      List.filter (fun source -> priceFrom.[source].Value = min) validSources
+    let priceStatuses = List.map (fun source -> priceFrom.[source], this.PriceStatus priceFrom.[source]) sources
+    let validPrices = List.filter (fun ps -> snd ps <> Invalid) priceStatuses
+    if (validPrices.IsEmpty) then
+      priceStatuses
+    else
+      let bestPrice = 
+        (validPrices
+        |> List.minBy (fun ps -> (fst ps).Value)
+        |> fst).Value
+      List.filter (fun ps -> (fst ps).Value = bestPrice) validPrices
 
 let init () =
   let farmingProfessions =
@@ -203,14 +225,14 @@ type Message =
   | ToggleSellSource of Name<Processor>
   | ToggleFertSelected of Fertilizer
   | SetYear of int
-  | SetYearConditionsDo of string
-  | SetSkillLevelConditionsDo of string
+  | SetYearConditionsDo of ConditionsDo
+  | SetSkillLevelConditionsDo of ConditionsDo
 
 //ran into trouble unboxing input from <select> element, so here we just parse the raw string:
 let parseConditionsDo str =
   match str with
   | "Warn" -> Warn
-  | "Override" -> Override
+  | "Invalidate" -> Invalidate
   | _ -> Ignore
 
 let update message model =
@@ -233,8 +255,8 @@ let update message model =
   | ToggleSellSource source -> { model with SellSources = model.SellSources.Add(source, model.SellSources.[source].Toggle) }
   | ToggleFertSelected fert -> { model with Fertilizers = List.map (fun f -> if f = fert then f.Toggle else f ) model.Fertilizers}
   | SetYear year -> { model with Date = { model.Date with Year = year } }
-  | SetYearConditionsDo something -> { model with YearConditionsDo = parseConditionsDo something }
-  | SetSkillLevelConditionsDo something -> { model with SkillLevelConditionsDo = parseConditionsDo something }
+  | SetYearConditionsDo something -> { model with YearConditionsDo = something }
+  | SetSkillLevelConditionsDo something -> { model with SkillLevelConditionsDo = something }
 
 //--View--
 open Fable.React
@@ -288,7 +310,7 @@ let checkboxImg isChecked status =
   else
     "img/UI/Checkbox.png"
 
-let statusCheckbox siblings message isChecked status dispatch =
+let statusCheckbox displayAfter message isChecked status dispatch =
   label [ ClassName "checkbox-img-label" ]
     ( ( [ input
             [ Type "checkbox"
@@ -298,7 +320,7 @@ let statusCheckbox siblings message isChecked status dispatch =
           img
             [ ClassName "checkbox-img"
               Src (checkboxImg isChecked status) ] ] )
-      @ siblings)
+      @ displayAfter)
 
 let sameTabAs tab currentTab = tab = currentTab
 
@@ -306,7 +328,7 @@ let viewTab css message tab active dispatch =
   li
     [ classModifier (css + "-tab") "active" active
       OnClick (fun _ -> dispatch <| message tab) ]
-    [ str (tab.ToString()) ]
+    [ str (string tab) ]
 
 let viewTabs css message list activeFun dispatch =
   ul [ ClassName (css + "-tabs") ]
@@ -354,7 +376,7 @@ let profession conditionsDo name skill dispatch =
         else
           match conditionsDo with
           | Warn -> Some (span [] [ str " warn" ])
-          | Override -> Some (span [] [ str " override"])
+          | Invalidate -> Some (span [] [ str " override"])
           | Ignore -> None) ]
 let professionRow conditionsDo skill row dispatch =
   div [ ClassName "profession-row" ]
@@ -381,16 +403,56 @@ let viewSources message lens list (map: Map<Name<'t>, 't>) dispatch =
     [ for name in list do
         source message name (lens map.[name]) dispatch ]
 
-let selectConditionsDo text message value dispatch =
+let selectConditionsDo text message value dispatch=
   label []
       [ str (text + ": ")
         select
           [ valueOrDefault value
-            OnChange (fun x -> dispatch <| message !!x.Value) ]
+            OnChange (fun x -> parseConditionsDo x.Value |> message |> dispatch) ]
           [ for something in ConditionsDo.List do
               option
                 [ Value something ]
                 [ str (string something) ] ] ]
+
+let viewPrices priceStatuses =
+  if (List.exists (fun ps -> snd ps = Warning) priceStatuses) then
+    let id = System.Guid.NewGuid().ToString()
+    [ ofInt (fst priceStatuses.Head).Value
+      //sources
+      br []
+      img
+        [ ClassName "alert"
+          Src ("img/UI/Warning.png") ]
+      label
+        [ ClassName "details-label"
+          HtmlFor id ]
+        [ str "Show Warnings"]
+      input
+        [ Type "checkbox"
+          ClassName "details-input"
+          Id id ]
+      div [ ClassName "details" ]
+        [ str "details" ] ]
+  elif (List.exists (fun ps -> snd ps = Valid) priceStatuses) then
+    //show price, valid sources
+    [ ofInt (fst priceStatuses.Head).Value
+      //sources
+       ]
+  else
+    let id = System.Guid.NewGuid().ToString()
+    [ img
+        [ ClassName "alert"
+          Src ("img/UI/Error.png") ]
+      label
+        [ ClassName "details-label"
+          HtmlFor id ]
+        [ str "Show Errors"]
+      input
+        [ Type "checkbox"
+          ClassName "details-input"
+          Id id ]
+      div [ ClassName "details" ]
+        [ str "details" ] ]
 
 let sidebarContent model dispatch =
   div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
@@ -429,9 +491,7 @@ let sidebarContent model dispatch =
                           str fert.Name ]
                       td [] [ ofInt fert.Quality ]
                       td [] [ ofFloat fert.Speed ]
-                      td [] [ match model.BestPrices fert.Sources fert.PriceFrom with 
-                              | [] -> str "None"
-                              | list -> ofInt fert.PriceFrom.[list.Head].Value ] ] ] ] ] //price
+                      td [] (viewPrices (model.BestPrices fert.Sources fert.PriceFrom)) ] ] ] ]
     | Buy ->
       [ viewSources ToggleBuySource (fun s -> s.Selected) model.BuySourceList model.BuySources dispatch ]
     | Sell ->

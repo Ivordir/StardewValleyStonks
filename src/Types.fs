@@ -7,7 +7,6 @@ type Name<'t> =
     match this with Name name -> name
   static member ValueOf name =
     match name with Name str -> str
-  override this.ToString() = this.Value
 
 type Season =
   | Spring
@@ -88,16 +87,25 @@ type Skill =
 
 type ConditionsDo =
   | Warn
-  | Override
+  | Invalidate
   | Ignore
   static member List =
     [ Warn
-      Override
+      Invalidate
       Ignore ]
 
 type Condition =
   | SkillLevel of {| Skill: Name<Skill>; Level: int |}
   | Year of int
+
+type InvalidReason =
+  | Condition of Condition
+  | Reason of (string * InvalidReason list)
+
+type StatusData =
+  | Valid
+  | Warning of InvalidReason
+  | Invalid of InvalidReason
 
 type Status =
   | Valid
