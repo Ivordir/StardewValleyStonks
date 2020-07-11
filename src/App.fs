@@ -41,7 +41,7 @@ type Model =
     SkillList: Name<Skill> list
     IgnoreProfessions: bool
     BuySources: Map<Name<Source>, Source>
-    BuySourceList: Name<Source> list //necessary to preserve order, haven't though of another way
+    BuySourceList: Name<Source> list //necessary to preserve order, haven't thought of another way
     SellSources: Map<Name<Processor>, Processor>
     SellSourceList: Name<Processor> list //same thing here ^^
     Fertilizers: Fertilizer list
@@ -52,6 +52,10 @@ type Model =
     | Year y -> this.YearConditionsDo = Ignore || this.Date.Year >= y
   member this.ConditionsMet = List.forall this.ConditionMet
   member this.UnmetConditions = List.filter (this.ConditionMet >> not)
+  member this.ConditionStatusData conditions overallStatus =
+    conditions
+    |> List.filter (fun c -> this.ConditionStatus c = overallStatus)
+    |> List.map InvalidCondition
   member private this.StatusHelper condition conditionsDo =
     match conditionsDo with
     | Ignore -> Valid
@@ -93,6 +97,19 @@ type Model =
   member this.SourceStatus (source: Processor) =
     this.ConditionStatuses source.Conditions
     |> this.OverallStatus
+  member this.SourceStatusData (source: Name<Processor>) overallStatus =
+    this.ConditionStatusData this.SellSources.[source].Conditions overallStatus
+  member this.PriceStatusData (priceStatus: Price * Status) =
+    ( if (snd priceStatus = Invalid) then
+        match (fst priceStatus).Override with
+        | Some true -> []
+        | Some false -> []
+        | None ->
+            if (not this.BuySources.[(fst priceStatus).Source].Selected) then
+              [ Reason "Is not selected." ]
+            else []
+      else [] )
+    @ this.ConditionStatusData (fst priceStatus).Conditions (snd priceStatus)
 
 let init () =
   let farmingProfessions =
@@ -318,17 +335,15 @@ let checkboxImg isChecked status =
 
 let statusCheckbox displayAfter message isChecked status dispatch =
   label [ ClassName "checkbox-img-label" ]
-    ( ( [ input
-            [ Type "checkbox"
-              Style [ Visibility "hidden"; Position PositionOptions.Absolute ]
-              Checked isChecked
-              OnChange (fun _ -> dispatch message) ]
-          img
-            [ ClassName "checkbox-img"
-              Src (checkboxImg isChecked status) ] ] )
+    ( [ input
+          [ Type "checkbox"
+            Style [ Visibility "hidden"; Position PositionOptions.Absolute ]
+            Checked isChecked
+            OnChange (fun _ -> dispatch message) ]
+        img
+          [ ClassName "checkbox-img"
+            Src (checkboxImg isChecked status) ] ]
       @ displayAfter)
-
-let sameTabAs tab currentTab = tab = currentTab
 
 let viewTab css message tab active dispatch =
   li
@@ -343,15 +358,16 @@ let viewTabs css message list activeFun dispatch =
 
 //let lazySidebarContent =
 
+let levelInput mode name level dispatch =
+  input
+    [ Type mode
+      Min 0
+      Max 10
+      valueOrDefault level
+      ClassName ("skill-" + mode + "-input")
+      OnChange (fun l -> dispatch <| SetSkillLevel (name, !!l.Value)) ]
+
 let skillLevelInput name level dispatch =
-  let levelInput mode name level dispatch =
-    input
-      [ Type mode
-        Min 0
-        Max 10
-        valueOrDefault level
-        ClassName ("skill-" + mode + "-input")
-        OnChange (fun l -> dispatch <| SetSkillLevel (name, !!l.Value)) ]
   label [ ClassName "skill-input" ]
     [ str "Level: "
       levelInput "range" name level dispatch
@@ -376,18 +392,17 @@ let profession conditionsDo name skill dispatch =
         [ ClassName "profession-img"
           Src ("img/Skills/" + name.Value + ".png")]
       str name.Value
-      ofOption(
-        if not skill.Professions.[name].Selected || skill.ProfessionUnlocked name then
-          None
-        else
-          match conditionsDo with
-          | Warn -> Some (span [] [ str " warn" ])
-          | Invalidate -> Some (span [] [ str " override"])
-          | Ignore -> None) ]
+      if skill.Professions.[name].Selected && not (skill.ProfessionUnlocked name) then
+        if conditionsDo = Warn then
+          span [] [ str " warn" ]
+        elif conditionsDo = Invalidate then
+          span [] [ str " override"] ]
+
 let professionRow conditionsDo skill row dispatch =
   div [ ClassName "profession-row" ]
     [ for name in row do
         profession conditionsDo name skill dispatch ]
+
 let viewProfessions conditionsDo skill dispatch =
   div [ ClassName "professions" ]
     [ for row in skill.ProfessionLayout do
@@ -399,6 +414,16 @@ let sourceIcon (name: Name<'t>) =
         Src ("img/Sources/" + name.Value + ".png") ]
     str name.Value ]
 
+let rec invalidReason reason =
+  li []
+    [ match reason with
+      | InvalidCondition c ->
+          match c with
+          | SkillLevel sl -> str (sl.Skill.Value + " level too low. Unlocks at level " + string sl.Level + ".")
+          | Year y -> str ("Available only from year " + string y + " and onwards.")
+      | Reason reason -> str reason
+      | SubReason (text, sub) -> str text; for subReason in sub do ul [] [ invalidReason subReason ] ]
+
 let buySources list (sources: Map<Name<Source>, Source>) dispatch =
   let buySource (name: Name<Source>) selected dispatch =
     li []
@@ -408,16 +433,46 @@ let buySources list (sources: Map<Name<Source>, Source>) dispatch =
     [ for name in list do
         buySource name sources.[name].Selected dispatch ]
 
-let sellSources model dispatch =
-  let sellSource (name: Name<Processor>) selected status dispatch =
-    li []
-      [ statusCheckbox (sourceIcon name) (ToggleSellSource name) selected status dispatch
-        //none/warning/error
-       ]
+let sellSource (name: Name<Processor>) selected status dispatch =
+  li []
+    [ statusCheckbox (sourceIcon name) (ToggleSellSource name) selected status dispatch
+      if status = Invalid then
+        img []
+      elif status = Warning then
+        img []
+     ]
 
+let sellSources model dispatch =
   ul [ ClassName "source-list" ]
     [ for name in model.SellSourceList do
-        sellSource name model.SellSources.[name].Selected (model.SourceStatus model.SellSources.[name]) dispatch]
+        let status = model.SourceStatus model.SellSources.[name]
+        sellSource name model.SellSources.[name].Selected status dispatch
+        if status = Warning then
+          let id = System.Guid.NewGuid().ToString()
+          label
+            [ ClassName "details-label"
+              HtmlFor id ]
+            [ str "Show Warnings"]
+          input
+            [ Type "checkbox"
+              ClassName "details-input"
+              Id id ]
+          ul [ ClassName "details" ]
+            [ for reason in model.SourceStatusData name status do
+                invalidReason reason ] 
+        elif status = Invalid then
+          let id = System.Guid.NewGuid().ToString()
+          label
+            [ ClassName "details-label"
+              HtmlFor id ]
+            [ str "Show Errors"]
+          input
+            [ Type "checkbox"
+              ClassName "details-input"
+              Id id ]
+          ul [ ClassName "details" ]
+            [ for reason in model.SourceStatusData name status do
+                invalidReason reason ] ]
 
 let selectConditionsDo text message value dispatch=
   label []
@@ -430,12 +485,22 @@ let selectConditionsDo text message value dispatch=
                 [ Value something ]
                 [ str (string something) ] ] ]
 
-let viewPrices (priceStatuses: (Price * Status) list) status =
+let viewPrices (model: Model) (priceStatuses: (Price * Status) list) =
+  let status =
+    if (List.exists (fun ps -> snd ps = Warning) priceStatuses) then
+      Warning
+    elif (List.exists (fun ps -> snd ps = Valid) priceStatuses) then
+      Valid
+    else
+      Invalid
   match status with
   | Warning ->
       let id = System.Guid.NewGuid().ToString()
       [ ofInt (fst priceStatuses.Head).Value
-        //sources
+        for price in priceStatuses do
+          img
+            [ classModifier "price-img" "warning" (snd price = Warning)
+              Src ("img/Sources/" + (fst price).Source.Value + ".png") ]
         br []
         img
           [ ClassName "alert"
@@ -448,12 +513,19 @@ let viewPrices (priceStatuses: (Price * Status) list) status =
           [ Type "checkbox"
             ClassName "details-input"
             Id id ]
-        div [ ClassName "details" ]
-          [ str "details" ] ]
+        ul [ ClassName "details" ]
+            [ for priceStatus in priceStatuses do
+                li []
+                  [ str ((fst priceStatus).Source.Value + ": ")
+                    ul []
+                      [ for reason in model.PriceStatusData priceStatus do
+                          invalidReason reason ] ] ] ]
   | Valid ->
-      //show price, valid sources
       [ ofInt (fst priceStatuses.Head).Value
-      //sources
+        for price in priceStatuses do
+          img
+            [ ClassName "price-img"
+              Src ("img/Sources/" + (fst price).Source.Value + ".png") ]
        ]
   | Invalid ->
       let id = System.Guid.NewGuid().ToString()
@@ -468,8 +540,13 @@ let viewPrices (priceStatuses: (Price * Status) list) status =
           [ Type "checkbox"
             ClassName "details-input"
             Id id ]
-        div [ ClassName "details" ]
-          [ str "details" ] ]
+        ul [ ClassName "details" ]
+            [ for priceStatus in priceStatuses do
+                li []
+                  [ str ((fst priceStatus).Source.Value + ": ")
+                    ul []
+                      [ for reason in model.PriceStatusData priceStatus do
+                          invalidReason reason ] ] ] ]
 
 let sidebarContent model dispatch =
   div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
@@ -501,10 +578,10 @@ let sidebarContent model dispatch =
               [ for fert in model.Fertilizers do
                   let priceStatuses = model.BestPrices fert.Sources fert.PriceFrom
                   let status = 
-                    if (List.exists (fun ps -> snd ps = Warning) priceStatuses) then
-                      Warning
-                    elif (List.exists (fun ps -> snd ps = Valid) priceStatuses) then
+                    if (List.exists (fun ps -> snd ps = Valid) priceStatuses) then
                       Valid
+                    elif (List.exists (fun ps -> snd ps = Warning) priceStatuses) then
+                      Warning
                     else
                       Invalid
                   tr []
@@ -516,7 +593,7 @@ let sidebarContent model dispatch =
                           str fert.Name ]
                       td [] [ ofInt fert.Quality ]
                       td [] [ ofFloat fert.Speed ]
-                      td [] (viewPrices priceStatuses status) ] ] ] ]
+                      td [] (viewPrices model priceStatuses) ] ] ] ]
     | Buy ->
       [ buySources model.BuySourceList model.BuySources dispatch ]
     | Sell ->

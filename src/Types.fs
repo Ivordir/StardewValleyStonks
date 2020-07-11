@@ -99,8 +99,9 @@ type Condition =
   | Year of int
 
 type InvalidReason =
-  | Condition of Condition
-  | Reason of (string * InvalidReason list)
+  | InvalidCondition of Condition
+  | Reason of string
+  | SubReason of (string * InvalidReason list)
 
 type StatusData =
   | Valid
