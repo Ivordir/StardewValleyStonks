@@ -12,62 +12,11 @@ header
   word-spacing: 0.25em
 
 body
-  --checkbox-height: 25px
-  --checkbox-text-offset: 5px
-  --checkmark-length: 12px
-  --checkmark-width: 6px
-  --checkmark-thickness: 4px
-  --checkmark-height: calc(var(--checkmark-length) + var(--checkmark-thickness))
-  --checkmark-margin-top: calc((var(--checkbox-height) - var(--checkmark-thickness) - var(--checkmark-height)) / 2)
-  --checkmark-margin-bottom: calc(var(--checkmark-margin-top) + var(--checkmark-thickness))
   background-color: antiquewhite
   margin: 0
   font-family: StardewValley, Nunito, Helvetica, sans-serif
   font-size: 2em
   --sidebar-transition-speed: 0.25s
-
-.other-checkbox-label
-  display: flex
-  align-items: flex-start
-  flex-wrap: nowrap
-  text-align: start
-  padding-top: var(--checkbox-text-offset)
-
-.other-checkbox
-  display: inline-block
-  flex-shrink: 0
-  width: var(--checkbox-height)
-  height: var(--checkbox-height)
-  background-color: white
-  border: 1px solid black
-  border-radius: 3px
-  margin-top: calc(-1 * var(--checkbox-text-offset))
-
-.checkbox-label
-  vertical-align: middle
-  text-align: center
-
-.checkbox
-  display: inline-block
-  flex-shrink: 0
-  width: var(--checkbox-height)
-  height: var(--checkbox-height)
-  background-color: white
-  border: 1px solid black
-  border-radius: 3px
-
-.checkmark
-  display: none
-  margin: var(--checkmark-margin-top) auto var(--checkmark-margin-bottom)
-  width: var(--checkmark-width)
-  height: var(--checkmark-length)
-  border: solid black
-  border-width: 0 var(--checkmark-thickness) var(--checkmark-thickness) 0
-  transform: rotate(45deg)
-
-  &--active
-    @extend .checkmark
-    display: block
 
 %pixel-art
   image-rendering: pixelated
