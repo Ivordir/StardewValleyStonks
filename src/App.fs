@@ -384,7 +384,6 @@ let skillBuffInput (name: Name<Skill>) buff dispatch =
           OnChange (fun b -> dispatch <| SetSkillBuff (name, !!b.Value)) ] ]
 
 let profession conditionsDo name skill dispatch =
-  console.log(conditionsDo)
   button
     [ classModifier "profession" "active" skill.Professions.[name].Selected
       OnClick (fun _ -> dispatch <| ToggleProfession (skill, name)) ]
@@ -424,23 +423,18 @@ let rec invalidReason reason =
       | Reason reason -> str reason
       | SubReason (text, sub) -> str text; for subReason in sub do ul [] [ invalidReason subReason ] ]
 
-let buySources list (sources: Map<Name<Source>, Source>) dispatch =
-  let buySource (name: Name<Source>) selected dispatch =
-    li []
-      [ checkboxWith (sourceIcon name) (ToggleBuySource name) selected dispatch ]
+let buySource (name: Name<Source>) selected dispatch =
+  li []
+    [ checkboxWith (sourceIcon name) (ToggleBuySource name) selected dispatch ]
 
+let buySources list (sources: Map<Name<Source>, Source>) dispatch =
   ul [ClassName "source-list" ]
     [ for name in list do
         buySource name sources.[name].Selected dispatch ]
 
 let sellSource (name: Name<Processor>) selected status dispatch =
   li []
-    [ statusCheckbox (sourceIcon name) (ToggleSellSource name) selected status dispatch
-      if status = Invalid then
-        img []
-      elif status = Warning then
-        img []
-     ]
+    [ statusCheckbox (sourceIcon name) (ToggleSellSource name) selected status dispatch ]
 
 let sellSources model dispatch =
   ul [ ClassName "source-list" ]
@@ -516,17 +510,16 @@ let viewPrices (model: Model) (priceStatuses: (Price * Status) list) =
         ul [ ClassName "details" ]
             [ for priceStatus in priceStatuses do
                 li []
-                  [ str ((fst priceStatus).Source.Value + ": ")
-                    ul []
-                      [ for reason in model.PriceStatusData priceStatus do
-                          invalidReason reason ] ] ] ]
+                  ( sourceIcon (fst priceStatus).Source @
+                    [ ul []
+                        [ for reason in model.PriceStatusData priceStatus do
+                            invalidReason reason ] ] ) ] ]
   | Valid ->
       [ ofInt (fst priceStatuses.Head).Value
         for price in priceStatuses do
           img
             [ ClassName "price-img"
-              Src ("img/Sources/" + (fst price).Source.Value + ".png") ]
-       ]
+              Src ("img/Sources/" + (fst price).Source.Value + ".png") ] ]
   | Invalid ->
       let id = System.Guid.NewGuid().ToString()
       [ img
@@ -543,70 +536,70 @@ let viewPrices (model: Model) (priceStatuses: (Price * Status) list) =
         ul [ ClassName "details" ]
             [ for priceStatus in priceStatuses do
                 li []
-                  [ str ((fst priceStatus).Source.Value + ": ")
-                    ul []
-                      [ for reason in model.PriceStatusData priceStatus do
-                          invalidReason reason ] ] ] ]
+                  ( sourceIcon (fst priceStatus).Source @
+                    [ ul []
+                        [ for reason in model.PriceStatusData priceStatus do
+                            invalidReason reason ] ] ) ] ]
 
 let sidebarContent model dispatch =
   div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
     ( match model.SidebarTab with
-    | Skills ->
-      [ ul [ ClassName "skills" ]
-          [ for skill in model.SkillList do
-              li [ ClassName "skill" ]
-                [ span [ ClassName "skill-header" ]
-                    [ img
-                        [ ClassName "skill-img"
-                          Src ("/img/Skills/" + skill.Value + ".png")]
-                      str model.Skills.[skill].Name ]
-                  skillLevelInput skill model.Skills.[skill].Level dispatch
-                  skillBuffInput skill model.Skills.[skill].Buff dispatch
-                  viewProfessions model.SkillLevelConditionsDo model.Skills.[skill] dispatch ] ]
-        checkboxText "Ignore Profession Relationships" ToggleIgnoreProfessions model.IgnoreProfessions dispatch ]
-    | Crops -> [ span [] [] ]
-    | Fertilizers ->
-      [ table [ ClassName "fertilizers" ]
-          [ thead []
-              [ tr []
-                  [ th [] []
-                    th [] [ str "Fertilizer" ]
-                    th [] [ str "Quality" ]
-                    th [] [ str "Speed" ]
-                    th [] [ str "Price" ] ] ]
-            tbody []
-              [ for fert in model.Fertilizers do
-                  let priceStatuses = model.BestPrices fert.Sources fert.PriceFrom
-                  let status = 
-                    if (List.exists (fun ps -> snd ps = Valid) priceStatuses) then
-                      Valid
-                    elif (List.exists (fun ps -> snd ps = Warning) priceStatuses) then
-                      Warning
-                    else
-                      Invalid
-                  tr []
-                    [ td [] [ statusCheckbox [] (ToggleFertSelected fert) fert.Selected status dispatch ] 
-                      td []
+      | Skills ->
+          [ ul [ ClassName "skills" ]
+              [ for skill in model.SkillList do
+                  li [ ClassName "skill" ]
+                    [ span [ ClassName "skill-header" ]
                         [ img
-                            [ ClassName "fertilizer-img"
-                              Src ("/img/Fertilizers/" + fert.Name + ".png") ]
-                          str fert.Name ]
-                      td [] [ ofInt fert.Quality ]
-                      td [] [ ofFloat fert.Speed ]
-                      td [] (viewPrices model priceStatuses) ] ] ] ]
-    | Buy ->
-      [ buySources model.BuySourceList model.BuySources dispatch ]
-    | Sell ->
-      [ sellSources model dispatch ]
-    | Replant
-    | Settings ->
-      [ selectConditionsDo "Year Conditions" SetYearConditionsDo model.YearConditionsDo dispatch
-        selectConditionsDo "Skill Level Conditions" SetSkillLevelConditionsDo model.SkillLevelConditionsDo dispatch ]
-    | Debug ->
-      [ input
-          [ Type "number"
-            OnClick (fun y -> dispatch <| (SetYear !!y.Value) )
-            valueOrDefault model.Date.Year ] ] )
+                            [ ClassName "skill-img"
+                              Src ("/img/Skills/" + skill.Value + ".png")]
+                          str model.Skills.[skill].Name ]
+                      skillLevelInput skill model.Skills.[skill].Level dispatch
+                      skillBuffInput skill model.Skills.[skill].Buff dispatch
+                      viewProfessions model.SkillLevelConditionsDo model.Skills.[skill] dispatch ] ]
+            checkboxText "Ignore Profession Relationships" ToggleIgnoreProfessions model.IgnoreProfessions dispatch ]
+      | Crops -> [ span [] [] ]
+      | Fertilizers ->
+          [ table [ ClassName "fertilizers" ]
+              [ thead []
+                  [ tr []
+                      [ th [] []
+                        th [] [ str "Fertilizer" ]
+                        th [] [ str "Quality" ]
+                        th [] [ str "Speed" ]
+                        th [] [ str "Price" ] ] ]
+                tbody []
+                  [ for fert in model.Fertilizers do
+                      let priceStatuses = model.BestPrices fert.Sources fert.PriceFrom
+                      let status = 
+                        if (List.exists (fun ps -> snd ps = Valid) priceStatuses) then
+                          Valid
+                        elif (List.exists (fun ps -> snd ps = Warning) priceStatuses) then
+                          Warning
+                        else
+                          Invalid
+                      tr []
+                        [ td [] [ statusCheckbox [] (ToggleFertSelected fert) fert.Selected status dispatch ] 
+                          td []
+                            [ img
+                                [ ClassName "fertilizer-img"
+                                  Src ("/img/Fertilizers/" + fert.Name + ".png") ]
+                              str fert.Name ]
+                          td [] [ ofInt fert.Quality ]
+                          td [] [ ofFloat fert.Speed ]
+                          td [] (viewPrices model priceStatuses) ] ] ] ]
+      | Buy ->
+          [ buySources model.BuySourceList model.BuySources dispatch ]
+      | Sell ->
+          [ sellSources model dispatch ]
+      | Replant
+      | Settings ->
+          [ selectConditionsDo "Year Conditions" SetYearConditionsDo model.YearConditionsDo dispatch
+            selectConditionsDo "Skill Level Conditions" SetSkillLevelConditionsDo model.SkillLevelConditionsDo dispatch ]
+      | Debug ->
+          [ input
+              [ Type "number"
+                OnClick (fun y -> dispatch <| (SetYear !!y.Value) )
+                valueOrDefault model.Date.Year ] ] )
   //lazyView2With (fun oldModel newModel -> (not oldModel.SidebarOpen && not newModel.SidebarOpen) || oldModel = newModel) sidebarContent
 
 let cover sidebarOpen dispatch =
@@ -624,15 +617,15 @@ let sidebar model dispatch =
 let view model dispatch =
   match model.Page with
   | Help ->
-    span [] [ str "Help! I need somebody!" ]
+      span [] [ str "Help! I need somebody!" ]
   | Home ->
-    div []
-      [ div [ Class "calender-grid" ]
-          []
-        button []
-          [ str "Help" ]
-        cover model.SidebarOpen dispatch
-        sidebar model dispatch ]
+      div []
+        [ div [ Class "calender-grid" ]
+            []
+          button []
+            [ str "Help" ]
+          cover model.SidebarOpen dispatch
+          sidebar model dispatch ]
 
 //--App--
 open Elmish.React

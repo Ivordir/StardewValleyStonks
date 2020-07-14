@@ -242,9 +242,6 @@ type Fertilizer =
           prices
           |> List.map (fun price -> price.Source, price)
           |> Map.ofList }
-  //member this.ActivePrices = List.filter (fun p -> p.Selectable.Active) this.Prices
-  //member this.Price = (List.minBy (fun p -> p.Value ) this.ActivePrices).Value
-  //member this.BestPrices = List.filter (fun p -> p.Value = this.Price) this.ActivePrices
 
 //type Fertilizer =
 //  { Name: string
