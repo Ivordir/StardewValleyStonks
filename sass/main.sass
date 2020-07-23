@@ -182,6 +182,14 @@ footer
 
   &--active
     @extend .profession
+    color: green
+  
+  &--warning
+    @extend .profession
+    color: yellow
+
+  &--error
+    @extend .profession
     color: red
 
 .source-tabs
@@ -201,6 +209,9 @@ footer
   @extend %list
 
 .source
+
+.match-condition-list
+  @extend %list
 
 .checkbox-hidden
   width: 1em

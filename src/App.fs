@@ -52,9 +52,7 @@ type Model =
     MatchConditionList: Name<MatchCondition> list
     SellSources: Map<Name<Processor>, Processor>
     SellSourceList: Name<Processor> list
-    Replants: Map<Name<ReplantMethod>, ReplantMethod>
-    ReplantList: Name<ReplantMethod> list
-    BuySeeds: bool
+    Replants: Map<Replant, bool>
     Crops: Map<Name<Crop>, Crop>
     CropList: Name<Crop> list
     Fertilizers: Map<Name<Fertilizer>, Fertilizer>
@@ -103,13 +101,20 @@ type Model =
     [ if not this.SellSources.[source].Selected then Reason "Is not selected." ]
     @ this.ConditionStatusData this.SellSources.[source].Conditions overallStatus
   member this.ReplantStatus replant =
-    if this.Replants.[replant].Selected then
-      this.ConditionStatuses this.Replants.[replant].Conditions
-      |> this.OverallStatus
-    else Invalid
+    match replant with
+    | SeedMaker ->
+        if this.Replants.[SeedMaker] then
+          this.ConditionStatuses seedMakerConditions
+          |> this.OverallStatus
+        else
+          Invalid
+    | r -> if this.Replants.[r] then Valid else Invalid
   member this.ReplantStatusData replant overallStatus =
-    [ if not this.Replants.[replant].Selected then Reason "Is not selected." ]
-    @ this.ConditionStatusData this.Replants.[replant].Conditions overallStatus
+    match replant with
+    | SeedMaker ->
+        [ if not this.Replants.[SeedMaker] then Reason "Is not selected." ]
+        @ this.ConditionStatusData seedMakerConditions overallStatus
+    | r -> [ if not this.Replants.[r] then Reason "Is not selected." ]
   member this.PriceStatus (price: Price) =
     match price.Override with
     | Some true -> Valid //true //ignore source conditions but consider local conditions
@@ -190,11 +195,12 @@ let init () =
       Multiplier ("Irrigated", 1.1, false) ]
 
   let buySources =
-    [ { Source.Initial with Name = "Pierre" }
-      { Source.Initial with Name = "Joja" }
-      { Source.Initial with Name = "Oasis" }
-      { Source.Initial with Name = "Traveling Merchant" }
-      { Source.Initial with Name = "Crafting" } ]
+    [ "Pierre"
+      "Joja"
+      "Oasis"
+      "Traveling Merchant"
+      "Crafting" ]
+    |> List.map source
 
   let matchConditions =
     [ { Name = "Joja Membership"; Selected = false } ]
@@ -216,12 +222,6 @@ let init () =
       { Processor.Initial with
           Name = "Seed Maker"
           Conditions = [ SkillLevel (Name "Farming", 9) ] } ]
-
-  let replantList =
-    [ { ReplantMethod.Initial with
-          Name = "Seed Maker"
-          Conditions = [ SkillLevel (Name "Farming", 9) ] }
-      { ReplantMethod.Initial with Name = "Harvested Crop or Seed" } ]
 
   let oil =
     Process
@@ -409,7 +409,7 @@ let init () =
           Pierre
           true
         with
-          GrowthMultipliers = Name "Irrigated" ::agri
+          GrowthMultipliers = agri.Add(Name "Irrigated")
           HasDoubleCropChance = false
           ExtraCrops = extraCrops 1 0.1 }
 
@@ -542,7 +542,17 @@ let init () =
               price "Joja" 125 ] )
           true
         with
-          HasDoubleCropChance = false }
+          HasDoubleCropChance = false
+          HarvestedItems =
+            Map.ofList
+              [ ( Name "Sunflower Seeds",
+                  { Item = item "Sunflower Seeds" 20
+                    Amount = 1.0
+                    Processes =
+                      Map.ofList
+                        [ Name "Raw Crop", UseItem None
+                          Name "Mill", oil ]
+                    Replants = Map.ofList [ SeedOrCrop, None ] } ) ] }
 
       { genCrop
           "Tomato"
@@ -723,47 +733,38 @@ let init () =
     ]
 
   let fertilizers =
-    [ ( { Fertilizer.Initial with
-            Name = "Basic Fertilizer"
-            Quality = 1 }
-        |> Fertilizer.WithPrices
-          [ Price
-              {| Price.InitialPrice with
-                   Source = Name "Pierre"
-                   Value = 100 |} ] )
+    [ genFertilizer
+        "Basic Fertilizer"
+        1
+        0.0
+        [ price "Pierre" 100 ]
 
-      ( { Fertilizer.Initial with
-            Name = "Quality Fertilizer"
-            Quality = 2 }
-        |> Fertilizer.WithPrices
-          [ Price
-              {| Price.InitialPrice with
-                   Value = 150
-                   Source = Name "Pierre"
-                   Conditions = [ Year 2 ] |} ] )
+      genFertilizer
+        "Quality Fertilizer"
+        2
+        0.0
+        [ Price
+            {| Value = 150
+               Source = Name "Pierre"
+               Conditions = [ Year 2 ]
+               Override = None |} ]
 
-      ( { Fertilizer.Initial with
-            Name = "Speed-Gro"
-            Speed = 0.1 }
-        |> Fertilizer.WithPrices
-          [ Price
-              {| Price.InitialPrice with
-                   Value = 100
-                   Source = Name "Pierre" |} ] )
+      genFertilizer
+        "Speed-Gro"
+        0
+        0.1
+        [ price "Pierre" 100 ]
 
-      ( { Fertilizer.Initial with
-            Name = "Deluxe Speed-Gro"
-            Speed = 0.25 }
-        |> Fertilizer.WithPrices
-          [ Price
-              {| Price.InitialPrice with
-                   Value = 150
-                   Source = Name "Pierre"
-                   Conditions = [ Year 2 ] |}
-            Price
-              {| Price.InitialPrice with
-                   Value = 80
-                   Source = Name "Oasis" |} ] ) ]
+      genFertilizer
+        "Deluxe Speed-Gro"
+        0
+        0.25
+        [ Price
+            {| Value = 150
+               Source = Name "Pierre"
+               Conditions = [ Year 2 ]
+               Override = None |}
+          price "Oasis" 80 ] ]
 
   { Page = Home
     StartDate = { Season = Spring; Day = 1 }
@@ -801,11 +802,9 @@ let init () =
       |> List.map (fun s -> (Name s.Name, s))
       |> Map.ofList
     Replants =
-      replantList
-      |> List.map (fun r -> (Name r.Name, r))
+      Replant.List
+      |> List.map (fun r -> r, true)
       |> Map.ofList
-    ReplantList = List.map (fun (r: ReplantMethod) -> Name r.Name) replantList
-    BuySeeds = true
     Crops = 
       crops
       |> List.map (fun c -> (Name c.Name), c)
@@ -839,9 +838,9 @@ type Message =
   | SetSkillBuff of Name<Skill> * int
   | ToggleProfession of Skill * Name<Profession>
   | ToggleBuySource of Name<Source>
+  | ToggleMatchCondition of Name<MatchCondition>
   | ToggleSellSource of Name<Processor>
-  | ToggleReplant of Name<ReplantMethod>
-  | ToggleBuySeeds
+  | ToggleReplant of Replant
   | ToggleCropSelected of Name<Crop>
   | ToggleFertSelected of Name<Fertilizer>
   | SetStartDay of int
@@ -874,9 +873,9 @@ let update message model =
   | ToggleProfession (skill, name) ->
       { model with Skills = model.Skills.Add(Name skill.Name, model.Skills.[Name skill.Name].ToggleProfession name model.IgnoreProfessions) }
   | ToggleBuySource source -> { model with BuySources = model.BuySources.Add(source, model.BuySources.[source].Toggle) }
+  | ToggleMatchCondition cond -> { model with MatchConditions = model.MatchConditions.Add(cond, model.MatchConditions.[cond].Toggle) }
   | ToggleSellSource source -> { model with SellSources = model.SellSources.Add(source, model.SellSources.[source].Toggle) }
-  | ToggleReplant replant -> { model with Replants = model.Replants.Add(replant, model.Replants.[replant].Toggle) }
-  | ToggleBuySeeds -> { model with BuySeeds = not model.BuySeeds }
+  | ToggleReplant replant -> { model with Replants = model.Replants.Add(replant, not model.Replants.[replant]) }
   | ToggleCropSelected crop -> { model with Crops = model.Crops.Add(crop, model.Crops.[crop].Toggle) }
   | ToggleFertSelected fert -> { model with Fertilizers = model.Fertilizers.Add(fert, model.Fertilizers.[fert].Toggle) }
   | SetStartDay day -> { model with StartDate = { model.StartDate with Day = day } }
@@ -968,6 +967,16 @@ let viewTabs css message list activeFun dispatch =
     [ for tab in list do
         viewTab css message tab (activeFun tab) dispatch ]
 
+let warningIcon =
+  img
+    [ ClassName "alert"
+      Src ("img/UI/Warning.png") ]
+
+let errorIcon =
+  img
+    [ ClassName "alert"
+      Src ("img/UI/Error.png") ]
+
 //let lazySidebarContent =
 
 let levelInput mode name level dispatch =
@@ -997,17 +1006,27 @@ let skillBuffInput (name: Name<Skill>) buff dispatch =
 
 let profession conditionsDo name skill dispatch =
   button
-    [ classModifier "profession" "active" skill.Professions.[name].Selected
+    [ ClassName
+        ( "profession" +
+          if skill.Professions.[name].Selected then
+            if skill.ProfessionIsUnlocked name || conditionsDo = Ignore then
+              "--active"
+            elif conditionsDo = Warn then
+              "--warning"
+            else
+              "--error"
+          else
+            "")
       OnClick (fun _ -> dispatch <| ToggleProfession (skill, name)) ]
-    [ img
-        [ ClassName "profession-img"
-          Src ("img/Skills/" + name.Value + ".png")]
-      str name.Value
-      if skill.Professions.[name].Selected && not (skill.ProfessionIsUnlocked name) then
+    [ if skill.Professions.[name].Selected && not (skill.ProfessionIsUnlocked name) then
         if conditionsDo = Warn then
-          span [] [ str " warn" ]
+          warningIcon
         elif conditionsDo = Invalidate then
-          span [] [ str " override"] ]
+          errorIcon
+      img
+        [ ClassName "profession-img"
+          Src ("img/Skills/" + name.Value + ".png") ]
+      str name.Value ]
 
 let professionRow conditionsDo skill row dispatch =
   div [ ClassName "profession-row" ]
@@ -1019,11 +1038,11 @@ let viewProfessions conditionsDo skill dispatch =
     [ for row in skill.ProfessionLayout do
         professionRow conditionsDo skill row dispatch ]
 
-let sourceIcon (name: Name<'t>) =
+let sourceIcon name =
   [ img
-      [ ClassName "source-img" 
-        Src ("img/Sources/" + name.Value + ".png") ]
-    str name.Value ]
+      [ ClassName "source-img"
+        Src ("img/Sources/" + name + ".png") ]
+    str name ]
 
 let rec invalidReason reason =
   li []
@@ -1037,7 +1056,7 @@ let rec invalidReason reason =
 
 let buySource (name: Name<Source>) selected dispatch =
   li []
-    [ checkboxWith (sourceIcon name) (ToggleBuySource name) selected dispatch ]
+    [ checkboxWith (sourceIcon name.Value) (ToggleBuySource name) selected dispatch ]
 
 let buySources list (sources: Map<Name<Source>, Source>) dispatch =
   ul [ClassName "source-list" ]
@@ -1046,7 +1065,7 @@ let buySources list (sources: Map<Name<Source>, Source>) dispatch =
 
 let sellSource (name: Name<Processor>) selected status dispatch =
   li []
-    [ statusCheckbox (sourceIcon name) (ToggleSellSource name) selected status dispatch ]
+    [ statusCheckbox (sourceIcon name.Value) (ToggleSellSource name) selected status dispatch ]
 
 let sellSources model dispatch =
   ul [ ClassName "source-list" ]
@@ -1081,16 +1100,15 @@ let sellSources model dispatch =
               [ for reason in model.ProcessorStatusData name status do
                   invalidReason reason ] ]
 
-let replant (name: Name<ReplantMethod>) selected status dispatch =
+let replant (replant: Replant) selected status dispatch =
   li []
-    [ statusCheckbox (sourceIcon name) (ToggleReplant name) selected status dispatch ]
+    [ statusCheckbox (sourceIcon replant.Name) (ToggleReplant replant) selected status dispatch ]
 
-let replants model dispatch =
+let replants (model: Model) dispatch =
   ul [ ClassName "source-list" ]
-    [ li [] [ checkboxWith (sourceIcon (Types.Name "Buy Seeds")) ToggleBuySeeds model.BuySeeds dispatch ]
-      for name in model.ReplantList do
+    [ for name in Replant.List do
         let status = model.ReplantStatus name
-        replant name model.Replants.[name].Selected status dispatch
+        replant name model.Replants.[name] status dispatch
         if status = Warning then
           let id = System.Guid.NewGuid().ToString()
           label
@@ -1144,9 +1162,6 @@ let parseSeasons str =
   | "Fall" -> Fall
   | _ -> Winter
 
-
-
-
 let viewPrices (model: Model) priceFrom (priceStatuses: (Price * Status) list) =
   let status =
     if (List.exists (fun ps -> snd ps = Warning) priceStatuses) then
@@ -1164,9 +1179,7 @@ let viewPrices (model: Model) priceFrom (priceStatuses: (Price * Status) list) =
             [ classModifier "price-img" "warning" (snd price = Warning)
               Src ("img/Sources/" + (fst price).Source.Value + ".png") ]
         br []
-        img
-          [ ClassName "alert"
-            Src ("img/UI/Warning.png") ]
+        warningIcon
         label
           [ ClassName "details-label"
             HtmlFor id ]
@@ -1178,7 +1191,7 @@ let viewPrices (model: Model) priceFrom (priceStatuses: (Price * Status) list) =
         ul [ ClassName "details" ]
             [ for priceStatus in priceStatuses do
                 li []
-                  ( sourceIcon (fst priceStatus).Source @
+                  ( sourceIcon (fst priceStatus).Source.Value @
                     [ ul []
                         [ for reason in model.PriceStatusData priceStatus do
                             invalidReason reason ] ] ) ] ]
@@ -1190,9 +1203,7 @@ let viewPrices (model: Model) priceFrom (priceStatuses: (Price * Status) list) =
               Src ("img/Sources/" + (fst price).Source.Value + ".png") ] ]
   | Invalid ->
       let id = System.Guid.NewGuid().ToString()
-      [ img
-          [ ClassName "alert"
-            Src ("img/UI/Error.png") ]
+      [ errorIcon
         label
           [ ClassName "details-label"
             HtmlFor id ]
@@ -1204,7 +1215,7 @@ let viewPrices (model: Model) priceFrom (priceStatuses: (Price * Status) list) =
         ul [ ClassName "details" ]
             [ for priceStatus in priceStatuses do
                 li []
-                  ( sourceIcon (fst priceStatus).Source @
+                  ( sourceIcon (fst priceStatus).Source.Value @
                     [ ul []
                         [ for reason in model.PriceStatusData priceStatus do
                             invalidReason reason ] ] ) ] ]
@@ -1314,7 +1325,10 @@ let sidebarContent model dispatch =
                         td [] (viewPrices model fert.PriceFrom priceStatuses) ] ] ] ]
   | Buy ->
       div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
-        [ buySources model.BuySourceList model.BuySources dispatch ]
+        [ buySources model.BuySourceList model.BuySources dispatch
+          ul [ ClassName "match-condition-list" ]
+            [ for cond in model.MatchConditionList do
+              checkboxText cond.Value (ToggleMatchCondition cond) model.MatchConditions.[cond].Selected dispatch ] ]
   | Sell ->
       div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
         [ sellSources model dispatch ]

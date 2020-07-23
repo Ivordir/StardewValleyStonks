@@ -95,7 +95,7 @@ type Condition =
 type InvalidReason =
   | InvalidCondition of Condition
   | Reason of string
-  | SubReason of (string * InvalidReason list)
+  | SubReason of Reason: string * SubReason: InvalidReason list
 
 type Status =
   | Valid
@@ -112,35 +112,15 @@ type Source =
   { Name: string
     Selected: bool }
   member this.Toggle = { this with Selected = not this.Selected }
-  static member Initial =
-    { Name = "Initial"
-      Selected = true }
 
-type Processor =
-  { Name: string
-    Selected: bool
-    Conditions: Condition list
-    PreservesQuality: bool }
-  member this.Toggle = { this with Selected = not this.Selected }
-  static member Initial =
-    { Name = "Initial"
-      Selected = true
-      Conditions = List.empty
-      PreservesQuality = false }
-
-type ReplantMethod =
-  { Name: string
-    Selected: bool
-    Conditions: Condition list }
-  member this.Toggle = { this with Selected = not this.Selected }
-  static member Initial =
-    { Name = "Initial"
-      Selected = true
-      Conditions = List.empty }
+let source name =
+  { Name = name
+    Selected = true }
 
 type MatchCondition =
   { Name: string
     Selected: bool }
+  member this.Toggle = { this with Selected = not this.Selected }
 
 type Price =
   | Price of
@@ -171,89 +151,6 @@ type Price =
     match this with
     | Price p -> p.Conditions
     | MatchPrice m -> m.Conditions
-  static member InitialPrice =
-    {| Value = -1
-       Source = Name "Initial"
-       Conditions = List.empty<Condition>
-       Override = Option<bool>.None |}
-  static member IntitialMatchPrice =
-    {| Value = -1
-       Source = Name "Initial"
-       Conditions = List.empty<Condition>
-       Override = Option<bool>.None
-       MatchSource = Name "Initial"
-       MatchCondition = Name "Initial" |}
-
-type Quality =
-  | Normal
-  | Silver
-  | Gold
-  | Iridium
-  member this.Multiplier =
-    match this with
-    | Normal -> 1.0
-    | Silver -> 1.25
-    | Gold -> 1.5
-    | Iridium -> 2.0
-
-type Multiplier =
-  | Multiplier of Name: string * Value: float * Selected: bool
-  | Profession of Name: Name<Profession> * Value: float
-
-let applyMultiplier value multiplier =
-  int (float value * multiplier)
-
-type Item =
-  { Name: string
-    BasePrice: int
-    Multiplier: Name<Multiplier> option }
-  //member this.Price =
-  //    match this.Multiplier with
-  //    | Some multi ->
-  //        match multi with
-  //        | Multiplier m -> applyMultiplier this.BasePrice m.Value //when m.Selectable.Active
-  //        | Profession p -> applyMultiplier this.BasePrice p.Value //when p.Profession.Selected 
-  //        //| _ -> this.BasePrice
-  //    | None -> this.BasePrice
-  static member Initial =
-    { Name = "Initial"
-      BasePrice = -1
-      Multiplier = None }
-
-type Process =
-  | UseItem of
-      {| Processor: Name<Processor>
-         Override: bool option |}
-  | Process of
-      {| Processor: Name<Processor>
-         Output: Item
-         Override: bool option |}
-  | RatioProcess of
-      {| InputAmount: int
-         Processor: Name<Processor>
-         Output: Item
-         OutputAmount: float
-         Override: bool option |}
-  | SeedMaker of Override: bool option
-  member this.InputAmount =
-    match this with
-    | UseItem _ | Process _ | SeedMaker _ -> 1
-    | RatioProcess r -> r.InputAmount
-   member this.Processor =
-    match this with
-    | UseItem i -> i.Processor
-    | Process p -> p.Processor
-    | RatioProcess r -> r.Processor
-    | SeedMaker _ -> Name "Seed Maker"
-  // member this.Output =
-  //   match this with
-  //   | UseItem _ -> Item.Initial
-  //   | Process p -> p.Output
-  //   | RatioProcess r -> r.Output
-  // member this.OutputAmount =
-  //   match this with
-  //   | UseItem _ | Process _ -> 1.0
-  //   | RatioProcess r -> r.OutputAmount
 
 let priceListToMap prices =
   prices
@@ -267,11 +164,14 @@ type Fertilizer =
     Speed: float
     PriceFrom: Map<Name<Source>, Price> }
   member this.Toggle = { this with Selected = not this.Selected }
-  static member Initial =
-    { Name = "Initial"
-      Selected = true
-      Quality = 0
-      Speed = 0.0
-      PriceFrom = Map.empty }
-  static member WithPrices prices fertilizer =
-    { fertilizer with PriceFrom = priceListToMap prices }
+
+let genFertilizer
+  name
+  quality
+  speed
+  prices =
+  { Name = name
+    Selected = true
+    Quality = quality
+    Speed = speed
+    PriceFrom = priceListToMap prices }
