@@ -55,6 +55,7 @@ type Model =
     Replants: Map<Replant, bool>
     Crops: Map<Name<Crop>, Crop>
     CropList: Name<Crop> list
+    ShowOutOfSeasonCrops: bool
     Fertilizers: Map<Name<Fertilizer>, Fertilizer>
     FertilizerList: Name<Fertilizer> list
     YearConditionsDo: ConditionsDo
@@ -150,6 +151,49 @@ type Model =
     (noGiantCropProb,
      noGiantCropProb * (crop.ExtraCrops + (if crop.HasDoubleCropChance then crop.ExtraCrops * this.DoubleCropProb + this.DoubleCropProb else 0.0))
      + (1.0 - noGiantCropProb) * 2.0)
+  member this.MultiplierValue name =
+    match this.Multipliers.[name] with
+    | Multiplier (_, v, s) -> if s then v else 0.0
+    | Profession (s, p, v) ->
+        let skill = this.Skills.[s]
+        if skill.Professions.[p].Selected && (skill.ProfessionIsUnlocked p || this.SkillLevelConditionsDo <> Invalidate) then
+          v
+        else
+          0.0
+  member this.GrowthTime fertSpeed (crop: Crop) =
+    crop.GrowthTimeWith (fertSpeed + List.sumBy this.MultiplierValue crop.GrowthMultipliers)
+  member this.FastestFertSpeed =
+    this.FertilizerList
+    |> List.filter (fun fert -> this.Fertilizers.[fert].Selected && List.exists (fun (_, s) -> s <> Invalid) (this.BestPrices this.Fertilizers.[fert].PriceFrom))
+    |> (fun list -> if list.IsEmpty then 0.0 else this.Fertilizers.[ (List.maxBy (fun fert -> this.Fertilizers.[fert].Speed) list) ].Speed)
+  member this.DaysInSeason (season: Season) =
+    if this.StartDate.Season = this.EndDate.Season then
+      this.EndDate.Day - this.StartDate.Day + 1
+    elif season = this.StartDate.Season then
+      29 - this.StartDate.Day
+    elif season = this.EndDate.Season then
+      this.EndDate.Day
+    else
+      28
+  member this.CropCanGiveOneHarvest name =
+    let crop = this.Crops.[name]
+    let seasons =
+      set
+        [ for s = this.StartDate.Season.ToInt to int this.EndDate.Season.ToInt do
+            season s ]
+    if Set.exists seasons.Contains crop.Seasons then
+      let lastDays, maxDays =
+        crop.Seasons
+        |> Set.fold
+          (fun (consecDays, maxDays) season ->
+            if seasons.Contains season then
+              (consecDays + this.DaysInSeason season, maxDays)
+            else
+              (0, max consecDays maxDays))
+          (0, 0)
+      this.GrowthTime this.FastestFertSpeed this.Crops.[name] <= (max lastDays maxDays) - 1
+    else
+      false
 
 let init () =
   let skills =
@@ -188,10 +232,10 @@ let init () =
           ProfessionLayout = [ [ Name "Gatherer" ]; [ Name "Botanist" ] ] } ]
 
   let multipliers =
-    [ Profession (Name "Tiller", 1.1)
-      Profession (Name "Artisan", 1.4)
-      Profession (Name "Agriculturist", 0.1)
-      Profession (Name "Gatherer", 1.2)
+    [ Profession (Name "Farming", Name "Tiller", 1.1)
+      Profession (Name "Farming", Name "Artisan", 1.4)
+      Profession (Name "Farming", Name "Agriculturist", 0.1)
+      Profession (Name "Foraging", Name "Gatherer", 1.2)
       Multiplier ("Irrigated", 1.1, false) ]
 
   let buySources =
@@ -409,7 +453,7 @@ let init () =
           Pierre
           true
         with
-          GrowthMultipliers = agri.Add(Name "Irrigated")
+          GrowthMultipliers = Name "Irrigated"::agri
           HasDoubleCropChance = false
           ExtraCrops = extraCrops 1 0.1 }
 
@@ -782,7 +826,7 @@ let init () =
       |>List.map (fun multi ->
           match multi with
           | Multiplier (name, _, _) -> Name name
-          | Profession (name, _) -> Name name.Value
+          | Profession (_, name, _) -> Name name.Value
           , multi)
       |> Map.ofList
     IgnoreProfessions = false
@@ -805,11 +849,12 @@ let init () =
       Replant.List
       |> List.map (fun r -> r, true)
       |> Map.ofList
-    Crops = 
+    Crops =
       crops
       |> List.map (fun c -> (Name c.Name), c)
       |> Map.ofList
     CropList = List.map (fun (c: Crop) -> Name c.Name) crops
+    ShowOutOfSeasonCrops = false
     Fertilizers =
       fertilizers
       |> List.map (fun f -> (Name f.Name, f))
@@ -843,6 +888,7 @@ type Message =
   | ToggleReplant of Replant
   | ToggleCropSelected of Name<Crop>
   | ToggleFertSelected of Name<Fertilizer>
+  | ToggleShowOutOfSeasonCrops
   | SetStartDay of int
   | SetStartSeason of Season
   | SetEndDay of int
@@ -878,6 +924,7 @@ let update message model =
   | ToggleReplant replant -> { model with Replants = model.Replants.Add(replant, not model.Replants.[replant]) }
   | ToggleCropSelected crop -> { model with Crops = model.Crops.Add(crop, model.Crops.[crop].Toggle) }
   | ToggleFertSelected fert -> { model with Fertilizers = model.Fertilizers.Add(fert, model.Fertilizers.[fert].Toggle) }
+  | ToggleShowOutOfSeasonCrops -> { model with ShowOutOfSeasonCrops = not model.ShowOutOfSeasonCrops }
   | SetStartDay day -> { model with StartDate = { model.StartDate with Day = day } }
   | SetStartSeason season -> { model with StartDate = { model.StartDate with Season = season } }
   | SetEndDay day -> { model with EndDate = { model.EndDate with Day = day } }
@@ -1270,28 +1317,30 @@ let sidebarContent model dispatch =
                       th [] [ str "CropAmounts" ] ] ]
               tbody [ ClassName "table-body" ]
                 [ for c in model.CropList do
-                    let crop = model.Crops.[c]
-                    let priceStatuses = model.BestPrices crop.PriceFrom
-                    let status =
-                      if (List.exists (fun ps -> snd ps = Valid) priceStatuses) then
-                        Valid
-                      elif (List.exists (fun ps -> snd ps = Warning) priceStatuses) then
-                        Warning
-                      else
-                        Invalid
-                    tr []
-                      [ td [] [ statusCheckbox [] (ToggleCropSelected c) crop.Selected status dispatch ] 
-                        td []
-                          [ img
-                              [ ClassName "crop-img"
-                                Src ("/img/Crops/" + crop.Name + ".png") ]
-                            str crop.Name ]
-                        td [] [ ofInt crop.TotalGrowthTime ]
-                        td [] [ ofOption (Option.bind (ofInt >> Some) crop.RegrowTime) ]
-                        td [] [ for season in crop.Seasons do str (string season); br [] ]
-                        td [] (viewPrices model crop.PriceFrom priceStatuses)
-                        td [] [ str (sprintf "%.4f" crop.ExtraCrops) ]
-                        td [] [ str (model.CropAmounts crop |> (fun (q, n) -> sprintf "%.4f" q + ", " + sprintf "%.4f" n)) ] ] ] ] ]
+                    if model.ShowOutOfSeasonCrops || model.CropCanGiveOneHarvest c then
+                      let crop = model.Crops.[c]
+                      let priceStatuses = model.BestPrices crop.PriceFrom
+                      let status =
+                        if (List.exists (fun ps -> snd ps = Valid) priceStatuses) then
+                          Valid
+                        elif (List.exists (fun ps -> snd ps = Warning) priceStatuses) then
+                          Warning
+                        else
+                          Invalid
+                      tr []
+                        [ td [] [ statusCheckbox [] (ToggleCropSelected c) crop.Selected status dispatch ]
+                          td []
+                            [ img
+                                [ ClassName "crop-img"
+                                  Src ("/img/Crops/" + crop.Name + ".png") ]
+                              str crop.Name ]
+                          td [] [ ofInt crop.TotalGrowthTime ]
+                          td [] [ ofOption (Option.bind (ofInt >> Some) crop.RegrowTime) ]
+                          td [] [ for season in crop.Seasons do str (string season); br [] ]
+                          td [] (viewPrices model crop.PriceFrom priceStatuses)
+                          td [] [ str (sprintf "%.4f" crop.ExtraCrops) ]
+                          td [] [ str (model.CropAmounts crop |> (fun (q, n) -> sprintf "%.4f" q + ", " + sprintf "%.4f" n)) ] ] ] ]
+          checkboxText "Show Out of Season Crops" ToggleShowOutOfSeasonCrops model.ShowOutOfSeasonCrops dispatch ]
   | Fertilizers ->
       div [ classModifier "sidebar-table-content" "open" model.SidebarOpen ]
         [ table [ ClassName "table" ]

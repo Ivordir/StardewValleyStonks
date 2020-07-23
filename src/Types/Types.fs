@@ -13,11 +13,24 @@ type Season =
   | Summer
   | Fall
   | Winter
+  member this.ToInt =
+    match this with
+    | Spring -> 1
+    | Summer -> 2
+    | Fall -> 3
+    | Winter -> 4
   static member List =
     [ Spring
       Summer
       Fall
       Winter ]
+
+let season int =
+  match int with
+  | 1 -> Spring
+  | 2 -> Summer
+  | 3 -> Fall
+  | _ -> Winter
 
 type Date =
   { Season: Season

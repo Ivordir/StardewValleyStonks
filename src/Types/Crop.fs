@@ -28,7 +28,7 @@ type Quality =
 
 type Multiplier =
   | Multiplier of Name: string * Value: float * Selected: bool
-  | Profession of Name: Name<Profession> * Value: float
+  | Profession of Skill: Name<Skill> * Profession: Name<Profession> * Value: float
 
 let applyMultiplier value multiplier =
   int (float value * multiplier)
@@ -104,7 +104,7 @@ type Crop =
     GrowthStages: int list
     TotalGrowthTime: int
     RegrowTime: int option
-    GrowthMultipliers: Set<Name<Multiplier>>
+    GrowthMultipliers: Name<Multiplier> list
     Item: Item
     Seed: Item
     PriceFrom: Map<Name<Source>, Price>
@@ -221,7 +221,7 @@ type GeneratePrices =
     | PriceList list -> list
     | NoPrices -> []
 
-let agri: Set<Name<Multiplier>> = set [ Name "Agriculturist" ]
+let agri: Name<Multiplier> list = [ Name "Agriculturist" ]
 
 let private initialItem =
   { Name = "Initial"
