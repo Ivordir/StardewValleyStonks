@@ -5,37 +5,35 @@ type Name<'t> =
   member this.Value =
     match this with Name name -> name
 
-let valueOf name =
-  match name with Name str -> str
-
 type Season =
   | Spring
   | Summer
   | Fall
   | Winter
-  member this.ToInt =
-    match this with
-    | Spring -> 1
-    | Summer -> 2
-    | Fall -> 3
-    | Winter -> 4
   static member List =
     [ Spring
       Summer
       Fall
       Winter ]
 
+let seasonToInt = function
+  | Spring -> 1
+  | Summer -> 2
+  | Fall -> 3
+  | Winter -> 4
+
 let season int =
   match int with
   | 1 -> Spring
   | 2 -> Summer
   | 3 -> Fall
-  | _ -> Winter
+  | 4 -> Winter
+  | _ -> invalidArg "int" (sprintf "There are only four seasons dummy. '%i' does not correspond to a season." int)
 
 type Date =
   { Season: Season
     Day: int }
-  member this.IsBeforeOrOn date =
+  member this.IsBefore date =
     this.Season < date.Season
     || this.Season = date.Season && this.Day < date.Day
 
@@ -55,6 +53,20 @@ type Profession =
       ExclusiveWith = Set.empty
       Dependants = Set.empty }
 
+let private setSelected value (set: Set<Name<Profession>>) professions =
+  professions
+  |> Map.map
+    (fun name profession ->
+      if set.Contains name then
+        { profession with Selected = value }
+      else
+        profession)
+
+let professionListToMap professions =
+  professions
+  |> List.map (fun p -> Name p.Name, p)
+  |> Map.ofList
+
 type Skill =
   { Name: string
     Level: int
@@ -72,19 +84,12 @@ type Skill =
       let profession = professions.[name]
       { this with
           Professions =
-            match profession.Selected with
-            | true ->
+            if profession.Selected then
               professions
-              |> Skill.SetSelected true profession.Requires
-              |> Skill.SetSelected false profession.ExclusiveWith
-            | false -> professions |> Skill.SetSelected false profession.Dependants }
-  static member private SetSelected value set professions =
-    professions |> Map.map
-      (fun name profession ->
-        if set.Contains name then
-          { profession with Selected = value }
-        else
-          profession) //better way to do this?
+              |> setSelected true profession.Requires
+              |> setSelected false profession.ExclusiveWith
+            else
+              professions |> setSelected false profession.Dependants }
   static member Initial =
     { Name = "Initial"
       Level = 0
@@ -92,7 +97,7 @@ type Skill =
       Professions = Map.empty
       ProfessionLayout = List.empty }
 
-type ConditionsDo =
+type RequirementsShould =
   | Warn
   | Invalidate
   | Ignore
@@ -101,14 +106,14 @@ type ConditionsDo =
       Invalidate
       Ignore ]
 
-type Condition =
+type Requirement =
   | SkillLevel of Skill: Name<Skill> * Level: int
   | Year of int
 
 type InvalidReason =
-  | InvalidCondition of Condition
+  | UnmetRequirement of Requirement
   | Reason of string
-  | SubReason of Reason: string * SubReason: InvalidReason list
+  | SubReason of Reason: string * SubReasons: InvalidReason list
 
 type Status =
   | Valid
@@ -139,12 +144,12 @@ type Price =
   | Price of
       {| Value: int
          Source: Name<Source>
-         Conditions: Condition list
+         Requirements: Requirement list
          Override: bool option |}
   | MatchPrice of
       {| Value: int
          Source: Name<Source>
-         Conditions: Condition list
+         Requirements: Requirement list
          Override: bool option
          MatchSource: Name<Source>
          MatchCondition: Name<MatchCondition> |}
@@ -160,10 +165,10 @@ type Price =
     match this with
     | Price p -> p.Override
     | MatchPrice m -> m.Override
-  member this.Conditions =
+  member this.Requirements =
     match this with
-    | Price p -> p.Conditions
-    | MatchPrice m -> m.Conditions
+    | Price p -> p.Requirements
+    | MatchPrice m -> m.Requirements
 
 let priceListToMap prices =
   prices

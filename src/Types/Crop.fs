@@ -5,13 +5,14 @@ open Types
 type Processor =
   { Name: string
     Selected: bool
-    Conditions: Condition list
+    Requirements: Requirement list
     PreservesQuality: bool }
   member this.Toggle = { this with Selected = not this.Selected }
+  member this.TogglePreservesQuality = { this with PreservesQuality = not this.PreservesQuality }
   static member Initial =
     { Name = "Initial"
       Selected = true
-      Conditions = List.empty
+      Requirements = List.empty
       PreservesQuality = false }
 
 type Quality =
@@ -25,21 +26,43 @@ type Quality =
     | Silver -> 1.25
     | Gold -> 1.5
     | Iridium -> 2.0
+  static member List =
+    [ Normal
+      Silver
+      Gold
+      Iridium ]
 
 type Multiplier =
-  | Multiplier of Name: string * Value: float * Selected: bool
-  | Profession of Skill: Name<Skill> * Profession: Name<Profession> * Value: float
-
-let applyMultiplier value multiplier =
-  int (float value * multiplier)
+  | Multiplier of
+      {| Name: string
+         Value: float
+         Selected: bool |}
+  | Profession of
+      {| Skill: Name<Skill>
+         Profession: Name<Profession>
+         Value: float |}
+  member this.Name =
+    match this with
+    | Multiplier m -> m.Name
+    | Profession p -> p.Profession.Value
 
 type Item =
   { Name: string
     BasePrice: int
     Multiplier: Name<Multiplier> option }
 
-type Process =
-  | UseItem of Override: bool option // * Name<Processor>?
+type ProductSource =
+  | RawCrop
+  | Processor of Name<Processor>
+  | SeedMaker
+  member this.Name =
+    match this with
+    | RawCrop -> "Raw Crop"
+    | Processor p -> p.Value
+    | SeedMaker -> "Seed Maker"
+
+type Product =
+  | RawItem of Override: bool option
   | Process of
       {| Processor: Name<Processor>
          Output: Item
@@ -50,17 +73,17 @@ type Process =
          Output: Item
          OutputAmount: float
          Override: bool option |}
-  | SeedMaker of Override: bool option
+  | SeedsFromSeedMaker of Override: bool option
+  member this.Source =
+    match this with
+    | RawItem -> RawCrop
+    | Process p -> Processor p.Processor
+    | RatioProcess r -> Processor r.Processor
+    | SeedsFromSeedMaker -> SeedMaker
   member this.InputAmount =
     match this with
-    | UseItem _ | Process _ | SeedMaker _ -> 1
     | RatioProcess r -> r.InputAmount
-   member this.Processor =
-    match this with
-    | UseItem _ -> Name "Raw Crop"
-    | Process p -> p.Processor
-    | RatioProcess r -> r.Processor
-    | SeedMaker _ -> Name "Seed Maker"
+    | _ -> 1
   // member this.Output =
   //   match this with
   //   | UseItem _ -> Item.Initial
@@ -71,12 +94,12 @@ type Process =
   //   | UseItem _ | Process _ -> 1.0
   //   | RatioProcess r -> r.OutputAmount
 
-let seedMakerConditions = [ SkillLevel (Name "Farming", 9) ]
+let seedMakerRequirement = [ SkillLevel (Name "Farming", 9) ]
 
 type Replant =
   | BuySeeds
   | SeedMaker
-  | SeedOrCrop //of Name<Item>?
+  | SeedOrCrop
   member this.Name =
     match this with
     | BuySeeds -> "Buy Seeds"
@@ -90,7 +113,7 @@ type Replant =
 type HarvestedItemData =
   { Item: Item
     Amount: float
-    Processes: Map<Name<Processor>, Process>
+    Products: Map<ProductSource, Product>
     Replants: Map<Replant, bool option> }
 
 open Fable.Core.JsInterop
@@ -101,6 +124,7 @@ type Crop =
   { Name: string
     Selected: bool
     Seasons: Set<Season>
+    SelectedSeasons: Set<Season>
     GrowthStages: int list
     TotalGrowthTime: int
     RegrowTime: int option
@@ -108,7 +132,7 @@ type Crop =
     Item: Item
     Seed: Item
     PriceFrom: Map<Name<Source>, Price>
-    Processes: Map<Name<Processor>, Process>
+    Products: Map<ProductSource, Product>
     Replants: Map<Replant, bool option>
     IsGiantCrop: bool
     HasDoubleCropChance: bool
@@ -173,8 +197,8 @@ type GenerateProducts =
   | Vegetable
   | Keg of KegProduct
   | Jar of JarProduct
-  | ProductList of Process list
-  | GenerateAndList of GenerateProducts * Process list
+  | ProductList of Product list
+  | GenerateAndList of GenerateProducts * Product list
   | NoProduct
   member this.Generate cropItem =
     match this with
@@ -184,20 +208,20 @@ type GenerateProducts =
     | Jar product -> [ product.Generate cropItem ]
     | ProductList list -> list
     | GenerateAndList (gen, list) -> gen.Generate cropItem @ list
-    | NoProduct -> []
+    | NoProduct -> List.empty
 
-let private genPrice basePrice name =
+let private genPrice seedSellPrice name =
   Price
-    {| Value = basePrice * 2
+    {| Value = seedSellPrice * 2
        Source = Name name
-       Conditions = List.empty
+       Requirements = List.empty
        Override = None |}
 
 let private genJoja (pierrePrice: Price) =
   MatchPrice
     {| Value = float pierrePrice.Value * 1.25 |> int
        Source = Name "Joja"
-       Conditions = List.empty
+       Requirements = List.empty
        Override = None
        MatchSource = Name "Pierre"
        MatchCondition = Name "Joja Membership" |}
@@ -209,17 +233,17 @@ type GeneratePrices =
   | PierreAndJoja
   | PriceList of Price list
   | NoPrices
-  member this.Generate basePrice =
+  member this.Generate seedSellPrice =
     match this with
-    | Pierre -> [ genPrice basePrice "Pierre" ]
+    | Pierre -> [ genPrice seedSellPrice "Pierre" ]
     | Joja pierrePrice -> [ pierrePrice; genJoja pierrePrice ]
-    | Oasis -> [ genPrice basePrice "Oasis" ]
+    | Oasis -> [ genPrice seedSellPrice "Oasis" ]
     | PierreAndJoja ->
-      let pierrePrice = genPrice basePrice "Pierre"
+      let pierrePrice = genPrice seedSellPrice "Pierre"
       [ pierrePrice
         genJoja pierrePrice ]
     | PriceList list -> list
-    | NoPrices -> []
+    | NoPrices -> List.empty
 
 let agri: Name<Multiplier> list = [ Name "Agriculturist" ]
 
@@ -232,6 +256,7 @@ let private initialCrop =
   { Name = "Initial"
     Selected = true
     Seasons = Set.empty
+    SelectedSeasons = Set.empty
     GrowthStages = List.empty
     TotalGrowthTime = -1
     RegrowTime = None //safe to edit later in generation
@@ -239,7 +264,7 @@ let private initialCrop =
     Item = initialItem
     Seed = initialItem
     PriceFrom = Map.empty
-    Processes = Map.empty
+    Products = Map.empty
     Replants = Map.empty
     IsGiantCrop = false //safe to edit later
     HasDoubleCropChance = true //safe to edit later
@@ -247,15 +272,16 @@ let private initialCrop =
     HarvestedItems = Map.empty //safe to add to later
      }
 
-let genCrop
+let private generateCrop
+  seedMaker
   name
-  seasons
+  (seasons: Season list)
   growthStages
   genCropItem
   genSeed
   (genProducts: GenerateProducts)
-  (genPrices: GeneratePrices)
-  seedMaker =
+  (genPrices: GeneratePrices) =
+  let seasonsSet = set seasons
   let cropItem =
     match genCropItem with
     | SellPrice price ->
@@ -274,14 +300,18 @@ let genCrop
   let priceFrom = seed.BasePrice |> genPrices.Generate |> priceListToMap
   { initialCrop with
       Name = name
-      Seasons = set seasons
+      Seasons = seasonsSet
+      SelectedSeasons = seasonsSet
       GrowthStages = growthStages
       TotalGrowthTime = List.sum growthStages
       Item = cropItem
       Seed = seed
-      Processes = //add seedmaker
-        UseItem None::(genProducts.Generate cropItem)
-        |> List.map (fun p -> p.Processor, p)
+      Products =
+        [ RawItem None
+          yield! genProducts.Generate cropItem
+          if seedMaker then
+            SeedsFromSeedMaker None ]
+        |> List.map (fun p -> p.Source, p)
         |> Map.ofList
       PriceFrom = priceFrom
       Replants =
@@ -290,6 +320,9 @@ let genCrop
           if seedMaker then SeedMaker ]
         |> List.map (fun r -> r, None)
         |> Map.ofList }
+
+let genCrop = generateCrop true
+let genCropWithoutSeedMaker = generateCrop false
 
 let extraCrops cropYield extraChance =
   1.0 / (1.0 - extraChance) + float cropYield - 2.0
