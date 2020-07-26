@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="./Types/Types.fs" />
+    <Compile Include="./Types/Fertilizer.fs" />
     <Compile Include="./Types/Crop.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>

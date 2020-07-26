@@ -1,4 +1,4 @@
-module Types
+module StardewValleyStonks.Types
 
 type Name<'t> =
   | Name of string
@@ -53,6 +53,11 @@ type Profession =
       ExclusiveWith = Set.empty
       Dependants = Set.empty }
 
+let professionListToMap professions =
+  professions
+  |> List.map (fun p -> Name p.Name, p)
+  |> Map.ofList
+
 let private setSelected value (set: Set<Name<Profession>>) professions =
   professions
   |> Map.map
@@ -61,11 +66,6 @@ let private setSelected value (set: Set<Name<Profession>>) professions =
         { profession with Selected = value }
       else
         profession)
-
-let professionListToMap professions =
-  professions
-  |> List.map (fun p -> Name p.Name, p)
-  |> Map.ofList
 
 type Skill =
   { Name: string
@@ -97,6 +97,12 @@ type Skill =
       Professions = Map.empty
       ProfessionLayout = List.empty }
 
+type Requirement =
+  | SkillLevel of Skill: Name<Skill> * Level: int
+  | Year of int
+
+let seedMakerRequirement = [ SkillLevel (Name "Farming", 9) ]
+
 type RequirementsShould =
   | Warn
   | Invalidate
@@ -105,10 +111,6 @@ type RequirementsShould =
     [ Warn
       Invalidate
       Ignore ]
-
-type Requirement =
-  | SkillLevel of Skill: Name<Skill> * Level: int
-  | Year of int
 
 type InvalidReason =
   | UnmetRequirement of Requirement
@@ -175,21 +177,91 @@ let priceListToMap prices =
   |> List.map (fun (price: Price) -> price.Source, price)
   |> Map.ofList
 
-type Fertilizer =
+type Processor =
   { Name: string
     Selected: bool
-    Quality: int
-    Speed: float
-    PriceFrom: Map<Name<Source>, Price> }
+    Requirements: Requirement list
+    PreservesQuality: bool }
   member this.Toggle = { this with Selected = not this.Selected }
+  member this.TogglePreservesQuality = { this with PreservesQuality = not this.PreservesQuality }
+  static member Initial =
+    { Name = "Initial"
+      Selected = true
+      Requirements = List.empty
+      PreservesQuality = false }
 
-let genFertilizer
-  name
-  quality
-  speed
-  prices =
-  { Name = name
-    Selected = true
-    Quality = quality
-    Speed = speed
-    PriceFrom = priceListToMap prices }
+type Quality =
+  | Normal
+  | Silver
+  | Gold
+  | Iridium
+  member this.Multiplier =
+    match this with
+    | Normal -> 1.0
+    | Silver -> 1.25
+    | Gold -> 1.5
+    | Iridium -> 2.0
+  static member List =
+    [ Normal
+      Silver
+      Gold
+      Iridium ]
+
+type Multiplier =
+  | Multiplier of
+      {| Name: string
+         Value: float
+         Selected: bool |}
+  | Profession of
+      {| Skill: Name<Skill>
+         Profession: Name<Profession>
+         Value: float |}
+  member this.Name =
+    match this with
+    | Multiplier m -> m.Name
+    | Profession p -> p.Profession.Value
+
+let agri: Name<Multiplier> list = [ Name "Agriculturist" ]
+
+type Item =
+  { Name: string
+    BasePrice: int
+    Multiplier: Name<Multiplier> option }
+
+type ProductSource =
+  | RawCrop
+  | Processor of Name<Processor>
+  | SeedMaker
+  member this.Name =
+    match this with
+    | RawCrop -> "Raw Crop"
+    | Processor p -> p.Value
+    | SeedMaker -> "Seed Maker"
+
+type Product =
+  | RawItem of Override: bool option
+  | Process of
+      {| Processor: Name<Processor>
+         Output: Item
+         Override: bool option |}
+  | RatioProcess of
+      {| InputAmount: int
+         Processor: Name<Processor>
+         Output: Item
+         OutputAmount: float
+         Override: bool option |}
+  | SeedsFromSeedMaker of Override: bool option
+  member this.Source =
+    match this with
+    | RawItem -> RawCrop
+    | Process p -> Processor p.Processor
+    | RatioProcess r -> Processor r.Processor
+    | SeedsFromSeedMaker -> SeedMaker
+  member this.InputAmount =
+    match this with
+    | RatioProcess r -> r.InputAmount
+    | _ -> 1
+  member this.OutputAmount =
+    match this with
+    | RatioProcess r -> r.OutputAmount
+    | _ -> 1.0

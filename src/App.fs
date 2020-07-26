@@ -1,4 +1,4 @@
-module App
+module StardewValleyStonks.App
 
 open Fable.Core
 open Fable.Core.JsInterop
@@ -8,7 +8,7 @@ importAll "../sass/main.sass"
 
 //--Model--
 open Types
-open Crop
+//open Crop
 
 type Page =
   | Home
@@ -134,8 +134,8 @@ type Model =
         @ this.RequirementStatusData seedMakerRequirement overallStatus
   member this.ReplantStatus replant =
     match replant with
-    | SeedMaker ->
-        if this.Replants.[SeedMaker] then
+    | Replant.SeedMaker ->
+        if this.Replants.[Replant.SeedMaker] then
           this.RequirementStatuses seedMakerRequirement
           |> this.OverallStatus
         else
@@ -143,8 +143,8 @@ type Model =
     | r -> if this.Replants.[r] then Valid else Invalid
   member this.ReplantStatusData replant overallStatus =
     match replant with
-    | SeedMaker ->
-        [ if not this.Replants.[SeedMaker] then Reason "Is not selected." ]
+    | Replant.SeedMaker ->
+        [ if not this.Replants.[Replant.SeedMaker] then Reason "Is not selected." ]
         @ this.RequirementStatusData seedMakerRequirement overallStatus
     | r -> [ if not this.Replants.[r] then Reason "Is not selected." ]
   member this.PriceStatus (price: Price) =
@@ -342,7 +342,7 @@ let init () =
          Override = Option<bool>.None |}
 
   let crops =
-    [ genCrop
+    [ Crop.create
         "Blue Jazz"
         [ Spring ]
         [ 1; 2; 2; 2 ]
@@ -351,7 +351,7 @@ let init () =
         NoProduct
         PierreAndJoja
 
-      { genCrop
+      { Crop.create
           "Cauliflower"
           [ Spring ]
           [ 1; 2; 4; 4; 1 ]
@@ -362,7 +362,7 @@ let init () =
         with
           IsGiantCrop = true }
 
-      { genCropWithoutSeedMaker
+      { Crop.createWithoutSeedMaker
           "Coffee"
           [ Spring; Summer ]
           [ 1; 2; 2; 3; 2 ]
@@ -378,9 +378,9 @@ let init () =
           (PriceList [ price "Traveling Merchant" 2500 ] )
         with
           RegrowTime = Some 2
-          ExtraCrops = extraCrops 4 0.02 }
+          ExtraCrops = Crop.extraCrops 4 0.02 }
 
-      genCrop
+      Crop.create
         "Garlic"
         [ Spring ]
         [ 1; 1; 1; 1 ]
@@ -394,7 +394,7 @@ let init () =
                  Requirements = [ Year 2 ]
                  Override = None |} ] )
 
-      { genCrop
+      { Crop.create
           "Green Bean"
           [ Spring ]
           [ 1; 1; 1; 3; 4 ]
@@ -405,7 +405,7 @@ let init () =
         with
           RegrowTime = Some 3 }
 
-      { genCrop
+      { Crop.create
           "Kale"
           [ Spring ]
           [ 1; 2; 2; 1 ]
@@ -416,7 +416,7 @@ let init () =
         with
           HasDoubleCropChance = false }
 
-      genCrop
+      Crop.create
         "Parsnip"
         [ Spring ]
         [ 1; 1; 1; 1 ]
@@ -425,7 +425,7 @@ let init () =
         Vegetable
         PierreAndJoja
 
-      { genCrop
+      { Crop.create
           "Potato"
           [ Spring ]
           [ 1; 1; 1; 2; 1 ]
@@ -434,9 +434,9 @@ let init () =
           Vegetable
           PierreAndJoja
         with
-          ExtraCrops = extraCrops 1 0.2 }
+          ExtraCrops = Crop.extraCrops 1 0.2 }
 
-      genCrop
+      Crop.create
         "Rhubarb"
         [ Spring ]
         [ 2; 2; 2; 3; 4]
@@ -445,7 +445,7 @@ let init () =
         Fruit
         Oasis
 
-      { genCrop
+      { Crop.create
           "Strawberry"
           [ Spring ]
           [ 1; 1; 2; 2; 2 ]
@@ -455,9 +455,9 @@ let init () =
           (PriceList [ price "Pierre" 100 ])
         with
           RegrowTime = Some 4
-          ExtraCrops = extraCrops 1 0.02 }
+          ExtraCrops = Crop.extraCrops 1 0.02 }
 
-      genCrop
+      Crop.create
         "Tulip"
         [ Spring ]
         [ 1; 1; 2; 2 ]
@@ -466,13 +466,13 @@ let init () =
         NoProduct
         PierreAndJoja
 
-      { genCrop
+      { Crop.create
           "Rice"
           [ Spring ]
           [ 1; 2; 2; 3 ]
           (Item (cropItem "Unmilled Rice" 30))
           (Seed (item "Rice Shoot" 20))
-          (GenerateAndList
+          (CreateAndList
             ( Vegetable,
               [ Process
                   {| Processor = Name "Mill"
@@ -482,9 +482,9 @@ let init () =
         with
           GrowthMultipliers = Name "Irrigated"::agri
           HasDoubleCropChance = false
-          ExtraCrops = extraCrops 1 0.1 }
+          ExtraCrops = Crop.extraCrops 1 0.1 }
 
-      { genCrop
+      { Crop.create
           "Blueberry"
           [ Summer ]
           [ 1; 3; 3; 4; 2 ]
@@ -494,31 +494,31 @@ let init () =
           Pierre
         with
           RegrowTime = Some 4
-          ExtraCrops = extraCrops 3 0.02 }
+          ExtraCrops = Crop.extraCrops 3 0.02 }
 
-      { genCrop
+      { Crop.create
           "Corn"
           [ Summer; Fall ]
           [ 2; 3; 3; 3; 3 ]
           (SellPrice 50)
           (SeedSell 75)
-          (GenerateAndList (Vegetable, [ oil ] ))
+          (CreateAndList (Vegetable, [ oil ] ))
           PierreAndJoja
         with
           RegrowTime = Some 4 }
 
-      { genCrop
+      { Crop.create
           "Hops"
           [ Summer ]
           [ 1; 1; 2; 3; 4 ]
           (SellPrice 25)
           (Seed (item "Hops Starter" 30))
-          (GenerateAndList (Jar Pickle, [ kegProduct "Pale Ale" 300 ] ))
+          (CreateAndList (Jar Pickle, [ kegProduct "Pale Ale" 300 ] ))
           PierreAndJoja
         with
           RegrowTime = Some 1 }
 
-      { genCrop
+      { Crop.create
           "Hot Pepper"
           [ Summer ]
           [ 1; 1; 1; 1; 1 ]
@@ -528,9 +528,9 @@ let init () =
           PierreAndJoja
         with
           RegrowTime = Some 3
-          ExtraCrops = extraCrops 1 0.03 }
+          ExtraCrops = Crop.extraCrops 1 0.03 }
 
-      { genCrop
+      { Crop.create
           "Melon"
           [ Summer ]
           [ 1; 2; 3; 3; 3 ]
@@ -541,7 +541,7 @@ let init () =
         with
           IsGiantCrop = true }
 
-      genCrop
+      Crop.create
         "Poppy"
         [ Summer ]
         [ 1; 2; 2; 2 ]
@@ -550,7 +550,7 @@ let init () =
         NoProduct
         PierreAndJoja
 
-      genCrop
+      Crop.create
         "Radish"
         [ Summer ]
         [ 2; 1; 2; 1 ]
@@ -559,7 +559,7 @@ let init () =
         Vegetable
         PierreAndJoja
 
-      genCrop
+      Crop.create
         "Red Cabbage"
         [ Summer ]
         [ 2; 1; 2; 2; 2 ]
@@ -573,7 +573,7 @@ let init () =
                  Requirements = [ Year 2 ]
                  Override = None |} ] )
 
-      genCrop
+      Crop.create
         "StarFruit"
         [ Summer ]
         [ 2; 3; 2; 3; 3 ]
@@ -582,7 +582,7 @@ let init () =
         Fruit
         Oasis
 
-      genCrop
+      Crop.create
         "Summer Spangle"
         [ Summer ]
         [ 1; 2; 3; 2 ]
@@ -591,7 +591,7 @@ let init () =
         NoProduct
         PierreAndJoja
 
-      { genCrop
+      { Crop.create
           "Sunflower"
           [ Summer; Fall ]
           [ 1; 2; 3; 2 ]
@@ -614,7 +614,7 @@ let init () =
                           Processor (Name "Mill"), oil ]
                     Replants = Map.ofList [ SeedOrCrop, None ] } ) ] }
 
-      { genCrop
+      { Crop.create
           "Tomato"
           [ Summer ]
           [ 2; 2; 2; 2; 3 ]
@@ -624,15 +624,15 @@ let init () =
           PierreAndJoja
         with
           RegrowTime = Some 4
-          ExtraCrops = extraCrops 1 0.05 }
+          ExtraCrops = Crop.extraCrops 1 0.05 }
 
-      { genCrop
+      { Crop.create
           "Wheat"
           [ Summer; Fall ]
           [ 1; 1; 1; 1 ]
           (SellPrice 25)
           (SeedSell 5)
-          (GenerateAndList
+          (CreateAndList
             ( Jar Pickle,
               [ kegProduct "Beer" 200
                 Process
@@ -643,7 +643,7 @@ let init () =
         with
           HasDoubleCropChance = false }
 
-      { genCrop
+      { Crop.create
           "Amaranth"
           [ Fall ]
           [ 1; 2; 2; 2 ]
@@ -654,7 +654,7 @@ let init () =
         with
           HasDoubleCropChance = false }
 
-      genCrop
+      Crop.create
         "Artichoke"
         [ Fall ]
         [ 2; 2; 1; 2; 1 ]
@@ -668,13 +668,13 @@ let init () =
                  Requirements = [ Year 2 ]
                  Override = None |} ] )
 
-      genCrop
+      Crop.create
         "Beet"
         [ Fall ]
         [ 1; 1; 2; 2 ]
         (SellPrice 100)
         (SeedSell 10)
-        (GenerateAndList
+        (CreateAndList
           ( Vegetable,
             [ RatioProcess
                 {| InputAmount = 1
@@ -684,7 +684,7 @@ let init () =
                    Override = None |} ] ))
          Oasis
 
-      genCrop
+      Crop.create
         "Bok Choy"
         [ Fall ]
         [ 1; 1; 1; 1 ]
@@ -693,7 +693,7 @@ let init () =
         Vegetable
         PierreAndJoja
 
-      { genCrop
+      { Crop.create
           "Cranberries"
           [ Fall ]
           [ 1; 2; 1; 1; 2 ]
@@ -703,9 +703,9 @@ let init () =
           (Joja (price "Pierre" 240))
         with
           RegrowTime = Some 5
-          ExtraCrops = extraCrops 2 0.1 }
+          ExtraCrops = Crop.extraCrops 2 0.1 }
 
-      { genCrop
+      { Crop.create
           "Eggplant"
           [ Fall ]
           [ 1; 1; 1; 1; 1 ]
@@ -715,9 +715,9 @@ let init () =
           PierreAndJoja
         with
           RegrowTime = Some 5
-          ExtraCrops = extraCrops 1 0.002 }
+          ExtraCrops = Crop.extraCrops 1 0.002 }
 
-      genCrop
+      Crop.create
         "Fairy Rose"
         [ Fall ]
         [ 1; 4; 4; 3 ]
@@ -726,7 +726,7 @@ let init () =
         NoProduct
         PierreAndJoja
 
-      { genCrop
+      { Crop.create
           "Grape"
           [ Fall ]
           [ 1; 1; 2; 3; 3 ]
@@ -737,7 +737,7 @@ let init () =
         with
           RegrowTime = Some 3 }
 
-      { genCrop
+      { Crop.create
           "Pumpkin"
           [ Fall ]
           [ 1; 2; 3; 4; 3 ]
@@ -748,7 +748,7 @@ let init () =
         with
           IsGiantCrop = true }
 
-      genCrop
+      Crop.create
         "Sweet Gem Berry"
         [ Fall ]
         [ 2; 4; 6; 6; 6 ]
@@ -757,7 +757,7 @@ let init () =
         NoProduct
         (PriceList [ price "Traveling Merchant" 1000 ])
 
-      genCrop
+      Crop.create
         "Yam"
         [ Fall ]
         [ 1; 3; 3; 3 ]
@@ -766,7 +766,7 @@ let init () =
         Vegetable
         PierreAndJoja
 
-      { genCrop
+      { Crop.create
           "Ancient Fruit"
           [ Spring; Summer; Fall ]
           [ 2; 7; 7; 7; 5 ]
@@ -779,13 +779,13 @@ let init () =
     ]
 
   let fertilizers =
-    [ genFertilizer
+    [ Fertilizer.create
         "Basic Fertilizer"
         1
         0.0
         [ price "Pierre" 100 ]
 
-      genFertilizer
+      Fertilizer.create
         "Quality Fertilizer"
         2
         0.0
@@ -795,13 +795,13 @@ let init () =
                Requirements = [ Year 2 ]
                Override = None |} ]
 
-      genFertilizer
+      Fertilizer.create
         "Speed-Gro"
         0
         0.1
         [ price "Pierre" 100 ]
 
-      genFertilizer
+      Fertilizer.create
         "Deluxe Speed-Gro"
         0
         0.25
@@ -893,9 +893,9 @@ type Message =
   | SetSidebarTab of SidebarTab
   | CloseSidebar
   | ToggleIgnoreProfessions
-  | SetSkillLevel of Name<Skill> * Level: int
-  | SetSkillBuff of Name<Skill> * Level: int
-  | ToggleProfession of Skill * Name<Profession>
+  | SetSkillLevel of Skill: Name<Skill> * Level: int
+  | SetSkillBuff of Skill: Name<Skill> * Buff: int
+  | ToggleProfession of Name<Skill> * Name<Profession>
   | ToggleBuySource of Name<Source>
   | ToggleMatchCondition of Name<MatchCondition>
   | ToggleProductSource of ProductSource
@@ -935,7 +935,7 @@ let update message model =
   | SetSkillBuff (skill, buff) ->
       { model with Skills = model.Skills.Add(skill, { model.Skills.[skill] with Buff = max buff 0 } ) }
   | ToggleProfession (skill, name) ->
-      { model with Skills = model.Skills.Add(Name skill.Name, model.Skills.[Name skill.Name].ToggleProfession name model.IgnoreProfessions) }
+      { model with Skills = model.Skills.Add(skill, model.Skills.[skill].ToggleProfession name model.IgnoreProfessions) }
   | ToggleBuySource source -> { model with BuySources = model.BuySources.Add(source, model.BuySources.[source].Toggle) }
   | ToggleMatchCondition cond -> { model with MatchConditions = model.MatchConditions.Add(cond, model.MatchConditions.[cond].Toggle) }
   | ToggleProductSource source ->
@@ -1091,7 +1091,7 @@ let profession requirementsShould name skill dispatch =
               "--error"
           else
             "")
-      OnClick (fun _ -> dispatch <| ToggleProfession (skill, name)) ]
+      OnClick (fun _ -> dispatch <| ToggleProfession (Types.Name skill.Name, name)) ]
     [ if skill.Professions.[name].Selected && not (skill.ProfessionIsUnlocked name) then
         if requirementsShould = Warn then
           warningIcon
@@ -1183,7 +1183,7 @@ let replants (model: Model) dispatch =
     [ for r in Replant.List do
         let status = model.ReplantStatus r
         replant r model.Replants.[r] status dispatch
-        if r = SeedMaker && status = Warning then
+        if r = Replant.SeedMaker && status = Warning then
           label
             [ ClassName "details-label"
               HtmlFor r.Name ]
