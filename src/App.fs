@@ -37,6 +37,12 @@ type SidebarTab =
 
 type Integer = int
 
+let sortMode<'t, 'key when 'key: comparison> ascending =
+  if ascending then
+    List.sortBy<'t, 'key>
+  else
+    List.sortByDescending<'t, 'key>
+
 type Model =
   { Page: Page
     StartDate: Date
@@ -57,12 +63,17 @@ type Model =
     SellRawItem: bool
     SellSeedsFromSeedMaker: bool
     ProductSources: ProductSource list
+    BuySeeds: bool
     Replants: Map<Replant, bool>
     Crops: Map<Name<Crop>, Crop>
     CropList: Name<Crop> list
+    CropSort: CropSort
+    CropSortAscending: bool
     ShowUselessCrops: bool
     Fertilizers: Map<Name<Fertilizer>, Fertilizer>
     FertilizerList: Name<Fertilizer> list
+    FertilizerSort: FertilizerSort
+    FertilizerSortAscending: bool
     YearRequirementsShould: RequirementsShould
     SkillLevelRequirementsShould: RequirementsShould
     SpecialCharm: bool
@@ -94,7 +105,7 @@ type Model =
     requirements
     |> List.filter (fun c -> this.RequirementStatus c = overallStatus)
     |> List.map UnmetRequirement
-  member this.OverallStatus requirementStatuses =
+  member this.OverallRequirementStatus requirementStatuses =
     if (List.exists (fun cs -> snd cs = Invalid) requirementStatuses) then
       Invalid
     elif (List.exists (fun cs -> snd cs = Warning) requirementStatuses) then
@@ -115,12 +126,12 @@ type Model =
     | Processor p ->
         if this.Processors.[p].Selected then
           this.RequirementStatuses this.Processors.[p].Requirements
-          |> this.OverallStatus
+          |> this.OverallRequirementStatus
         else Invalid
     | ProductSource.SeedMaker ->
         if this.SellSeedsFromSeedMaker then
           this.RequirementStatuses seedMakerRequirement
-          |> this.OverallStatus
+          |> this.OverallRequirementStatus
         else
           Invalid
   member this.ProductSourceStatusData source overallStatus =
@@ -137,7 +148,7 @@ type Model =
     | Replant.SeedMaker ->
         if this.Replants.[Replant.SeedMaker] then
           this.RequirementStatuses seedMakerRequirement
-          |> this.OverallStatus
+          |> this.OverallRequirementStatus
         else
           Invalid
     | r -> if this.Replants.[r] then Valid else Invalid
@@ -154,7 +165,7 @@ type Model =
     | None ->
         if (this.SourceStatus price.Source = Valid) then
           this.RequirementStatuses price.Requirements
-          |> this.OverallStatus
+          |> this.OverallRequirementStatus
         else Invalid
    member this.PriceStatusData (priceStatus: Price * Status) =
     ( match (fst priceStatus).Override with
@@ -166,7 +177,7 @@ type Model =
     match price with
     | Price p -> p.Value
     | MatchPrice m -> if this.MatchConditions.[m.MatchCondition].Selected then this.PriceOf priceFrom priceFrom.[m.MatchSource] else m.Value
-  member this.BestPrices (priceFrom: Map<Name<Source>, Price>) =
+  member this.PriceStatuses (priceFrom: Map<Name<Source>, Price>) =
     let priceStatuses = Map.map (fun source _ -> this.PriceStatus priceFrom.[source] ) priceFrom
     let validPrices = Map.filter (fun _ status -> status <> Invalid) priceStatuses
     ( if (validPrices.IsEmpty) then
@@ -175,6 +186,46 @@ type Model =
         let bestPrice = Map.fold (fun currentMin source _ -> min (this.PriceOf priceFrom priceFrom.[source] ) currentMin) Integer.MaxValue validPrices
         Map.filter (fun _ price -> this.PriceOf priceFrom price = bestPrice) priceFrom)
     |> Map.fold (fun prices source price -> (price, priceStatuses.[source])::prices) []
+  member this.OverallPriceStatus priceStatuses =
+    if (List.exists (fun ps -> snd ps = Warning) priceStatuses) then
+      Warning
+    elif (List.exists (fun ps -> snd ps = Valid) priceStatuses) then
+      Valid
+    else
+      Invalid
+  member this.BestPrice (priceFrom: Map<Name<Source>, Price>) priceStatuses =
+    if priceFrom.IsEmpty then
+      Integer.MaxValue
+    elif this.OverallPriceStatus priceStatuses = Invalid then
+      Integer.MaxValue - 1
+    else
+      this.PriceOf priceFrom (fst priceStatuses.Head)
+  member this.BestPrice2 (priceFrom: Map<Name<Source>, Price>) =
+    this.BestPrice priceFrom (this.PriceStatuses priceFrom)
+  member this.SortedFertilizers =
+    [ for KeyValue(_, fert) in this.Fertilizers do
+        fert ]
+    |> List.sortBy Fertilizer.name
+    |> (fun list ->
+      ( match this.FertilizerSort with
+        | FertilizerSort.ByName -> list
+        | FertilizerSort.Selected -> (sortMode this.FertilizerSortAscending) Fertilizer.selected list
+        | Quality -> (sortMode this.FertilizerSortAscending) Fertilizer.quality list
+        | Speed -> (sortMode this.FertilizerSortAscending) Fertilizer.speed list
+        | FertilizerSort.Price -> (sortMode this.FertilizerSortAscending) (fun c -> this.BestPrice2 c.PriceFrom) list))
+  member this.SortedCrops =
+    [ for KeyValue(_, crop) in this.Crops do
+        if this.ShowUselessCrops || this.CropCanGiveOneHarvest crop then crop ]
+    |> List.sortBy Crop.name
+    |> List.sortBy Crop.seasons
+    |> (fun list ->
+      ( match this.CropSort with
+        | CropSort.ByName -> (sortMode this.CropSortAscending) Crop.name list
+        | CropSort.Selected -> (sortMode this.CropSortAscending) Crop.selected list
+        | Seasons -> list
+        | TotalGrowthTime -> (sortMode this.CropSortAscending) Crop.totalGrowthTime list
+        | RegrowTime -> (sortMode this.CropSortAscending) Crop.regrowTime list
+        | SeedPrice -> (sortMode this.CropSortAscending) (fun c -> this.BestPrice2 c.PriceFrom) list))
   member this.DoubleCropProb = 0.0001 + float this.LuckBuff / 1500.0 + (if this.SpecialCharm then 0.025 else 0.0)
   member this.NoGiantCropProb = (1.0 - this.BaseGiantCropChance) ** this.GiantCropChecksPerTile
   member this.CropAmounts crop =
@@ -195,7 +246,7 @@ type Model =
     crop.GrowthTimeWith (fertSpeed + List.sumBy this.GrowthMultiplierValue crop.GrowthMultipliers)
   member this.FastestFertSpeed =
     this.FertilizerList
-    |> List.filter (fun fert -> this.Fertilizers.[fert].Selected && List.exists (fun (_, s) -> s <> Invalid) (this.BestPrices this.Fertilizers.[fert].PriceFrom))
+    |> List.filter (fun fert -> this.Fertilizers.[fert].Selected && List.exists (fun (_, s) -> s <> Invalid) (this.PriceStatuses this.Fertilizers.[fert].PriceFrom))
     |> (fun list -> if list.IsEmpty then 0.0 else this.Fertilizers.[ (List.maxBy (fun fert -> this.Fertilizers.[fert].Speed) list) ].Speed)
   member this.DaysInSeason (season: Season) =
     if season >= this.StartDate.Season && season <= this.EndDate.Season then
@@ -209,11 +260,8 @@ type Model =
         28
     else
       0
-  member this.CropCanGiveOneHarvest name =
-    let crop = this.Crops.[name]
-    let seasons =
-      [ for s = seasonToInt this.StartDate.Season to seasonToInt this.EndDate.Season do
-          season s ]
+  member this.CropCanGiveOneHarvest crop =
+    let seasons = seasonsFrom this.StartDate.Season this.EndDate.Season
     if List.exists crop.Seasons.Contains seasons then
       let lastConsecDays, maxDays =
         seasons
@@ -224,7 +272,7 @@ type Model =
             else
               (0, max consecDays maxDays))
           (0, 0)
-      this.GrowthTime this.FastestFertSpeed this.Crops.[name] <= (max lastConsecDays maxDays) - 1
+      this.GrowthTime this.FastestFertSpeed crop <= (max lastConsecDays maxDays) - 1
     else
       false
 
@@ -340,6 +388,8 @@ let init () =
          Source = Name name
          Requirements = List.empty<Requirement>
          Override = Option<bool>.None |}
+
+  let test = List.sortBy
 
   let crops =
     [ Crop.create
@@ -612,7 +662,8 @@ let init () =
                       Map.ofList
                         [ RawCrop, RawItem None
                           Processor (Name "Mill"), oil ]
-                    Replants = Map.ofList [ SeedOrCrop, None ] } ) ] }
+                    Replant = Some SeedOrCrop
+                    ReplantOverride = None } ) ] }
 
       { Crop.create
           "Tomato"
@@ -853,17 +904,22 @@ let init () =
       Replant.List
       |> List.map (fun r -> r, true)
       |> Map.ofList
+    BuySeeds = true
     Crops =
       crops
       |> List.map (fun c -> (Name c.Name), c)
       |> Map.ofList
     CropList = List.map (fun (c: Crop) -> Name c.Name) crops
+    CropSort = Seasons
+    CropSortAscending = true
     ShowUselessCrops = false
     Fertilizers =
       fertilizers
       |> List.map (fun f -> (Name f.Name, f))
       |> Map.ofList
     FertilizerList = List.map (fun (f: Fertilizer) -> Name f.Name) fertilizers
+    FertilizerSort = Speed
+    FertilizerSortAscending = true
     YearRequirementsShould = Warn
     SkillLevelRequirementsShould = Warn
     SpecialCharm = false
@@ -900,8 +956,11 @@ type Message =
   | ToggleMatchCondition of Name<MatchCondition>
   | ToggleProductSource of ProductSource
   | ToggleReplant of Replant
+  | ToggleBuySeeds
   | ToggleCropSelected of Name<Crop>
-  | ToggleFertSelected of Name<Fertilizer>
+  | SetCropSort of CropSort
+  | ToggleFertilizerSelected of Name<Fertilizer>
+  | SetFertilizerSort of FertilizerSort
   | ToggleShowUselessCrops
   | SetStartDay of int
   | SetStartSeason of Season
@@ -944,9 +1003,24 @@ let update message model =
       | Processor p ->
         { model with Processors = model.Processors.Add(p, model.Processors.[p].Toggle) }
       | ProductSource.SeedMaker -> { model with SellSeedsFromSeedMaker = not model.SellSeedsFromSeedMaker }
-  | ToggleReplant replant -> { model with Replants = model.Replants.Add(replant, not model.Replants.[replant]) }
+  | ToggleReplant replant -> { model with Replants = model.Replants.Add(replant, not model.Replants.[replant] ) }
+  | ToggleBuySeeds -> { model with BuySeeds = not model.BuySeeds }
   | ToggleCropSelected crop -> { model with Crops = model.Crops.Add(crop, model.Crops.[crop].Toggle) }
-  | ToggleFertSelected fert -> { model with Fertilizers = model.Fertilizers.Add(fert, model.Fertilizers.[fert].Toggle) }
+  | SetCropSort sort ->
+      if sort = model.CropSort then
+        { model with CropSortAscending = not model.CropSortAscending }
+      else
+        { model with
+            CropSort = sort
+            CropSortAscending = true }
+  | ToggleFertilizerSelected fert -> { model with Fertilizers = model.Fertilizers.Add(fert, model.Fertilizers.[fert].Toggle) }
+  | SetFertilizerSort sort ->
+      if sort = model.FertilizerSort then
+        { model with FertilizerSortAscending = not model.FertilizerSortAscending }
+      else
+        { model with
+            FertilizerSort = sort
+            FertilizerSortAscending = true }
   | ToggleShowUselessCrops -> { model with ShowUselessCrops = not model.ShowUselessCrops }
   | SetStartDay day -> { model with StartDate = { model.StartDate with Day = day } }
   | SetStartSeason season -> { model with StartDate = { model.StartDate with Season = season } }
@@ -1031,16 +1105,16 @@ let statusCheckbox displayAfter message isChecked status dispatch =
             Src (checkboxImg isChecked status) ] ]
       @ displayAfter)
 
-let viewTab css message tab active dispatch =
+let viewTab string css message tab active dispatch =
   li
     [ classModifier (css + "-tab") "active" active
       OnClick (fun _ -> dispatch <| message tab) ]
     [ str (string tab) ]
 
-let viewTabsWith activeFun css message list dispatch =
+let viewTabsWith activeFun string css message list dispatch =
   ul [ ClassName (css + "-tabs") ]
     [ for tab in list do
-        viewTab css message tab (activeFun tab) dispatch ]
+        viewTab string css message tab (activeFun tab) dispatch ]
 
 let viewTabs css message list currentTab dispatch =
   viewTabsWith (fun tab -> tab = currentTab) css message list dispatch
@@ -1180,7 +1254,9 @@ let replant (replant: Replant) selected status dispatch =
 
 let replants (model: Model) dispatch =
   ul [ ClassName "source-list" ]
-    [ for r in Replant.List do
+    [ li []
+        [ checkboxWith (sourceIcon "Buy Seeds") ToggleBuySeeds model.BuySeeds dispatch ]
+      for r in Replant.List do
         let status = model.ReplantStatus r
         replant r model.Replants.[r] status dispatch
         if r = Replant.SeedMaker && status = Warning then
@@ -1196,33 +1272,17 @@ let replants (model: Model) dispatch =
             [ for reason in model.ReplantStatusData r status do
                 invalidReason reason ] ]
 
-let selectOptions (list: 't seq) toText (fromText: string -> 't) text message (value: 't) dispatch=
+let selectOptions (list: 't seq) string (ofString: string -> 't) text message (value: 't) dispatch=
   label []
       [ ofOption (text |> Option.bind (fun t -> str (t + ": ") |> Some))
         select
           [ valueOrDefault value
-            OnChange (fun x -> fromText x.Value |> message |> dispatch) ]
+            OnChange (fun x -> ofString x.Value |> message |> dispatch) ]
           [ for something in list do
               option [ Value something ]
-                [ str (toText something) ] ] ]
+                [ str (string something) ] ] ]
 
-let parseRequirementsShould str =
-  match str with
-  | "Warn" -> Warn
-  | "Invalidate" -> Invalidate
-  | "Ignore" -> Ignore
-  | _ -> invalidArg "str" ("'" + str + "' does not correspond to a RequirementsShould.")
-
-let selectRequirementsShould =
-  selectOptions RequirementsShould.List string parseRequirementsShould
-
-let parseSeasons str =
-  match str with
-  | "Spring" -> Spring
-  | "Summer" -> Summer
-  | "Fall" -> Fall
-  | "Winter" -> Winter
-  | _ -> invalidArg "str" ("'" + str + "' is not the name of a Season.")
+let selectRequirementsShould = selectOptions RequirementsShould.List string requirementsShould
 
 let viewPrices (model: Model) (name: Name<'t>) priceFrom (priceStatuses: (Price * Status) list) =
   let status =
@@ -1235,7 +1295,7 @@ let viewPrices (model: Model) (name: Name<'t>) priceFrom (priceStatuses: (Price 
   //extract warnings and errors to crop/fert level from the current price level
   match status with
   | Warning ->
-      [ ofInt (model.PriceOf priceFrom (fst priceStatuses.Head))
+      [ str (string (model.PriceOf priceFrom (fst priceStatuses.Head)) + "g")
         for price in priceStatuses do
           img
             [ classModifier "price-img" "warning" (snd price = Warning)
@@ -1258,7 +1318,7 @@ let viewPrices (model: Model) (name: Name<'t>) priceFrom (priceStatuses: (Price 
                         [ for reason in model.PriceStatusData priceStatus do
                             invalidReason reason ] ] ) ] ]
   | Valid ->
-      [ ofInt (model.PriceOf priceFrom (fst priceStatuses.Head))
+      [ str (string (model.PriceOf priceFrom (fst priceStatuses.Head)) + "g")
         for price in priceStatuses do
           img
             [ ClassName "price-img"
@@ -1281,8 +1341,7 @@ let viewPrices (model: Model) (name: Name<'t>) priceFrom (priceStatuses: (Price 
                         [ for reason in model.PriceStatusData priceStatus do
                             invalidReason reason ] ] ) ] ]
 
-let selectSeasons =
-  selectOptions Season.List string parseSeasons None
+let selectSeasons = selectOptions Season.List string parseSeason None
 
 let dayInput message day dispatch =
   label [ ClassName "day-input" ]
@@ -1321,71 +1380,70 @@ let sidebarContent model dispatch =
         [ table [ ClassName "table" ]
             [ thead [ ClassName "table-header" ]
                 [ tr []
-                    [ th [] []
-                      th [] [ str "Crop" ]
-                      th [] [ str "Growth Time" ]
-                      th [] [ str "Regrow Time" ]
-                      th [] [ str "Seasons" ]
-                      th [] [ str "Seed Price" ] ] ]
+                    [ th [ OnClick (fun _ -> dispatch <| SetCropSort CropSort.Selected) ] []
+                      th [ OnClick (fun _ -> dispatch <| SetCropSort CropSort.ByName) ] [ str "Crop" ]
+                      th [ OnClick (fun _ -> dispatch <| SetCropSort TotalGrowthTime) ] [ str "Growth Time" ]
+                      th [ OnClick (fun _ -> dispatch <| SetCropSort RegrowTime) ] [ str "Regrow Time" ]
+                      th [ OnClick (fun _ -> dispatch <| SetCropSort Seasons) ] [ str "Seasons" ]
+                      th [ OnClick (fun _ -> dispatch <| SetCropSort SeedPrice) ] [ str "Seed Price" ] ] ]
               tbody [ ClassName "table-body" ]
-                [ for c in model.CropList do
-                    if model.ShowUselessCrops || model.CropCanGiveOneHarvest c then
-                      let crop = model.Crops.[c]
-                      let priceStatuses = model.BestPrices crop.PriceFrom
-                      let status =
-                        if (List.exists (fun ps -> snd ps = Valid) priceStatuses) then
-                          Valid
-                        elif (List.exists (fun ps -> snd ps = Warning) priceStatuses) then
-                          Warning
-                        else
-                          Invalid
-                      tr []
-                        [ td [] [ statusCheckbox [] (ToggleCropSelected c) crop.Selected status dispatch ]
-                          td []
-                            [ img
-                                [ ClassName "crop-img"
-                                  Src ("/img/Crops/" + crop.Name + ".png") ]
-                              str crop.Name ]
-                          td [] [ ofInt crop.TotalGrowthTime ]
-                          td [] [ ofOption (Option.bind (ofInt >> Some) crop.RegrowTime) ]
-                          td [] [ for season in crop.Seasons do str (string season); br [] ]
-                          td []
-                            ( if crop.Replants.ContainsKey BuySeeds then
-                                viewPrices model c crop.PriceFrom priceStatuses
-                              else
-                                [ str "N/A" ] ) ] ] ]
+                [ ofList
+                    [ for crop in model.SortedCrops do
+                        let priceStatuses = model.PriceStatuses crop.PriceFrom
+                        let status =
+                          if (List.exists (fun ps -> snd ps = Valid) priceStatuses) then
+                            Valid
+                          elif (List.exists (fun ps -> snd ps = Warning) priceStatuses) then
+                            Warning
+                          else
+                            Invalid
+                        tr [ Key crop.Name ]
+                          [ td [] [ statusCheckbox [] (ToggleCropSelected (Types.Name crop.Name)) crop.Selected status dispatch ]
+                            td []
+                              [ img
+                                  [ ClassName "crop-img"
+                                    Src ("/img/Crops/" + crop.Name + ".png") ]
+                                str crop.Name ]
+                            td [] [ ofInt crop.TotalGrowthTime ]
+                            td [] [ ofOption (Option.bind (ofInt >> Some) crop.RegrowTime) ]
+                            td [] [ for season in crop.Seasons do str (string season); br [] ]
+                            td []
+                              ( if not crop.PriceFrom.IsEmpty then
+                                  viewPrices model (Types.Name crop.Name) crop.PriceFrom priceStatuses
+                                else
+                                  [ str "N/A" ] ) ] ] ] ]
           checkboxWithText "Show Crops That Cannot Give One Harvest" ToggleShowUselessCrops model.ShowUselessCrops dispatch ]
   | Fertilizers ->
       div [ classModifier "sidebar-table-content" "open" model.SidebarOpen ]
         [ table [ ClassName "table" ]
             [ thead [ ClassName "table-header" ]
                 [ tr []
-                    [ th [] []
-                      th [] [ str "Fertilizer" ]
-                      th [] [ str "Quality" ]
-                      th [] [ str "Speed" ]
-                      th [] [ str "Price" ] ] ]
+                    [ th [ OnClick (fun _ -> dispatch <| SetFertilizerSort FertilizerSort.Selected) ] []
+                      th [ OnClick (fun _ -> dispatch <| SetFertilizerSort FertilizerSort.ByName) ] [ str "Fertilizer" ]
+                      th [ OnClick (fun _ -> dispatch <| SetFertilizerSort Quality) ] [ str "Quality" ]
+                      th [ OnClick (fun _ -> dispatch <| SetFertilizerSort Speed) ] [ str "Speed Bonus" ]
+                      th [ OnClick (fun _ -> dispatch <| SetFertilizerSort FertilizerSort.Price) ] [ str "Price" ] ] ]
               tbody [ ClassName "table-body" ]
-                [ for f in model.FertilizerList do
-                    let fert = model.Fertilizers.[f]
-                    let priceStatuses = model.BestPrices fert.PriceFrom
-                    let status =
-                      if (List.exists (fun ps -> snd ps = Valid) priceStatuses) then
-                        Valid
-                      elif (List.exists (fun ps -> snd ps = Warning) priceStatuses) then
-                        Warning
-                      else
-                        Invalid
-                    tr []
-                      [ td [] [ statusCheckbox [] (ToggleFertSelected f) fert.Selected status dispatch ] 
-                        td []
-                          [ img
-                              [ ClassName "fertilizer-img"
-                                Src ("/img/Fertilizers/" + fert.Name + ".png") ]
-                            str fert.Name ]
-                        td [] [ ofInt fert.Quality ]
-                        td [] [ ofFloat fert.Speed ]
-                        td [] (viewPrices model f fert.PriceFrom priceStatuses) ] ] ]
+                [ ofList
+                    [ for fert in model.SortedFertilizers do
+                        let priceStatuses = model.PriceStatuses fert.PriceFrom
+                        let status =
+                          if (List.exists (fun ps -> snd ps = Valid) priceStatuses) then
+                            Valid
+                          elif (List.exists (fun ps -> snd ps = Warning) priceStatuses) then
+                            Warning
+                          else
+                            Invalid
+                        tr [ Key fert.Name ]
+                          [ td [] [ statusCheckbox [] (ToggleFertilizerSelected (Types.Name fert.Name)) fert.Selected status dispatch ] 
+                            td []
+                              [ img
+                                  [ ClassName "fertilizer-img"
+                                    Src ("/img/Fertilizers/" + fert.Name + ".png") ]
+                                str fert.Name ]
+                            td [] [ ofInt fert.Quality ]
+                            td [] [ str (string (fert.Speed * 100.0) + "%") ]
+                            td [] (viewPrices model (Types.Name fert.Name) fert.PriceFrom priceStatuses) ] ] ] ]
           label []
             [ str "Starting Fertilizer: "
               select
@@ -1501,7 +1559,7 @@ let cover sidebarOpen dispatch =
 let sidebar model dispatch =
   div [ classModifier "sidebar" "open" model.SidebarOpen ]
     [ sidebarContent model dispatch
-      viewTabsWith (fun t -> model.SidebarOpen && t = model.SidebarTab) "sidebar" SetSidebarTab SidebarTab.List dispatch ]
+      viewTabsWith (fun t -> model.SidebarOpen && t = model.SidebarTab) string "sidebar" SetSidebarTab SidebarTab.List dispatch ]
 
 let view model dispatch =
   match model.Page with

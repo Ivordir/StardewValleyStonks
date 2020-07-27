@@ -10,6 +10,13 @@ type Fertilizer =
     PriceFrom: Map<Name<Source>, Price> }
   member this.Toggle = { this with Selected = not this.Selected }
 
+type FertilizerSort =
+  | ByName
+  | Selected
+  | Quality
+  | Speed
+  | Price
+
 //[<RequireQualifiedAccess>]
 module Fertilizer =
   let name fertilizer = fertilizer.Name

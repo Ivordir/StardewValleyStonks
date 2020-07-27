@@ -10,25 +10,33 @@ type Season =
   | Summer
   | Fall
   | Winter
+  member this.Next =
+   match this with
+   | Spring -> Summer
+   | Summer -> Fall
+   | Fall -> Winter
+   | Winter -> Spring
   static member List =
     [ Spring
       Summer
       Fall
       Winter ]
 
-let seasonToInt = function
-  | Spring -> 1
-  | Summer -> 2
-  | Fall -> 3
-  | Winter -> 4
+let seasonsFrom start finish =
+  let rec helper list (current: Season) finish =
+    if current = finish then
+      current::list
+    else
+      helper (current::list) current.Next finish
+  helper [] start finish
 
-let season int =
-  match int with
-  | 1 -> Spring
-  | 2 -> Summer
-  | 3 -> Fall
-  | 4 -> Winter
-  | _ -> invalidArg "int" (sprintf "There are only four seasons dummy. '%i' does not correspond to a season." int)
+let parseSeason str =
+  match str with
+  | "Spring" -> Spring
+  | "Summer" -> Summer
+  | "Fall" -> Fall
+  | "Winter" -> Winter
+  | _ -> invalidArg "str" ("'" + str + "' is not the name of a Season.")
 
 type Date =
   { Season: Season
@@ -111,6 +119,13 @@ type RequirementsShould =
     [ Warn
       Invalidate
       Ignore ]
+
+let requirementsShould str =
+  match str with
+  | "Warn" -> Warn
+  | "Invalidate" -> Invalidate
+  | "Ignore" -> Ignore
+  | _ -> invalidArg "str" (sprintf "'%s' does not correspond to a RequirementsShould." str)
 
 type InvalidReason =
   | UnmetRequirement of Requirement

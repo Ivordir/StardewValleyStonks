@@ -8,24 +8,22 @@ module private Util =
 open Types
 
 type Replant =
-  | BuySeeds
   | SeedMaker
   | SeedOrCrop
   member this.Name =
     match this with
-    | BuySeeds -> "Buy Seeds"
     | SeedMaker -> "Seed Maker"
     | SeedOrCrop -> "Harvested Crop or Seed"
   static member List =
-    [ BuySeeds
-      SeedMaker
+    [ SeedMaker
       SeedOrCrop ]
 
 type HarvestedItemData =
   { Item: Item
     Amount: float
     Products: Map<ProductSource, Product>
-    Replants: Map<Replant, bool option> }
+    Replant: Replant option
+    ReplantOverride: bool option }
 
 type Crop =
   { Name: string
@@ -38,9 +36,11 @@ type Crop =
     GrowthMultipliers: Name<Multiplier> list
     Item: Item
     Seed: Item
-    PriceFrom: Map<Name<Source>, Price>
     Products: Map<ProductSource, Product>
-    Replants: Map<Replant, bool option>
+    PriceFrom: Map<Name<Source>, Price>
+    BuySeedsOverride: bool option
+    Replant: Replant option
+    ReplantOverride: bool option
     IsGiantCrop: bool
     HasDoubleCropChance: bool
     ExtraCrops: float
@@ -64,6 +64,14 @@ type Crop =
         maxReduction <- maxReduction - 1
         traverses <- traverses + 1
       this.TotalGrowthTime - daysReduced
+
+  type CropSort =
+    | ByName
+    | Selected
+    | Seasons
+    | TotalGrowthTime
+    | RegrowTime
+    | SeedPrice
 
   type CreateCropItem =
     | SellPrice of int
@@ -126,7 +134,7 @@ module Crop =
     | Keg product -> [ createKegProduct product cropItem ]
     | Jar product -> [ createJarProduct product cropItem ]
     | ProductList list -> list
-    | CreateAndList (create, list) -> createProducts create cropItem @ list
+    | CreateAndList (products, list) -> createProducts products cropItem @ list
     | NoProduct -> List.empty
 
   let private createPrice seedSellPrice name =
@@ -175,7 +183,9 @@ module Crop =
       Seed = initialItem
       PriceFrom = Map.empty
       Products = Map.empty
-      Replants = Map.empty
+      BuySeedsOverride = None
+      Replant = None
+      ReplantOverride = None
       IsGiantCrop = false
       HasDoubleCropChance = true
       ExtraCrops = 0.0
@@ -206,7 +216,6 @@ module Crop =
               Multiplier = None }
         | Seed item -> item
         | CropItem -> createdCropItem
-    let priceFrom = createdSeed.BasePrice |> createPrices prices |> priceListToMap
     { initialCrop with
         Name = name
         Seasons = seasonsSet
@@ -222,20 +231,21 @@ module Crop =
               SeedsFromSeedMaker None ]
           |> List.map (fun p -> p.Source, p)
           |> Map.ofList
-        PriceFrom = priceFrom
-        Replants =
-          [ if not priceFrom.IsEmpty then BuySeeds
-            if seed = CropItem then SeedOrCrop
-            if seedMaker then SeedMaker ]
-          |> List.map (fun r -> r, None)
-          |> Map.ofList }
+        PriceFrom = createdSeed.BasePrice |> createPrices prices |> priceListToMap
+        Replant =
+          if seedMaker then
+            Some SeedMaker
+          elif seed = CropItem then
+            Some SeedOrCrop
+          else
+            None }
 
   let create = createCrop true
   let createWithoutSeedMaker = createCrop false
 
   let name crop = crop.Name
   let selected crop = crop.Selected
-  //let seasons
+  let seasons crop = crop.Seasons
   let totalGrowthTime crop = crop.TotalGrowthTime
   let regrowTime crop = crop.RegrowTime
 
