@@ -3,9 +3,12 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="./Types/Types.fs" />
-    <Compile Include="./Types/Fertilizer.fs" />
-    <Compile Include="./Types/Crop.fs" />
+    <Compile Include="./Model/Types.fs" />
+    <Compile Include="./Model/Skills.fs" />
+    <Compile Include="./Model/Price.fs" />
+    <Compile Include="./Model/Fertilizer.fs" />
+    <Compile Include="./Model/Crop.fs" />
+    <Compile Include="./Model/Model.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />

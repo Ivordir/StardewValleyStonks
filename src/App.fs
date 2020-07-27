@@ -8,304 +8,40 @@ importAll "../sass/main.sass"
 
 //--Model--
 open Types
-//open Crop
-
-type Page =
-  | Home
-  | Help
-
-type SidebarTab =
-  | Skills
-  | Crops
-  | Fertilizers
-  | Buy
-  | Sell
-  | Replant
-  | Date
-  | Settings
-  | Mod
-  static member List =
-    [ Skills
-      Crops
-      Fertilizers
-      Buy
-      Sell
-      Replant
-      Date
-      Settings
-      Mod ]
-
-type Integer = int
-
-let sortMode<'t, 'key when 'key: comparison> ascending =
-  if ascending then
-    List.sortBy<'t, 'key>
-  else
-    List.sortByDescending<'t, 'key>
-
-type Model =
-  { Page: Page
-    StartDate: Date
-    EndDate: Date
-    Year: int
-    SidebarTab: SidebarTab
-    SidebarOpen: bool
-    Skills: Map<Name<Skill>, Skill>
-    SkillList: Name<Skill> list
-    Multipliers: Map<Name<Multiplier>, Multiplier>
-    IgnoreProfessions: bool
-    BuySources: Map<Name<Source>, Source>
-    BuySourceList: Name<Source> list //lists are necessary to enforce/preserve order, haven't thought of another way
-    MatchConditions: Map<Name<MatchCondition>, MatchCondition>
-    MatchConditionList: Name<MatchCondition> list
-    Processors: Map<Name<Processor>, Processor>
-    ProcessorList: Name<Processor> list
-    SellRawItem: bool
-    SellSeedsFromSeedMaker: bool
-    ProductSources: ProductSource list
-    BuySeeds: bool
-    Replants: Map<Replant, bool>
-    Crops: Map<Name<Crop>, Crop>
-    CropList: Name<Crop> list
-    CropSort: CropSort
-    CropSortAscending: bool
-    ShowUselessCrops: bool
-    Fertilizers: Map<Name<Fertilizer>, Fertilizer>
-    FertilizerList: Name<Fertilizer> list
-    FertilizerSort: FertilizerSort
-    FertilizerSortAscending: bool
-    YearRequirementsShould: RequirementsShould
-    SkillLevelRequirementsShould: RequirementsShould
-    SpecialCharm: bool
-    LuckBuff: int
-    BaseGiantCropChance: float
-    GiantCropChecksPerTile: float
-    SeedMakerProb: float
-    AncientSeedProb: float
-    GreenhouseMode: bool
-    StartingFertilizer: Name<Fertilizer> option
-    QualityProducts: bool
-    QualitySeedMaker: bool
-    QualitySeedMakerAmounts: Map<Quality, int> }
-  member this.ValidDate = this.StartDate.IsBefore this.EndDate
-  member this.RequirementMet = function
-    | SkillLevel (skill, level) -> this.SkillLevelRequirementsShould = Ignore || this.Skills.[skill].Level >= level
-    | Year y -> this.YearRequirementsShould = Ignore || this.Year >= y
-  member private this.StatusHelper requirement requirementsShould =
-    match requirementsShould with
-    | Ignore -> Valid
-    | Warn | Invalidate when (this.RequirementMet requirement) -> Valid
-    | Warn -> Warning
-    | Invalidate -> Invalid
-  member this.RequirementStatus = function
-    | SkillLevel (skill, level) -> this.StatusHelper (SkillLevel (skill, level)) this.SkillLevelRequirementsShould
-    | Year y -> this.StatusHelper (Year y) this.YearRequirementsShould
-  member this.RequirementStatuses = List.map (fun c -> c, this.RequirementStatus c)
-  member this.RequirementStatusData requirements overallStatus =
-    requirements
-    |> List.filter (fun c -> this.RequirementStatus c = overallStatus)
-    |> List.map UnmetRequirement
-  member this.OverallRequirementStatus requirementStatuses =
-    if (List.exists (fun cs -> snd cs = Invalid) requirementStatuses) then
-      Invalid
-    elif (List.exists (fun cs -> snd cs = Warning) requirementStatuses) then
-      Warning
-    else Valid
-  member this.SourceStatus source =
-    if this.BuySources.[source].Selected then Valid else Invalid
-  member this.SourceStatusData source =
-    [ if not this.BuySources.[source].Selected then Reason "Is not selected." ]
-  member this.ProductSourceSelected source =
-    match source with
-    | RawCrop -> this.SellRawItem
-    | Processor p -> this.Processors.[p].Selected
-    | ProductSource.SeedMaker -> this.SellSeedsFromSeedMaker
-  member this.ProductSourceStatus source=
-    match source with
-    | RawCrop -> if this.SellRawItem then Valid else Invalid
-    | Processor p ->
-        if this.Processors.[p].Selected then
-          this.RequirementStatuses this.Processors.[p].Requirements
-          |> this.OverallRequirementStatus
-        else Invalid
-    | ProductSource.SeedMaker ->
-        if this.SellSeedsFromSeedMaker then
-          this.RequirementStatuses seedMakerRequirement
-          |> this.OverallRequirementStatus
-        else
-          Invalid
-  member this.ProductSourceStatusData source overallStatus =
-    match source with
-    | RawCrop -> [ if not this.SellRawItem then Reason "Is not selected." ]
-    | Processor p ->
-        [ if not this.Processors.[p].Selected then Reason "Is not selected." ]
-        @ this.RequirementStatusData this.Processors.[p].Requirements overallStatus
-    | ProductSource.SeedMaker ->
-        [ if not this.SellSeedsFromSeedMaker then Reason "Is not selected." ]
-        @ this.RequirementStatusData seedMakerRequirement overallStatus
-  member this.ReplantStatus replant =
-    match replant with
-    | Replant.SeedMaker ->
-        if this.Replants.[Replant.SeedMaker] then
-          this.RequirementStatuses seedMakerRequirement
-          |> this.OverallRequirementStatus
-        else
-          Invalid
-    | r -> if this.Replants.[r] then Valid else Invalid
-  member this.ReplantStatusData replant overallStatus =
-    match replant with
-    | Replant.SeedMaker ->
-        [ if not this.Replants.[Replant.SeedMaker] then Reason "Is not selected." ]
-        @ this.RequirementStatusData seedMakerRequirement overallStatus
-    | r -> [ if not this.Replants.[r] then Reason "Is not selected." ]
-  member this.PriceStatus (price: Price) =
-    match price.Override with
-    | Some true -> Valid //true //ignore source conditions but consider local conditions
-    | Some false -> Invalid //false //false, return display: manually overriden to false
-    | None ->
-        if (this.SourceStatus price.Source = Valid) then
-          this.RequirementStatuses price.Requirements
-          |> this.OverallRequirementStatus
-        else Invalid
-   member this.PriceStatusData (priceStatus: Price * Status) =
-    ( match (fst priceStatus).Override with
-      | Some true -> []
-      | Some false -> []
-      | None -> this.SourceStatusData (fst priceStatus).Source)
-    @ this.RequirementStatusData (fst priceStatus).Requirements (snd priceStatus)
-  member this.PriceOf (priceFrom: Map<Name<Source>, Price>) price =
-    match price with
-    | Price p -> p.Value
-    | MatchPrice m -> if this.MatchConditions.[m.MatchCondition].Selected then this.PriceOf priceFrom priceFrom.[m.MatchSource] else m.Value
-  member this.PriceStatuses (priceFrom: Map<Name<Source>, Price>) =
-    let priceStatuses = Map.map (fun source _ -> this.PriceStatus priceFrom.[source] ) priceFrom
-    let validPrices = Map.filter (fun _ status -> status <> Invalid) priceStatuses
-    ( if (validPrices.IsEmpty) then
-        priceFrom
-      else
-        let bestPrice = Map.fold (fun currentMin source _ -> min (this.PriceOf priceFrom priceFrom.[source] ) currentMin) Integer.MaxValue validPrices
-        Map.filter (fun _ price -> this.PriceOf priceFrom price = bestPrice) priceFrom)
-    |> Map.fold (fun prices source price -> (price, priceStatuses.[source])::prices) []
-  member this.OverallPriceStatus priceStatuses =
-    if (List.exists (fun ps -> snd ps = Warning) priceStatuses) then
-      Warning
-    elif (List.exists (fun ps -> snd ps = Valid) priceStatuses) then
-      Valid
-    else
-      Invalid
-  member this.BestPrice (priceFrom: Map<Name<Source>, Price>) priceStatuses =
-    if priceFrom.IsEmpty then
-      Integer.MaxValue
-    elif this.OverallPriceStatus priceStatuses = Invalid then
-      Integer.MaxValue - 1
-    else
-      this.PriceOf priceFrom (fst priceStatuses.Head)
-  member this.BestPrice2 (priceFrom: Map<Name<Source>, Price>) =
-    this.BestPrice priceFrom (this.PriceStatuses priceFrom)
-  member this.SortedFertilizers =
-    [ for KeyValue(_, fert) in this.Fertilizers do
-        fert ]
-    |> List.sortBy Fertilizer.name
-    |> (fun list ->
-      ( match this.FertilizerSort with
-        | FertilizerSort.ByName -> list
-        | FertilizerSort.Selected -> (sortMode this.FertilizerSortAscending) Fertilizer.selected list
-        | Quality -> (sortMode this.FertilizerSortAscending) Fertilizer.quality list
-        | Speed -> (sortMode this.FertilizerSortAscending) Fertilizer.speed list
-        | FertilizerSort.Price -> (sortMode this.FertilizerSortAscending) (fun c -> this.BestPrice2 c.PriceFrom) list))
-  member this.SortedCrops =
-    [ for KeyValue(_, crop) in this.Crops do
-        if this.ShowUselessCrops || this.CropCanGiveOneHarvest crop then crop ]
-    |> List.sortBy Crop.name
-    |> List.sortBy Crop.seasons
-    |> (fun list ->
-      ( match this.CropSort with
-        | CropSort.ByName -> (sortMode this.CropSortAscending) Crop.name list
-        | CropSort.Selected -> (sortMode this.CropSortAscending) Crop.selected list
-        | Seasons -> list
-        | TotalGrowthTime -> (sortMode this.CropSortAscending) Crop.totalGrowthTime list
-        | RegrowTime -> (sortMode this.CropSortAscending) Crop.regrowTime list
-        | SeedPrice -> (sortMode this.CropSortAscending) (fun c -> this.BestPrice2 c.PriceFrom) list))
-  member this.DoubleCropProb = 0.0001 + float this.LuckBuff / 1500.0 + (if this.SpecialCharm then 0.025 else 0.0)
-  member this.NoGiantCropProb = (1.0 - this.BaseGiantCropChance) ** this.GiantCropChecksPerTile
-  member this.CropAmounts crop =
-    let noGiantCropProb = if crop.IsGiantCrop then this.NoGiantCropProb else 1.0
-    (noGiantCropProb,
-     noGiantCropProb * (crop.ExtraCrops + (if crop.HasDoubleCropChance then crop.ExtraCrops * this.DoubleCropProb + this.DoubleCropProb else 0.0))
-     + (1.0 - noGiantCropProb) * 2.0)
-  member this.GrowthMultiplierValue name =
-    match this.Multipliers.[name] with
-    | Multiplier m -> if m.Selected then m.Value else 0.0
-    | Profession p ->
-        let skill = this.Skills.[p.Skill]
-        if skill.Professions.[p.Profession].Selected && (skill.ProfessionIsUnlocked p.Profession || this.SkillLevelRequirementsShould <> Invalidate) then
-          p.Value
-        else
-          0.0
-  member this.GrowthTime fertSpeed (crop: Crop) =
-    crop.GrowthTimeWith (fertSpeed + List.sumBy this.GrowthMultiplierValue crop.GrowthMultipliers)
-  member this.FastestFertSpeed =
-    this.FertilizerList
-    |> List.filter (fun fert -> this.Fertilizers.[fert].Selected && List.exists (fun (_, s) -> s <> Invalid) (this.PriceStatuses this.Fertilizers.[fert].PriceFrom))
-    |> (fun list -> if list.IsEmpty then 0.0 else this.Fertilizers.[ (List.maxBy (fun fert -> this.Fertilizers.[fert].Speed) list) ].Speed)
-  member this.DaysInSeason (season: Season) =
-    if season >= this.StartDate.Season && season <= this.EndDate.Season then
-      if this.StartDate.Season = this.EndDate.Season then
-        this.EndDate.Day - this.StartDate.Day + 1
-      elif season = this.StartDate.Season then
-        29 - this.StartDate.Day
-      elif season = this.EndDate.Season then
-        this.EndDate.Day
-      else
-        28
-    else
-      0
-  member this.CropCanGiveOneHarvest crop =
-    let seasons = seasonsFrom this.StartDate.Season this.EndDate.Season
-    if List.exists crop.Seasons.Contains seasons then
-      let lastConsecDays, maxDays =
-        seasons
-        |> List.fold
-          (fun (consecDays, maxDays) season ->
-            if crop.Seasons.Contains season then
-              (consecDays + this.DaysInSeason season, maxDays)
-            else
-              (0, max consecDays maxDays))
-          (0, 0)
-      this.GrowthTime this.FastestFertSpeed crop <= (max lastConsecDays maxDays) - 1
-    else
-      false
 
 let init () =
   let skills =
-    [ { Skill.Initial with
+    [ { Skill.initial with
           Name = "Farming"
           Professions =
-            professionListToMap
-              [ { Profession.Initial with
+            listToMap
+              Profession.nameKey
+              [ { Profession.initial with
                     Name = "Tiller"
                     UnlockLevel = 5
                     Dependants = set [ Name "Artisan"; Name "Agriculturist" ] }
-                { Profession.Initial with
+                { Profession.initial with
                     Name = "Artisan"
                     Requires = set [ Name "Tiller" ]
                     ExclusiveWith = set [ Name "Agriculturist" ] }
-                { Profession.Initial with
+                { Profession.initial with
                     Name = "Agriculturist"
                     Requires = set [ Name "Tiller" ]
                     ExclusiveWith = set [ Name "Artisan" ] } ]
+
           ProfessionLayout =
             [ [ Name "Tiller" ]
               [ Name "Artisan"; Name "Agriculturist" ] ] }
-      { Skill.Initial with
+      { Skill.initial with
           Name = "Foraging"
           Professions =
-            professionListToMap
-              [ { Profession.Initial with
+            listToMap
+              Profession.nameKey
+              [ { Profession.initial with
                     Name = "Gatherer"
                     UnlockLevel = 5
                     Dependants = set [ Name "Botanist" ] }
-                { Profession.Initial with
+                { Profession.initial with
                     Name = "Botanist"
                     Requires = set [ Name "Gatherer" ] } ]
           ProfessionLayout = [ [ Name "Gatherer" ]; [ Name "Botanist" ] ] } ]
@@ -338,21 +74,21 @@ let init () =
       "Oasis"
       "Traveling Merchant"
       "Crafting" ]
-    |> List.map source
+    |> List.map Source.create
 
   let matchConditions = [ { Name = "Joja Membership"; Selected = false } ]
 
   let processors =
-    [ { Processor.Initial with
+    [ { Processor.initial with
           Name = "Preserves Jar"
           Requirements = [ SkillLevel (Name "Farming", 4) ] }
-      { Processor.Initial with
+      { Processor.initial with
           Name = "Keg"
           Requirements = [ SkillLevel (Name "Farming", 8) ] }
-      { Processor.Initial with
+      { Processor.initial with
           Name = "Oil Maker"
           Requirements = [ SkillLevel (Name "Farming", 8) ] }
-      { Processor.Initial with Name = "Mill" } ]
+      { Processor.initial with Name = "Mill" } ]
 
   let oil =
     Process
@@ -381,15 +117,6 @@ let init () =
              BasePrice = price
              Multiplier = Some (Name "Artisan") }
          Override = None |}
-
-  let price name value =
-    Price
-      {| Value = value
-         Source = Name name
-         Requirements = List.empty<Requirement>
-         Override = Option<bool>.None |}
-
-  let test = List.sortBy
 
   let crops =
     [ Crop.create
@@ -425,7 +152,7 @@ let init () =
                    Output = item "Coffee" 150
                    OutputAmount = 1.0
                    Override = None |} ] )
-          (PriceList [ price "Traveling Merchant" 2500 ] )
+          (PriceList [ Price.create "Traveling Merchant" 2500 ] )
         with
           RegrowTime = Some 2
           ExtraCrops = Crop.extraCrops 4 0.02 }
@@ -438,11 +165,11 @@ let init () =
         (SeedSell 20)
         Vegetable
         (PriceList
-          [ Price
+          [ Price.Price
               {| Value = 40
                  Source = Name "Pierre"
                  Requirements = [ Year 2 ]
-                 Override = None |} ] )
+                 OverrideSource = None |} ] )
 
       { Crop.create
           "Green Bean"
@@ -502,7 +229,7 @@ let init () =
           (SellPrice 120)
           (SeedSell 0)
           Fruit
-          (PriceList [ price "Pierre" 100 ])
+          (PriceList [ Price.create "Pierre" 100 ])
         with
           RegrowTime = Some 4
           ExtraCrops = Crop.extraCrops 1 0.02 }
@@ -530,7 +257,7 @@ let init () =
                      Override = None |} ] ))
           Pierre
         with
-          GrowthMultipliers = Name "Irrigated"::agri
+          GrowthMultipliers = Name "Irrigated"::Crop.agri
           HasDoubleCropChance = false
           ExtraCrops = Crop.extraCrops 1 0.1 }
 
@@ -617,11 +344,11 @@ let init () =
         (SeedSell 50)
         Vegetable
         (PriceList
-          [ Price
+          [ Price.Price
               {| Value = 100
                  Source = Name "Pierre"
                  Requirements = [ Year 2 ]
-                 Override = None |} ] )
+                 OverrideSource = None |} ] )
 
       Crop.create
         "StarFruit"
@@ -649,8 +376,8 @@ let init () =
           (SeedSell 20)
           (ProductList [ oil ] )
           (PriceList
-            [ price "Pierre" 200
-              price "Joja" 125 ] )
+            [ Price.create "Pierre" 200
+              Price.create "Joja" 125 ] )
         with
           HasDoubleCropChance = false
           HarvestedItems =
@@ -713,11 +440,11 @@ let init () =
         (SeedSell 15)
         Vegetable
         (PriceList
-          [ Price
+          [ Price.Price
               {| Value = 30
                  Source = Name "Pierre"
                  Requirements = [ Year 2 ]
-                 Override = None |} ] )
+                 OverrideSource = None |} ] )
 
       Crop.create
         "Beet"
@@ -751,7 +478,7 @@ let init () =
           (SellPrice 75)
           (SeedSell 60)
           Fruit
-          (Joja (price "Pierre" 240))
+          (Joja (Price.create "Pierre" 240))
         with
           RegrowTime = Some 5
           ExtraCrops = Crop.extraCrops 2 0.1 }
@@ -806,7 +533,7 @@ let init () =
         (Item (item "Sweet Gem Berry" 3000))
         (Seed (item "Rare Seed" 200))
         NoProduct
-        (PriceList [ price "Traveling Merchant" 1000 ])
+        (PriceList [ Price.create "Traveling Merchant" 1000 ])
 
       Crop.create
         "Yam"
@@ -834,34 +561,34 @@ let init () =
         "Basic Fertilizer"
         1
         0.0
-        [ price "Pierre" 100 ]
+        [ Price.create "Pierre" 100 ]
 
       Fertilizer.create
         "Quality Fertilizer"
         2
         0.0
-        [ Price
+        [ Price.Price
             {| Value = 150
                Source = Name "Pierre"
                Requirements = [ Year 2 ]
-               Override = None |} ]
+               OverrideSource = None |} ]
 
       Fertilizer.create
         "Speed-Gro"
         0
         0.1
-        [ price "Pierre" 100 ]
+        [ Price.create "Pierre" 100 ]
 
       Fertilizer.create
         "Deluxe Speed-Gro"
         0
         0.25
-        [ Price
+        [ Price.Price
             {| Value = 150
                Source = Name "Pierre"
                Requirements = [ Year 2 ]
-               Override = None |}
-          price "Oasis" 80 ] ]
+               OverrideSource = None |}
+          Price.create "Oasis" 80 ] ]
 
   { Page = Home
     StartDate = { Season = Spring; Day = 1 }
@@ -994,7 +721,7 @@ let update message model =
   | SetSkillBuff (skill, buff) ->
       { model with Skills = model.Skills.Add(skill, { model.Skills.[skill] with Buff = max buff 0 } ) }
   | ToggleProfession (skill, name) ->
-      { model with Skills = model.Skills.Add(skill, model.Skills.[skill].ToggleProfession name model.IgnoreProfessions) }
+      { model with Skills = model.Skills.Add(skill, model.Skills.[skill] |> Skill.toggleProfession name model.IgnoreProfessions) }
   | ToggleBuySource source -> { model with BuySources = model.BuySources.Add(source, model.BuySources.[source].Toggle) }
   | ToggleMatchCondition cond -> { model with MatchConditions = model.MatchConditions.Add(cond, model.MatchConditions.[cond].Toggle) }
   | ToggleProductSource source ->
@@ -1159,22 +886,22 @@ let profession requirementsShould name skill dispatch =
     [ ClassName
         ( "profession" +
           if skill.Professions.[name].Selected then
-            if skill.ProfessionIsUnlocked name || requirementsShould <> Invalidate then
+            if Skill.professionIsUnlocked name skill || requirementsShould <> Invalidate then
               "--active"
             else
               "--error"
           else
             "")
       OnClick (fun _ -> dispatch <| ToggleProfession (Types.Name skill.Name, name)) ]
-    [ if skill.Professions.[name].Selected && not (skill.ProfessionIsUnlocked name) then
+    [ if skill.Professions.[name].Selected && not (Skill.professionIsUnlocked name skill) then
         if requirementsShould = Warn then
           warningIcon
         elif requirementsShould = Invalidate then
           errorIcon
       img
         [ ClassName "profession-img"
-          Src ("img/Skills/" + name.Value + ".png") ]
-      str name.Value ]
+          Src ("img/Skills/" + ofName name + ".png") ]
+      str (ofName name) ]
 
 let professionRow requirementsShould skill row dispatch =
   div [ ClassName "profession-row" ]
@@ -1197,14 +924,14 @@ let rec invalidReason reason =
     [ match reason with
       | UnmetRequirement c ->
           match c with
-          | SkillLevel (skill, level) -> str (skill.Value + " level too low. Unlocks at level " + string level + ".")
+          | SkillLevel (skill, level) -> str (ofName skill + " level too low. Unlocks at level " + string level + ".")
           | Year y -> str ("Available only from year " + string y + " and onwards.")
       | Reason reason -> str reason
       | SubReason (text, sub) -> str text; for subReason in sub do ul [] [ invalidReason subReason ] ]
 
 let buySource (name: Name<Source>) selected dispatch =
   li []
-    [ checkboxWith (sourceIcon name.Value) (ToggleBuySource name) selected dispatch ]
+    [ checkboxWith (sourceIcon (ofName name)) (ToggleBuySource name) selected dispatch ]
 
 let buySources list (sources: Map<Name<Source>, Source>) dispatch =
   ul [ClassName "source-list" ]
@@ -1218,8 +945,8 @@ let productSource (source: ProductSource) selected status dispatch =
 let productSources model dispatch =
   ul [ ClassName "source-list" ]
     [ for source in model.ProductSources do
-        let status = model.ProductSourceStatus source
-        let selected = model.ProductSourceSelected source
+        let status = Model.productSourceStatus model source
+        let selected = Model.productSourceSelected model source
         productSource source selected status dispatch
         if selected then
           if status = Warning then
@@ -1232,7 +959,7 @@ let productSources model dispatch =
                 ClassName "details-input"
                 Id source.Name ]
             ul [ ClassName "details" ]
-              [ for reason in model.ProductSourceStatusData source status do
+              [ for reason in Model.productSourceStatusData status model source do
                   invalidReason reason ]
           elif status = Invalid then
             let id = System.Guid.NewGuid().ToString()
@@ -1245,7 +972,7 @@ let productSources model dispatch =
                 ClassName "details-input"
                 Id id ]
             ul [ ClassName "details" ]
-              [ for reason in model.ProductSourceStatusData source status do
+              [ for reason in Model.productSourceStatusData status model source do
                   invalidReason reason ] ]
 
 let replant (replant: Replant) selected status dispatch =
@@ -1257,7 +984,7 @@ let replants (model: Model) dispatch =
     [ li []
         [ checkboxWith (sourceIcon "Buy Seeds") ToggleBuySeeds model.BuySeeds dispatch ]
       for r in Replant.List do
-        let status = model.ReplantStatus r
+        let status = Model.replantStatus model r
         replant r model.Replants.[r] status dispatch
         if r = Replant.SeedMaker && status = Warning then
           label
@@ -1269,7 +996,7 @@ let replants (model: Model) dispatch =
               ClassName "details-input"
               Id r.Name ]
           ul [ ClassName "details" ]
-            [ for reason in model.ReplantStatusData r status do
+            [ for reason in Model.replantStatusData status model r do
                 invalidReason reason ] ]
 
 let selectOptions (list: 't seq) string (ofString: string -> 't) text message (value: 't) dispatch=
@@ -1282,7 +1009,7 @@ let selectOptions (list: 't seq) string (ofString: string -> 't) text message (v
               option [ Value something ]
                 [ str (string something) ] ] ]
 
-let selectRequirementsShould = selectOptions RequirementsShould.List string requirementsShould
+let selectRequirementsShould = selectOptions RequirementsShould.List string parseRequirementsShould
 
 let viewPrices (model: Model) (name: Name<'t>) priceFrom (priceStatuses: (Price * Status) list) =
   let status =
@@ -1295,53 +1022,53 @@ let viewPrices (model: Model) (name: Name<'t>) priceFrom (priceStatuses: (Price 
   //extract warnings and errors to crop/fert level from the current price level
   match status with
   | Warning ->
-      [ str (string (model.PriceOf priceFrom (fst priceStatuses.Head)) + "g")
+      [ str (string (Model.priceOf priceFrom model (fst priceStatuses.Head)) + "g")
         for price in priceStatuses do
           img
             [ classModifier "price-img" "warning" (snd price = Warning)
-              Src ("img/Sources/" + (fst price).Source.Value + ".png") ]
+              Src ("img/Sources/" + (fst price |> Price.source |> ofName) + ".png") ]
         br []
         warningIcon
         label
           [ ClassName "details-label"
-            HtmlFor name.Value ]
+            HtmlFor (ofName name) ]
           [ str "Show Warnings"]
         input
           [ Type "checkbox"
             ClassName "details-input"
-            Id name.Value ]
+            Id (ofName name) ]
         ul [ ClassName "details" ]
             [ for priceStatus in priceStatuses do
                 li []
-                  ( sourceIcon (fst priceStatus).Source.Value @
+                  ( sourceIcon (fst priceStatus |> Price.source |> ofName) @
                     [ ul []
-                        [ for reason in model.PriceStatusData priceStatus do
+                        [ for reason in Model.priceStatusData priceStatus model do
                             invalidReason reason ] ] ) ] ]
   | Valid ->
-      [ str (string (model.PriceOf priceFrom (fst priceStatuses.Head)) + "g")
+      [ str (string (Model.priceOf priceFrom model (fst priceStatuses.Head)) + "g")
         for price in priceStatuses do
           img
             [ ClassName "price-img"
-              Src ("img/Sources/" + (fst price).Source.Value + ".png") ] ]
+              Src ("img/Sources/" + (fst price |> Price.source |> ofName) + ".png") ] ]
   | Invalid ->
       [ errorIcon
         label
           [ ClassName "details-label"
-            HtmlFor name.Value ]
+            HtmlFor (ofName name) ]
           [ str "Show Errors"]
         input
           [ Type "checkbox"
             ClassName "details-input"
-            Id name.Value ]
+            Id (ofName name) ]
         ul [ ClassName "details" ]
             [ for priceStatus in priceStatuses do
                 li []
-                  ( sourceIcon (fst priceStatus).Source.Value @
+                  ( sourceIcon (fst priceStatus |> Price.source |> ofName) @
                     [ ul []
-                        [ for reason in model.PriceStatusData priceStatus do
+                        [ for reason in Model.priceStatusData priceStatus model do
                             invalidReason reason ] ] ) ] ]
 
-let selectSeasons = selectOptions Season.List string parseSeason None
+let selectSeasons = selectOptions allSeasons string parseSeason None
 
 let dayInput message day dispatch =
   label [ ClassName "day-input" ]
@@ -1369,7 +1096,7 @@ let sidebarContent model dispatch =
                   [ span [ ClassName "skill-header" ]
                       [ img
                           [ ClassName "skill-img"
-                            Src ("/img/Skills/" + skill.Value + ".png")]
+                            Src ("/img/Skills/" + ofName skill + ".png")]
                         str model.Skills.[skill].Name ]
                     skillLevelInput skill model.Skills.[skill].Level dispatch
                     skillBuffInput skill model.Skills.[skill].Buff dispatch
@@ -1388,8 +1115,8 @@ let sidebarContent model dispatch =
                       th [ OnClick (fun _ -> dispatch <| SetCropSort SeedPrice) ] [ str "Seed Price" ] ] ]
               tbody [ ClassName "table-body" ]
                 [ ofList
-                    [ for crop in model.SortedCrops do
-                        let priceStatuses = model.PriceStatuses crop.PriceFrom
+                    [ for crop in Model.sortedCrops model do
+                        let priceStatuses = Model.priceStatuses crop.PriceFrom model
                         let status =
                           if (List.exists (fun ps -> snd ps = Valid) priceStatuses) then
                             Valid
@@ -1425,8 +1152,8 @@ let sidebarContent model dispatch =
                       th [ OnClick (fun _ -> dispatch <| SetFertilizerSort FertilizerSort.Price) ] [ str "Price" ] ] ]
               tbody [ ClassName "table-body" ]
                 [ ofList
-                    [ for fert in model.SortedFertilizers do
-                        let priceStatuses = model.PriceStatuses fert.PriceFrom
+                    [ for fert in Model.sortedFertilizers model do
+                        let priceStatuses = Model.priceStatuses fert.PriceFrom model
                         let status =
                           if (List.exists (fun ps -> snd ps = Valid) priceStatuses) then
                             Valid
@@ -1449,7 +1176,7 @@ let sidebarContent model dispatch =
               select
                 [ valueOrDefault
                     ( match model.StartingFertilizer with
-                      | Some fert -> fert.Value
+                      | Some fert -> ofName fert
                       | None -> "None")
                   OnChange (fun fert ->
                     ( match fert.Value with
@@ -1459,14 +1186,14 @@ let sidebarContent model dispatch =
                 [ option [ Value "None" ]
                     [ str "None" ]
                   for fert in model.FertilizerList do
-                    option [ Value fert.Value ]
-                      [ str fert.Value ] ] ] ]
+                    option [ Value (ofName fert) ]
+                      [ str (ofName fert) ] ] ] ]
   | Buy ->
       div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
         [ buySources model.BuySourceList model.BuySources dispatch
           ul [ ClassName "match-condition-list" ]
             [ for cond in model.MatchConditionList do
-              checkboxWithText cond.Value (ToggleMatchCondition cond) model.MatchConditions.[cond].Selected dispatch ] ]
+              checkboxWithText (ofName cond) (ToggleMatchCondition cond) model.MatchConditions.[cond].Selected dispatch ] ]
   | Sell ->
       div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
         [ productSources model dispatch ]
@@ -1477,7 +1204,7 @@ let sidebarContent model dispatch =
       div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
         [ date "Start Date: " SetStartSeason SetStartDay model.StartDate dispatch
           date "End Date: " SetEndSeason SetEndDay model.EndDate dispatch
-          if not model.ValidDate then
+          if not (Model.validDate model) then
             span []
               [ errorIcon
                 if model.StartDate = model.EndDate then
@@ -1533,7 +1260,7 @@ let sidebarContent model dispatch =
                           img
                             [ ClassName "checkbox-img"
                               Src (if model.Processors.[processor].PreservesQuality then "img/UI/CheckboxGreen.png" else "img/UI/Checkbox.png") ] ] 
-                        @ sourceIcon processor.Value) ] ]
+                        @ sourceIcon (ofName processor)) ] ]
           checkboxWithText "Quality Seed Maker" ToggleQualitySeedMaker model.QualitySeedMaker dispatch
           str "(Average) Seed Amounts: "
           ul []

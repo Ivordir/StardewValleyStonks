@@ -24,6 +24,8 @@ module Fertilizer =
   let quality fertilizer = fertilizer.Quality
   let speed fertilizer = fertilizer.Speed
 
+  let nameKey fertilizer : Name<Fertilizer> = Name fertilizer.Name
+
   let create
     name
     quality
@@ -33,4 +35,4 @@ module Fertilizer =
       Selected = true
       Quality = quality
       Speed = speed
-      PriceFrom = priceListToMap prices }
+      PriceFrom = listToMap Price.key prices }
