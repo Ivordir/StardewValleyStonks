@@ -17,6 +17,8 @@ body
   font-family: StardewValley, Nunito, Helvetica, sans-serif
   font-size: 2em
 
+  --table-header-height: 3em
+
 %pixel-art
   image-rendering: pixelated
   image-rendering: -moz-crisp-edges
@@ -110,7 +112,7 @@ footer
   visibility: hidden
   transition: opacity var(--sidebar-transition-speed), visibility var(--sidebar-transition-speed)
 
-  overflow: auto
+  //overflow: auto
 
   &--open
     @extend .sidebar-content
@@ -232,12 +234,8 @@ footer
     display: block
 
 .sidebar-table-content
-  height: 100%
-  opacity: 1
-  visibility: hidden
-  transition: opacity var(--sidebar-transition-speed), visibility var(--sidebar-transition-speed)
-
-  overflow: auto
+  @extend .sidebar-content
+  justify-content: space-between
 
   &--open
     @extend .sidebar-table-content
@@ -245,12 +243,21 @@ footer
     visibility: visible
 
 .table
-  --table-header-height: 2em
-  padding-top: var(--table-header-height)
 
-  &-body
+  &-body-container
+    margin-top: var(--table-header-height)
+    //height: calc(100% - var(--table-header-height))
+    overflow: auto
+
+  & > tbody
 
   &-header
+    & > thead
     position: absolute
     top: 0
+    width: 100%
     height: var(--table-header-height)
+    background-color: lavender
+
+    & > tr
+      & > th

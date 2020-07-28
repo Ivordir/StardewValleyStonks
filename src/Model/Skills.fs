@@ -6,10 +6,16 @@ type Profession =
   { Name: string
     Selected: bool
     UnlockLevel: int
-    Requires: Set<Name<Profession>>
-    ExclusiveWith: Set<Name<Profession>>
-    Dependants: Set<Name<Profession>> }
-  member this.Toggle = { this with Selected = not this.Selected }
+    Requires: Set<NameOf<Profession>>
+    ExclusiveWith: Set<NameOf<Profession>>
+    Dependants: Set<NameOf<Profession>> }
+
+type Skill =
+  { Name: string
+    Level: int
+    Buff: int
+    Professions: Map<NameOf<Profession>, Profession>
+    ProfessionLayout: NameOf<Profession> list list }
 
 module Profession =
   let initial =
@@ -19,30 +25,15 @@ module Profession =
       Requires = Set.empty
       ExclusiveWith = Set.empty
       Dependants = Set.empty }
-  
-  let nameKey (profession: Profession) : Name<Profession> = Name profession.Name
 
-type Skill =
-  { Name: string
-    Level: int
-    Buff: int
-    Professions: Map<Name<Profession>, Profession>
-    ProfessionLayout: Name<Profession> list list }
+  let name (profession: Profession) = profession.Name
 
-module Skill =
-  let initial =
-    { Name = "initial"
-      Level = 0
-      Buff = 0
-      Professions = Map.empty
-      ProfessionLayout = List.empty }
+  let nameOf = toNameOf name
 
-  let buffedLevel skill = skill.Level + skill.Buff
-
-  let professionIsUnlocked profession skill =
+  let isUnlocked skill profession =
     skill.Professions.[profession].UnlockLevel <= skill.Level
 
-  let private setSelected value set (professions: Map<Name<Profession>, Profession>) =
+  let private setSelected value set (professions: Map<NameOf<Profession>, Profession>) =
     professions
     |> Map.map
       (fun name profession ->
@@ -51,9 +42,11 @@ module Skill =
         else
           profession)
 
-  let toggleProfession profession ignoreConflicts skill =
-    let professions = skill.Professions.Add(profession, skill.Professions.[profession].Toggle)
-    if ignoreConflicts then
+  let toggleIgnoreRelationships profession = { profession with Selected = not profession.Selected }
+
+  let toggle skill ignoreRelationships profession =
+    let professions = skill.Professions.Add(profession, toggleIgnoreRelationships skill.Professions.[profession])
+    if ignoreRelationships then
       { skill with Professions = professions }
     else
       let profession = professions.[profession]
@@ -65,3 +58,17 @@ module Skill =
               |> setSelected false profession.ExclusiveWith
             else
               professions |> setSelected false profession.Dependants }
+
+module Skill =
+  let initial =
+    { Name = "initial"
+      Level = 0
+      Buff = 0
+      Professions = Map.empty
+      ProfessionLayout = List.empty }
+
+  let name skill = skill.Name
+
+  let nameOf = toNameOf name
+
+  let buffedLevel skill = skill.Level + skill.Buff

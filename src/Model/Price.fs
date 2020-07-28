@@ -8,6 +8,10 @@ type Source =
   member this.Toggle = { this with Selected = not this.Selected }
 
 module Source =
+  let name source = source.Name
+
+  let nameOf = toNameOf name
+
   let create name : Source =
     { Name = name
       Selected = true }
@@ -17,8 +21,13 @@ type MatchCondition =
     Selected: bool }
   member this.Toggle = { this with Selected = not this.Selected }
 
+module MatchCondition =
+  let name matchCondition = matchCondition.Name
+
+  let nameOf = toNameOf name
+
 type Requirement =
-  | SkillLevel of Skill: Name<Skill> * Level: int
+  | SkillLevel of Skill: NameOf<Skill> * Level: int
   | Year of int
 
 type InvalidReason =
@@ -29,16 +38,16 @@ type InvalidReason =
 type Price =
   | Price of
       {| Value: int
-         Source: Name<Source>
+         Source: NameOf<Source>
          Requirements: Requirement list
-         OverrideSource: bool option |}
+         SourceOverride: bool option |}
   | MatchPrice of
       {| Value: int
-         Source: Name<Source>
+         Source: NameOf<Source>
          Requirements: Requirement list
-         OverrideSource: bool option
-         MatchSource: Name<Source>
-         MatchCondition: Name<MatchCondition> |}
+         SourceOverride: bool option
+         MatchSource: NameOf<Source>
+         MatchCondition: NameOf<MatchCondition> |}
 
 module Price =
   let value = function
@@ -50,18 +59,18 @@ module Price =
     | MatchPrice m -> m.Source
   
   let overrideSource = function
-    | Price p -> p.OverrideSource
-    | MatchPrice m -> m.OverrideSource
+    | Price p -> p.SourceOverride
+    | MatchPrice m -> m.SourceOverride
 
   let requirements = function
     | Price p -> p.Requirements
     | MatchPrice m -> m.Requirements
 
-  let key price = source price
+  let nameOf = source
 
   let create name value =
     Price
       {| Value = value
          Source = Name name
          Requirements = List.empty
-         OverrideSource = None |}
+         SourceOverride = None |}

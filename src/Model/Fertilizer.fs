@@ -7,7 +7,7 @@ type Fertilizer =
     Selected: bool
     Quality: int
     Speed: float
-    PriceFrom: Map<Name<Source>, Price> }
+    PriceFrom: Map<NameOf<Source>, Price> }
   member this.Toggle = { this with Selected = not this.Selected }
 
 type FertilizerSort =
@@ -17,14 +17,14 @@ type FertilizerSort =
   | Speed
   | Price
 
-//[<RequireQualifiedAccess>]
 module Fertilizer =
   let name fertilizer = fertilizer.Name
   let selected fertilizer = fertilizer.Selected
   let quality fertilizer = fertilizer.Quality
   let speed fertilizer = fertilizer.Speed
+  let priceFrom fertilizer = fertilizer.PriceFrom
 
-  let nameKey fertilizer : Name<Fertilizer> = Name fertilizer.Name
+  let nameOf = toNameOf name
 
   let create
     name
@@ -35,4 +35,4 @@ module Fertilizer =
       Selected = true
       Quality = quality
       Speed = speed
-      PriceFrom = listToMap Price.key prices }
+      PriceFrom = listToMap Price.nameOf prices }

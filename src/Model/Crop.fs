@@ -16,6 +16,10 @@ module Processor =
       Selected = true
       Requirements = List.empty
       PreservesQuality = false }
+  
+  let name processor = processor.Name
+
+  let nameOf = toNameOf name
 
 type Quality =
   | Normal
@@ -40,67 +44,83 @@ type Multiplier =
          Value: float
          Selected: bool |}
   | Profession of
-      {| Skill: Name<Skill>
-         Profession: Name<Profession>
+      {| Skill: NameOf<Skill>
+         Profession: NameOf<Profession>
          Value: float |}
-  member this.Name =
-    match this with
+
+module Multiplier =
+  let name = function
     | Multiplier m -> m.Name
     | Profession p -> ofName p.Profession
+
+  let nameOf = toNameOf name
 
 type Item =
   { Name: string
     BasePrice: int
-    Multiplier: Name<Multiplier> option }
+    Multiplier: NameOf<Multiplier> option }
 
 type ProductSource =
   | RawCrop
-  | Processor of Name<Processor>
+  | Processor of NameOf<Processor>
   | SeedMaker
-  member this.Name =
-    match this with
+
+module ProductSource =
+  let name = function
     | RawCrop -> "Raw Crop"
     | Processor p -> ofName p
     | SeedMaker -> "Seed Maker"
 
+  let nameOf = toNameOf name
+
 type Product =
   | RawItem of Override: bool option
   | Process of
-      {| Processor: Name<Processor>
+      {| Processor: NameOf<Processor>
          Output: Item
-         Override: bool option |}
+         ProcessorOverride: bool option |}
   | RatioProcess of
       {| InputAmount: int
-         Processor: Name<Processor>
+         Processor: NameOf<Processor>
          Output: Item
          OutputAmount: float
-         Override: bool option |}
+         ProcessorOverride: bool option |}
   | SeedsFromSeedMaker of Override: bool option
-  member this.Source =
-    match this with
+
+module Product =
+  let source = function
     | RawItem -> RawCrop
     | Process p -> Processor p.Processor
     | RatioProcess r -> Processor r.Processor
     | SeedsFromSeedMaker -> SeedMaker
-  member this.InputAmount =
-    match this with
+  
+  let inputAmount = function
     | RatioProcess r -> r.InputAmount
     | _ -> 1
-  member this.OutputAmount =
-    match this with
+  
+  let outputAmount = function
     | RatioProcess r -> r.OutputAmount
     | _ -> 1.0
+  
+  let sourceOverride = function
+    | RawItem o -> o
+    | Process p -> p.ProcessorOverride
+    | RatioProcess r -> r.ProcessorOverride
+    | SeedsFromSeedMaker o -> o
 
 type Replant =
   | SeedMaker
   | SeedOrCrop
-  member this.Name =
-    match this with
-    | SeedMaker -> "Seed Maker"
-    | SeedOrCrop -> "Harvested Crop or Seed"
-  static member List =
+
+module Replant =
+  let all =
     [ SeedMaker
       SeedOrCrop ]
+
+  let name = function
+    | SeedMaker -> "Seed Maker"
+    | SeedOrCrop -> "Harvested Crop or Seed"
+
 
 type HarvestedItemData =
   { Item: Item
@@ -117,18 +137,18 @@ type Crop =
     GrowthStages: int list
     TotalGrowthTime: int
     RegrowTime: int option
-    GrowthMultipliers: Name<Multiplier> list
+    GrowthMultipliers: NameOf<Multiplier> list
     Item: Item
     Seed: Item
     Products: Map<ProductSource, Product>
-    PriceFrom: Map<Name<Source>, Price>
+    PriceFrom: Map<NameOf<Source>, Price>
     BuySeedsOverride: bool option
     Replant: Replant option
     ReplantOverride: bool option
     IsGiantCrop: bool
     HasDoubleCropChance: bool
     ExtraCrops: float
-    HarvestedItems: Map<Name<Item>, HarvestedItemData> }
+    HarvestedItems: Map<NameOf<Item>, HarvestedItemData> }
   member this.Toggle = { this with Selected = not this.Selected }
 
   type CropSort =
@@ -171,7 +191,21 @@ type Crop =
     | Oasis
     | PierreAndJoja
     | PriceList of Price list
-    | NoPrices
+    | NoPrice
+
+type HarvestedItemDataCache =
+  { HarvestItem: HarvestedItemData
+    Product: Product }
+
+// Haha... "Cash" Crop
+type CacheCrop =
+  { Crop: Crop
+    GrowthMultiplier: float
+    BestProducts: Map<Quality, Product>
+    SeedPrice: int
+    SeedSources: NameOf<Source> list
+    HarvestedItems: Map<NameOf<Item>, HarvestedItemDataCache>
+    BestReplants: NameOf<Item> list }
 
 module Crop =
   let private createProcess processor outputName price =
@@ -181,26 +215,23 @@ module Crop =
             { Name = outputName
               BasePrice = price
               Multiplier = Some (Name "Artisan") }
-          Override = None |}
+          ProcessorOverride = None |}
 
-  let private createKegProduct product (cropItem: Item) =
-    match product with
+  let private createKegProduct (cropItem: Item) = function
     | Wine -> createProcess "Keg" (cropItem.Name + " Wine") (cropItem.BasePrice * 3)
     | Juice -> createProcess "Keg" (cropItem.Name + " Juice") (float cropItem.BasePrice * 2.25 |> int)
 
-  let private createJarProduct product (cropItem: Item) =
-    match product with
+  let private createJarProduct (cropItem: Item) = function
     | Jam -> createProcess "Preserves Jar" (cropItem.Name + " Jam") (cropItem.BasePrice * 2 + 50)
     | Pickle -> createProcess "Preserves Jar" ("Pickeled " + cropItem.Name) (cropItem.BasePrice * 2 + 50)
 
-  let rec private createProducts products (cropItem: Item) =
-    match products with
-    | Fruit -> [ createKegProduct Wine cropItem; createJarProduct Jam cropItem ]
-    | Vegetable -> [ createKegProduct Juice cropItem; createJarProduct Pickle cropItem ]
-    | Keg product -> [ createKegProduct product cropItem ]
-    | Jar product -> [ createJarProduct product cropItem ]
+  let rec private createProducts cropItem = function
+    | Fruit -> [ createKegProduct cropItem Wine; createJarProduct cropItem Jam ]
+    | Vegetable -> [ createKegProduct cropItem Juice; createJarProduct cropItem Pickle ]
+    | Keg product -> [ createKegProduct cropItem product ]
+    | Jar product -> [ createJarProduct cropItem product ]
     | ProductList list -> list
-    | CreateAndList (products, list) -> createProducts products cropItem @ list
+    | CreateAndList (products, list) -> createProducts cropItem products @ list
     | NoProduct -> List.empty
 
   let private createPrice seedSellPrice name =
@@ -208,19 +239,18 @@ module Crop =
       {| Value = seedSellPrice * 2
          Source = Name name
          Requirements = List.empty
-         OverrideSource = None |}
+         SourceOverride = None |}
 
-  let private createJojaPrice (pierrePrice: Price) =
+  let private createJojaPrice pierrePrice =
     MatchPrice
       {| Value = (pierrePrice |> Price.value |> float) * 1.25 |> int
          Source = Name "Joja"
          Requirements = List.empty
-         OverrideSource = None
+         SourceOverride = None
          MatchSource = Name "Pierre"
          MatchCondition = Name "Joja Membership" |}
 
-  let private createPrices prices seedSellPrice =
-    match prices with
+  let private createPrices seedSellPrice = function
     | Pierre -> [ createPrice seedSellPrice "Pierre" ]
     | Joja pierrePrice -> [ pierrePrice; createJojaPrice pierrePrice ]
     | Oasis -> [ createPrice seedSellPrice "Oasis" ]
@@ -229,14 +259,14 @@ module Crop =
       [ pierrePrice
         createJojaPrice pierrePrice ]
     | PriceList list -> list
-    | NoPrices -> List.empty
+    | NoPrice -> List.empty
 
   let private initialItem =
     { Name = "Initial"
       BasePrice = -1
       Multiplier = None }
 
-  let agri: Name<Multiplier> list = [ Name "Agriculturist" ]
+  let agri: NameOf<Multiplier> list = [ Name "Agriculturist" ]
 
   let private initialCrop =
     { Name = "Initial"
@@ -294,12 +324,11 @@ module Crop =
         Seed = createdSeed
         Products =
           [ RawItem None
-            yield! createProducts products createdCropItem
+            yield! createProducts createdCropItem products
             if seedMaker then
               SeedsFromSeedMaker None ]
-          |> List.map (fun p -> p.Source, p)
-          |> Map.ofList
-        PriceFrom = createdSeed.BasePrice |> createPrices prices |> listToMap Price.key
+          |> listToMap Product.source
+        PriceFrom = createPrices createdSeed.BasePrice prices |> listToMap Price.nameOf
         Replant =
           if seedMaker then
             Some SeedMaker
@@ -316,9 +345,11 @@ module Crop =
   let seasons crop = crop.Seasons
   let totalGrowthTime crop = crop.TotalGrowthTime
   let regrowTime crop = crop.RegrowTime
+  let priceFrom crop = crop.PriceFrom
 
-  let extraCrops cropYield extraChance =
-    1.0 / (1.0 - extraChance) + float cropYield - 2.0
+  let nameOf = toNameOf name
+
+  let extraCrops cropYield extraChance = 1.0 / (1.0 - extraChance) + float cropYield - 2.0
 
   open Fable.Core.JsInterop
 

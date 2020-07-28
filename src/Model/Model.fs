@@ -12,7 +12,6 @@ type SidebarTab =
   | Fertilizers
   | Buy
   | Sell
-  | Replant
   | Date
   | Settings
   | Mod
@@ -22,7 +21,6 @@ type SidebarTab =
       Fertilizers
       Buy
       Sell
-      Replant
       Date
       Settings
       Mod ]
@@ -36,28 +34,28 @@ type Model =
     Year: int
     SidebarTab: SidebarTab
     SidebarOpen: bool
-    Skills: Map<Name<Skill>, Skill>
-    SkillList: Name<Skill> list
-    Multipliers: Map<Name<Multiplier>, Multiplier>
+    Skills: Map<NameOf<Skill>, Skill>
+    SkillList: NameOf<Skill> list
+    Multipliers: Map<NameOf<Multiplier>, Multiplier>
     IgnoreProfessions: bool
-    BuySources: Map<Name<Source>, Source>
-    BuySourceList: Name<Source> list //lists are necessary to enforce/preserve order, haven't thought of another way
-    MatchConditions: Map<Name<MatchCondition>, MatchCondition>
-    MatchConditionList: Name<MatchCondition> list
-    Processors: Map<Name<Processor>, Processor>
-    ProcessorList: Name<Processor> list
+    BuySources: Map<NameOf<Source>, Source>
+    BuySourceList: NameOf<Source> list //lists are necessary to enforce/preserve order, haven't thought of another way
+    MatchConditions: Map<NameOf<MatchCondition>, MatchCondition>
+    MatchConditionList: NameOf<MatchCondition> list
+    Processors: Map<NameOf<Processor>, Processor>
+    ProcessorList: NameOf<Processor> list
     SellRawItem: bool
     SellSeedsFromSeedMaker: bool
     ProductSources: ProductSource list
     BuySeeds: bool
     Replants: Map<Replant, bool>
-    Crops: Map<Name<Crop>, Crop>
-    CropList: Name<Crop> list
+    Crops: Map<NameOf<Crop>, Crop>
+    CropList: NameOf<Crop> list
     CropSort: CropSort
     CropSortAscending: bool
     ShowUselessCrops: bool
-    Fertilizers: Map<Name<Fertilizer>, Fertilizer>
-    FertilizerList: Name<Fertilizer> list
+    Fertilizers: Map<NameOf<Fertilizer>, Fertilizer>
+    FertilizerList: NameOf<Fertilizer> list
     FertilizerSort: FertilizerSort
     FertilizerSortAscending: bool
     YearRequirementsShould: RequirementsShould
@@ -69,13 +67,20 @@ type Model =
     SeedMakerProb: float
     AncientSeedProb: float
     GreenhouseMode: bool
-    StartingFertilizer: Name<Fertilizer> option
+    StartingFertilizer: NameOf<Fertilizer> option
     QualityProducts: bool
     QualitySeedMaker: bool
     QualitySeedMakerAmounts: Map<Quality, int> }
 
+type DisplayPrices =
+  | PriceData of (int * (NameOf<Source> * Status) list)
+  | NoValidPrices
+  | NoPrices
+
 module Model =
   let seedMakerRequirement = [ SkillLevel (Name "Farming", 9) ]
+
+  let notSelected = Reason "Is not selected."
 
   let validDate model = model.StartDate |> isBefore model.EndDate
 
@@ -95,17 +100,12 @@ module Model =
     |> List.map UnmetRequirement
   
   let overallRequirementStatus requirements model =
-    let requirementStatuses = List.map (fun req -> req, requirementStatus model req) requirements
-    if (List.exists (fun cs -> snd cs = Invalid) requirementStatuses) then
-      Invalid
-    elif (List.exists (fun cs -> snd cs = Warning) requirementStatuses) then
-      Warning
-    else
-      Valid
+    let requirementStatuses = List.map (fun req -> requirementStatus model req) requirements
+    List.fold Status.compareInvalid Valid requirementStatuses
   
   let sourceStatus source model = if model.BuySources.[source].Selected then Valid else Invalid
   
-  let sourceStatusData source model = [ if not model.BuySources.[source].Selected then Reason "Is not selected." ]
+  let sourceStatusData source model = [ if not model.BuySources.[source].Selected then notSelected ]
   
   let productSourceSelected model = function
     | RawCrop -> model.SellRawItem
@@ -117,7 +117,8 @@ module Model =
     | Processor p ->
         if model.Processors.[p].Selected then
           overallRequirementStatus model.Processors.[p].Requirements model
-        else Invalid
+        else
+          Invalid
     | ProductSource.SeedMaker ->
         if model.SellSeedsFromSeedMaker then
           overallRequirementStatus seedMakerRequirement model
@@ -125,12 +126,12 @@ module Model =
           Invalid
   
   let productSourceStatusData overallStatus model = function
-    | RawCrop -> [ if not model.SellRawItem then Reason "Is not selected." ]
+    | RawCrop -> [ if not model.SellRawItem then notSelected ]
     | Processor p ->
-        [ if not model.Processors.[p].Selected then Reason "Is not selected." ]
+        [ if not model.Processors.[p].Selected then notSelected ]
         @ requirementStatusData model.Processors.[p].Requirements overallStatus model
     | ProductSource.SeedMaker ->
-        [ if not model.SellSeedsFromSeedMaker then Reason "Is not selected." ]
+        [ if not model.SellSeedsFromSeedMaker then notSelected ]
         @ requirementStatusData seedMakerRequirement overallStatus model
   
   let replantStatus model = function
@@ -143,9 +144,9 @@ module Model =
   
   let replantStatusData overallStatus model = function
     | Replant.SeedMaker ->
-        [ if not model.Replants.[Replant.SeedMaker] then Reason "Is not selected." ]
+        [ if not model.Replants.[Replant.SeedMaker] then notSelected ]
         @ requirementStatusData seedMakerRequirement overallStatus model
-    | r -> [ if not model.Replants.[r] then Reason "Is not selected." ]
+    | r -> [ if not model.Replants.[r] then notSelected ]
   
   let priceStatus price model =
     match price |> Price.overrideSource with
@@ -157,18 +158,18 @@ module Model =
         else
           Invalid
   
-  let priceStatusData (priceStatus: Price * Status) model =
+  let priceStatusData priceStatus model =
     ( match fst priceStatus |> Price.overrideSource with
       | Some true -> []
       | Some false -> []
       | None -> sourceStatusData (fst priceStatus |> Price.source) model)
     @ requirementStatusData (fst priceStatus |> Price.requirements) (snd priceStatus) model
   
-  let rec priceOf (priceFrom: Map<Name<Source>, Price>) model = function
+  let rec priceOf (priceFrom: Map<NameOf<Source>, Price>) model = function
     | Price.Price p -> p.Value
     | MatchPrice m -> if model.MatchConditions.[m.MatchCondition].Selected then priceOf priceFrom model priceFrom.[m.MatchSource] else m.Value
   
-  let priceStatuses (priceFrom: Map<Name<Source>, Price>) model =
+  let priceStatuses (priceFrom: Map<NameOf<Source>, Price>) model =
     let priceStatuses = Map.map (fun source _ -> priceStatus priceFrom.[source] model) priceFrom
     let validPrices = Map.filter (fun _ status -> status <> Invalid) priceStatuses
     ( if (validPrices.IsEmpty) then
@@ -178,24 +179,39 @@ module Model =
         Map.filter (fun _ price -> priceOf priceFrom model price = bestPrice) priceFrom)
     |> Map.fold (fun prices source price -> (price, priceStatuses.[source])::prices) []
   
-  let overallPriceStatus priceStatuses =
-    if (List.exists (fun ps -> snd ps = Warning) priceStatuses) then
-      Warning
-    elif (List.exists (fun ps -> snd ps = Valid) priceStatuses) then
-      Valid
+  let overallStatus = List.fold Status.compareWVI Invalid
+
+  let priceData model (priceFrom: Map<NameOf<Source>, Price>) =
+    if priceFrom.IsEmpty then
+      NoPrices
     else
-      Invalid
-  
-  let bestPrice (priceFrom: Map<Name<Source>, Price>) priceStatuses model =
+      let bestPrice =
+        Map.fold
+          (fun currentMin source _ ->
+            if sourceStatus source model <> Invalid then
+              min (priceOf priceFrom model priceFrom.[source]) currentMin
+            else
+              currentMin)
+          Integer.MaxValue
+          priceFrom
+      if bestPrice = Integer.MaxValue then
+        NoValidPrices
+      else
+        PriceData
+          ( bestPrice,
+            [ for KeyValue(source, price) in priceFrom do
+                let status = priceStatus price model
+                if status <> Invalid && priceOf priceFrom model price = bestPrice then source, status ] )
+
+  let bestPrice (priceFrom: Map<NameOf<Source>, Price>) priceStatuses model =
     if priceFrom.IsEmpty then
       Integer.MaxValue
-    elif overallPriceStatus priceStatuses = Invalid then
+    elif List.fold Status.compareWVI Invalid (priceStatuses |> List.unzip |> snd) = Invalid then
       Integer.MaxValue - 1
     else
       priceOf priceFrom model (fst priceStatuses.Head)
   
-  let bestPrice2 (priceFrom: Map<Name<Source>, Price>) model =
-    bestPrice priceFrom (priceStatuses priceFrom model) model
+  let bestPrice2 priceFrom model = bestPrice priceFrom (priceStatuses priceFrom model) model
   
   let daysIn season model =
     if season >= model.StartDate.Season && season <= model.EndDate.Season then
@@ -215,22 +231,54 @@ module Model =
     |> List.filter (fun fert -> model.Fertilizers.[fert].Selected && List.exists (fun (_, s) -> s <> Invalid) (priceStatuses model.Fertilizers.[fert].PriceFrom model))
     |> (fun list -> if list.IsEmpty then 0.0 else model.Fertilizers.[ (List.maxBy (fun fert -> model.Fertilizers.[fert].Speed) list) ].Speed)
 
+  let growthMultiplierValue model name =
+    match model.Multipliers.[name] with
+    | Multiplier m -> if m.Selected then m.Value else 0.0
+    | Profession p ->
+        let skill = model.Skills.[p.Skill]
+        if skill.Professions.[p.Profession].Selected && (p.Profession |> Profession.isUnlocked skill || model.SkillLevelRequirementsShould <> Invalidate) then
+          p.Value
+        else
+          0.0
+  
+  let fastestGrowthTime model crop =
+    Crop.growthTimeWith (fastestFertSpeed model + List.sumBy (growthMultiplierValue model) crop.GrowthMultipliers) crop
+
+  let seasons model = Season.from model.StartDate.Season model.EndDate.Season
+
+  let isInSeason model crop = List.exists crop.Seasons.Contains (seasons model)
 
   let canGiveOneHarvest model crop =
-    let seasons = seasonsFrom model.StartDate.Season model.EndDate.Season
-    if List.exists crop.Seasons.Contains seasons then
-      let lastConsecDays, maxDays =
-        seasons
-        |> List.fold
-          (fun (consecDays, maxDays) season ->
-            if crop.Seasons.Contains season then
-              (consecDays + daysIn season model, maxDays)
-            else
-              (0, max consecDays maxDays))
-          (0, 0)
-      Crop.growthTimeWith (fastestFertSpeed model) crop <= (max lastConsecDays maxDays) - 1
+    let lastConsecDays, maxDays =
+      seasons model
+      |> List.fold
+        (fun (consecDays, maxDays) season ->
+          if crop.Seasons.Contains season then
+            (consecDays + daysIn season model, maxDays)
+          else
+            (0, max consecDays maxDays))
+        (0, 0)
+    fastestGrowthTime model crop <= (max lastConsecDays maxDays) - 1
+
+  let productStatus model source product =
+    match Product.sourceOverride product with
+    | Some true -> Valid
+    | Some false -> Invalid
+    | None -> productSourceStatus model source
+
+  let hasAProduct model crop =
+    Map.exists (fun source product -> productStatus model source product <> Invalid) crop.Products
+
+  let cropStatus model crop =
+    if crop.Selected
+      && crop |> isInSeason model
+      && crop |> canGiveOneHarvest model
+      && crop |> hasAProduct model then
+      Valid
     else
-      false
+      Invalid
+
+  let fertilizerStatus model fertilizer = Valid
 
   let sortMode<'t, 'key when 'key: comparison> ascending =
     if ascending then
@@ -252,7 +300,7 @@ module Model =
   
   let sortedCrops model =
     [ for KeyValue(_, crop) in model.Crops do
-        if model.ShowUselessCrops || crop |> canGiveOneHarvest model then crop ]
+        if model.ShowUselessCrops || (crop |> isInSeason model && crop |> canGiveOneHarvest model) then crop ]
     |> List.sortBy Crop.name
     |> List.sortBy Crop.seasons
     |> (fun list ->
@@ -273,16 +321,15 @@ module Model =
     (noGiantCropProb,
      noGiantCropProb * (crop.ExtraCrops + (if crop.HasDoubleCropChance then crop.ExtraCrops * doubleCropProb model + doubleCropProb model else 0.0))
      + (1.0 - noGiantCropProb) * 2.0)
-  
-  let growthMultiplierValue model name =
-    match model.Multipliers.[name] with
-    | Multiplier m -> if m.Selected then m.Value else 0.0
-    | Profession p ->
-        let skill = model.Skills.[p.Skill]
-        if skill.Professions.[p.Profession].Selected && (Skill.professionIsUnlocked p.Profession skill || model.SkillLevelRequirementsShould <> Invalidate) then
-          p.Value
-        else
-          0.0
-  
-  let fastestGrowthTime fertSpeed (crop: Crop) model =
-    Crop.growthTimeWith (fertSpeed + List.sumBy (growthMultiplierValue model) crop.GrowthMultipliers)
+
+  //let validCrops model =
+  //  [ for KeyValue(_, crop) in model.Crops do
+  //      crop ]
+  //  |> L
+  //  |> List.fitler (canGiveOneHarvest crop)
+
+  open System.Collections.Generic
+  let calculate model =
+    let cache = Dictionary<Date, _>()
+    //let crops = Model.validCrops model
+    model
