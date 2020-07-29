@@ -35,4 +35,4 @@ module Fertilizer =
       Selected = true
       Quality = quality
       Speed = speed
-      PriceFrom = listToMap Price.nameOf prices }
+      PriceFrom = prices |> listToMap Price.nameOf }

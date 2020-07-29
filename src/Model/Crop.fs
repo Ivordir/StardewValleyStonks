@@ -32,7 +32,9 @@ type Quality =
     | Silver -> 1.25
     | Gold -> 1.5
     | Iridium -> 2.0
-  static member List =
+
+module Quality =
+  let all =
     [ Normal
       Silver
       Gold
@@ -55,10 +57,24 @@ module Multiplier =
 
   let nameOf = toNameOf name
 
+  let isRawMultiplier = function
+    | Multiplier _ -> true
+    | Profession _ -> false
+
 type Item =
   { Name: string
     BasePrice: int
     Multiplier: NameOf<Multiplier> option }
+
+module Item =
+  let name item = item.Name
+
+  let nameOf = toNameOf name
+
+  let create name basePrice =
+    { Name = name
+      BasePrice = basePrice
+      Multiplier = None }
 
 type ProductSource =
   | RawCrop
@@ -74,7 +90,7 @@ module ProductSource =
   let nameOf = toNameOf name
 
 type Product =
-  | RawItem of Override: bool option
+  | HarvestedItem of Override: bool option
   | Process of
       {| Processor: NameOf<Processor>
          Output: Item
@@ -89,7 +105,7 @@ type Product =
 
 module Product =
   let source = function
-    | RawItem -> RawCrop
+    | HarvestedItem -> RawCrop
     | Process p -> Processor p.Processor
     | RatioProcess r -> Processor r.Processor
     | SeedsFromSeedMaker -> SeedMaker
@@ -103,7 +119,7 @@ module Product =
     | _ -> 1.0
   
   let sourceOverride = function
-    | RawItem o -> o
+    | HarvestedItem o -> o
     | Process p -> p.ProcessorOverride
     | RatioProcess r -> r.ProcessorOverride
     | SeedsFromSeedMaker o -> o
@@ -122,12 +138,17 @@ module Replant =
     | SeedOrCrop -> "Harvested Crop or Seed"
 
 
-type HarvestedItemData =
+type HarvestedItem =
   { Item: Item
     Amount: float
     Products: Map<ProductSource, Product>
     Replant: Replant option
     ReplantOverride: bool option }
+
+module HarvestedItem =
+  let item harvestedItem = harvestedItem.Item
+
+  let nameOfItem = item >> Item.nameOf
 
 type Crop =
   { Name: string
@@ -148,7 +169,7 @@ type Crop =
     IsGiantCrop: bool
     HasDoubleCropChance: bool
     ExtraCrops: float
-    HarvestedItems: Map<NameOf<Item>, HarvestedItemData> }
+    HarvestedItems: Map<NameOf<Item>, HarvestedItem> }
   member this.Toggle = { this with Selected = not this.Selected }
 
   type CropSort =
@@ -194,14 +215,14 @@ type Crop =
     | NoPrice
 
 type HarvestedItemDataCache =
-  { HarvestItem: HarvestedItemData
-    Product: Product }
+  { HarvestItem: HarvestedItem
+    Product: Product list }
 
 // Haha... "Cash" Crop
 type CacheCrop =
   { Crop: Crop
     GrowthMultiplier: float
-    BestProducts: Map<Quality, Product>
+    BestProducts: Map<Quality, Product list>
     SeedPrice: int
     SeedSources: NameOf<Source> list
     HarvestedItems: Map<NameOf<Item>, HarvestedItemDataCache>
@@ -235,7 +256,7 @@ module Crop =
     | NoProduct -> List.empty
 
   let private createPrice seedSellPrice name =
-    Price.Price
+    BuyPrice
       {| Value = seedSellPrice * 2
          Source = Name name
          Requirements = List.empty
@@ -243,7 +264,7 @@ module Crop =
 
   let private createJojaPrice pierrePrice =
     MatchPrice
-      {| Value = (pierrePrice |> Price.value |> float) * 1.25 |> int
+      {| Value = pierrePrice |> Price.value |> float |> (*) 1.25 |> int
          Source = Name "Joja"
          Requirements = List.empty
          SourceOverride = None
@@ -262,14 +283,14 @@ module Crop =
     | NoPrice -> List.empty
 
   let private initialItem =
-    { Name = "Initial"
+    { Name = "initial"
       BasePrice = -1
       Multiplier = None }
 
   let agri: NameOf<Multiplier> list = [ Name "Agriculturist" ]
 
   let private initialCrop =
-    { Name = "Initial"
+    { Name = "initial"
       Selected = true
       Seasons = Set.empty
       SelectedSeasons = Set.empty
@@ -323,7 +344,7 @@ module Crop =
         Item = createdCropItem
         Seed = createdSeed
         Products =
-          [ RawItem None
+          [ HarvestedItem None
             yield! createProducts createdCropItem products
             if seedMaker then
               SeedsFromSeedMaker None ]

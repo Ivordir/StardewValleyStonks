@@ -30,8 +30,7 @@ module Profession =
 
   let nameOf = toNameOf name
 
-  let isUnlocked skill profession =
-    skill.Professions.[profession].UnlockLevel <= skill.Level
+  let isUnlocked skill profession = skill.Professions.[profession].UnlockLevel <= skill.Level
 
   let private setSelected value set (professions: Map<NameOf<Profession>, Profession>) =
     professions

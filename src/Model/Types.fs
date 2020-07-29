@@ -80,9 +80,9 @@ module Types =
     |> Map.ofList
 
 type Status =
-| Valid
-| Warning
-| Invalid
+  | Valid
+  | Warning
+  | Invalid
 
 module Status =
   let validPrecedence = function

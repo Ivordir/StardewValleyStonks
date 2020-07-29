@@ -27,10 +27,10 @@ let init () =
                   Requires = set [ Name "Tiller" ]
                   ExclusiveWith = set [ Name "Artisan" ] } ]
             |> listToMap Profession.nameOf
-
           ProfessionLayout =
             [ [ Name "Tiller" ]
               [ Name "Artisan"; Name "Agriculturist" ] ] }
+      
       { Skill.initial with
           Name = "Foraging"
           Professions =
@@ -74,7 +74,9 @@ let init () =
       "Crafting" ]
     |> List.map Source.create
 
-  let matchConditions = [ { Name = "Joja Membership"; Selected = false } ]
+  let matchConditions =
+    [ "Joja Membership" ]
+    |> List.map MatchCondition.create
 
   let processors =
     [ { Processor.initial with
@@ -97,11 +99,6 @@ let init () =
              Multiplier = None }
          ProcessorOverride = None |}
 
-  let item name price =
-    { Name = name
-      BasePrice = price
-      Multiplier = None }
-
   let cropItem name price =
     { Name = name
       BasePrice = price
@@ -122,7 +119,7 @@ let init () =
         [ Spring ]
         [ 1; 2; 2; 2 ]
         (SellPrice 50)
-        (Seed (item "Jazz Seeds" 15))
+        (Seed (Item.create "Jazz Seeds" 15))
         NoProduct
         PierreAndJoja
 
@@ -141,13 +138,13 @@ let init () =
           "Coffee"
           [ Spring; Summer ]
           [ 1; 2; 2; 3; 2 ]
-          (Item (item "Coffee Bean" 15))
+          (Item (Item.create "Coffee Bean" 15))
           CropItem
           (ProductList
             [ RatioProcess
                 {| InputAmount = 5
                    Processor = Name "Keg"
-                   Output = item "Coffee" 150
+                   Output = Item.create "Coffee" 150
                    OutputAmount = 1.0
                    ProcessorOverride = None |} ] )
           (PriceList [ Price.create "Traveling Merchant" 2500 ] )
@@ -163,7 +160,7 @@ let init () =
         (SeedSell 20)
         Vegetable
         (PriceList
-          [ Price.Price
+          [ BuyPrice
               {| Value = 40
                  Source = Name "Pierre"
                  Requirements = [ Year 2 ]
@@ -174,7 +171,7 @@ let init () =
           [ Spring ]
           [ 1; 1; 1; 3; 4 ]
           (SellPrice 40)
-          (Seed (item "Bean Starter" 30))
+          (Seed (Item.create "Bean Starter" 30))
           Vegetable
           PierreAndJoja
         with
@@ -236,7 +233,7 @@ let init () =
         "Tulip"
         [ Spring ]
         [ 1; 1; 2; 2 ]
-        (Item (item "Tulip Bulb" 10))
+        (Item (cropItem"Tulip Bulb" 10))
         (SeedSell 30)
         NoProduct
         PierreAndJoja
@@ -246,12 +243,12 @@ let init () =
           [ Spring ]
           [ 1; 2; 2; 3 ]
           (Item (cropItem "Unmilled Rice" 30))
-          (Seed (item "Rice Shoot" 20))
+          (Seed (Item.create "Rice Shoot" 20))
           (CreateAndList
             ( Vegetable,
               [ Process
                   {| Processor = Name "Mill"
-                     Output = item "Rice" 100
+                     Output = Item.create "Rice" 100
                      ProcessorOverride = None |} ] ))
           Pierre
         with
@@ -287,7 +284,7 @@ let init () =
           [ Summer ]
           [ 1; 1; 2; 3; 4 ]
           (SellPrice 25)
-          (Seed (item "Hops Starter" 30))
+          (Seed (Item.create "Hops Starter" 30))
           (CreateAndList (Jar Pickle, [ kegProduct "Pale Ale" 300 ] ))
           PierreAndJoja
         with
@@ -298,7 +295,7 @@ let init () =
           [ Summer ]
           [ 1; 1; 1; 1; 1 ]
           (SellPrice 40)
-          (Seed (item "Pepper Seeds" 20))
+          (Seed (Item.create "Pepper Seeds" 20))
           Fruit
           PierreAndJoja
         with
@@ -342,7 +339,7 @@ let init () =
         (SeedSell 50)
         Vegetable
         (PriceList
-          [ Price.Price
+          [ BuyPrice
               {| Value = 100
                  Source = Name "Pierre"
                  Requirements = [ Year 2 ]
@@ -362,7 +359,7 @@ let init () =
         [ Summer ]
         [ 1; 2; 3; 2 ]
         (SellPrice 90)
-        (Seed (item "Spangle Seeds" 25))
+        (Seed (Item.create "Spangle Seeds" 25))
         NoProduct
         PierreAndJoja
 
@@ -379,16 +376,15 @@ let init () =
         with
           HasDoubleCropChance = false
           HarvestedItems =
-            Map.ofList
-              [ ( Name "Sunflower Seeds",
-                  { Item = item "Sunflower Seeds" 20
-                    Amount = 1.0
-                    Products =
-                      Map.ofList
-                        [ RawCrop, RawItem None
-                          Processor (Name "Mill"), oil ]
-                    Replant = Some SeedOrCrop
-                    ReplantOverride = None } ) ] }
+            [ { Item = Item.create "Sunflower Seeds" 20
+                Amount = 1.0
+                Products =
+                    [ HarvestedItem None
+                      oil ]
+                    |> listToMap Product.source
+                Replant = Some SeedOrCrop
+                ReplantOverride = None } ]
+            |> listToMap HarvestedItem.nameOfItem }
 
       { Crop.create
           "Tomato"
@@ -413,7 +409,7 @@ let init () =
               [ kegProduct "Beer" 200
                 Process
                   {| Processor = Name "Mill"
-                     Output = item "Wheat Flour" 50
+                     Output = Item.create "Wheat Flour" 50
                      ProcessorOverride = None |} ] ))
           PierreAndJoja
         with
@@ -438,7 +434,7 @@ let init () =
         (SeedSell 15)
         Vegetable
         (PriceList
-          [ Price.Price
+          [ BuyPrice
               {| Value = 30
                  Source = Name "Pierre"
                  Requirements = [ Year 2 ]
@@ -455,7 +451,7 @@ let init () =
             [ RatioProcess
                 {| InputAmount = 1
                    Processor = Name "Mill"
-                   Output = item "Sugar" 50
+                   Output = Item.create "Sugar" 50
                    OutputAmount = 3.0
                    ProcessorOverride = None |} ] ))
          Oasis
@@ -498,7 +494,7 @@ let init () =
         [ Fall ]
         [ 1; 4; 4; 3 ]
         (SellPrice 290)
-        (Seed (item "Fairy Seeds" 100))
+        (Seed (Item.create "Fairy Seeds" 100))
         NoProduct
         PierreAndJoja
 
@@ -507,7 +503,7 @@ let init () =
           [ Fall ]
           [ 1; 1; 2; 3; 3 ]
           (SellPrice 30)
-          (Seed (item "Grape Starter" 30))
+          (Seed (Item.create "Grape Starter" 30))
           Fruit
           PierreAndJoja
         with
@@ -528,8 +524,8 @@ let init () =
         "Sweet Gem Berry"
         [ Fall ]
         [ 2; 4; 6; 6; 6 ]
-        (Item (item "Sweet Gem Berry" 3000))
-        (Seed (item "Rare Seed" 200))
+        (Item (Item.create "Sweet Gem Berry" 3000))
+        (Seed (Item.create "Rare Seed" 200))
         NoProduct
         (PriceList [ Price.create "Traveling Merchant" 1000 ])
 
@@ -547,7 +543,7 @@ let init () =
           [ Spring; Summer; Fall ]
           [ 2; 7; 7; 7; 5 ]
           (SellPrice 550)
-          (Seed (item "Ancient Seeds" 30))
+          (Seed (Item.create "Ancient Seeds" 30))
           Fruit
           NoPrice
         with
@@ -565,7 +561,7 @@ let init () =
         "Quality Fertilizer"
         2
         0.0
-        [ Price.Price
+        [ BuyPrice
             {| Value = 150
                Source = Name "Pierre"
                Requirements = [ Year 2 ]
@@ -581,7 +577,7 @@ let init () =
         "Deluxe Speed-Gro"
         0
         0.25
-        [ Price.Price
+        [ BuyPrice
             {| Value = 150
                Source = Name "Pierre"
                Requirements = [ Year 2 ]
@@ -595,22 +591,23 @@ let init () =
     SidebarTab = Skills
     SidebarOpen = false
     Skills = skills |> listToMap Skill.nameOf
-    SkillList = List.map Skill.nameOf skills
+    SkillList = skills |> List.map Skill.nameOf
+    IgnoreProfessionRelationships = false
     Multipliers = multipliers |> listToMap Multiplier.nameOf
-    IgnoreProfessions = false
-    BuySourceList = List.map Source.nameOf buySources
+    RawMultipliers =
+      multipliers
+      |> List.filter Multiplier.isRawMultiplier
+      |> List.map Multiplier.nameOf
+    BuySourceList = buySources |> List.map Source.nameOf
     BuySources = buySources |> listToMap Source.nameOf
     MatchConditions = matchConditions |> listToMap MatchCondition.nameOf
-    MatchConditionList = List.map MatchCondition.nameOf matchConditions
+    MatchConditionList = matchConditions |> List.map MatchCondition.nameOf
     ProductSources =
       [ RawCrop
-        yield! List.map (fun (p: Processor) -> Processor (Name p.Name)) processors
+        yield! List.map (Processor.nameOf >> Processor) processors
         ProductSource.SeedMaker ]
-    Processors =
-      processors
-      |> List.map (fun s -> (Name s.Name, s))
-      |> Map.ofList
-    ProcessorList = List.map (fun (p: Processor) -> Name p.Name) processors
+    Processors = processors |> listToMap Processor.nameOf
+    ProcessorList = processors |> List.map Processor.nameOf
     SellRawItem = true
     SellSeedsFromSeedMaker = true
     Replants =
@@ -618,21 +615,14 @@ let init () =
       |> List.map (fun r -> r, true)
       |> Map.ofList
     BuySeeds = true
-    Crops =
-      crops
-      |> List.map (fun c -> (Name c.Name), c)
-      |> Map.ofList
-    CropList = List.map (fun (c: Crop) -> Name c.Name) crops
+    Crops = crops |> listToMap Crop.nameOf
     CropSort = Seasons
     CropSortAscending = true
     ShowUselessCrops = false
-    Fertilizers =
-      fertilizers
-      |> List.map (fun f -> (Name f.Name, f))
-      |> Map.ofList
-    FertilizerList = List.map (fun (f: Fertilizer) -> Name f.Name) fertilizers
+    Fertilizers = fertilizers |> listToMap Fertilizer.nameOf
     FertilizerSort = Speed
     FertilizerSortAscending = true
+    FertilizerList = fertilizers |> List.map Fertilizer.nameOf
     YearRequirementsShould = Warn
     SkillLevelRequirementsShould = Warn
     SpecialCharm = false
@@ -661,7 +651,7 @@ type Message =
   | SetPage of Page
   | SetSidebarTab of SidebarTab
   | CloseSidebar
-  | ToggleIgnoreProfessions
+  | ToggleIgnoreProfessionRelationships
   | SetSkillLevel of Skill: NameOf<Skill> * Level: int
   | SetSkillBuff of Skill: NameOf<Skill> * Buff: int
   | ToggleProfession of NameOf<Skill> * NameOf<Profession>
@@ -702,20 +692,19 @@ let update message model =
       else
           { model with SidebarTab = tab; SidebarOpen = true }
   | CloseSidebar -> { model with SidebarOpen = false }
-  | ToggleIgnoreProfessions -> { model with IgnoreProfessions = not model.IgnoreProfessions }
+  | ToggleIgnoreProfessionRelationships -> { model with IgnoreProfessionRelationships = not model.IgnoreProfessionRelationships }
   | SetSkillLevel (skill, level) ->
       { model with Skills = model.Skills.Add(skill, { model.Skills.[skill] with Level = level |> max 0 |> min 10 } ) }
   | SetSkillBuff (skill, buff) ->
       { model with Skills = model.Skills.Add(skill, { model.Skills.[skill] with Buff = max buff 0 } ) }
   | ToggleProfession (skill, profession) ->
-      { model with Skills = model.Skills.Add(skill, profession |> Profession.toggle model.Skills.[skill] model.IgnoreProfessions) }
+      { model with Skills = model.Skills.Add(skill, profession |> Profession.toggle model.Skills.[skill] model.IgnoreProfessionRelationships) }
   | ToggleBuySource source -> { model with BuySources = model.BuySources.Add(source, model.BuySources.[source].Toggle) }
   | ToggleMatchCondition cond -> { model with MatchConditions = model.MatchConditions.Add(cond, model.MatchConditions.[cond].Toggle) }
   | ToggleProductSource source ->
       match source with
       | RawCrop -> { model with SellRawItem = not model.SellRawItem }
-      | Processor p ->
-        { model with Processors = model.Processors.Add(p, model.Processors.[p].Toggle) }
+      | Processor p -> { model with Processors = model.Processors.Add(p, model.Processors.[p].Toggle) }
       | ProductSource.SeedMaker -> { model with SellSeedsFromSeedMaker = not model.SellSeedsFromSeedMaker }
   | ToggleReplant replant -> { model with Replants = model.Replants.Add(replant, not model.Replants.[replant] ) }
   | ToggleBuySeeds -> { model with BuySeeds = not model.BuySeeds }
@@ -741,8 +730,8 @@ let update message model =
   | SetEndDay day -> { model with EndDate = { model.EndDate with Day = day } }
   | SetEndSeason season -> { model with EndDate = { model.EndDate with Season = season } }
   | SetYear year -> { model with Year = year }
-  | SetYearRequirementsShould something -> { model with YearRequirementsShould = something }
-  | SetSkillLevelRequirementsShould something -> { model with SkillLevelRequirementsShould = something }
+  | SetYearRequirementsShould mode -> { model with YearRequirementsShould = mode }
+  | SetSkillLevelRequirementsShould mode -> { model with SkillLevelRequirementsShould = mode }
   | ToggleSpecialCharm -> { model with SpecialCharm = not model.SpecialCharm }
   | SetLuckBuff buff -> { model with LuckBuff = max buff 0 }
   | SetGiantCropChecksPerTile checks -> { model with GiantCropChecksPerTile = checks |> max 0.0 |> min 9.0 }
@@ -751,8 +740,7 @@ let update message model =
   | ToggleQualityProducts -> { model with QualityProducts = not model.QualityProducts }
   | TogglePreservesQuality processor -> { model with Processors = model.Processors.Add(processor, model.Processors.[processor].TogglePreservesQuality) }
   | ToggleQualitySeedMaker -> { model with QualitySeedMaker = not model.QualitySeedMaker }
-  | SetQualitySeedMakerAmount (quality, amount) ->
-      { model with QualitySeedMakerAmounts = model.QualitySeedMakerAmounts.Add(quality, amount) }
+  | SetQualitySeedMakerAmount (quality, amount) -> { model with QualitySeedMakerAmounts = model.QualitySeedMakerAmounts.Add(quality, amount) }
   | Calculate -> Model.calculate model
 
 //--View--
@@ -914,15 +902,19 @@ let rec invalidReason reason =
           match c with
           | SkillLevel (skill, level) -> str (ofName skill + " level too low. Unlocks at level " + string level + ".")
           | Year y -> str ("Available only from year " + string y + " and onwards.")
-      | Reason reason -> str reason
-      | SubReason (text, sub) -> str text; for subReason in sub do ul [] [ invalidReason subReason ] ]
+      | Alert reason -> str reason
+      | AlertList (reason, subReasons) ->
+          str reason
+          for subReason in subReasons do
+            ul []
+              [ invalidReason subReason ] ]
 
 let buySource name selected dispatch =
   li []
     [ checkboxWith (sourceIcon (ofName name)) (ToggleBuySource name) selected dispatch ]
 
 let buySources list (sources: Map<NameOf<Source>, Source>) dispatch =
-  ul [ClassName "source-list" ]
+  ul [ ClassName "source-list" ]
     [ for name in list do
         buySource name sources.[name].Selected dispatch ]
 
@@ -1124,7 +1116,7 @@ let sidebarContent model dispatch =
                     skillLevelInput skill model.Skills.[skill].Level dispatch
                     skillBuffInput skill model.Skills.[skill].Buff dispatch
                     viewProfessions model.SkillLevelRequirementsShould model.Skills.[skill] dispatch ] ]
-          checkboxWithText "Ignore Profession Relationships" ToggleIgnoreProfessions model.IgnoreProfessions dispatch ]
+          checkboxWithText "Ignore Profession Relationships" ToggleIgnoreProfessionRelationships model.IgnoreProfessionRelationships dispatch ]
   | Crops ->
       div [ classModifier "sidebar-table-content" "open" model.SidebarOpen ]
         [ yield! viewTable
@@ -1262,7 +1254,7 @@ let cover sidebarOpen dispatch =
 let sidebar model dispatch =
   div [ classModifier "sidebar" "open" model.SidebarOpen ]
     [ sidebarContent model dispatch
-      viewTabsWith (fun t -> model.SidebarOpen && t = model.SidebarTab) string "sidebar" SetSidebarTab SidebarTab.List dispatch ]
+      viewTabsWith (fun t -> model.SidebarOpen && t = model.SidebarTab) string "sidebar" SetSidebarTab SidebarTab.all dispatch ]
 
 let view model dispatch =
   match model.Page with

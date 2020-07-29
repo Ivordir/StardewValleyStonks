@@ -12,7 +12,7 @@ module Source =
 
   let nameOf = toNameOf name
 
-  let create name : Source =
+  let create name =
     { Name = name
       Selected = true }
 
@@ -26,17 +26,51 @@ module MatchCondition =
 
   let nameOf = toNameOf name
 
+  let create name =
+    { Name = name
+      Selected = false }
+
 type Requirement =
   | SkillLevel of Skill: NameOf<Skill> * Level: int
   | Year of int
 
-type InvalidReason =
+type Alert =
   | UnmetRequirement of Requirement
-  | Reason of string
-  | SubReason of Reason: string * SubReasons: InvalidReason list
+  | Alert of string
+  | AlertList of Alert: string * SubAlerts: Alert list
+
+module InvalidReason =
+  let notSelected = Alert "Is not selected."
+
+type StatusData =
+  | ValidD
+  | WarningD of Alert
+  | InvalidD of Alert
+
+module StatusData =
+  let validPrecedence = function
+    | ValidD -> 2
+    | WarningD _ -> 1
+    | InvalidD _ -> 0
+  
+  let invalidPrecedence = function
+    | ValidD -> 0
+    | WarningD _ -> 1
+    | InvalidD _ -> 2
+
+  let WVIPrecedence = function
+    | WarningD _ -> 2
+    | ValidD -> 1
+    | InvalidD _ -> 0
+
+  let compare (precedence: StatusData -> int) a b = if precedence a > precedence b then a else b
+  
+  let compareValid = compare validPrecedence
+  let compareInvalid = compare invalidPrecedence
+  let compareWVI = compare WVIPrecedence
 
 type Price =
-  | Price of
+  | BuyPrice of
       {| Value: int
          Source: NameOf<Source>
          Requirements: Requirement list
@@ -51,25 +85,25 @@ type Price =
 
 module Price =
   let value = function
-    | Price p -> p.Value
+    | BuyPrice p -> p.Value
     | MatchPrice m -> m.Value
 
   let source = function
-    | Price p -> p.Source
+    | BuyPrice p -> p.Source
     | MatchPrice m -> m.Source
   
   let overrideSource = function
-    | Price p -> p.SourceOverride
+    | BuyPrice p -> p.SourceOverride
     | MatchPrice m -> m.SourceOverride
 
   let requirements = function
-    | Price p -> p.Requirements
+    | BuyPrice p -> p.Requirements
     | MatchPrice m -> m.Requirements
 
   let nameOf = source
 
   let create name value =
-    Price
+    BuyPrice
       {| Value = value
          Source = Name name
          Requirements = List.empty
