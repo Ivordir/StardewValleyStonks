@@ -47,11 +47,11 @@ type Model =
     MatchConditionList: NameOf<MatchCondition> list
     Processors: Map<NameOf<Processor>, Processor>
     ProcessorList: NameOf<Processor> list
-    SellRawItem: bool
+    SellRawCrop: bool
     SellSeedsFromSeedMaker: bool
-    ProductSources: ProductSource list
     BuySeeds: bool
-    Replants: Map<Replant, bool>
+    SeedMakerReplant: bool
+    SeedOrCropReplant: bool
     Crops: Map<NameOf<Crop>, Crop>
     CropSort: CropSort
     CropSortAscending: bool
@@ -100,59 +100,37 @@ module Model =
     |> List.map UnmetRequirement
   
   let flip f a b = f b a
-
-  let overallRequirementStatus model =
-    List.fold (flip ((requirementStatus model) >> Status.compareInvalid)) Valid
   
+  let overallRequirementStatus model = Status.listOverallInvalidWith (requirementStatus model)
+
   let sourceActive source model = model.BuySources.[source].Selected
   
-  let sourceStatusData source model = [ if not model.BuySources.[source].Selected then InvalidReason.notSelected ]
+  let sourceStatusData source model = [ if not model.BuySources.[source].Selected then Alert.notSelected ]
+
+  let processorStatus model processor =
+    if model.Processors.[processor].Selected then
+      overallRequirementStatus model model.Processors.[processor].Requirements
+    else
+      Invalid
   
-  let productSourceSelected model = function
-    | RawCrop -> model.SellRawItem
-    | Processor p -> model.Processors.[p].Selected
-    | ProductSource.SeedMaker -> model.SellSeedsFromSeedMaker
+  let processorStatusData overallStatus model processor =
+    [ if not model.Processors.[processor].Selected then Alert.notSelected ]
+    @ requirementStatusData model.Processors.[processor].Requirements overallStatus model
   
-  let productSourceStatus model = function
-    | RawCrop -> if model.SellRawItem then Valid else Invalid
-    | Processor p ->
-        if model.Processors.[p].Selected then
-          overallRequirementStatus model model.Processors.[p].Requirements
-        else
-          Invalid
-    | ProductSource.SeedMaker ->
-        if model.SellSeedsFromSeedMaker then
-          overallRequirementStatus model seedMakerRequirements
-        else
-          Invalid
+  let seedMakerStatus sellOrReplant model =
+    if sellOrReplant then
+      overallRequirementStatus model seedMakerRequirements
+    else
+      Invalid
   
-  let productSourceStatusData overallStatus model = function
-    | RawCrop -> [ if not model.SellRawItem then InvalidReason.notSelected ]
-    | Processor p ->
-        [ if not model.Processors.[p].Selected then InvalidReason.notSelected ]
-        @ requirementStatusData model.Processors.[p].Requirements overallStatus model
-    | ProductSource.SeedMaker ->
-        [ if not model.SellSeedsFromSeedMaker then InvalidReason.notSelected ]
-        @ requirementStatusData seedMakerRequirements overallStatus model
-  
-  let replantStatus model = function
-    | SeedOrCrop -> if model.Replants.[SeedOrCrop] then Valid else Invalid
-    | Replant.SeedMaker ->
-        if model.Replants.[SeedMaker] then
-          overallRequirementStatus model seedMakerRequirements
-        else
-          Invalid
-  
-  let replantStatusData overallStatus model = function
-    | SeedOrCrop -> [ if not model.Replants.[SeedOrCrop] then InvalidReason.notSelected ]
-    | Replant.SeedMaker ->
-        [ if not model.Replants.[SeedMaker] then InvalidReason.notSelected ]
-        @ requirementStatusData seedMakerRequirements overallStatus model
+  let seedMakerStatusData status model =
+    [ if not model.SeedMakerReplant then Alert.notSelected ]
+    @ requirementStatusData seedMakerRequirements status model
   
   let priceStatus price model =
     match Price.overrideSource price with
-    | Some true -> Valid //true //ignore source conditions but consider local conditions
-    | Some false -> Invalid //false //false, return display: manually overriden to false
+    | Some true -> Valid
+    | Some false -> Invalid
     | None ->
         if sourceActive (Price.source price) model then
           overallRequirementStatus model (Price.requirements price)
@@ -162,12 +140,13 @@ module Model =
   let priceStatusData (price, status) model =
     match Price.overrideSource price with
     | Some true -> []
-    | Some false -> []
-    | None -> sourceStatusData (Price.source price) model
-    @ requirementStatusData (Price.requirements price) status model
+    | Some false -> [ Alert.overridden ]
+    | None ->
+      sourceStatusData (Price.source price) model
+      @ requirementStatusData (Price.requirements price) status model
   
   let rec priceOf (priceFrom: Map<NameOf<Source>, Price>) model = function
-    | Price.BuyPrice p -> p.Value
+    | BuyPrice p -> p.Value
     | MatchPrice m ->
         if model.MatchConditions.[m.MatchCondition].Selected then
           priceOf priceFrom model priceFrom.[m.MatchSource]
@@ -209,7 +188,7 @@ module Model =
   let bestPrice (priceFrom: Map<NameOf<Source>, Price>) priceStatuses model =
     if priceFrom.IsEmpty then
       Integer.MaxValue
-    elif List.fold Status.compareWVI Invalid (priceStatuses |> List.unzip |> snd) = Invalid then
+    elif Status.listOverallWVI (priceStatuses |> List.unzip |> snd) = Invalid then
       Integer.MaxValue - 1
     else
       priceOf priceFrom model (fst priceStatuses.Head)
@@ -232,7 +211,7 @@ module Model =
   let fertilizerStatus model (fertilizer: Fertilizer) =
     if fertilizer.Selected then
       match priceData model fertilizer.PriceFrom with
-        | PriceData (_, list) -> List.fold Status.compareValid Invalid (list |> List.unzip |> snd)
+        | PriceData (_, list) -> Status.listOverallValid (list |> List.unzip |> snd)
         | _ -> Invalid
     else
       Invalid
@@ -242,32 +221,37 @@ module Model =
     |> Map.filter (fun _ fert -> fert.Selected && fertilizerStatus model fert <> Invalid)
     |> Map.fold (fun speed _ fert -> max speed fert.Speed) 0.0
 
-  let growthMultiplierValue model name =
-    match model.Multipliers.[name] with
-    | Multiplier m -> if m.Selected then m.Value else 0.0
+  let multiplierValue defaultValue model multiplier =
+    match model.Multipliers.[multiplier] with
+    | Multiplier m -> if m.Selected then m.Value else defaultValue
     | Profession p ->
         let skill = model.Skills.[p.Skill]
         if skill.Professions.[p.Profession].Selected && (p.Profession |> Profession.isUnlocked skill || model.SkillLevelRequirementsShould <> Invalidate) then
           p.Value
         else
-          0.0
+          defaultValue
+
+  let growthMultiplierValue = multiplierValue 0.0
+  let priceMultiplierValue = multiplierValue 1.0
   
+  let growthMultipler model crop =
+    List.sumBy (growthMultiplierValue model) crop.GrowthMultipliers
+
   let fastestGrowthTime model crop =
-    Crop.growthTimeWith (fastestFertSpeed model + List.sumBy (growthMultiplierValue model) crop.GrowthMultipliers) crop
+    Crop.growthTimeWith (fastestFertSpeed model + growthMultipler model crop) crop
 
   let seasons model = Season.from model.StartDate.Season model.EndDate.Season
 
-  let isInSeason model crop = List.exists crop.SelectedSeasons.Contains (seasons model)
+  let isInSeason model crop = Seq.exists crop.SelectedSeasons.Contains (seasons model)
 
   let canGiveOneHarvest model crop =
     let lastConsecDays, maxDays =
       seasons model
-      |> List.fold
-        (fun (consecDays, maxDays) season ->
-          if crop.Seasons.Contains season then
-            (consecDays + daysIn season model, maxDays)
-          else
-            (0, max consecDays maxDays))
+      |> Seq.fold (fun (consecDays, maxDays) season ->
+        if crop.Seasons.Contains season then
+          (consecDays + daysIn season model, maxDays)
+        else
+          (0, max consecDays maxDays))
         (0, 0)
     fastestGrowthTime model crop <= (max lastConsecDays maxDays) - 1
 
@@ -275,24 +259,45 @@ module Model =
     match Product.sourceOverride product with
     | Some true -> Valid
     | Some false -> Invalid
-    | None -> productSourceStatus model source
+    | None -> processorStatus model source
 
-  let productStatuses model =
-    Map.fold (fun status source product -> productStatus model source product |> Status.compareValid status) Invalid
+  let productStatuses model = Status.mapOverallValid (productStatus model)
 
-  let cropProductStatus model crop =
-    [ productStatuses model crop.Products
-      for KeyValue(_, item) in crop.HarvestedItems do
-        productStatuses model item.Products ]
-    |> List.fold Status.compareValid Invalid
-
-  let cropReplantStatus model replantOverride = function
-    | Some r ->
-        match replantOverride with
+  let sellSeedsFromSeedMakerStatus model = function
+    | SeedMaker (o, _) ->
+        match o with
         | Some true -> Valid
         | Some false -> Invalid
-        | None -> replantStatus model r
-    | None -> Invalid
+        | None -> seedMakerStatus model.SellSeedsFromSeedMaker model
+    | _ -> Invalid
+
+  let rawItemStatus model = function
+    | Some true -> Valid
+    | Some false -> Invalid
+    | None -> if model.SellRawCrop then Valid else Invalid
+
+  let cropProductStatus model crop =
+    [ rawItemStatus model crop.SellRawCropOverride
+      productStatuses model crop.Products
+      for KeyValue(_, item) in crop.OtherHarvestedItems do
+        rawItemStatus model item.SellRawItemOverride
+        productStatuses model item.Products
+        sellSeedsFromSeedMakerStatus model item.Replant
+      sellSeedsFromSeedMakerStatus model crop.Replant ]
+    |> Status.listOverallValid
+
+  let replantStatus model = function
+    | SeedMaker (_, o) ->
+        match o with
+        | Some true -> Valid
+        | Some false -> Invalid
+        | None -> seedMakerStatus model.SeedMakerReplant model
+    | SeedOrCrop o ->
+        match o with
+        | Some true -> Valid
+        | Some false -> Invalid
+        | None -> if model.SeedOrCropReplant then Valid else Invalid
+    | NoReplant -> Invalid
 
   let cropReplantStatuses model crop =
     [ if (match crop.BuySeedsOverride with
@@ -300,14 +305,14 @@ module Model =
           | Some false -> false
           | None -> model.BuySeeds) then
         match priceData model crop.PriceFrom with
-        | PriceData (_, list) -> List.fold Status.compareValid Invalid (list |> List.unzip |> snd)
+        | PriceData (_, list) -> Status.listOverallValid (list |> List.unzip |> snd)
         | _ -> Invalid
       else
         Invalid
-      cropReplantStatus model crop.ReplantOverride crop.Replant
-      for KeyValue(_, item) in crop.HarvestedItems do
-        cropReplantStatus model item.ReplantOverride item.Replant ]
-    |> List.fold Status.compareValid Invalid
+      replantStatus model crop.Replant
+      for KeyValue(_, item) in crop.OtherHarvestedItems do
+        replantStatus model item.Replant ]
+    |> Status.listOverallValid
 
   let cropStatus model crop =
     if crop.Selected
@@ -315,7 +320,7 @@ module Model =
       && crop |> canGiveOneHarvest model then
         [ crop |> cropProductStatus model
           crop |> cropReplantStatuses model ]
-        |> List.fold Status.compareWVI Invalid
+        |> Status.listOverallWVI
     else
       Invalid
 
@@ -360,15 +365,70 @@ module Model =
     (noGiantCropProb,
      noGiantCropProb * (crop.ExtraCrops + (if crop.HasDoubleCropChance then crop.ExtraCrops * doubleCropProb model + doubleCropProb model else 0.0))
      + (1.0 - noGiantCropProb) * 2.0)
+  
+  let cachePrices = function
+    | PriceData (price, sources) -> price, sources |> List.unzip |> fst
+    | _ -> invalidArg "displayPrices" "Plz no"
 
-  //let validCrops model =
-  //  [ for KeyValue(_, crop) in model.Crops do
-  //      crop ]
-  //  |> L
-  //  |> List.fitler (canGiveOneHarvest crop)
+  let itemPrice model item =
+    match item.Multiplier with
+    | Some m -> priceMultiplierValue model m * float item.BasePrice |> int
+    | None -> item.BasePrice
+
+  let compareProduct model item seed = function
+    | Process p -> itemPrice model p.Output |> float
+    | RatioProcess r -> float (itemPrice model r.Output) * r.OutputAmount / float r.InputAmount
+
+  let compareProducts model item seed a b =
+    let scoreA = compareProduct model item seed a
+    let scoreB = compareProduct model item seed b
+    if scoreA > scoreB then
+      scoreA
+    else
+      scoreB
+
+  let bestProducts model item seed products =
+    let validProducts =
+      [ for KeyValue(source, product) in products do
+          if productStatus model source product <> Invalid then
+            product ]
+    let bestProduct =
+      List.fold
+        (fun a product ->
+          let score = compareProduct model item seed product
+          if score > a then
+            score
+          else
+            a)
+        0.0
+        validProducts
+    List.fold (fun list product -> if compareProduct model item seed product = bestProduct then product::list else list) [] validProducts
 
   open System.Collections.Generic
   let calculate model =
     let cache = Dictionary<Date, _>()
-    //let crops = Model.validCrops model
+    let fertilizers =
+      [ for KeyValue(_, fert) in model.Fertilizers do
+          if fertilizerStatus model fert <> Invalid then
+            let price, sources = fert.PriceFrom |> priceData model |> cachePrices 
+            { Fertilizer = fert
+              Price = price
+              Sources = sources } ]
+    let crops =
+      [ for KeyValue(_, crop) in model.Crops do
+          if cropStatus model crop <> Invalid then
+            let temp = priceData model crop.PriceFrom
+            { Crop = crop
+              GrowthMultiplier = growthMultipler model crop
+              BestProducts = Map.empty
+              SeedPrice =
+                match temp with
+                | PriceData (price, _) -> Some price
+                | _ -> None
+              SeedSources =
+                match temp with
+                | PriceData (_, list) -> list |> List.unzip |> fst
+                | _ -> List.empty
+              HarvestedItems = Map.empty
+              BestReplants = List.empty } ]
     model

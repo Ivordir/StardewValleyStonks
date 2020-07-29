@@ -34,12 +34,11 @@ module Profession =
 
   let private setSelected value set (professions: Map<NameOf<Profession>, Profession>) =
     professions
-    |> Map.map
-      (fun name profession ->
-        if set |> Set.contains name then
-          { profession with Selected = value }
-        else
-          profession)
+    |> Map.map (fun name profession ->
+      if set |> Set.contains name then
+        { profession with Selected = value }
+      else
+        profession)
 
   let toggleIgnoreRelationships profession = { profession with Selected = not profession.Selected }
 

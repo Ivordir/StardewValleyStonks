@@ -39,8 +39,9 @@ type Alert =
   | Alert of string
   | AlertList of Alert: string * SubAlerts: Alert list
 
-module InvalidReason =
+module Alert =
   let notSelected = Alert "Is not selected."
+  let overridden = Alert "Is manually overridden to false."
 
 type StatusData =
   | ValidD

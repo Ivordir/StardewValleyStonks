@@ -375,15 +375,14 @@ let init () =
               Price.create "Joja" 125 ] )
         with
           HasDoubleCropChance = false
-          HarvestedItems =
+          OtherHarvestedItems =
             [ { Item = Item.create "Sunflower Seeds" 20
                 Amount = 1.0
+                SellRawItemOverride = None
                 Products =
-                    [ HarvestedItem None
-                      oil ]
-                    |> listToMap Product.source
-                Replant = Some SeedOrCrop
-                ReplantOverride = None } ]
+                  [ oil ]
+                  |> listToMap Product.processor
+                Replant = SeedOrCrop None } ]
             |> listToMap HarvestedItem.nameOfItem }
 
       { Crop.create
@@ -602,19 +601,13 @@ let init () =
     BuySources = buySources |> listToMap Source.nameOf
     MatchConditions = matchConditions |> listToMap MatchCondition.nameOf
     MatchConditionList = matchConditions |> List.map MatchCondition.nameOf
-    ProductSources =
-      [ RawCrop
-        yield! List.map (Processor.nameOf >> Processor) processors
-        ProductSource.SeedMaker ]
     Processors = processors |> listToMap Processor.nameOf
     ProcessorList = processors |> List.map Processor.nameOf
-    SellRawItem = true
+    SellRawCrop = true
     SellSeedsFromSeedMaker = true
-    Replants =
-      Replant.all
-      |> List.map (fun r -> r, true)
-      |> Map.ofList
     BuySeeds = true
+    SeedMakerReplant = true
+    SeedOrCropReplant = true
     Crops = crops |> listToMap Crop.nameOf
     CropSort = Seasons
     CropSortAscending = true
@@ -657,14 +650,18 @@ type Message =
   | ToggleProfession of NameOf<Skill> * NameOf<Profession>
   | ToggleBuySource of NameOf<Source>
   | ToggleMatchCondition of NameOf<MatchCondition>
-  | ToggleProductSource of ProductSource
-  | ToggleReplant of Replant
+  | ToggleProcessor of NameOf<Processor>
+  | ToggleSellRawCrop
+  | ToggleSellSeedsFromSeedMaker
   | ToggleBuySeeds
+  | ToggleSeedMakerReplant
+  | ToggleSeedOrCropReplant
   | ToggleCropSelected of NameOf<Crop>
   | SetCropSort of CropSort
+  | ToggleShowUselessCrops
   | ToggleFertilizerSelected of NameOf<Fertilizer>
   | SetFertilizerSort of FertilizerSort
-  | ToggleShowUselessCrops
+  | SetStartingFertilizer of NameOf<Fertilizer> option
   | SetStartDay of int
   | SetStartSeason of Season
   | SetEndDay of int
@@ -676,7 +673,6 @@ type Message =
   | SetLuckBuff of int
   | SetGiantCropChecksPerTile of float
   | ToggleGreenhouseMode
-  | SetStartingFertilizer of NameOf<Fertilizer> option
   | ToggleQualityProducts
   | TogglePreservesQuality of NameOf<Processor>
   | ToggleQualitySeedMaker
@@ -701,13 +697,12 @@ let update message model =
       { model with Skills = model.Skills.Add(skill, profession |> Profession.toggle model.Skills.[skill] model.IgnoreProfessionRelationships) }
   | ToggleBuySource source -> { model with BuySources = model.BuySources.Add(source, model.BuySources.[source].Toggle) }
   | ToggleMatchCondition cond -> { model with MatchConditions = model.MatchConditions.Add(cond, model.MatchConditions.[cond].Toggle) }
-  | ToggleProductSource source ->
-      match source with
-      | RawCrop -> { model with SellRawItem = not model.SellRawItem }
-      | Processor p -> { model with Processors = model.Processors.Add(p, model.Processors.[p].Toggle) }
-      | ProductSource.SeedMaker -> { model with SellSeedsFromSeedMaker = not model.SellSeedsFromSeedMaker }
-  | ToggleReplant replant -> { model with Replants = model.Replants.Add(replant, not model.Replants.[replant] ) }
+  | ToggleProcessor processor -> { model with Processors = model.Processors.Add(processor, model.Processors.[processor].Toggle) }
+  | ToggleSellRawCrop -> { model with SellRawCrop = not model.SellRawCrop }
+  | ToggleSellSeedsFromSeedMaker -> { model with SellSeedsFromSeedMaker = not model.SellSeedsFromSeedMaker }
   | ToggleBuySeeds -> { model with BuySeeds = not model.BuySeeds }
+  | ToggleSeedMakerReplant -> { model with SeedMakerReplant = not model.SeedMakerReplant }
+  | ToggleSeedOrCropReplant -> { model with SeedOrCropReplant = not model.SeedOrCropReplant }
   | ToggleCropSelected crop -> { model with Crops = model.Crops.Add(crop, model.Crops.[crop].Toggle) }
   | SetCropSort sort ->
       if sort = model.CropSort then
@@ -716,6 +711,7 @@ let update message model =
         { model with
             CropSort = sort
             CropSortAscending = true }
+  | ToggleShowUselessCrops -> { model with ShowUselessCrops = not model.ShowUselessCrops }
   | ToggleFertilizerSelected fert -> { model with Fertilizers = model.Fertilizers.Add(fert, model.Fertilizers.[fert].Toggle) }
   | SetFertilizerSort sort ->
       if sort = model.FertilizerSort then
@@ -724,7 +720,7 @@ let update message model =
         { model with
             FertilizerSort = sort
             FertilizerSortAscending = true }
-  | ToggleShowUselessCrops -> { model with ShowUselessCrops = not model.ShowUselessCrops }
+  | SetStartingFertilizer fert -> { model with StartingFertilizer = fert }
   | SetStartDay day -> { model with StartDate = { model.StartDate with Day = day } }
   | SetStartSeason season -> { model with StartDate = { model.StartDate with Season = season } }
   | SetEndDay day -> { model with EndDate = { model.EndDate with Day = day } }
@@ -736,7 +732,6 @@ let update message model =
   | SetLuckBuff buff -> { model with LuckBuff = max buff 0 }
   | SetGiantCropChecksPerTile checks -> { model with GiantCropChecksPerTile = checks |> max 0.0 |> min 9.0 }
   | ToggleGreenhouseMode -> { model with GreenhouseMode = not model.GreenhouseMode }
-  | SetStartingFertilizer fert -> { model with StartingFertilizer = fert }
   | ToggleQualityProducts -> { model with QualityProducts = not model.QualityProducts }
   | TogglePreservesQuality processor -> { model with Processors = model.Processors.Add(processor, model.Processors.[processor].TogglePreservesQuality) }
   | ToggleQualitySeedMaker -> { model with QualitySeedMaker = not model.QualitySeedMaker }
@@ -918,66 +913,56 @@ let buySources list (sources: Map<NameOf<Source>, Source>) dispatch =
     [ for name in list do
         buySource name sources.[name].Selected dispatch ]
 
-let productSource source selected status dispatch =
+let processor model name status selected dispatch =
   li []
-    [ statusCheckbox (source |> ProductSource.name |> sourceIcon ) (ToggleProductSource source) selected status dispatch ]
-
-let productSources model dispatch =
-  ul [ ClassName "source-list" ]
-    [ for source in model.ProductSources do
-        let status = Model.productSourceStatus model source
-        let selected = Model.productSourceSelected model source
-        productSource source selected status dispatch
-        if selected then
+    [ checkboxWith (name |> ofName |> sourceIcon) (ToggleProcessor name) selected dispatch
+      if selected then
           if status = Warning then
             label
               [ ClassName "details-label"
-                HtmlFor (ProductSource.name source) ]
+                HtmlFor (ofName name) ]
               [ str "Show Warnings"]
             input
               [ Type "checkbox"
                 ClassName "details-input"
-                Id (ProductSource.name source) ]
+                Id (ofName name) ]
             ul [ ClassName "details" ]
-              [ for reason in Model.productSourceStatusData status model source do
+              [ for reason in Model.processorStatusData status model name do
                   invalidReason reason ]
           elif status = Invalid then
-            let id = System.Guid.NewGuid().ToString()
             label
               [ ClassName "details-label"
-                HtmlFor id ]
+                HtmlFor (ofName name) ]
               [ str "Show Errors"]
             input
               [ Type "checkbox"
                 ClassName "details-input"
-                Id id ]
+                Id (ofName name) ]
             ul [ ClassName "details" ]
-              [ for reason in Model.productSourceStatusData status model source do
+              [ for reason in Model.processorStatusData status model name do
                   invalidReason reason ] ]
-
-let replant replant selected status dispatch =
-  li []
-    [ statusCheckbox (replant |> Replant.name |> sourceIcon) (ToggleReplant replant) selected status dispatch ]
 
 let replants model dispatch =
   ul [ ClassName "source-list" ]
     [ li []
         [ checkboxWith (sourceIcon "Buy Seeds") ToggleBuySeeds model.BuySeeds dispatch ]
-      for r in Replant.all do
-        let status = Model.replantStatus model r
-        replant r model.Replants.[r] status dispatch
-        if r = Replant.SeedMaker && status = Warning then
-          label
-            [ ClassName "details-label"
-              HtmlFor (Replant.name r) ]
-            [ str "Show Warnings"]
-          input
-            [ Type "checkbox"
-              ClassName "details-input"
-              Id (Replant.name r) ]
-          ul [ ClassName "details" ]
-            [ for reason in Model.replantStatusData status model r do
-                invalidReason reason ] ]
+      li []
+        [ checkboxWith (sourceIcon "Seed Maker") ToggleSeedMakerReplant model.SeedMakerReplant dispatch
+          let status = Model.seedMakerStatus model.SeedMakerReplant model
+          if status = Warning then
+            label
+              [ ClassName "details-label"
+                HtmlFor "seedMakerReplant" ]
+              [ str "Show Warnings"]
+            input
+              [ Type "checkbox"
+                ClassName "details-input"
+                Id "seedMakerReplant" ]
+            ul [ ClassName "details" ]
+              [ for reason in Model.seedMakerStatusData status model do
+                  invalidReason reason ] ]
+      li []
+        [ checkboxWith (sourceIcon "Harvested Seed or Crop") ToggleSeedOrCropReplant model.SeedOrCropReplant dispatch ] ]
 
 let selectOptions (list: 't seq) string (ofString: string -> 't) text message (value: 't) dispatch=
   label []
@@ -1167,7 +1152,26 @@ let sidebarContent model dispatch =
           replants model dispatch ]
   | Sell ->
       div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
-        [ productSources model dispatch ]
+        [ ul []
+            [ li []
+                [ checkboxWith (sourceIcon "Raw Crop") ToggleSellRawCrop model.SellRawCrop dispatch ]
+              for name in model.ProcessorList do
+                processor model name (Model.processorStatus model name) (model.Processors.[name].Selected) dispatch
+              li []
+                [ checkboxWith (sourceIcon "Seed Maker") ToggleSeedMakerReplant model.SeedMakerReplant dispatch
+                  let status = Model.seedMakerStatus model.SellSeedsFromSeedMaker model
+                  if status = Warning then
+                    label
+                      [ ClassName "details-label"
+                        HtmlFor "seedMakerReplant" ]
+                      [ str "Show Warnings"]
+                    input
+                      [ Type "checkbox"
+                        ClassName "details-input"
+                        Id "seedMakerReplant" ]
+                    ul [ ClassName "details" ]
+                      [ for reason in Model.seedMakerStatusData status model do
+                          invalidReason reason ] ] ] ]
   | Date ->
       div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
         [ date "Start Date: " SetStartSeason SetStartDay model.StartDate dispatch

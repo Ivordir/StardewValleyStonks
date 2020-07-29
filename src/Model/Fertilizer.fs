@@ -17,6 +17,11 @@ type FertilizerSort =
   | Speed
   | Price
 
+type CacheFertilizer =
+  { Fertilizer: Fertilizer
+    Price: int
+    Sources: NameOf<Source> list }
+
 module Fertilizer =
   let name fertilizer = fertilizer.Name
   let selected fertilizer = fertilizer.Selected
