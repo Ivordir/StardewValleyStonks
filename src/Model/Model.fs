@@ -99,11 +99,12 @@ module Model =
     |> List.filter (fun req -> requirementStatus model req = overallStatus)
     |> List.map UnmetRequirement
   
-  let overallRequirementStatus requirements model =
-    let requirementStatuses = List.map (fun req -> requirementStatus model req) requirements
-    List.fold Status.compareInvalid Valid requirementStatuses
+  let flip f a b = f b a
+
+  let overallRequirementStatus model =
+    List.fold (flip ((requirementStatus model) >> Status.compareInvalid)) Valid
   
-  let sourceStatus source model = if model.BuySources.[source].Selected then Valid else Invalid
+  let sourceActive source model = model.BuySources.[source].Selected
   
   let sourceStatusData source model = [ if not model.BuySources.[source].Selected then notSelected ]
   
@@ -116,12 +117,12 @@ module Model =
     | RawCrop -> if model.SellRawItem then Valid else Invalid
     | Processor p ->
         if model.Processors.[p].Selected then
-          overallRequirementStatus model.Processors.[p].Requirements model
+          overallRequirementStatus model model.Processors.[p].Requirements
         else
           Invalid
     | ProductSource.SeedMaker ->
         if model.SellSeedsFromSeedMaker then
-          overallRequirementStatus seedMakerRequirement model
+          overallRequirementStatus model seedMakerRequirement
         else
           Invalid
   
@@ -135,26 +136,26 @@ module Model =
         @ requirementStatusData seedMakerRequirement overallStatus model
   
   let replantStatus model = function
+    | SeedOrCrop -> if model.Replants.[SeedOrCrop] then Valid else Invalid
     | Replant.SeedMaker ->
-        if model.Replants.[Replant.SeedMaker] then
-          overallRequirementStatus seedMakerRequirement model
+        if model.Replants.[SeedMaker] then
+          overallRequirementStatus model seedMakerRequirement
         else
           Invalid
-    | r -> if model.Replants.[r] then Valid else Invalid
   
   let replantStatusData overallStatus model = function
+    | SeedOrCrop -> [ if not model.Replants.[SeedOrCrop] then notSelected ]
     | Replant.SeedMaker ->
-        [ if not model.Replants.[Replant.SeedMaker] then notSelected ]
+        [ if not model.Replants.[SeedMaker] then notSelected ]
         @ requirementStatusData seedMakerRequirement overallStatus model
-    | r -> [ if not model.Replants.[r] then notSelected ]
   
   let priceStatus price model =
     match price |> Price.overrideSource with
     | Some true -> Valid //true //ignore source conditions but consider local conditions
     | Some false -> Invalid //false //false, return display: manually overriden to false
     | None ->
-        if (sourceStatus (price |> Price.source) model = Valid) then
-          overallRequirementStatus (price |> Price.requirements) model
+        if sourceActive (price |> Price.source) model then
+          overallRequirementStatus model (price |> Price.requirements)
         else
           Invalid
   
@@ -178,8 +179,6 @@ module Model =
         let bestPrice = Map.fold (fun currentMin source _ -> min (priceOf priceFrom model priceFrom.[source] ) currentMin) Integer.MaxValue validPrices
         Map.filter (fun _ price -> priceOf priceFrom model price = bestPrice) priceFrom)
     |> Map.fold (fun prices source price -> (price, priceStatuses.[source])::prices) []
-  
-  let overallStatus = List.fold Status.compareWVI Invalid
 
   let priceData model (priceFrom: Map<NameOf<Source>, Price>) =
     if priceFrom.IsEmpty then
@@ -188,7 +187,7 @@ module Model =
       let bestPrice =
         Map.fold
           (fun currentMin source _ ->
-            if sourceStatus source model <> Invalid then
+            if sourceActive source model then
               min (priceOf priceFrom model priceFrom.[source]) currentMin
             else
               currentMin)
@@ -246,7 +245,7 @@ module Model =
 
   let seasons model = Season.from model.StartDate.Season model.EndDate.Season
 
-  let isInSeason model crop = List.exists crop.Seasons.Contains (seasons model)
+  let isInSeason model crop = List.exists crop.SelectedSeasons.Contains (seasons model)
 
   let canGiveOneHarvest model crop =
     let lastConsecDays, maxDays =
@@ -266,19 +265,55 @@ module Model =
     | Some false -> Invalid
     | None -> productSourceStatus model source
 
-  let hasAProduct model crop =
-    Map.exists (fun source product -> productStatus model source product <> Invalid) crop.Products
+  let productStatuses model =
+    Map.fold (fun status source product -> productStatus model source product |> Status.compareValid status) Invalid
+
+  let cropProductStatus model crop =
+    [ productStatuses model crop.Products
+      for KeyValue(_, item) in crop.HarvestedItems do
+        productStatuses model item.Products ]
+    |> List.fold Status.compareValid Invalid
+
+  let cropReplantStatus model replantOverride = function
+    | Some r ->
+        match replantOverride with
+        | Some true -> Valid
+        | Some false -> Invalid
+        | None -> replantStatus model r
+    | None -> Invalid
+
+  let cropReplantStatuses model crop =
+    [ if (match crop.BuySeedsOverride with
+          | Some true -> true
+          | Some false -> false
+          | None -> model.BuySeeds) then
+        match priceData model crop.PriceFrom with
+        | PriceData (_, list) -> List.fold Status.compareValid Invalid (list |> List.unzip |> snd)
+        | _ -> Invalid
+      else
+        Invalid
+      cropReplantStatus model crop.ReplantOverride crop.Replant
+      for KeyValue(_, item) in crop.HarvestedItems do
+        cropReplantStatus model item.ReplantOverride item.Replant ]
+    |> List.fold Status.compareValid Invalid
 
   let cropStatus model crop =
     if crop.Selected
       && crop |> isInSeason model
-      && crop |> canGiveOneHarvest model
-      && crop |> hasAProduct model then
-      Valid
+      && crop |> canGiveOneHarvest model then
+        [ crop |> cropProductStatus model
+          crop |> cropReplantStatuses model ]
+        |> List.fold Status.compareWVI Invalid
     else
       Invalid
 
-  let fertilizerStatus model fertilizer = Valid
+  let fertilizerStatus model (fertilizer: Fertilizer) =
+    if fertilizer.Selected then
+      match priceData model fertilizer.PriceFrom with
+        | PriceData (_, list) -> List.fold Status.compareValid Invalid (list |> List.unzip |> snd)
+        | _ -> Invalid
+    else
+      Invalid
 
   let sortMode<'t, 'key when 'key: comparison> ascending =
     if ascending then

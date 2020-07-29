@@ -803,7 +803,7 @@ let checkboxImg isChecked status =
   if isChecked then
     match status with
     | Valid -> "img/UI/CheckboxGreen.png"
-    | Warning -> "img/UI/CheckboxGreen.png"
+    | Warning -> "img/UI/CheckboxYellow.png"
     | Invalid -> "img/UI/CheckboxRed.png"
   else
     "img/UI/Checkbox.png"
@@ -1102,7 +1102,11 @@ let viewTable columns sortMessage data dispatch =
                     [ str name ] ] ] ]
     div [ ClassName "table-body-container" ]
       [ table [ ClassName "table" ]
-          [ tbody []
+          [ for _, width, _, css in columns do
+              col
+                [ ClassName css
+                  Style [ Width (string width + "%") ] ]
+            tbody []
               [ data ] ] ] ]
 
 let sidebarContent model dispatch =
@@ -1124,12 +1128,12 @@ let sidebarContent model dispatch =
   | Crops ->
       div [ classModifier "sidebar-table-content" "open" model.SidebarOpen ]
         [ yield! viewTable
-            [ "", 5, CropSort.Selected, ""
-              "Crop", 40, CropSort.ByName, ""
-              "Growth Time", 5, TotalGrowthTime, ""
-              "Regrow Time", 5, RegrowTime, ""
-              "Seasons", 10, Seasons, ""
-              "Seed Price", 35, SeedPrice, "" ]
+            [ "", 5.0, CropSort.Selected, ""
+              "Crop", 40.0, CropSort.ByName, ""
+              "Growth Time", 7.5, TotalGrowthTime, ""
+              "Regrow Time", 7.5, RegrowTime, ""
+              "Seasons", 15.0, Seasons, ""
+              "Seed Price", 25.0, SeedPrice, "" ]
             SetCropSort
             (cropTableItems (Model.sortedCrops model) model dispatch)
             dispatch
@@ -1137,11 +1141,11 @@ let sidebarContent model dispatch =
   | Fertilizers ->
       div [ classModifier "sidebar-table-content" "open" model.SidebarOpen ]
         [ yield! viewTable
-            [ "", 5, FertilizerSort.Selected, ""
-              "Fertilizer", 40, FertilizerSort.ByName, ""
-              "Quality", 10, Quality, ""
-              "Speed", 10, Speed, ""
-              "Price", 35, Price, "" ]
+            [ "", 5.0, FertilizerSort.Selected, ""
+              "Fertilizer", 50.0, FertilizerSort.ByName, ""
+              "Quality", 10.0, Quality, ""
+              "Speed Bonus", 10.0, Speed, ""
+              "Price", 25.0, Price, "" ]
             SetFertilizerSort
             (fertilizerTableItems (Model.sortedFertilizers model) model dispatch)
             dispatch
