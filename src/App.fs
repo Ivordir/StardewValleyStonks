@@ -1043,7 +1043,7 @@ let cropTableItems =
     Crop.nameOf
     Crop.selected
     Model.cropStatus
-    (fun crop -> "/img/Crops/" + crop.Name + ".png")
+    (fun crop -> "img/Crops/" + crop.Name + ".png")
     (fun crop ->
       [ [ ofInt crop.TotalGrowthTime ]
         [ ofOption (Option.bind (ofInt >> Some) crop.RegrowTime) ]
@@ -1059,7 +1059,7 @@ let fertilizerTableItems =
     Fertilizer.nameOf
     Fertilizer.selected
     Model.fertilizerStatus
-    (fun fert -> "/img/Fertilizers/" + fert.Name + ".png")
+    (fun fert -> "img/Fertilizers/" + fert.Name + ".png")
     (fun fert ->
       [ [ ofInt fert.Quality ]
         [ str (string (fert.Speed * 100.0) + "%") ] ] )
@@ -1096,7 +1096,7 @@ let sidebarContent model dispatch =
                   [ span [ ClassName "skill-header" ]
                       [ img
                           [ ClassName "skill-img"
-                            Src ("/img/Skills/" + ofName skill + ".png")]
+                            Src ("img/Skills/" + ofName skill + ".png")]
                         str model.Skills.[skill].Name ]
                     skillLevelInput skill model.Skills.[skill].Level dispatch
                     skillBuffInput skill model.Skills.[skill].Buff dispatch
