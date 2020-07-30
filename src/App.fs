@@ -346,7 +346,7 @@ let init () =
                  SourceOverride = None |} ] )
 
       Crop.create
-        "StarFruit"
+        "Starfruit"
         [ Summer ]
         [ 2; 3; 2; 3; 3 ]
         (SellPrice 750)
