@@ -9,12 +9,20 @@ type Source =
 
 module Source =
   let name source = source.Name
-
+  
   let nameOf = toNameOf name
-
+  
   let create name =
     { Name = name
       Selected = true }
+  
+  let all =
+    [ "Pierre"
+      "Joja"
+      "Oasis"
+      "Traveling Merchant"
+      "Crafting" ]
+    |> List.map create
 
 type MatchCondition =
   { Name: string
@@ -30,9 +38,23 @@ module MatchCondition =
     { Name = name
       Selected = false }
 
+  let all =
+    [ "Joja Membership" ]
+    |> List.map create
+
 type Requirement =
   | SkillLevel of Skill: NameOf<Skill> * Level: int
   | Year of int
+
+module Requirement =
+  let status isMet = function
+    | Ignore -> Valid
+    | Warn | Invalidate when isMet -> Valid
+    | Warn -> Warning
+    | Invalidate -> Invalid
+
+  let seedMaker = [ SkillLevel (Name "Farming", 9) ]
+  let year2 = [ Year 2 ]
 
 type Alert =
   | UnmetRequirement of Requirement
@@ -84,6 +106,14 @@ type Price =
          MatchSource: NameOf<Source>
          MatchCondition: NameOf<MatchCondition> |}
 
+type CreatePrices =
+  | Pierre
+  | Joja of PierrePrice: Price
+  | Oasis
+  | PierreAndJoja
+  | PriceList of Price list
+  | NoPrice
+
 module Price =
   let value = function
     | BuyPrice p -> p.Value
@@ -103,9 +133,42 @@ module Price =
 
   let nameOf = source
 
-  let create name value =
+  let (.*) price multiplier = value price |> float |> (*) multiplier |> int
+
+  let create value source =
     BuyPrice
       {| Value = value
-         Source = Name name
+         Source = Name source
          Requirements = List.empty
          SourceOverride = None |}
+
+  let createYear2 value source =
+    BuyPrice
+      {| Value = value
+         Source = Name source
+         Requirements = Requirement.year2
+         SourceOverride = None |}
+
+  let createSeed seedSellPrice = create (seedSellPrice * 2)
+
+  let createMatch value source matchSource matchCondition =
+    MatchPrice
+      {| Value = value
+         Source = Name source
+         Requirements = List.empty
+         SourceOverride = None
+         MatchSource = Name matchSource
+         MatchCondition = Name matchCondition |}
+
+  let createJojaPrice pierrePrice = createMatch (pierrePrice .* 1.25) "Joja" "Pierre" "Joja Membership"
+
+  let createAll seedSellPrice = function
+    | Pierre -> [ createSeed seedSellPrice "Pierre" ]
+    | Joja pierrePrice -> [ pierrePrice; createJojaPrice pierrePrice ]
+    | Oasis -> [ createSeed seedSellPrice "Oasis" ]
+    | PierreAndJoja ->
+      let pierrePrice = createSeed seedSellPrice "Pierre"
+      [ pierrePrice
+        createJojaPrice pierrePrice ]
+    | PriceList list -> list
+    | NoPrice -> List.empty

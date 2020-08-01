@@ -72,7 +72,7 @@ type Model =
     GreenhouseMode: bool
     QualityProducts: bool
     QualitySeedMaker: bool
-    QualitySeedMakerAmounts: Map<Quality, int> }
+    QualitySeedMakerAmounts: Map<Quality, float> }
 
 type DisplayPrices =
   | PriceData of (int * (NameOf<Source> * Status) list)
@@ -80,19 +80,11 @@ type DisplayPrices =
   | NoPrices
 
 module Model =
-  let seedMakerRequirements = [ SkillLevel (Name "Farming", 9) ]
-
   let validDate model = model.StartDate |> isBefore model.EndDate
-
-  let private requirementStatusHelper requirementMet = function
-    | Ignore -> Valid
-    | Warn | Invalidate when requirementMet -> Valid
-    | Warn -> Warning
-    | Invalidate -> Invalid
   
   let requirementStatus model = function
-    | SkillLevel (skill, level) -> requirementStatusHelper (model.Skills.[skill].Level >= level) model.SkillLevelRequirementsShould
-    | Year y -> requirementStatusHelper (model.Year >= y) model.YearRequirementsShould
+    | SkillLevel (skill, level) -> Requirement.status (model.Skills.[skill].Level >= level) model.SkillLevelRequirementsShould
+    | Year y -> Requirement.status (model.Year >= y) model.YearRequirementsShould
   
   let requirementStatusData requirements overallStatus model =
     requirements
@@ -119,13 +111,13 @@ module Model =
   
   let seedMakerStatus sellOrReplant model =
     if sellOrReplant then
-      overallRequirementStatus model seedMakerRequirements
+      overallRequirementStatus model Requirement.seedMaker
     else
       Invalid
   
   let seedMakerStatusData status model =
     [ if not model.SeedMakerReplant then Alert.notSelected ]
-    @ requirementStatusData seedMakerRequirements status model
+    @ requirementStatusData Requirement.seedMaker status model
   
   let priceStatus price model =
     match Price.overrideSource price with
@@ -263,13 +255,10 @@ module Model =
 
   let productStatuses model = Status.mapOverallValid (productStatus model)
 
-  let sellSeedsFromSeedMakerStatus model = function
-    | SeedMaker (o, _) ->
-        match o with
-        | Some true -> Valid
-        | Some false -> Invalid
-        | None -> seedMakerStatus model.SellSeedsFromSeedMaker model
-    | _ -> Invalid
+  let useSeedMakerStatus model = function
+    | Some true -> Valid
+    | Some false -> Invalid
+    | None -> seedMakerStatus model.SellSeedsFromSeedMaker model
 
   let rawItemStatus model = function
     | Some true -> Valid
@@ -277,27 +266,13 @@ module Model =
     | None -> if model.SellRawCrop then Valid else Invalid
 
   let cropProductStatus model crop =
-    [ rawItemStatus model crop.SellRawCropOverride
-      productStatuses model crop.Products
-      for KeyValue(_, item) in crop.OtherHarvestedItems do
+    [ for KeyValue(_, item) in crop.HarvestedItems do
         rawItemStatus model item.SellRawItemOverride
         productStatuses model item.Products
-        sellSeedsFromSeedMakerStatus model item.Replant
-      sellSeedsFromSeedMakerStatus model crop.Replant ]
+      match crop.SeedMaker with
+      | Some s -> useSeedMakerStatus model s.SellSeedsOverride
+      | None -> Invalid ]
     |> Status.listOverallValid
-
-  let replantStatus model = function
-    | SeedMaker (_, o) ->
-        match o with
-        | Some true -> Valid
-        | Some false -> Invalid
-        | None -> seedMakerStatus model.SeedMakerReplant model
-    | SeedOrCrop o ->
-        match o with
-        | Some true -> Valid
-        | Some false -> Invalid
-        | None -> if model.SeedOrCropReplant then Valid else Invalid
-    | NoReplant -> Invalid
 
   let cropReplantStatuses model crop =
     [ if (match crop.BuySeedsOverride with
@@ -309,9 +284,14 @@ module Model =
         | _ -> Invalid
       else
         Invalid
-      replantStatus model crop.Replant
-      for KeyValue(_, item) in crop.OtherHarvestedItems do
-        replantStatus model item.Replant ]
+      match crop.SeedMaker with
+      | Some s -> useSeedMakerStatus model s.SellSeedsOverride
+      | None -> Invalid
+      if crop.HarvestedItems.ContainsKey (Item.nameOf crop.Seed) then
+        match crop.SeedOrCropOverride with
+        | Some true -> Valid
+        | Some false -> Invalid
+        | None -> if model.SeedOrCropReplant then Valid else Invalid ]
     |> Status.listOverallValid
 
   let cropStatus model crop =
@@ -320,7 +300,7 @@ module Model =
       && crop |> canGiveOneHarvest model then
         [ crop |> cropProductStatus model
           crop |> cropReplantStatuses model ]
-        |> Status.listOverallWVI
+        |> Status.listOverallInvalid
     else
       Invalid
 
@@ -340,7 +320,7 @@ module Model =
         | FertilizerSort.Selected -> (sortMode model.FertilizerSortAscending) Fertilizer.selected list
         | Quality -> (sortMode model.FertilizerSortAscending) Fertilizer.quality list
         | Speed -> (sortMode model.FertilizerSortAscending) Fertilizer.speed list
-        | FertilizerSort.Price -> (sortMode model.FertilizerSortAscending) (fun f -> bestPrice2 f.PriceFrom model) list))
+        | Price -> (sortMode model.FertilizerSortAscending) (fun f -> bestPrice2 f.PriceFrom model) list))
   
   let sortedCrops model =
     [ for KeyValue(_, crop) in model.Crops do
@@ -360,11 +340,13 @@ module Model =
   
   let noGiantCropProb model = (1.0 - model.BaseGiantCropChance) ** model.GiantCropChecksPerTile
   
-  let amountOf crop model =
-    let noGiantCropProb = if crop.IsGiantCrop then noGiantCropProb model else 1.0
-    (noGiantCropProb,
-     noGiantCropProb * (crop.ExtraCrops + (if crop.HasDoubleCropChance then crop.ExtraCrops * doubleCropProb model + doubleCropProb model else 0.0))
-     + (1.0 - noGiantCropProb) * 2.0)
+  let amountValue model = function
+    | CropAmount (extra, chance) -> 1.0, extra + (if chance then extra * doubleCropProb model + doubleCropProb model else 0.0)
+    | GiantCrop ->
+        let noGiantCrop = noGiantCropProb model
+        noGiantCrop, noGiantCrop * doubleCropProb model + (1.0 - noGiantCrop) * 2.0
+    | Amount x -> 0.0, x
+    
   
   let cachePrices = function
     | PriceData (price, sources) -> price, sources |> List.unzip |> fst
@@ -429,6 +411,59 @@ module Model =
                 match temp with
                 | PriceData (_, list) -> list |> List.unzip |> fst
                 | _ -> List.empty
-              HarvestedItems = Map.empty
+              HarvestedItemCache = Map.empty
               BestReplants = List.empty } ]
     model
+
+  let initial =
+    { Page = Home
+      StartDate = { Season = Spring; Day = 1 }
+      EndDate = { Season = Fall; Day = 28 }
+      Year = 1
+      SidebarTab = Skills
+      SidebarOpen = false
+      Skills = Skill.all |> listToMap Skill.nameOf
+      SkillList = Skill.all |> List.map Skill.nameOf
+      IgnoreProfessionRelationships = false
+      Multipliers = Multiplier.all |> listToMap Multiplier.nameOf
+      RawMultipliers =
+        Multiplier.all
+        |> List.filter Multiplier.isRawMultiplier
+        |> List.map Multiplier.nameOf
+      BuySourceList = Source.all |> List.map Source.nameOf
+      BuySources = Source.all |> listToMap Source.nameOf
+      MatchConditions = MatchCondition.all |> listToMap MatchCondition.nameOf
+      MatchConditionList = MatchCondition.all |> List.map MatchCondition.nameOf
+      Processors = Processor.all |> listToMap Processor.nameOf
+      ProcessorList = Processor.all |> List.map Processor.nameOf
+      SellRawCrop = true
+      SellSeedsFromSeedMaker = true
+      BuySeeds = true
+      SeedMakerReplant = true
+      SeedOrCropReplant = true
+      Crops = Crop.all |> listToMap Crop.nameOf
+      CropSort = Seasons
+      CropSortAscending = true
+      ShowUselessCrops = false
+      Fertilizers = Fertilizer.all |> listToMap Fertilizer.nameOf
+      FertilizerSort = Speed
+      FertilizerSortAscending = true
+      FertilizerList = Fertilizer.all |> List.map Fertilizer.nameOf
+      YearRequirementsShould = Warn
+      SkillLevelRequirementsShould = Warn
+      SpecialCharm = false
+      LuckBuff = 0
+      BaseGiantCropChance = 0.01
+      GiantCropChecksPerTile = 8.0
+      SeedMakerProb = 0.975
+      AncientSeedProb = 0.005
+      GreenhouseMode = false
+      StartingFertilizer = None
+      QualityProducts = false
+      QualitySeedMaker = false
+      QualitySeedMakerAmounts =
+        Map.ofList
+          [ Normal, 2.0
+            Silver, 3.0
+            Gold, 4.0
+            Iridium, 5.0 ] }

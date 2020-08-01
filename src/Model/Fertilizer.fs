@@ -41,3 +41,37 @@ module Fertilizer =
       Quality = quality
       Speed = speed
       PriceFrom = prices |> listToMap Price.nameOf }
+
+  let all =
+    [ create
+          "Basic Fertilizer"
+          1
+          0.0
+          [ Price.create 100 "Pierre" ]
+
+      create
+        "Quality Fertilizer"
+        2
+        0.0
+        [ BuyPrice
+            {| Value = 150
+               Source = Name "Pierre"
+               Requirements = [ Year 2 ]
+               SourceOverride = None |} ]
+
+      create
+        "Speed-Gro"
+        0
+        0.1
+        [ Price.create 100 "Pierre" ]
+
+      create
+        "Deluxe Speed-Gro"
+        0
+        0.25
+        [ BuyPrice
+            {| Value = 150
+               Source = Name "Pierre"
+               Requirements = [ Year 2 ]
+               SourceOverride = None |}
+          Price.create 80 "Oasis" ] ]

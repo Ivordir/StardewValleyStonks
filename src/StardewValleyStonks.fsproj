@@ -7,6 +7,7 @@
     <Compile Include="./Model/Skills.fs" />
     <Compile Include="./Model/Price.fs" />
     <Compile Include="./Model/Fertilizer.fs" />
+    <Compile Include="./Model/Items.fs" />
     <Compile Include="./Model/Crop.fs" />
     <Compile Include="./Model/Model.fs" />
     <Compile Include="App.fs" />
