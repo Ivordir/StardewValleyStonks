@@ -14,7 +14,7 @@ module Processor =
   let name processor = processor.Name
 
   let nameOf = toNameOf name
-  
+
   let create name requirements =
     { Name = name
       Selected = true
@@ -60,34 +60,31 @@ module Multiplier =
   let name = function
     | Multiplier m -> m.Name
     | Profession p -> ofName p.Profession
-  
+
   let nameOf = toNameOf name
-  
+
   let isRawMultiplier = function
     | Multiplier _ -> true
     | Profession _ -> false
-  
+
+  let create name value =
+    Multiplier
+      {| Name = name
+         Selected = false
+         Value = value |}
+
+  let createProfession skill name value =
+    Profession
+      {| Skill = Name skill
+         Profession = Name name
+         Value = value |}
+
   let all =
-    [ Profession
-        {| Skill = Name "Farming"
-           Profession = Name "Tiller"
-           Value = 1.1 |}
-      Profession
-        {| Skill = Name "Farming"
-           Profession = Name "Artisan"
-           Value = 1.4 |}
-      Profession
-        {| Skill = Name "Farming"
-           Profession = Name "Agriculturist"
-           Value = 0.1 |}
-      Profession
-        {| Skill = Name "Foraging"
-           Profession = Name "Gatherer"
-           Value = 1.2 |}
-      Multiplier
-        {| Name = "Irrigated"
-           Selected = false
-           Value = 1.1 |} ]
+    [ createProfession "Farming" "Tiller" 1.1
+      createProfession "Farming" "Artisan" 1.4
+      createProfession "Farming" "Agriculturist" 0.1
+      createProfession "Foraging" "Gatherer" 1.2
+      create "Irrigated" 1.1 ]
 
   let agri: NameOf<Multiplier> list = [ Name "Agriculturist" ]
 
@@ -100,21 +97,20 @@ module Item =
   let name item = item.Name
 
   let nameOf = toNameOf name
-  
+
   let initial =
     { Name = "initial"
       BasePrice = -1
       Multiplier = None }
 
-  let create name basePrice =
+  let createWith multiplier name basePrice =
     { Name = name
       BasePrice = basePrice
-      Multiplier = None }
+      Multiplier = multiplier }
 
-  let createCrop name sellPrice =
-    { Name = name
-      BasePrice = sellPrice
-      Multiplier = Some (Name "Tiller") }
+  let create = createWith None
+  let createCrop = createWith (Some <| Name "Tiller")
+  let createArtisan = createWith (Some <| Name "Artisan")
 
 type Product =
   | Process of
@@ -149,15 +145,15 @@ module Product =
   let processor = function
     | Process p -> p.Processor
     | RatioProcess r -> r.Processor
-  
+
   let inputAmount = function
     | RatioProcess r -> r.InputAmount
     | _ -> 1
-  
+
   let outputAmount = function
     | RatioProcess r -> r.OutputAmount
     | _ -> 1.0
-  
+
   let sourceOverride = function
     | Process p -> p.Override
     | RatioProcess r -> r.Override
@@ -169,13 +165,7 @@ module Product =
          Override = None |}
 
   let createArtisan processor outputName price =
-     Process
-       {| Processor = Name processor
-          Output =
-            { Name = outputName
-              BasePrice = price
-              Multiplier = Some (Name "Artisan") }
-          Override = None |}
+    create processor (Item.createArtisan outputName price)
 
   let createKeg = createArtisan "Keg"
   let createJar = createArtisan "Preserves Jar"
@@ -189,8 +179,12 @@ module Product =
     | Pickle -> createJar ("Pickeled " + cropItem.Name) (cropItem.BasePrice * 2 + 50)
 
   let rec createAll cropItem = function
-    | Fruit -> [ createKegProduct cropItem Wine; createJarProduct cropItem Jam ]
-    | Vegetable -> [ createKegProduct cropItem Juice; createJarProduct cropItem Pickle ]
+    | Fruit ->
+        [ createKegProduct cropItem Wine
+          createJarProduct cropItem Jam ]
+    | Vegetable ->
+        [ createKegProduct cropItem Juice
+          createJarProduct cropItem Pickle ]
     | Keg product -> [ createKegProduct cropItem product ]
     | Jar product -> [ createJarProduct cropItem product ]
     | ProductList list -> list

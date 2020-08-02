@@ -19,21 +19,21 @@ type Skill =
 
 module Profession =
   let name (profession: Profession) = profession.Name
-  
+
   let nameOf = toNameOf name
-  
+
   let isUnlocked skill profession = skill.Professions.[profession].UnlockLevel <= skill.Level
-  
-  let private setSelected value set (professions: Map<NameOf<Profession>, Profession>) =
+
+  let private setSelected value set (professions: Map<NameOf<Profession>,_>) =
     professions
     |> Map.map (fun name profession ->
       if set |> Set.contains name then
         { profession with Selected = value }
       else
         profession)
-  
+
   let forceToggle profession = { profession with Selected = not profession.Selected }
-  
+
   let toggle skill ignoreRelationships profession =
     let professions = skill.Professions.Add(profession, forceToggle skill.Professions.[profession])
     if ignoreRelationships then
@@ -48,7 +48,7 @@ module Profession =
               |> setSelected false profession.ExclusiveWith
             else
               professions |> setSelected false profession.Dependants }
-  
+
   let initial =
     { Name = "initial"
       Selected = false
@@ -59,53 +59,47 @@ module Profession =
 
 module Skill =
   let name skill = skill.Name
-  
+
   let nameOf = toNameOf name
-  
+
   let buffedLevel skill = skill.Level + skill.Buff
-  
+
   let initial =
     { Name = "initial"
       Level = 0
       Buff = 0
       Professions = Map.empty
       ProfessionLayout = List.empty }
-  
-  let farming =
-    { initial with
-        Name = "Farming"
-        Professions =
-          [ { Profession.initial with
-                Name = "Tiller"
-                UnlockLevel = 5
-                Dependants = set [ Name "Artisan"; Name "Agriculturist" ] }
-            { Profession.initial with
-                Name = "Artisan"
-                Requires = set [ Name "Tiller" ]
-                ExclusiveWith = set [ Name "Agriculturist" ] }
-            { Profession.initial with
-                Name = "Agriculturist"
-                Requires = set [ Name "Tiller" ]
-                ExclusiveWith = set [ Name "Artisan" ] } ]
-          |> listToMap Profession.nameOf
-        ProfessionLayout =
-          [ [ Name "Tiller" ]
-            [ Name "Artisan"; Name "Agriculturist" ] ] }
-  
-  let foraging =
-    { initial with
-        Name = "Foraging"
-        Professions =
-          [ { Profession.initial with
-                Name = "Gatherer"
-                UnlockLevel = 5
-                Dependants = set [ Name "Botanist" ] }
-            { Profession.initial with
-                Name = "Botanist"
-                Requires = set [ Name "Gatherer" ] } ]
-          |> listToMap Profession.nameOf
-        ProfessionLayout = [ [ Name "Gatherer" ]; [ Name "Botanist" ] ] }
-  
+
   let all =
-    [ farming
-      foraging ]
+    [ { initial with
+          Name = "Farming"
+          Professions =
+            [ { Profession.initial with
+                  Name = "Tiller"
+                  UnlockLevel = 5
+                  Dependants = set [ Name "Artisan"; Name "Agriculturist" ] }
+              { Profession.initial with
+                  Name = "Artisan"
+                  Requires = set [ Name "Tiller" ]
+                  ExclusiveWith = set [ Name "Agriculturist" ] }
+              { Profession.initial with
+                  Name = "Agriculturist"
+                  Requires = set [ Name "Tiller" ]
+                  ExclusiveWith = set [ Name "Artisan" ] } ]
+            |> listToMap Profession.nameOf
+          ProfessionLayout =
+            [ [ Name "Tiller" ]
+              [ Name "Artisan"; Name "Agriculturist" ] ] }
+      { initial with
+          Name = "Foraging"
+          Professions =
+            [ { Profession.initial with
+                  Name = "Gatherer"
+                  UnlockLevel = 5
+                  Dependants = set [ Name "Botanist" ] }
+              { Profession.initial with
+                  Name = "Botanist"
+                  Requires = set [ Name "Gatherer" ] } ]
+            |> listToMap Profession.nameOf
+          ProfessionLayout = [ [ Name "Gatherer" ]; [ Name "Botanist" ] ] } ]

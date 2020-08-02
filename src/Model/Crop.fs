@@ -70,7 +70,7 @@ type Crop =
 
   type CreateCropItem =
     | SellPrice of int
-    | Item of Item
+    | CropItem of Item
     | SameAsSeed
 
 module Crop =
@@ -85,7 +85,7 @@ module Crop =
 
   open Fable.Core.JsInterop
 
-  let private convertToF32AndBack(f64: float): float = importMember "./util.js"
+  let private convertToF32AndBack (f64: float): float = importMember "./util.js"
 
   let growthTimeWith speed crop =
     if speed = 0.0 then
@@ -113,8 +113,8 @@ module Crop =
       SelectedSeasons = Set.empty
       GrowthStages = List.empty
       TotalGrowthTime = -1
-      RegrowTime = None //
-      GrowthMultipliers = Multiplier.agri //
+      RegrowTime = None
+      GrowthMultipliers = Multiplier.agri
       Seed = Item.initial
       PriceFrom = Map.empty
       BuySeedsOverride = None
@@ -142,18 +142,12 @@ module Crop =
     let seasonsSet = set seasons
     let createdSeed =
       match seed with
-      | SeedSell price ->
-          { Name = name + " Seeds"
-            BasePrice = price
-            Multiplier = None }
+      | SeedSell price -> Item.create (name + " Seeds") price
       | Seed item -> item
     let createdCropItem =
       match cropItem with
-      | SellPrice price ->
-          { Name = name
-            BasePrice = price
-            Multiplier = Some (Name "Tiller") }
-      | Item item -> item
+      | SellPrice price -> Item.createCrop name price
+      | CropItem item -> item
       | SameAsSeed -> createdSeed
     { initial with
         Name = name
@@ -168,16 +162,6 @@ module Crop =
         HarvestedItems =
           [ HarvestedItem.create createdCropItem harvestAmount products ]
           |> listToMap HarvestedItem.nameOfItem }
-
-  let mergeWith f a (b : Map<_,_>) =
-    Map.fold (fun s k v ->
-      match Map.tryFind k s with
-      | Some v' -> Map.add k (f k (v, v')) s
-      | None -> Map.add k v s)
-      a
-      b
-
-  let merge a b = mergeWith (invalidArg "'a' or 'b'" "The maps had one or more of the same key(s).") a b
 
   let withOtherHarvestedItems items crop =
     { crop with
@@ -203,7 +187,7 @@ module Crop =
         "Blue Jazz"
         [ Spring ]
         [ 1; 2; 2; 2 ]
-        (Seed (Item.create "Jazz Seeds" 15))
+        (Seed <| Item.create "Jazz Seeds" 15)
         PierreAndJoja
         (SellPrice 50)
         NoProduct
@@ -223,7 +207,7 @@ module Crop =
         "Coffee"
         [ Spring; Summer ]
         [ 1; 2; 2; 3; 2 ]
-        (Seed (Item.create "Coffee Bean" 15))
+        (Seed <| Item.create "Coffee Bean" 15)
         (PriceList [ Price.create 2500 "Traveling Merchant" ] )
         SameAsSeed
         (ProductList
@@ -248,7 +232,7 @@ module Crop =
         "Green Bean"
         [ Spring ]
         [ 1; 1; 1; 3; 4 ]
-        (Seed (Item.create "Bean Starter" 30))
+        (Seed <| Item.create "Bean Starter" 30)
         PierreAndJoja
         (SellPrice 40)
         Vegetable
@@ -308,7 +292,7 @@ module Crop =
         [ 1; 1; 2; 2 ]
         (SeedSell 30)
         PierreAndJoja
-        (Item (Item.createCrop "Tulip Bulb" 10))
+        (CropItem <| Item.createCrop "Tulip Bulb" 10)
         NoProduct
 
       { createWithAmount
@@ -317,15 +301,10 @@ module Crop =
           "Rice"
           [ Spring ]
           [ 1; 2; 2; 3 ]
-          (Seed (Item.create "Rice Shoot" 20))
+          (Seed <| Item.create "Rice Shoot" 20)
           Pierre
-          (Item (Item.createCrop "Unmilled Rice" 30))
-          (CreateAndList
-            ( Vegetable,
-              [ Process
-                  {| Processor = Name "Mill"
-                     Output = Item.create "Rice" 100
-                     Override = None |} ] ))
+          (CropItem <| Item.createCrop "Unmilled Rice" 30)
+          (CreateAndList (Vegetable, [ Product.create "Mill" (Item.create "Rice" 100) ] ))
         with
           GrowthMultipliers = Name "Irrigated"::Multiplier.agri }
 
@@ -355,7 +334,7 @@ module Crop =
         "Hops"
         [ Summer ]
         [ 1; 1; 2; 3; 4 ]
-        (Seed (Item.create "Hops Starter" 30))
+        (Seed <| Item.create "Hops Starter" 30)
         PierreAndJoja
         (SellPrice 25)
         (CreateAndList (Jar Pickle, [ Product.createKeg "Pale Ale" 300 ] ))
@@ -366,7 +345,7 @@ module Crop =
         "Hot Pepper"
         [ Summer ]
         [ 1; 1; 1; 1; 1 ]
-        (Seed (Item.create "Pepper Seeds" 20))
+        (Seed <| Item.create "Pepper Seeds" 20)
         PierreAndJoja
         (SellPrice 40)
         Fruit
@@ -420,7 +399,7 @@ module Crop =
         "Summer Spangle"
         [ Summer ]
         [ 1; 2; 3; 2 ]
-        (Seed (Item.create "Spangle Seeds" 25))
+        (Seed <| Item.create "Spangle Seeds" 25)
         PierreAndJoja
         (SellPrice 90)
         NoProduct
@@ -458,10 +437,7 @@ module Crop =
         (CreateAndList
           ( Jar Pickle,
             [ Product.createKeg "Beer" 200
-              Process
-                {| Processor = Name "Mill"
-                   Output = Item.create "Wheat Flour" 50
-                   Override = None |} ] ))
+              Product.create "Mill" (Item.create "Wheat Flour" 50) ] ))
 
       createScythe
         "Amaranth"
@@ -513,7 +489,7 @@ module Crop =
         [ Fall ]
         [ 1; 2; 1; 1; 2 ]
         (SeedSell 60)
-        (Joja (Price.create 240 "Pierre"))
+        (Joja <| Price.create 240 "Pierre")
         (SellPrice 75)
         Fruit
 
@@ -532,7 +508,7 @@ module Crop =
         "Fairy Rose"
         [ Fall ]
         [ 1; 4; 4; 3 ]
-        (Seed (Item.create "Fairy Seeds" 100))
+        (Seed <| Item.create "Fairy Seeds" 100)
         PierreAndJoja
         (SellPrice 290)
         NoProduct
@@ -542,7 +518,7 @@ module Crop =
         "Grape"
         [ Fall ]
         [ 1; 1; 2; 3; 3 ]
-        (Seed (Item.create "Grape Starter" 30))
+        (Seed <| Item.create "Grape Starter" 30)
         PierreAndJoja
         (SellPrice 30)
         Fruit
@@ -560,9 +536,9 @@ module Crop =
         "Sweet Gem Berry"
         [ Fall ]
         [ 2; 4; 6; 6; 6 ]
-        (Seed (Item.create "Rare Seed" 200))
+        (Seed <| Item.create "Rare Seed" 200)
         (PriceList [ Price.create 1000 "Traveling Merchant" ] )
-        (Item (Item.create "Sweet Gem Berry" 3000))
+        (CropItem <| Item.create "Sweet Gem Berry" 3000)
         NoProduct
 
       create
@@ -579,7 +555,7 @@ module Crop =
         "Ancient Fruit"
         [ Spring; Summer; Fall ]
         [ 2; 7; 7; 7; 5 ]
-        (Seed (Item.create "Ancient Seeds" 30))
+        (Seed <| Item.create "Ancient Seeds" 30)
         NoPrice
         (SellPrice 550)
         Fruit

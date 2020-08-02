@@ -9,13 +9,13 @@ type Source =
 
 module Source =
   let name source = source.Name
-  
+
   let nameOf = toNameOf name
-  
+
   let create name =
     { Name = name
       Selected = true }
-  
+
   let all =
     [ "Pierre"
       "Joja"
@@ -41,6 +41,24 @@ module MatchCondition =
   let all =
     [ "Joja Membership" ]
     |> List.map create
+
+type RequirementsShould =
+  | Warn
+  | Invalidate
+  | Ignore
+
+module RequirementsShould =
+  let parse str =
+    match str with
+    | "Warn" -> Warn
+    | "Invalidate" -> Invalidate
+    | "Ignore" -> Ignore
+    | _ -> invalidArg "str" (sprintf "'%s' does not correspond to a RequirementsShould." str)
+
+  let all =
+    [ Warn
+      Invalidate
+      Ignore ]
 
 type Requirement =
   | SkillLevel of Skill: NameOf<Skill> * Level: int
@@ -85,12 +103,6 @@ module StatusData =
     | WarningD _ -> 2
     | ValidD -> 1
     | InvalidD _ -> 0
-
-  let compare (precedence: StatusData -> int) a b = if precedence a > precedence b then a else b
-  
-  let compareValid = compare validPrecedence
-  let compareInvalid = compare invalidPrecedence
-  let compareWVI = compare WVIPrecedence
 
 type Price =
   | BuyPrice of
@@ -149,7 +161,7 @@ module Price =
          Requirements = Requirement.year2
          SourceOverride = None |}
 
-  let createSeed seedSellPrice = create (seedSellPrice * 2)
+  let createSeed seedSellPrice = create <| seedSellPrice * 2
 
   let createMatch value source matchSource matchCondition =
     MatchPrice
@@ -164,7 +176,9 @@ module Price =
 
   let createAll seedSellPrice = function
     | Pierre -> [ createSeed seedSellPrice "Pierre" ]
-    | Joja pierrePrice -> [ pierrePrice; createJojaPrice pierrePrice ]
+    | Joja pierrePrice ->
+        [ pierrePrice
+          createJojaPrice pierrePrice ]
     | Oasis -> [ createSeed seedSellPrice "Oasis" ]
     | PierreAndJoja ->
       let pierrePrice = createSeed seedSellPrice "Pierre"

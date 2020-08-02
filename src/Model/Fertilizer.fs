@@ -17,11 +17,6 @@ type FertilizerSort =
   | Speed
   | Price
 
-type CacheFertilizer =
-  { Fertilizer: Fertilizer
-    Price: int
-    Sources: NameOf<Source> list }
-
 module Fertilizer =
   let name fertilizer = fertilizer.Name
   let selected fertilizer = fertilizer.Selected
@@ -53,11 +48,7 @@ module Fertilizer =
         "Quality Fertilizer"
         2
         0.0
-        [ BuyPrice
-            {| Value = 150
-               Source = Name "Pierre"
-               Requirements = [ Year 2 ]
-               SourceOverride = None |} ]
+        [ Price.createYear2 150 "Pierre" ]
 
       create
         "Speed-Gro"
@@ -69,9 +60,10 @@ module Fertilizer =
         "Deluxe Speed-Gro"
         0
         0.25
-        [ BuyPrice
-            {| Value = 150
-               Source = Name "Pierre"
-               Requirements = [ Year 2 ]
-               SourceOverride = None |}
+        [ Price.createYear2 150 "Pierre"
           Price.create 80 "Oasis" ] ]
+
+type CacheFertilizer =
+  { Fertilizer: Fertilizer
+    Price: int
+    Sources: NameOf<Source> list }
