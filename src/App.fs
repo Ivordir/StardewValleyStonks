@@ -109,7 +109,7 @@ let update message model =
   | TogglePreservesQuality processor -> { model with Processors = model.Processors.Add(processor, model.Processors.[processor].TogglePreservesQuality) }
   | ToggleQualitySeedMaker -> { model with QualitySeedMaker = not model.QualitySeedMaker }
   | SetQualitySeedMakerAmount (quality, amount) -> { model with QualitySeedMakerAmounts = model.QualitySeedMakerAmounts.Add(quality, amount) }
-  | Calculate -> Model.calculate model
+  | Calculate -> model //Model.calculate model
 
 //--View--
 open Fable.React
@@ -118,7 +118,7 @@ open Elmish.React.Common
 open Elmish.React.Helpers
 
 let classModifier baseClass modifier apply =
-  ClassName (if apply then baseClass + "--" + modifier else baseClass)
+  ClassName <| if apply then baseClass + "--" + modifier else baseClass
 
 let checkbox message isChecked dispatch =
   label [ ClassName "checkbox-img-label" ]
@@ -126,10 +126,10 @@ let checkbox message isChecked dispatch =
         [ Type "checkbox"
           Style [ Visibility "hidden"; Position PositionOptions.Absolute ]
           Checked isChecked
-          OnChange (fun _ -> dispatch message) ]
+          OnChange <| fun _ -> dispatch message ]
       img
         [ ClassName "checkbox-img"
-          Src (if isChecked then "img/UI/CheckboxGreen.png" else "img/UI/Checkbox.png") ] ]
+          Src <| if isChecked then "img/UI/CheckboxGreen.png" else "img/UI/Checkbox.png" ] ]
 
 let checkboxWith alsoDisplay message isChecked dispatch =
   label [ ClassName "checkbox-img-label" ]
@@ -137,10 +137,10 @@ let checkboxWith alsoDisplay message isChecked dispatch =
           [ Type "checkbox"
             Style [ Visibility "hidden"; Position PositionOptions.Absolute ]
             Checked isChecked
-            OnChange (fun _ -> dispatch message) ]
+            OnChange <| fun _ -> dispatch message ]
         img
           [ ClassName "checkbox-img"
-            Src (if isChecked then "img/UI/CheckboxGreen.png" else "img/UI/Checkbox.png") ] ]
+            Src <| if isChecked then "img/UI/CheckboxGreen.png" else "img/UI/Checkbox.png" ] ]
       @ alsoDisplay)
 
 let checkboxWithText text message isChecked dispatch =
@@ -149,10 +149,10 @@ let checkboxWithText text message isChecked dispatch =
         [ Type "checkbox"
           Style [ Visibility "hidden"; Position PositionOptions.Absolute ]
           Checked isChecked
-          OnChange (fun _ -> dispatch message) ]
+          OnChange <| fun _ -> dispatch message ]
       img
         [ ClassName "checkbox-img"
-          Src (if isChecked then "img/UI/CheckboxGreen.png" else "img/UI/Checkbox.png") ]
+          Src <| if isChecked then "img/UI/CheckboxGreen.png" else "img/UI/Checkbox.png" ]
       str text ]
 
 let checkboxImg isChecked status =
@@ -170,7 +170,7 @@ let statusCheckbox displayAfter message isChecked status dispatch =
           [ Type "checkbox"
             Style [ Visibility "hidden"; Position PositionOptions.Absolute ]
             Checked isChecked
-            OnChange (fun _ -> dispatch message) ]
+            OnChange <| fun _ -> dispatch message ]
         img
           [ ClassName "checkbox-img"
             Src <| checkboxImg isChecked status ] ]
@@ -179,7 +179,7 @@ let statusCheckbox displayAfter message isChecked status dispatch =
 let viewTab toString css message tab active dispatch =
   li
     [ classModifier (css + "-tab") "active" active
-      OnClick (fun _ -> dispatch <| message tab) ]
+      OnClick <| fun _ -> dispatch <| message tab ]
     [ str <| toString tab ]
 
 let viewTabsWith activeFun toString css message list dispatch =
@@ -207,7 +207,7 @@ let levelInput mode name level dispatch =
       Max 10
       valueOrDefault level
       ClassName <| "skill-" + mode + "-input"
-      OnChange (fun l -> dispatch <| SetSkillLevel (name, !!l.Value)) ]
+      OnChange <| fun l -> dispatch <| SetSkillLevel (name, !!l.Value) ]
 
 let skillLevelInput name level dispatch =
   label [ ClassName "skill-input" ]
@@ -223,7 +223,7 @@ let skillBuffInput name buff dispatch =
           Min 0
           valueOrDefault buff
           ClassName "skill-number-input"
-          OnChange (fun b -> dispatch <| SetSkillBuff (name, !!b.Value)) ] ]
+          OnChange <| fun b -> dispatch <| SetSkillBuff (name, !!b.Value) ] ]
 
 let profession requirementsShould profession skill dispatch =
   button
@@ -236,7 +236,7 @@ let profession requirementsShould profession skill dispatch =
               "--error"
           else
             "")
-      OnClick (fun _ -> dispatch <| ToggleProfession (Types.Name skill.Name, profession)) ]
+      OnClick <| fun _ -> dispatch <| ToggleProfession (Types.Name skill.Name, profession) ]
     [ if skill.Professions.[profession].Selected && not (profession |> Profession.isUnlocked skill) then
         if requirementsShould = Warn then
           warningIcon
@@ -263,20 +263,6 @@ let sourceIcon name =
         Src <| "img/Sources/" + name + ".png" ]
     str name ]
 
-let rec invalidReason reason =
-  li []
-    [ match reason with
-      | UnmetRequirement c ->
-          match c with
-          | SkillLevel (skill, level) -> str <| ofName skill + " level too low. Unlocks at level " + string level + "."
-          | Year y -> str <| "Available only from year " + string y + " and onwards."
-      | Alert reason -> str reason
-      | AlertList (reason, subReasons) ->
-          str reason
-          for subReason in subReasons do
-            ul []
-              [ invalidReason subReason ] ]
-
 let buySource name selected dispatch =
   li []
     [ checkboxWith (sourceIcon <| ofName name) (ToggleBuySource name) selected dispatch ]
@@ -286,34 +272,50 @@ let buySources list (sources: Map<NameOf<Source>, Source>) dispatch =
     [ for name in list do
         buySource name sources.[name].Selected dispatch ]
 
-let processor model name status selected dispatch =
+let rec viewAlert = function
+  | UnmetRequirement c ->
+      match c with
+      | SkillLevel (skill, level) -> [ str <| ofName skill + " level too low. Unlocks at level " + string level + "." ]
+      | Year y -> [ str <| "Available only from year " + string y + " and onwards." ]
+  | Message message -> [ str message ]
+  | AlertList (a, list) ->
+      [ str a
+        ul []
+          [ for subAlert in list do
+              li []
+                (viewAlert subAlert) ] ]
+
+let viewAlertList = viewAlert >> ul [ ClassName "alert-list" ]
+
+let viewAlertOption message alert =
+  match alert with
+  | [] -> None
+  | alerts -> AlertList (message, alerts) |> viewAlertList |> Some
+  |> ofOption
+
+let viewAlerts name (warning, error) =
+  match warning, error with
+  | [], [] -> None
+  | warnings, errors ->
+      div []
+        [ label
+            [ ClassName "alerts-label"
+              HtmlFor name ]
+            [ str "Show Alerts"]
+          input
+            [ Type "checkbox"
+              ClassName "alerts-toggle"
+              Id name ]
+          div [ ClassName "alerts" ]
+            [ viewAlertOption "Warning:" warnings
+              viewAlertOption "Error:" errors ] ]
+      |> Some
+  |> ofOption
+
+let processor model name dispatch =
   li []
-    [ checkboxWith (sourceIcon <| ofName name) (ToggleProcessor name) selected dispatch
-      if selected then
-          if status = Warning then
-            label
-              [ ClassName "details-label"
-                HtmlFor <| ofName name ]
-              [ str "Show Warnings"]
-            input
-              [ Type "checkbox"
-                ClassName "details-input"
-                Id <| ofName name ]
-            ul [ ClassName "details" ]
-              [ for reason in Model.processorStatusData status model name do
-                  invalidReason reason ]
-          elif status = Invalid then
-            label
-              [ ClassName "details-label"
-                HtmlFor <| ofName name ]
-              [ str "Show Errors"]
-            input
-              [ Type "checkbox"
-                ClassName "details-input"
-                Id <| ofName name ]
-            ul [ ClassName "details" ]
-              [ for reason in Model.processorStatusData status model name do
-                  invalidReason reason ] ]
+    [ checkboxWith (sourceIcon <| ofName name) (ToggleProcessor name) model.Processors.[name].Selected dispatch
+      viewAlerts (ofName name) (Model.processorAlert model name) ]
 
 let replants model dispatch =
   ul [ ClassName "source-list" ]
@@ -321,25 +323,13 @@ let replants model dispatch =
         [ checkboxWith (sourceIcon "Buy Seeds") ToggleBuySeeds model.BuySeeds dispatch ]
       li []
         [ checkboxWith (sourceIcon "Seed Maker") ToggleSeedMakerReplant model.SeedMakerReplant dispatch
-          let status = Model.seedMakerStatus model.SeedMakerReplant model
-          if status = Warning then
-            label
-              [ ClassName "details-label"
-                HtmlFor "seedMakerReplant" ]
-              [ str "Show Warnings"]
-            input
-              [ Type "checkbox"
-                ClassName "details-input"
-                Id "seedMakerReplant" ]
-            ul [ ClassName "details" ]
-              [ for reason in Model.seedMakerStatusData status model do
-                  invalidReason reason ] ]
+          viewAlerts "SeedMakerReplant" (Model.seedMakerAlert model.SeedMakerReplant model) ]
       li []
         [ checkboxWith (sourceIcon "Harvested Seed or Crop") ToggleSeedOrCropReplant model.SeedOrCropReplant dispatch ] ]
 
 let selectOptions (list: 't seq) toString (ofString: string -> 't) text message (value: 't) dispatch =
   label []
-      [ ofOption (text |> Option.bind (fun t -> Some <| str (t + ": ")))
+      [ ofOption <| Option.bind (fun t -> Some <| str (t + ": ")) text
         select
           [ valueOrDefault value
             OnChange (fun x -> dispatch <| (message <| ofString x.Value)) ]
@@ -418,11 +408,11 @@ let cropTableItems =
     Crop.nameOf
     Crop.selected
     Model.cropStatus
-    (fun crop -> "img/Crops/" + crop.Name + ".png")
+    (fun crop -> "img/Crops/" + Crop.name crop + ".png")
     (fun crop ->
-      [ [ ofInt crop.TotalGrowthTime ]
-        [ ofOption (Option.bind (ofInt >> Some) crop.RegrowTime) ]
-        [ for season in crop.Seasons do
+      [ [ ofInt <| Crop.totalGrowthTime crop ]
+        [ ofOption (Option.bind (ofInt >> Some) (Crop.regrowTime crop)) ]
+        [ for season in Crop.selectedSeasons crop do
             str <| string season
             br [] ] ] )
 
@@ -511,7 +501,7 @@ let sidebarContent model dispatch =
                   OnChange (fun fert ->
                     match fert.Value with
                     | "None" -> None
-                    | f -> Some (Types.Name f)
+                    | f -> Some <| Types.Name f
                     |> SetStartingFertilizer |> dispatch) ]
                 [ option [ Value "None" ]
                     [ str "None" ]
@@ -527,26 +517,14 @@ let sidebarContent model dispatch =
           replants model dispatch ]
   | Sell ->
       div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
-        [ ul []
+        [ ul [ ClassName "source-list" ]
             [ li []
                 [ checkboxWith (sourceIcon "Raw Crop") ToggleSellRawCrop model.SellRawCrop dispatch ]
               for name in model.ProcessorList do
-                processor model name (Model.processorStatus model name) (model.Processors.[name].Selected) dispatch
+                processor model name dispatch
               li []
                 [ checkboxWith (sourceIcon "Seed Maker") ToggleSellSeedsFromSeedMaker model.SellSeedsFromSeedMaker dispatch
-                  let status = Model.seedMakerStatus model.SellSeedsFromSeedMaker model
-                  if status = Warning then
-                    label
-                      [ ClassName "details-label"
-                        HtmlFor "seedMakerSell" ]
-                      [ str "Show Warnings"]
-                    input
-                      [ Type "checkbox"
-                        ClassName "details-input"
-                        Id "seedMakerSell" ]
-                    ul [ ClassName "details" ]
-                      [ for reason in Model.seedMakerStatusData status model do
-                          invalidReason reason ] ] ] ]
+                  viewAlerts "SellSeedsFromSeedMaker" (Model.seedMakerAlert model.SellSeedsFromSeedMaker model) ] ] ]
   | Date ->
       div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
         [ date "Start Date: " SetStartSeason SetStartDay model.StartDate dispatch

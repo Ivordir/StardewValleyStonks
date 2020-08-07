@@ -215,21 +215,22 @@ footer
   width: 1em
   height: 0.5em
 
-.alert
-  @extend %pixel-art
-
-.details
+.alert-list
+  @extend %list
   color: green
+
+.alerts
+  padding: 0.1em
   display: none
 
-.details-label
+.alerts-label
   color: blue
 
-.details-input
+.alerts-toggle
   @extend .checkbox-hidden
   display: none
 
-  &:checked + .details
+  &:checked + .alerts
     background-color: red
     display: block
 

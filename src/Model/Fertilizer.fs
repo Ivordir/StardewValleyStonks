@@ -7,7 +7,7 @@ type Fertilizer =
     Selected: bool
     Quality: int
     Speed: float
-    PriceFrom: Map<NameOf<Source>, Price> }
+    PriceFrom: Map<NameOf<Source>, Buy> }
   member this.Toggle = { this with Selected = not this.Selected }
 
 type FertilizerSort =
@@ -16,6 +16,11 @@ type FertilizerSort =
   | Quality
   | Speed
   | Price
+
+type CacheFertilizer =
+  { Fertilizer: Fertilizer
+    Price: int
+    Sources: Set<NameOf<Source>> }
 
 module Fertilizer =
   let name fertilizer = fertilizer.Name
@@ -26,6 +31,13 @@ module Fertilizer =
 
   let nameOf = toNameOf name
 
+  let compareCache a b =
+    [ compare a.Price b.Price
+      compare a.Fertilizer.Quality b.Fertilizer.Quality
+      compare a.Fertilizer.Speed b.Fertilizer.Speed ]
+    |> List.map Comparrison.ofInt
+    |> Comparrison.overall
+
   let create
     name
     quality
@@ -35,35 +47,30 @@ module Fertilizer =
       Selected = true
       Quality = quality
       Speed = speed
-      PriceFrom = prices |> listToMap Price.nameOf }
+      PriceFrom = prices |> listToMap Buy.source }
 
   let all =
     [ create
-          "Basic Fertilizer"
-          1
-          0.0
-          [ Price.create 100 "Pierre" ]
+        "Basic Fertilizer"
+        1
+        0.0
+        [ Buy.create 100 "Pierre" ]
 
       create
         "Quality Fertilizer"
         2
         0.0
-        [ Price.createYear2 150 "Pierre" ]
+        [ Buy.createYear2 150 "Pierre" ]
 
       create
         "Speed-Gro"
         0
         0.1
-        [ Price.create 100 "Pierre" ]
+        [ Buy.create 100 "Pierre" ]
 
       create
         "Deluxe Speed-Gro"
         0
         0.25
-        [ Price.createYear2 150 "Pierre"
-          Price.create 80 "Oasis" ] ]
-
-type CacheFertilizer =
-  { Fertilizer: Fertilizer
-    Price: int
-    Sources: NameOf<Source> list }
+        [ Buy.createYear2 150 "Pierre"
+          Buy.create 80 "Oasis" ] ]

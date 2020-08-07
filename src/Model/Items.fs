@@ -47,7 +47,7 @@ module Quality =
       Iridium ]
 
 type Multiplier =
-  | Multiplier of
+  | RawMultiplier of
       {| Name: string
          Value: float
          Selected: bool |}
@@ -58,17 +58,17 @@ type Multiplier =
 
 module Multiplier =
   let name = function
-    | Multiplier m -> m.Name
+    | RawMultiplier m -> m.Name
     | Profession p -> ofName p.Profession
 
   let nameOf = toNameOf name
 
   let isRawMultiplier = function
-    | Multiplier _ -> true
+    | RawMultiplier _ -> true
     | Profession _ -> false
 
   let create name value =
-    Multiplier
+    RawMultiplier
       {| Name = name
          Selected = false
          Value = value |}
@@ -86,7 +86,7 @@ module Multiplier =
       createProfession "Foraging" "Gatherer" 1.2
       create "Irrigated" 1.1 ]
 
-  let agri: NameOf<Multiplier> list = [ Name "Agriculturist" ]
+  let agri: Set<NameOf<Multiplier>> = set [ Name "Agriculturist" ]
 
 type Item =
   { Name: string
@@ -112,17 +112,23 @@ module Item =
   let createCrop = createWith (Some <| Name "Tiller")
   let createArtisan = createWith (Some <| Name "Artisan")
 
+type Process =
+  { Processor: NameOf<Processor>
+    Output: Item
+    ProcessorOverride: Override }
+
+module Process =
+  let create processor output =
+    { Processor = Name processor
+      Output = output
+      ProcessorOverride = None }
+
 type Product =
-  | Process of
-      {| Processor: NameOf<Processor>
-         Output: Item
-         Override: bool option |}
+  | FromProcess of Process
   | RatioProcess of
       {| InputAmount: int
-         Processor: NameOf<Processor>
-         Output: Item
-         OutputAmount: float
-         Override: bool option |}
+         Process: Process
+         OutputAmount: float |}
 
 type KegProduct =
   | Wine
@@ -142,30 +148,37 @@ type CreateProducts =
   | NoProduct
 
 module Product =
+  let output = function
+    | FromProcess p -> p.Output
+    | RatioProcess r -> r.Process.Output
+
+  let nameOf = output >> Item.nameOf
+
   let processor = function
-    | Process p -> p.Processor
-    | RatioProcess r -> r.Processor
+    | FromProcess p -> p.Processor
+    | RatioProcess r -> r.Process.Processor
 
   let inputAmount = function
+    | FromProcess _ -> 1
     | RatioProcess r -> r.InputAmount
-    | _ -> 1
 
   let outputAmount = function
+    | FromProcess _ -> 1.0
     | RatioProcess r -> r.OutputAmount
-    | _ -> 1.0
 
-  let sourceOverride = function
-    | Process p -> p.Override
-    | RatioProcess r -> r.Override
+  let processorOverride = function
+    | FromProcess p -> p.ProcessorOverride
+    | RatioProcess r -> r.Process.ProcessorOverride
 
-  let create processor output =
-    Process
-      {| Processor = Name processor
-         Output = output
-         Override = None |}
+  let create processor output = FromProcess <| Process.create processor output
 
-  let createArtisan processor outputName price =
-    create processor (Item.createArtisan outputName price)
+  let createRatio inputAmount processor output outputAmount =
+    RatioProcess
+      {| InputAmount = inputAmount
+         Process = Process.create processor output
+         OutputAmount = outputAmount |}
+
+  let createArtisan processor outputName price = create processor (Item.createArtisan outputName price)
 
   let createKeg = createArtisan "Keg"
   let createJar = createArtisan "Preserves Jar"

@@ -1,5 +1,28 @@
 module StardewValleyStonks
 
+type Comparrison =
+  | Better
+  | Equal
+  | Worse
+
+module Comparrison =
+  let ofInt = function
+    | 0 -> Equal
+    | x when x > 0 -> Better
+    | _ -> Worse
+
+  let overall comparrisons =
+    let rec helper comparrison list =
+      match list with
+      | [] -> Some comparrison
+      | head::tail ->
+          match head with
+          | Equal -> helper comparrison tail
+          | x -> if x = comparrison then helper comparrison tail else None
+    helper Equal comparrisons
+
+type Override = bool option
+
 type Season =
   | Spring
   | Summer
@@ -45,12 +68,6 @@ module Date =
     date.Season < other.Season
     || date.Season = other.Season && date.Day < other.Day
 
-type Comparison =
-  | Better
-  | Worse
-  | Same
-  | Incomparable
-
 module Types =
   type NameOf<'t> = Name of string
 
@@ -63,7 +80,7 @@ module Types =
     |> List.map (fun x -> keyFun x, x)
     |> Map.ofList
 
-  let mapToList map =
+  let mapValues (map: Map<_,'t>) =
     [ for KeyValue(_, value) in map do
         value ]
 
@@ -75,80 +92,76 @@ module Types =
       a
       b
 
-  let merge a b = mergeWith (invalidArg "'a' and/or 'b'" "The maps had one or more of the same key(s).") a b
+  let merge a b =
+    Map.fold (fun (map: Map<_,_>) k v1 ->
+      map.Add(k, v1))
+      a
+      b
+
+  let flip f a b = f b a
 
 type Status =
   | Valid
   | Warning
   | Invalid
 
+// type MaxValue<'t> =
+//   | Max of 't
+//   | NotMax of 't
+
+// type StatusBuilder =
+//   member this.Bind(v, f) =
+//     match v with
+//     | Max v -> v
+//     | NotMax v -> f v
+
+
+// type StatusDataBuilder =
+//   member this.Bind(v, f) =
+//     match v with
+//     | Max v -> f v
+//     | NotMax v -> f v
+
 module Status =
-  let validPrecedence = function
-    | Valid -> 0
-    | Warning -> 1
-    | Invalid -> 2
+  let ofBool value = if value then Valid else Invalid
 
-  let invalidPrecedence = function
-    | Valid -> 2
-    | Warning -> 1
-    | Invalid -> 0
+  let ofOverride defaultValue = function
+    | Some x -> ofBool x
+    | None -> defaultValue
 
-  let WVIPrecedence = function
-    | Warning -> 0
-    | Valid -> 1
-    | Invalid -> 2
+  let ofOverrideBool = ofBool >> ofOverride
 
-  let listOverall precedence initialStatus (statuses: Status list) =
-    if statuses.IsEmpty then
-      initialStatus
-    else
-      let rec helper status = function
-        | [] -> status
-        | head::tail ->
-            match precedence head with
-            | 0 -> head //max value found, "return" early
-            | x when x < precedence status -> helper head tail
-            | _ -> helper status tail
-      helper statuses.Head statuses.Tail
+  let foldEarlyReturn precedenceFun initialValue highestPrecedence (statuses: Status list) =
+    let rec helper status = function
+      | [] -> status
+      | head::tail ->
+          if head = highestPrecedence then
+            highestPrecedence //highestPrecedence found, "return" early
+          else
+            helper (precedenceFun head status) tail
+    helper initialValue statuses
 
-  let listOverallWith precedence initialStatus toStatus (list: _ list): Status =
-    if list.IsEmpty then
-      initialStatus
-    else
-      let rec helper status = function
-        | [] -> status
-        | head::tail ->
-            let headStatus = toStatus head
-            match precedence headStatus with
-            | 0 -> headStatus //max value found, "return" early
-            | x when x < precedence status -> helper headStatus tail
-            | _ -> helper status tail
-      helper (toStatus list.Head) list.Tail
+  let oneValid = foldEarlyReturn min Invalid Valid
+  let allValid = foldEarlyReturn max Valid Invalid
 
+  let private warningMax a b =
+    match a, b with
+    | (Warning, _) | (_, Warning) -> Warning
+    | (Valid, _) | (_, Valid) -> Valid
+    | _ -> Invalid
 
-  let listOverallValid = listOverall validPrecedence Valid
-  let listOverallInvalid = listOverall invalidPrecedence Valid
-  let listOverallWVI = listOverall WVIPrecedence Invalid
+  let warningPrecedence = foldEarlyReturn warningMax Invalid Warning
 
-  let listOverallValidWith toStatus list = listOverallWith validPrecedence Valid toStatus list
-  let listOverallInvalidWith toStatus list = listOverallWith invalidPrecedence Valid toStatus list
-  let listoOerallWVIWith toStatus list = listOverallWith WVIPrecedence Valid toStatus list
+  let foldEarlyReturnWith precedenceFun initialValue highestPrecedence toStatus (list: _ list): Status =
+    let rec helper status = function
+      | [] -> status
+      | head::tail ->
+          let headStatus = toStatus head
+          if headStatus = highestPrecedence then
+            highestPrecedence //highestPrecedence found, "return" early
+          else
+            helper (precedenceFun headStatus status) tail
+    helper initialValue list
 
-  let mapOverall precedence initialStatus toStatus (map: Map<_,_>): Status =
-    if map.IsEmpty then
-      initialStatus
-    else
-      let list = Map.toList map
-      let rec helper status = function
-        | [] -> status
-        | (key, value)::tail ->
-            let headStatus = toStatus key value
-            match precedence headStatus with
-            | 0 -> headStatus //max value found, "return" early
-            | x when x < precedence status -> helper headStatus tail
-            | _ -> helper status tail
-      helper (toStatus (fst list.Head) (snd list.Head)) list.Tail
-
-  let mapOverallValid toStatus map = mapOverall validPrecedence Invalid toStatus map 
-  let mapOverallInvalid toStatus map = mapOverall invalidPrecedence Valid toStatus map 
-  let mapOverallWVI toStatus map = mapOverall WVIPrecedence Invalid toStatus map 
+  let oneValidWith toStatus list = foldEarlyReturnWith min Invalid Valid toStatus list
+  let allValidWith toStatus list = foldEarlyReturnWith max Valid Invalid toStatus list

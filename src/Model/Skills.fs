@@ -6,8 +6,8 @@ type Profession =
   { Name: string
     Selected: bool
     UnlockLevel: int
-    Requires: Set<NameOf<Profession>>
-    ExclusiveWith: Set<NameOf<Profession>>
+    Requires: NameOf<Profession> option
+    ExclusiveWith: NameOf<Profession> option
     Dependants: Set<NameOf<Profession>> }
 
 type Skill =
@@ -24,16 +24,16 @@ module Profession =
 
   let isUnlocked skill profession = skill.Professions.[profession].UnlockLevel <= skill.Level
 
-  let private setSelected value set (professions: Map<NameOf<Profession>,_>) =
-    professions
-    |> Map.map (fun name profession ->
-      if set |> Set.contains name then
-        { profession with Selected = value }
-      else
-        profession)
-
   let forceToggle profession = { profession with Selected = not profession.Selected }
 
+  let trySetSelected profession value skill (professions: Map<NameOf<Profession>,_>) =
+    match profession with
+    | Some name -> professions.Add(name, { skill.Professions.[name] with Selected = value } )
+    | None -> professions
+
+  // Professions should only have direct relationships.
+  // E.g. profession A can depend on profession B, but profession B cannot then also depend on profession C.
+  // So this function is not recursive.
   let toggle skill ignoreRelationships profession =
     let professions = skill.Professions.Add(profession, forceToggle skill.Professions.[profession])
     if ignoreRelationships then
@@ -44,17 +44,20 @@ module Profession =
           Professions =
             if profession.Selected then
               professions
-              |> setSelected true profession.Requires
-              |> setSelected false profession.ExclusiveWith
+              |> trySetSelected profession.Requires true skill
+              |> trySetSelected profession.ExclusiveWith false skill
             else
-              professions |> setSelected false profession.Dependants }
+              Set.fold (fun professions profession ->
+                  professions.Add(profession, { professions.[profession] with Selected = false } ))
+                professions
+                profession.Dependants }
 
   let initial =
     { Name = "initial"
       Selected = false
       UnlockLevel = 10
-      Requires = Set.empty
-      ExclusiveWith = Set.empty
+      Requires = None
+      ExclusiveWith = None
       Dependants = Set.empty }
 
 module Skill =
@@ -81,12 +84,12 @@ module Skill =
                   Dependants = set [ Name "Artisan"; Name "Agriculturist" ] }
               { Profession.initial with
                   Name = "Artisan"
-                  Requires = set [ Name "Tiller" ]
-                  ExclusiveWith = set [ Name "Agriculturist" ] }
+                  Requires = Some <| Name "Tiller"
+                  ExclusiveWith = Some <| Name "Agriculturist" }
               { Profession.initial with
                   Name = "Agriculturist"
-                  Requires = set [ Name "Tiller" ]
-                  ExclusiveWith = set [ Name "Artisan" ] } ]
+                  Requires = Some <| Name "Tiller"
+                  ExclusiveWith = Some <| Name "Artisan" } ]
             |> listToMap Profession.nameOf
           ProfessionLayout =
             [ [ Name "Tiller" ]
@@ -100,6 +103,8 @@ module Skill =
                   Dependants = set [ Name "Botanist" ] }
               { Profession.initial with
                   Name = "Botanist"
-                  Requires = set [ Name "Gatherer" ] } ]
+                  Requires = Some <| Name "Gatherer" } ]
             |> listToMap Profession.nameOf
-          ProfessionLayout = [ [ Name "Gatherer" ]; [ Name "Botanist" ] ] } ]
+          ProfessionLayout =
+            [ [ Name "Gatherer" ]
+              [ Name "Botanist" ] ] } ]
