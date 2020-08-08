@@ -67,6 +67,9 @@ module Skill =
 
   let buffedLevel skill = skill.Level + skill.Buff
 
+  let validLevel = clamp 0 10
+  let validBuff = positive
+
   let initial =
     { Name = "initial"
       Level = 0

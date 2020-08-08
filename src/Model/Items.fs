@@ -84,7 +84,8 @@ module Multiplier =
       createProfession "Farming" "Artisan" 1.4
       createProfession "Farming" "Agriculturist" 0.1
       createProfession "Foraging" "Gatherer" 1.2
-      create "Irrigated" 1.1 ]
+      create "Irrigated" 1.1
+      create "Bear's Knowledge" 3.0 ]
 
   let agri: Set<NameOf<Multiplier>> = set [ Name "Agriculturist" ]
 

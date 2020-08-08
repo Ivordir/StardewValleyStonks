@@ -86,12 +86,7 @@ module Model =
     | SkillLevel (skill, level) -> Requirement.status (model.Skills.[skill].Level >= level) model.SkillLevelRequirementsShould
     | Year y -> Requirement.status (model.Year >= y) model.YearRequirementsShould
 
-  let requirementStatusData requirements overallStatus model =
-    requirements
-    |> List.filter (fun req -> requirementStatus model req = overallStatus)
-    |> List.map UnmetRequirement
-
-  let overallRequirementStatus model = Status.allValidWith (requirementStatus model)
+  let requirementsStatus model = Status.allValidWith (requirementStatus model)
 
   let requirementAlerts model =
     List.fold (fun (warnings, errors) requirement ->
@@ -103,11 +98,11 @@ module Model =
 
   let sourceActive source model = model.BuySources.[source].Selected
 
-  let sourceStatusData source model = [ if not model.BuySources.[source].Selected then Alert.notSelected ]
+  let sourceAlert source model = [ if not model.BuySources.[source].Selected then Alert.notSelected ]
 
   let processorStatus model processor =
     if model.Processors.[processor].Selected then
-      overallRequirementStatus model model.Processors.[processor].Requirements
+      requirementsStatus model model.Processors.[processor].Requirements
     else
       Invalid
 
@@ -117,13 +112,9 @@ module Model =
     else
       [], []
 
-  let processorStatusData overallStatus model processor =
-    [ if not model.Processors.[processor].Selected then Alert.notSelected ]
-    @ requirementStatusData model.Processors.[processor].Requirements overallStatus model
-
-  let seedMakerStatus sellOrReplant model =
-    if sellOrReplant then
-      overallRequirementStatus model Requirement.seedMaker
+  let seedMakerStatus selected model =
+    if selected then
+      requirementsStatus model Requirement.seedMaker
     else
       Invalid
 
@@ -133,27 +124,23 @@ module Model =
     else
       [], []
 
-  let seedMakerStatusData status model =
-    [ if not model.SeedMakerReplant then Alert.notSelected ]
-    @ requirementStatusData Requirement.seedMaker status model
-
   let priceStatus price model =
     match Buy.overrideSource price with
     | Some true -> Valid
     | Some false -> Invalid
     | None ->
         if sourceActive (Buy.source price) model then
-          overallRequirementStatus model (Buy.requirements price)
+          requirementsStatus model (Buy.requirements price)
         else
           Invalid
 
-  let priceStatusData (price, status) model =
+  let priceAlert price model =
     match Buy.overrideSource price with
-    | Some true -> []
-    | Some false -> [ Alert.overridden ]
+    | Some true -> [], []
+    | Some false -> [], [ Alert.overridden ]
     | None ->
-        sourceStatusData (Buy.source price) model
-        @ requirementStatusData (Buy.requirements price) status model
+        let warnings, errors = requirementAlerts model (Buy.requirements price)
+        warnings, sourceAlert (Buy.source price) model @ errors
 
   let rec priceValue (priceFrom: Map<_,_>) model = function
     | BuyPrice p -> p.Value
@@ -353,13 +340,6 @@ module Model =
   let doubleCropProb model = 0.0001 + float model.LuckBuff / 1500.0 + (if model.SpecialCharm then 0.025 else 0.0)
 
   let noGiantCropProb model = (1.0 - model.BaseGiantCropChance) ** model.GiantCropChecksPerTile
-
-  // let amountValue model = function
-  //   | CropAmount (extra, chance) -> 1.0, extra + (if chance then extra * doubleCropProb model + doubleCropProb model else 0.0)
-  //   | GiantCrop ->
-  //       let noGiantCrop = noGiantCropProb model
-  //       noGiantCrop, noGiantCrop * doubleCropProb model + (1.0 - noGiantCrop) * 2.0
-  //   | Amount x -> 0.0, x
 
   let cachePrices = function
     | PriceData (price, sources) -> Some price, List.unzip sources |> fst |> Set.ofList

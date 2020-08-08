@@ -52,7 +52,6 @@ type Crop =
          DoubleCropChance: bool
          Trelis: bool
          IndoorsOnly: bool
-         FertilizerCompatable: bool
          HarvestedItem: (float * HarvestedCrop) option |}
   | GiantCrop of
       {| Base: BaseCrop
@@ -63,6 +62,19 @@ type Crop =
          Crops: Map<NameOf<Item>, HarvestedCrop>
          SellForageSeedsOverride: Override
          ForageSeedsReplantOverride: Override |}
+  | Tea of
+      {| // Name: hard-coded
+         Selected: bool
+         // Seasons: hard-coded
+         SelectedSeasons: Set<Season>
+         // "GrowthStages": hard-coded
+         // GrowthMultipliers: None
+         // Seed: hard-coded
+         PriceFrom: Map<NameOf<Source>, Buy>
+         BuySeedsOverride: Override
+         // SeedMaker: None
+         // RawCropReplantOverride: None
+         TeaLeaves: HarvestedCrop |}
   member this.Toggle =
     match this with
     | RegularCrop c ->
@@ -250,7 +262,6 @@ module Crop =
          DoubleCropChance = doubleCropChance
          Trelis = false
          IndoorsOnly = false
-         FertilizerCompatable = true
          HarvestedItem = None |}
 
   let createWithSeedMaker = createCrop true
@@ -263,9 +274,9 @@ module Crop =
 
   let create = createWithRegrow None
 
-  let extraCrops cropYield extraChance = 1.0 / (1.0 - extraChance) + float cropYield - 2.0
-  let extraChance chance = extraCrops 1 chance
-  let withYield cropYield = extraCrops cropYield 0.0
+  let withExtraChance chance = 1.0 / (1.0 - min chance 0.9) - 1.0
+  let withYield cropYield = float <| cropYield - 1
+  let extraCrops cropYield extraChance = withYield cropYield + withExtraChance extraChance
 
   let createGiantCrop
     name
@@ -349,7 +360,7 @@ module Crop =
         Vegetable
 
       createWithAmount
-        (extraChance 0.2)
+        (withExtraChance 0.2)
         None
         "Potato"
         [ Spring ]
@@ -369,7 +380,7 @@ module Crop =
         Fruit
 
       createWithAmount
-        (extraChance 0.02)
+        (withExtraChance 0.02)
         (Some 4)
         "Strawberry"
         [ Spring ]
@@ -390,7 +401,7 @@ module Crop =
 
       createWithSeedMaker
         false
-        (extraChance 0.1)
+        (withExtraChance 0.1)
         None
         "Rice"
         [ Spring ]
@@ -433,7 +444,7 @@ module Crop =
         (CreateAndList (Jar Pickle, [ Product.createKeg "Pale Ale" 300 ] ))
 
       createWithAmount
-        (extraChance 0.03)
+        (withExtraChance 0.03)
         (Some 3)
         "Hot Pepper"
         [ Summer ]
@@ -497,20 +508,21 @@ module Crop =
         (SellPrice 90)
         NoProduct
 
+      let sunflowerSeeds = Item.create "Sunflower Seeds" 20
       createScythe
         "Sunflower"
         [ Summer; Fall ]
         [ 1; 2; 3; 2 ]
-        (SeedSell 20)
+        (Seed sunflowerSeeds)
         (PriceList
           [ Buy.create 200 "Pierre"
             Buy.create 125 "Joja" ] )
         (SellPrice 80)
         (ProductList [ Product.oil ] )
-      |> withHarvestedItem 1.0 (HarvestedCrop.create (Item.create "Sunflower Seeds" 20) (ProductList [ Product.oil ] ))
+      |> withHarvestedItem 1.0 (HarvestedCrop.create sunflowerSeeds (ProductList [ Product.oil ] ))
 
       createWithAmount
-        (extraChance 0.05)
+        (withExtraChance 0.05)
         (Some 4)
         "Tomato"
         [ Summer ]
@@ -580,7 +592,7 @@ module Crop =
         Fruit
 
       createWithAmount
-        (extraChance 0.002)
+        (withExtraChance 0.002)
         (Some 5)
         "Eggplant"
         [ Fall ]
@@ -671,7 +683,7 @@ type CacheCrop =
   | RegularCache of
       {| Base: BaseCacheCrop
          CropSell: Map<Quality, Set<Sell>>
-         HarvestItemSell: Map<Quality, Set<Sell>> |}
+         HarvestItemSell: Set<Sell> |}
   | GiantCahce of
       {| Base: BaseCacheCrop
          CropSell: Map<Quality, Set<Sell>> |}
