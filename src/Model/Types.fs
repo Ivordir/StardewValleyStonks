@@ -3,38 +3,32 @@ module StardewValleyStonks
 type Override = bool option
 
 module Types =
+  open Fable.Core
+  // During runtime, this will erase into simply a data field of string, not a union case.
+  // During compile time, this is useful for static type checking (i.e. are we correctly passing the name of a type 't and not a type 'u)
+  [<Erase>]
   type NameOf<'t> = Name of string
 
-  let ofName (Name name) = name
+  let inline ofName (Name name) = name
 
-  let toNameOf (toString: 't -> string) = toString >> NameOf<'t>.Name
+  let inline toNameOf (toString: 't -> string) = toString >> NameOf<'t>.Name
 
-  let listToMap keyFun list =
+  let inline listToMap keyProjection list =
     list
-    |> List.map (fun x -> keyFun x, x)
+    |> List.map (fun x -> keyProjection x, x)
     |> Map.ofList
 
-  let mapValues (map: Map<_,'t>) =
-    [ for KeyValue(_, value) in map do
-        value ]
-
-  let mergeWith f a b =
+  let inline mergeWith f =
     Map.fold (fun (map: Map<_,_>) k v1 ->
       match map.TryFind k with
       | Some v2 -> map.Add(k, f k v1 v2)
       | None -> map.Add(k, v1))
-      a
-      b
 
-  let merge a b =
-    Map.fold (fun (map: Map<_,_>) k v1 ->
-      map.Add(k, v1))
-      a
-      b
+  let inline merge a b = Map.fold (fun (map: Map<_,_>) k v -> map.Add(k, v)) a b
 
-  let flip f a b = f b a
+  let inline flip f a b = f b a
 
-  let clamp low high = max low >> min high 
+  let inline clamp low high = max low >> min high
 
   let positive = max 0
   let positivef = max 0.0
@@ -47,6 +41,35 @@ module Types =
     | "None" -> None
     | x -> Some <| f x
 
+  let inline applyTo (value: int) multiplier = multiplier * float value |> int
+
+  let inline tryAddToSet key value (map: Map<_,Set<_>>) =
+    match map.TryFind key with
+    | Some x -> map.Add(key, x.Add value)
+    | None -> map.Add(key, Set.singleton value)
+
+  let inline allExtremes empty singleton add extreme projection = function
+    | [] -> empty
+    | head::tail ->
+        let mutable extremes = singleton head
+        let mutable currentExtreme = projection head
+        for x in tail do
+          let thisExtreme = projection x
+          if thisExtreme = currentExtreme then
+            extremes <- extremes |> add x
+          elif extreme thisExtreme currentExtreme then
+            extremes <- singleton x
+            currentExtreme <- thisExtreme
+        extremes
+
+  let inline allList extreme = allExtremes List.empty List.singleton (fun h tail -> h::tail) extreme
+  let inline allSet extreme = allExtremes Set.empty Set.singleton Set.add extreme
+
+  let inline allMinsList projection list = allList (<) projection list
+  let inline allMaxsList projection list = allList (>) projection list
+  let inline allMinsSet projection list = allSet (<) projection list
+  let inline allMaxsSet projection list = allSet (>) projection list
+
 open Types
 
 type Season =
@@ -54,6 +77,7 @@ type Season =
   | Summer
   | Fall
   | Winter
+  static member (-) ((a:Season), b) = compare a b
 
 module Season =
   let next = function
@@ -61,15 +85,6 @@ module Season =
     | Summer -> Fall
     | Fall -> Winter
     | Winter -> Spring
-
-  let from (start: Season) finish =
-    let mutable season = start
-    seq {
-      start
-      while season <> finish do
-        season <- next season
-        season
-    }
 
   let parse str =
     match str with
@@ -88,35 +103,30 @@ module Season =
 type Date =
   { Season: Season
     Day: int }
+  static member (+) (date, days) =
+    if days > 28 - date.Day then
+      { Season = Season.next date.Season
+        Day = days - 28 + date.Day }
+    else
+      { Season = date.Season
+        Day = date.Day + days }
 
 module Date =
-  let isBefore other date =
-    date.Season < other.Season
-    || date.Season = other.Season && date.Day < other.Day
-
   let validDay = clamp 1 28
+
+  let daysIn season startDate endDate =
+    if season < startDate.Season || season > endDate.Season then
+      0
+    else
+      if startDate.Season = endDate.Season then endDate.Day - startDate.Day + 1
+      elif season = startDate.Season then 29 - startDate.Day
+      elif season = endDate.Season then endDate.Day
+      else 28
 
 type Status =
   | Valid
   | Warning
   | Invalid
-
-// type MaxValue<'t> =
-//   | Max of 't
-//   | NotMax of 't
-
-// type StatusBuilder =
-//   member this.Bind(v, f) =
-//     match v with
-//     | Max v -> v
-//     | NotMax v -> f v
-
-
-// type StatusDataBuilder =
-//   member this.Bind(v, f) =
-//     match v with
-//     | Max v -> f v
-//     | NotMax v -> f v
 
 module Status =
   let ofBool value = if value then Valid else Invalid
@@ -125,16 +135,15 @@ module Status =
     | Some x -> ofBool x
     | None -> defaultValue
 
-  let ofOverrideBool = ofBool >> ofOverride
+  let ofBoolOverride = ofBool >> ofOverride
 
   let foldEarlyReturn precedenceFun initialValue highestPrecedence (statuses: Status list) =
     let rec helper status = function
       | [] -> status
       | head::tail ->
-          if head = highestPrecedence then
-            highestPrecedence //highestPrecedence found, "return" early
-          else
-            helper (precedenceFun head status) tail
+          if head = highestPrecedence
+          then highestPrecedence // highestPrecedence found, "return" early
+          else helper (precedenceFun head status) tail
     helper initialValue statuses
 
   let oneValid = foldEarlyReturn min Invalid Valid
@@ -153,32 +162,33 @@ module Status =
       | [] -> status
       | head::tail ->
           let headStatus = toStatus head
-          if headStatus = highestPrecedence then
-            highestPrecedence //highestPrecedence found, "return" early
-          else
-            helper (precedenceFun headStatus status) tail
+          if headStatus = highestPrecedence
+          then highestPrecedence // highestPrecedence found, "return" early
+          else helper (precedenceFun headStatus status) tail
     helper initialValue list
 
   let oneValidWith toStatus list = foldEarlyReturnWith min Invalid Valid toStatus list
   let allValidWith toStatus list = foldEarlyReturnWith max Valid Invalid toStatus list
 
-type Comparrison =
+type Comparison =
   | Better
   | Equal
   | Worse
 
-module Comparrison =
+module Comparison =
   let ofInt = function
     | 0 -> Equal
     | x when x > 0 -> Better
     | _ -> Worse
 
-  let overall comparrisons =
-    let rec helper comparrison list =
-      match list with
-      | [] -> Some comparrison
-      | head::tail ->
-          match head with
-          | Equal -> helper comparrison tail
-          | x -> if x = comparrison then helper comparrison tail else None
-    helper Equal comparrisons
+  let overall = function
+    | [] -> None
+    | first::rest ->
+        let rec helper comparison list =
+          match list with
+          | [] -> Some comparison
+          | head::tail ->
+              match head with
+              | Equal -> helper comparison tail
+              | x -> if x = comparison then helper comparison tail else None
+        helper first rest

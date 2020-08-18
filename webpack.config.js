@@ -20,7 +20,6 @@ var CONFIG = {
     cssEntry: './sass/main.sass',
     outputDir: './deploy',
     assetsDir: './public',
-    utilDir: './src/Model/util.js',
     devServerPort: 8080,
     // When using webpack-dev-server, you may need to redirect some calls
     // to a external API server. See https://webpack.js.org/configuration/dev-server/#devserver-proxy
@@ -57,9 +56,9 @@ module.exports = {
     // In development, bundle styles together with the code so they can also
     // trigger hot reloads. In production, put them in a separate CSS file.
     entry: isProduction ? {
-        app: [resolve(CONFIG.fsharpEntry), resolve(CONFIG.cssEntry), resolve(CONFIG.utilDir)]
+        app: [resolve(CONFIG.fsharpEntry), resolve(CONFIG.cssEntry)]
     } : {
-            app: [resolve(CONFIG.fsharpEntry), resolve(CONFIG.utilDir)],
+            app: [resolve(CONFIG.fsharpEntry)],
             style: [resolve(CONFIG.cssEntry)]
         },
     // Add a hash to the output file name in production

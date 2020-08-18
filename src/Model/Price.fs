@@ -101,13 +101,13 @@ module Price =
 type Buy =
   | BuyPrice of Price
   | MatchPrice of
-      {| BasePrice: Price
-         MatchPrice: NameOf<Source>
+      {| OwnPrice: Price
+         MatchPriceFrom: NameOf<Source>
          MatchCondition: NameOf<MatchCondition> |}
 
 type CreatePrices =
   | Pierre
-  | Joja of PierrePrice: Price
+  | JojaWith of PierrePrice: Price
   | Oasis
   | PierreAndJoja
   | PriceList of Buy list
@@ -116,19 +116,19 @@ type CreatePrices =
 module Buy =
   let value = function
     | BuyPrice p -> p.Value
-    | MatchPrice m -> m.BasePrice.Value
+    | MatchPrice m -> m.OwnPrice.Value
 
   let source = function
     | BuyPrice p -> p.Source
-    | MatchPrice m -> m.BasePrice.Source
+    | MatchPrice m -> m.OwnPrice.Source
   
   let overrideSource = function
     | BuyPrice p -> p.SourceOverride
-    | MatchPrice m -> m.BasePrice.SourceOverride
+    | MatchPrice m -> m.OwnPrice.SourceOverride
 
   let requirements = function
     | BuyPrice p -> p.Requirements
-    | MatchPrice m -> m.BasePrice.Requirements
+    | MatchPrice m -> m.OwnPrice.Requirements
 
   let create price source = BuyPrice <| Price.create price source
 
@@ -139,21 +139,21 @@ module Buy =
 
   let createMatch price source matchSource matchCondition =
     MatchPrice
-      {| BasePrice = Price.create price source
-         MatchPrice = Name matchSource
+      {| OwnPrice = Price.create price source
+         MatchPriceFrom = Name matchSource
          MatchCondition = Name matchCondition |}
 
   let createJojaPrice pierrePrice = createMatch (float pierrePrice.Value * 1.25 |> int) "Joja" "Pierre" "Joja Membership"
 
   let createAll seedSellPrice = function
     | Pierre -> [ createBuySeed seedSellPrice "Pierre" ]
-    | Joja pierrePrice ->
+    | JojaWith pierrePrice ->
         [ BuyPrice pierrePrice
           createJojaPrice pierrePrice ]
     | Oasis -> [ createBuySeed seedSellPrice "Oasis" ]
     | PierreAndJoja ->
-      let pierrePrice = createSeedPrice seedSellPrice "Pierre"
-      [ BuyPrice pierrePrice
-        createJojaPrice pierrePrice ]
+        let pierrePrice = createSeedPrice seedSellPrice "Pierre"
+        [ BuyPrice pierrePrice
+          createJojaPrice pierrePrice ]
     | PriceList list -> list
     | NoPrice -> List.empty

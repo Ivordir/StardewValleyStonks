@@ -31,15 +31,15 @@ module Profession =
     | Some name -> professions.Add(name, { skill.Professions.[name] with Selected = value } )
     | None -> professions
 
-  // Professions should only have direct relationships.
+  // Professions should only have direct relationships (for now?).
   // E.g. profession A can depend on profession B, but profession B cannot then also depend on profession C.
   // So this function is not recursive.
-  let toggle skill ignoreRelationships profession =
-    let professions = skill.Professions.Add(profession, forceToggle skill.Professions.[profession])
+  let toggle skill ignoreRelationships name =
+    let professions = skill.Professions.Add(name, forceToggle skill.Professions.[name])
     if ignoreRelationships then
       { skill with Professions = professions }
     else
-      let profession = professions.[profession]
+      let profession = professions.[name]
       { skill with
           Professions =
             if profession.Selected then
@@ -47,8 +47,8 @@ module Profession =
               |> trySetSelected profession.Requires true skill
               |> trySetSelected profession.ExclusiveWith false skill
             else
-              Set.fold (fun professions profession ->
-                  professions.Add(profession, { professions.[profession] with Selected = false } ))
+              Set.fold (fun profs prof ->
+                  profs.Add(prof, { profs.[prof] with Selected = false } ))
                 professions
                 profession.Dependants }
 

@@ -17,11 +17,6 @@ type FertilizerSort =
   | Speed
   | Price
 
-type CacheFertilizer =
-  { Fertilizer: Fertilizer
-    Price: int
-    Sources: Set<NameOf<Source>> }
-
 module Fertilizer =
   let name fertilizer = fertilizer.Name
   let selected fertilizer = fertilizer.Selected
@@ -30,13 +25,6 @@ module Fertilizer =
   let priceFrom fertilizer = fertilizer.PriceFrom
 
   let nameOf = toNameOf name
-
-  let compareCache a b =
-    [ compare a.Price b.Price
-      compare a.Fertilizer.Quality b.Fertilizer.Quality
-      compare a.Fertilizer.Speed b.Fertilizer.Speed ]
-    |> List.map Comparrison.ofInt
-    |> Comparrison.overall
 
   let create
     name
@@ -74,3 +62,16 @@ module Fertilizer =
         0.25
         [ Buy.createYear2 150 "Pierre"
           Buy.create 80 "Oasis" ] ]
+
+type CacheFertilizer =
+  { Fertilizer: Fertilizer
+    Price: int
+    Sources: Set<NameOf<Source>> }
+
+module CacheFertilizer =
+  let compare comparePrice a b =
+    [ if comparePrice then compare b.Price a.Price
+      compare a.Fertilizer.Quality b.Fertilizer.Quality
+      compare a.Fertilizer.Speed b.Fertilizer.Speed ]
+    |> List.map Comparison.ofInt
+    |> Comparison.overall

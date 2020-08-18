@@ -25,21 +25,26 @@ module Processor =
     [ create "Preserves Jar" [ SkillLevel (Name "Farming", 4) ]
       create "Keg" [ SkillLevel (Name "Farming", 8) ]
       create "Oil Maker" [ SkillLevel (Name "Farming", 8) ]
-      create "Mill" List.empty ]
+      create "Mill" [] ]
 
 type Quality =
   | Normal
   | Silver
   | Gold
   | Iridium
-  member this.Multiplier =
-    match this with
+
+module Quality =
+  let multiplier = function
     | Normal -> 1.0
     | Silver -> 1.25
     | Gold -> 1.5
     | Iridium -> 2.0
 
-module Quality =
+  let common =
+    [ Normal
+      Silver
+      Gold ]
+
   let all =
     [ Normal
       Silver
@@ -67,7 +72,7 @@ module Multiplier =
     | RawMultiplier _ -> true
     | Profession _ -> false
 
-  let create name value =
+  let createRaw name value =
     RawMultiplier
       {| Name = name
          Selected = false
@@ -84,8 +89,8 @@ module Multiplier =
       createProfession "Farming" "Artisan" 1.4
       createProfession "Farming" "Agriculturist" 0.1
       createProfession "Foraging" "Gatherer" 1.2
-      create "Irrigated" 1.1
-      create "Bear's Knowledge" 3.0 ]
+      createRaw "Irrigated" 1.1
+      createRaw "Bear's Knowledge" 3.0 ]
 
   let agri: Set<NameOf<Multiplier>> = set [ Name "Agriculturist" ]
 
@@ -163,9 +168,13 @@ module Product =
     | FromProcess _ -> 1
     | RatioProcess r -> r.InputAmount
 
-  let outputAmount = function
+  let unitOutputAmount = function
     | FromProcess _ -> 1.0
     | RatioProcess r -> r.OutputAmount
+
+  let outputAmount inputAmount = function
+    | FromProcess _ -> 1.0
+    | RatioProcess r -> inputAmount * r.OutputAmount / float r.InputAmount
 
   let processorOverride = function
     | FromProcess p -> p.ProcessorOverride
@@ -186,7 +195,7 @@ module Product =
 
   let createKegProduct (cropItem: Item) = function
     | Wine -> createKeg (cropItem.Name + " Wine") (cropItem.BasePrice * 3)
-    | Juice -> createKeg (cropItem.Name + " Juice") (float cropItem.BasePrice * 2.25 |> int)
+    | Juice -> createKeg (cropItem.Name + " Juice") (2.25 |> applyTo cropItem.BasePrice)
 
   let createJarProduct (cropItem: Item) = function
     | Jam -> createJar (cropItem.Name + " Jam") (cropItem.BasePrice * 2 + 50)
