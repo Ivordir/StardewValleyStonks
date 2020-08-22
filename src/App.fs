@@ -13,40 +13,68 @@ type Message =
   | SetPage of Page
   | SetSidebarTab of SidebarTab
   | CloseSidebar
+
   | SetSkillLevel of Skill: NameOf<Skill> * Level: int
   | SetSkillBuff of Skill: NameOf<Skill> * Buff: int
   | ToggleProfession of NameOf<Skill> * NameOf<Profession>
   | ToggleIgnoreProfessionRelationships
+
   | ToggleBuySource of NameOf<Source>
   | ToggleMatchCondition of NameOf<MatchCondition>
+
   | ToggleProcessor of NameOf<Processor>
   | ToggleSellRawCrop
   | ToggleSellSeedsFromSeedMaker
+
   | ToggleBuySeeds
   | ToggleSeedMakerReplant
-  | ToggleHarvestedCropReplant
+  | ToggleHarvestReplant
+
   | ToggleCropSelected of NameOf<Crop>
   | SetCropSort of CropSort
+  | SetSelectedCrop of NameOf<Crop> option
   | ToggleShowOutOfSeasonCrops
   | ToggleAllowCropClearings
   | ToggleAllowCrossSeason
   | ToggleAccountForReplant
+
   | ToggleFertilizerSelected of NameOf<Fertilizer>
   | SetFertilizerSort of FertilizerSort
+  | SetSelectedFertilizer of NameOf<Fertilizer> option
   | ToggleAccountForFertilizerCost
-  | SetStartingFertilizer of NameOf<Fertilizer> option
+
   | SetStartDay of int
   | SetStartSeason of Season
   | SetEndDay of int
   | SetEndSeason of Season
   | SetYear of int
+
+  | SetCompareMode of CompareMode
+  | ToggleShowUnprofitableCombos
+  | SetSelectedCombo of (NameOf<Crop> * NameOf<Fertilizer> option) option
+
+  | SetSelectedCompareCrop of NameOf<Crop> option
+  | SetCompareCropsUsingFertilizer of NameOf<Fertilizer> option
+
+  | SetSelectedCompareFertilizer of NameOf<Fertilizer> option option
+  | SetCompareFertilizersUsingCrop of NameOf<Crop>
+
+  | SetStartingFertilizer of NameOf<Fertilizer> option
+
   | SetProfitMode of ProfitMode
   | ToggleGreenhouse
+
+  | ToggleShowTips
+  | ToggleSaveSettings
+
   | SetYearRequirementsShould of RequirementsShould
   | SetSkillLevelRequirementsShould of RequirementsShould
+
   | ToggleSpecialCharm
   | SetLuckBuff of int
+
   | SetGiantCropChecksPerTile of float
+
   | ToggleQualityProducts
   | TogglePreservesQuality of NameOf<Processor>
   | ToggleQualitySeedMaker
@@ -71,6 +99,7 @@ let update message model =
             SidebarTab = tab
             SidebarOpen = true }, []
   | CloseSidebar -> { model with SidebarOpen = false }, []
+
   | SetSkillLevel (skill, level) ->
       { model with Skills = model.Skills.Add(skill, { model.Skills.[skill] with Level = Skill.validLevel level } ) }, []
   | SetSkillBuff (skill, buff) ->
@@ -78,14 +107,18 @@ let update message model =
   | ToggleProfession (skill, profession) ->
       { model with Skills = model.Skills.Add(skill, profession |> Profession.toggle model.Skills.[skill] model.IgnoreProfessionRelationships) }, []
   | ToggleIgnoreProfessionRelationships -> { model with IgnoreProfessionRelationships = not model.IgnoreProfessionRelationships }, []
+  
   | ToggleBuySource source -> { model with BuySources = model.BuySources.Add(source, model.BuySources.[source].Toggle) }, []
   | ToggleMatchCondition cond -> { model with MatchConditions = model.MatchConditions.Add(cond, model.MatchConditions.[cond].Toggle) }, []
+
   | ToggleProcessor processor -> { model with Processors = model.Processors.Add(processor, model.Processors.[processor].Toggle) }, []
   | ToggleSellRawCrop -> { model with SellRawCrop = not model.SellRawCrop }, []
   | ToggleSellSeedsFromSeedMaker -> { model with SellSeedsFromSeedMaker = not model.SellSeedsFromSeedMaker }, []
+
   | ToggleBuySeeds -> { model with BuySeeds = not model.BuySeeds }, []
   | ToggleSeedMakerReplant -> { model with SeedMakerReplant = not model.SeedMakerReplant }, []
-  | ToggleHarvestedCropReplant -> { model with RawReplant = not model.RawReplant }, []
+  | ToggleHarvestReplant -> { model with HarvestReplant = not model.HarvestReplant }, []
+
   | ToggleCropSelected crop -> { model with Crops = model.Crops.Add(crop, Crop.toggle model.Crops.[crop]) }, []
   | SetCropSort sort ->
       if sort = model.CropSort then
@@ -94,10 +127,12 @@ let update message model =
         { model with
             CropSort = sort
             CropSortAscending = true }, []
+  | SetSelectedCrop crop -> { model with SelectedCrop = crop }, []
   | ToggleShowOutOfSeasonCrops -> { model with ShowOutOfSeasonCrops = not model.ShowOutOfSeasonCrops }, []
   | ToggleAllowCropClearings -> { model with AllowCropClearings = not model.AllowCropClearings }, []
   | ToggleAllowCrossSeason -> { model with AllowCrossSeason = not model.AllowCrossSeason }, []
   | ToggleAccountForReplant -> { model with AccountForReplant = not model.AccountForReplant }, []
+
   | ToggleFertilizerSelected fert -> { model with Fertilizers = model.Fertilizers.Add(fert, model.Fertilizers.[fert].Toggle) }, []
   | SetFertilizerSort sort ->
       if sort = model.FertilizerSort then
@@ -106,20 +141,41 @@ let update message model =
         { model with
             FertilizerSort = sort
             FertilizerSortAscending = true }, []
+  | SetSelectedFertilizer fert -> { model with SelectedFertilizer = fert }, []
   | ToggleAccountForFertilizerCost -> { model with AccountForFertilizerCost = not model.AccountForFertilizerCost }, []
-  | SetStartingFertilizer fert -> { model with StartingFertilizer = fert }, []
+
   | SetStartDay day -> { model with StartDate = { model.StartDate with Day = Date.validDay day } }, []
   | SetStartSeason season -> { model with StartDate = { model.StartDate with Season = season } }, []
   | SetEndDay day -> { model with EndDate = { model.EndDate with Day = Date.validDay day } }, []
   | SetEndSeason season -> { model with EndDate = { model.EndDate with Season = season } }, []
   | SetYear year -> { model with Year = year }, []
+
+  | SetCompareMode mode -> { model with CompareMode = mode }, []
+  | ToggleShowUnprofitableCombos -> { model with ShowUnprofitableCombos = not model.ShowUnprofitableCombos }, []
+  | SetSelectedCombo combo -> { model with SelectedCombo = combo }, []
+
+  | SetSelectedCompareCrop crop -> { model with SelectedCompareCrop = crop }, []
+  | SetCompareCropsUsingFertilizer fert -> { model with CompareCropsUsingFertilizer = fert }, []
+
+  | SetSelectedCompareFertilizer fert -> { model with SelectedCompareFertilizer = fert }, []
+  | SetCompareFertilizersUsingCrop crop -> { model with CompareFertilizersUsingCrop = crop }, []
+
+  | SetStartingFertilizer fert -> { model with StartingFertilizer = fert }, []
+
   | SetProfitMode mode -> { model with ProfitMode = mode }, []
   | ToggleGreenhouse -> { model with Greenhouse = not model.Greenhouse }, []
+
+  | ToggleShowTips -> { model with ShowTips = not model.ShowTips }, []
+  | ToggleSaveSettings -> { model with SaveSettings = not model.SaveSettings }, []
+
   | SetYearRequirementsShould mode -> { model with YearRequirementsShould = mode }, []
   | SetSkillLevelRequirementsShould mode -> { model with SkillLevelRequirementsShould = mode }, []
+  
   | ToggleSpecialCharm -> { model with SpecialCharm = not model.SpecialCharm }, []
   | SetLuckBuff buff -> { model with LuckBuff = positive buff }, []
+  
   | SetGiantCropChecksPerTile checks -> { model with GiantCropChecksPerTile = checks |> clamp 0.0 9.0 }, []
+
   | ToggleQualityProducts -> { model with QualityProducts = not model.QualityProducts }, []
   | TogglePreservesQuality processor -> { model with Processors = model.Processors.Add(processor, model.Processors.[processor].TogglePreservesQuality) }, []
   | ToggleQualitySeedMaker -> { model with QualitySeedMaker = not model.QualitySeedMaker }, []
@@ -130,6 +186,12 @@ let update message model =
 open Fable.React
 open Fable.React.Props
 open Elmish.React.Helpers
+
+let percent value = (value * 100.0 |> string) + "%"
+
+let strOption text = ofOption <| Option.bind (str >> Some) text
+let strOptionWith suffix text = strOption <| Option.bind (fun s -> Some <| s + suffix) text
+let strOptionColon = strOptionWith ":"
 
 let classModifier baseClass modifier apply =
   ClassName <| if apply then baseClass + "--" + modifier else baseClass
@@ -238,14 +300,14 @@ let profession requirementsShould profession skill dispatch =
   button
     [ classModifier
         "profession"
-        ( if profession |> Profession.isUnlocked skill || requirementsShould <> Invalidate
+        ( if profession |> Profession.isUnlocked skill || requirementsShould <> Require
           then "active"
           else "error")
         skill.Professions.[profession].Selected
       OnClick <| fun _ -> dispatch <| ToggleProfession (Skill.nameOf skill, profession) ]
     [ if skill.Professions.[profession].Selected && not (profession |> Profession.isUnlocked skill) then
         if requirementsShould = Warn then warningIcon
-        elif requirementsShould = Invalidate then errorIcon
+        elif requirementsShould = Require then errorIcon
       img
         [ ClassName "profession-img"
           Src <| "img/Skills/" + ofName profession + ".png" ]
@@ -327,22 +389,25 @@ let replants model dispatch =
         [ checkboxWith (sourceIcon "Seed Maker") ToggleSeedMakerReplant model.SeedMakerReplant dispatch
           viewAlerts "SeedMakerReplant" (Model.seedMakerAlert model model.SeedMakerReplant) ]
       li []
-        [ checkboxWith (sourceIcon "Harvested Seed or Crop") ToggleHarvestedCropReplant model.RawReplant dispatch ] ]
+        [ checkboxWith (sourceIcon "Harvested Seed or Crop") ToggleHarvestReplant model.HarvestReplant dispatch ] ]
 
-let selectList (list: 't seq) toString (ofString: string -> 't) text message (value: 't) dispatch =
+let selectWith (toString: 't -> _) parse list text (message: 't -> _) (value: 't) dispatch =
   label []
-    [ ofOption <| Option.bind (fun t -> Some <| str (t + ": ")) text
+    [ strOptionColon text
       select
         [ valueOrDefault <| toString value
-          OnChange <| fun x -> dispatch <| (message <| ofString x.Value) ]
-        [ for o in list do
-            option [ Value <| (toString o :> obj) ]
-              [ str <| toString o ] ] ]
+          OnChange <| fun x -> dispatch <| message (parse x.Value) ]
+        [ for item in list do
+            option [ Value (toString item) ]
+              [ str <| toString item ] ] ]
 
-let selectRequirementsShould = selectList RequirementsShould.all string RequirementsShould.parse
+// For types that do not erase into strings
+let inline selectParse parse = selectWith string parse
 
-let selectListOption (list: 't list) toString (ofString: string -> 't) =
-  selectList (None::(List.map Some list)) (optionToString toString) (stringToOption ofString)
+// For types that erase into strings (i.e. [<StringEnum>] and [<Erase>] on DU's)
+let inline selectString list = selectWith string (!!) list
+
+let inline selectStringOption list = selectWith (optionToString string) (stringToOption (!!)) (listWithNone list)
 
 let viewPrices model (priceFrom: Map<_,_>) =
   if priceFrom.IsEmpty then
@@ -359,8 +424,6 @@ let viewPrices model (priceFrom: Map<_,_>) =
         [ errorIcon
           str "No valid prices." ]
 
-let selectSeasons = selectList Season.all string Season.parse None
-
 let dayInput message day dispatch =
   label [ ClassName "day-input" ]
     [ input
@@ -374,88 +437,42 @@ let dayInput message day dispatch =
 let date text seasonMsg dayMsg date dispatch =
   div [ ClassName "date" ]
     [ str text
-      selectSeasons seasonMsg date.Season dispatch
+      selectParse Season.parse Season.all None seasonMsg date.Season dispatch
       dayInput dayMsg date.Day dispatch ]
 
-let tableItems
-  toKey
-  priceFrom
-  selectedMessage
-  (toNameOf: 't -> NameOf<'t>)
-  selected
-  active
-  imgPath
-  (properties: 't -> ReactElement list list)
-  items
-  model
-  dispatch =
-  //disabled background if not (active model item)
-  [ for item in items do
-      tr
-        [ ClassName "table-row"
-          Key <| toKey item ]
-        [ td []
-            [ checkbox (selectedMessage <| toNameOf item) (selected item) dispatch ]
-          td []
-            [ img
-                [ ClassName "table-item-img"
-                  Src <| imgPath item ]
-              str <| toKey item ]
-          for property in properties item do
-            td []
-              property
-          td []
-            (viewPrices model (priceFrom item)) ] ]
-  |> ofList
-
-let cropTableItems =
-  tableItems
-    Crop.name
-    Crop.priceFrom
-    ToggleCropSelected
-    Crop.nameOf
-    Crop.selected
-    Model.cropActive
-    (fun crop -> "img/Crops/" + Crop.name crop + ".png")
-    (fun crop ->
-      [ [ ofInt <| Crop.totalGrowthTime crop ]
-        [ ofOption <| Option.bind (ofInt >> Some) (Crop.regrowTime crop) ]
-        [ for season in Crop.selectedSeasons crop do
-            str <| string season
-            br [] ] ] )
-
-let fertilizerTableItems =
-  tableItems
-    Fertilizer.name
-    Fertilizer.priceFrom
-    ToggleFertilizerSelected
-    Fertilizer.nameOf
-    Fertilizer.selected
-    Model.fertilizerActive
-    (fun fert -> "img/Fertilizers/" + fert.Name + ".png")
-    (fun fert ->
-      [ [ ofInt fert.Quality ]
-        [ str <| string (fert.Speed * 100.0) + "%" ] ] )
-
-let viewTable columns sortMessage data dispatch =
+let viewTable columns sortMessage toKey active items dispatch =
   [ table [ ClassName "table-header" ]
       [ colgroup []
-          [ for _, width, _ in columns do
-              col [ Style [ Width (string width + "%") ] ] ]
+          [ for width, _,_,_ in columns do
+              col [ Style [ Width (percent width) ] ] ]
         thead []
           [ tr []
-              [ for name, width, sort in columns do
-                  th
-                    [ OnClick (fun _ -> dispatch <| sortMessage sort)
-                      Style [ Width (string width + "%") ] ]
-                    [ str name ] ] ] ]
+              [ for _, header, sort, _ in columns do
+                  th [ OnClick <| fun _ -> dispatch <| sortMessage sort ]
+                    header ] ] ]
     div [ ClassName "table-body-container" ]
       [ table [ ClassName "table" ]
           [ colgroup []
-              [ for _, width, _ in columns do
-                  col [ Style [ Width (string width + "%") ] ] ]
+              [ for width, _,_,_ in columns do
+                  col [ Style [ Width (percent width) ] ] ]
             tbody []
-              [ data ] ] ] ]
+              [ [ for item in items do
+                  tr
+                    [ classModifier "table-row" "active" (active item)
+                      Key <| toKey item ]
+                    [ for _,_,_, property in columns do
+                        td []
+                          (property item) ] ]
+                |> ofList ] ] ] ]
+
+let tableImage imgPath name item =
+  [ img
+      [ ClassName "table-item-img"
+        Src <| imgPath item ]
+    str <| name item ]
+
+let tableCheckbox selectedMsg toNameOf selected dispatch item =
+  [ checkbox (selectedMsg <| toNameOf item) (selected item) dispatch ]
 
 let sidebarContent model dispatch =
   match model.SidebarTab with
@@ -476,36 +493,46 @@ let sidebarContent model dispatch =
   | Crops ->
       div [ classModifier "sidebar-table-content" "open" model.SidebarOpen ]
         [ yield! viewTable
-            [ "", 5.0, CropSort.Selected
-              "Crop", 40.0, CropSort.ByName
-              "Growth Time", 7.5, TotalGrowthTime
-              "Regrow Time", 7.5, RegrowTime
-              "Seasons", 15.0, Seasons
-              "Seed Price", 25.0, SeedPrice ]
+            [ 0.05, [ str "" ], CropSort.Selected, tableCheckbox ToggleCropSelected Crop.nameOf Crop.selected dispatch
+              0.4, [ str "Crop" ], CropSort.ByName, tableImage Crop.image Crop.name
+              0.075, [ str "Growth Time" ], TotalGrowthTime, Crop.totalGrowthTime >> ofInt >> List.singleton
+              0.075, [ str "Regrow Time" ], RegrowTime, Crop.regrowTime >> Option.bind (ofInt >> Some) >> ofOption >> List.singleton
+              0.15, [ str "Seasons" ], Seasons, fun crop ->
+                [ for season in Crop.seasons crop do
+                    str <| string season
+                    br [] ]
+              0.25, [ str "Seed Price" ], SeedPrice, Crop.priceFrom >> viewPrices model ]
             SetCropSort
-            (cropTableItems (Model.sortedCrops model) model dispatch)
+            Crop.name
+            (Model.cropActive model)
+            (Model.sortedCrops model)
             dispatch
+
           checkboxText "Show Out of Season Crops" ToggleShowOutOfSeasonCrops model.ShowOutOfSeasonCrops dispatch ]
+
   | Fertilizers ->
       div [ classModifier "sidebar-table-content" "open" model.SidebarOpen ]
         [ yield! viewTable
-            [ "", 5.0, FertilizerSort.Selected
-              "Fertilizer", 50.0, FertilizerSort.ByName
-              "Quality", 10.0, Quality
-              "Speed Bonus", 10.0, Speed
-              "Price", 25.0, Price ]
+            [ 0.05, [ str "" ], FertilizerSort.Selected, tableCheckbox ToggleFertilizerSelected Fertilizer.nameOf Fertilizer.selected dispatch
+              0.5, [ str "Fertilizer" ], FertilizerSort.ByName, tableImage Fertilizer.image Fertilizer.name
+              0.1, [ str "Quality" ], Quality, Fertilizer.quality >> ofInt >> List.singleton
+              0.1, [ str "Speed Bonus" ], Speed, Fertilizer.speed >> percent >> str >> List.singleton
+              0.25, [ str "Price" ], Price, Fertilizer.priceFrom >> viewPrices model ]
             SetFertilizerSort
-            (fertilizerTableItems (Model.sortedFertilizers model) model dispatch)
+            Fertilizer.name
+            (Model.fertilizerActive model)
+            (Model.sortedFertilizers model)
             dispatch
+
           checkboxText "Account for Fertilizer Cost" ToggleAccountForFertilizerCost model.AccountForFertilizerCost dispatch
-          selectListOption
+
+          selectStringOption
             model.FertilizerList
-            ofName
-            Types.Name
-            (Some "Starting Fertilizer: ")
+            (Some "Starting Fertilizer")
             SetStartingFertilizer
             model.StartingFertilizer
             dispatch ]
+
   | Buy ->
       div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
         [ buySources model.BuySourceList model.BuySources dispatch
@@ -514,6 +541,7 @@ let sidebarContent model dispatch =
               checkboxText (ofName cond) (ToggleMatchCondition cond) model.MatchConditions.[cond].Selected dispatch ]
           replants model dispatch
           checkboxText "Account For Replant" ToggleAccountForReplant model.AccountForReplant dispatch ]
+
   | Sell ->
       div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
         [ ul [ ClassName "source-list" ]
@@ -524,6 +552,7 @@ let sidebarContent model dispatch =
               li []
                 [ checkboxWith (sourceIcon "Seed Maker") ToggleSellSeedsFromSeedMaker model.SellSeedsFromSeedMaker dispatch
                   viewAlerts "SellSeedsFromSeedMaker" (Model.seedMakerAlert model model.SellSeedsFromSeedMaker) ] ] ]
+
   | Date ->
       div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
         [ date "Start Date: " SetStartSeason SetStartDay model.StartDate dispatch
@@ -536,12 +565,13 @@ let sidebarContent model dispatch =
                   valueOrDefault model.Year
                   ClassName "year-number-input"
                   OnChange <| fun y -> dispatch <| SetYear !!y.Value ] ] ]
+
   | Settings ->
       div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
-        [ selectList ProfitMode.all ProfitMode.toString ProfitMode.parse (Some "Compare Stonks Using") SetProfitMode model.ProfitMode dispatch
+        [ selectString ProfitMode.all (Some "Compare Stonks Using") SetProfitMode model.ProfitMode dispatch
           checkboxText "Greenhouse Mode" ToggleGreenhouse model.Greenhouse dispatch
-          selectRequirementsShould (Some "Year Requirements") SetYearRequirementsShould model.YearRequirementsShould dispatch
-          selectRequirementsShould (Some "Skill Level Requirements") SetSkillLevelRequirementsShould model.SkillLevelRequirementsShould dispatch
+          selectString RequirementsShould.all (Some "Year Availability") SetYearRequirementsShould model.YearRequirementsShould dispatch
+          selectString RequirementsShould.all (Some "Skill Level Unlocks") SetSkillLevelRequirementsShould model.SkillLevelRequirementsShould dispatch
           checkboxText "Special Charm" ToggleSpecialCharm model.SpecialCharm dispatch
           label [ ClassName "setting-input" ]
             [ str "Luck Buff: "
@@ -561,6 +591,7 @@ let sidebarContent model dispatch =
                   valueOrDefault model.GiantCropChecksPerTile
                   ClassName "setting-number-input"
                   OnChange <| fun c -> dispatch <| SetGiantCropChecksPerTile !!c.Value ] ] ]
+
   | Mod ->
       div [ classModifier "sidebar-content" "open" model.SidebarOpen ]
         [ checkboxText "Quality Products" ToggleQualityProducts model.QualityProducts dispatch
@@ -622,7 +653,39 @@ let view model dispatch =
           div []
             [ div [ Class "calender-grid" ]
                 [ match mode with
-                  | Compare -> br []
+                  | Compare ->
+                      div []
+                        [ selectString CompareMode.all (Some "Compare") SetCompareMode model.CompareMode dispatch
+                          checkboxText "Show Unprofitable Combinations" ToggleShowUnprofitableCombos model.ShowUnprofitableCombos dispatch 
+                          if model.CompareMode = CompareCrops then
+                            selectStringOption (Model.activeFertilizers model) (Some "Select a Fertilizer") SetCompareCropsUsingFertilizer model.CompareCropsUsingFertilizer dispatch
+                          elif model.CompareMode = CompareFertilizers then
+                            selectString (Model.activeCrops model) (Some "Select a Crop") SetCompareFertilizersUsingCrop model.CompareFertilizersUsingCrop dispatch ]
+                      ul [ Style [ MarginLeft "250px" ] ]
+                        [ let combos =
+                            match model.CompareMode with
+                            | Combos -> Model.doComboCompare model
+                            | CompareCrops ->
+                                match model.CompareCropsUsingFertilizer with
+                                | Some fert ->
+                                    let fertilizer = model.Fertilizers.[fert]
+                                    if Model.fertilizerActive model fertilizer
+                                    then Model.doCropCompare model (Some fertilizer)
+                                    else []
+                                | None -> Model.doCropCompare model None
+                            | CompareFertilizers ->
+                                let crop = model.Crops.[model.CompareFertilizersUsingCrop]
+                                if Model.cropActive model crop
+                                then Model.doFertilizerCompare model crop
+                                else []
+
+                          for crop, fert, profit in combos do
+                            li []
+                              [ str <| ofName crop
+                                br []
+                                str <| optionMapDefault ofName "No Fertilizer" fert
+                                br []
+                                ofFloat profit ] ]
                   | _ -> br [] ]
               a [ Href (Page.url Help) ]
                 [ str "Help" ]

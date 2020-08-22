@@ -13,10 +13,19 @@ module Types =
 
   let inline toNameOf (toString: 't -> string) = toString >> NameOf<'t>.Name
 
-  let inline listToMap keyProjection list =
+  let inline listToMapByKey keyProjection list =
     list
     |> List.map (fun x -> keyProjection x, x)
     |> Map.ofList
+
+  let inline listToMapByValue valueProjection list =
+    list
+    |> List.map (fun x -> x, valueProjection x)
+    |> Map.ofList
+
+  let inline mapValues (map: Map<_,_>) =
+    [ for KeyValue(_, value) in map do
+        yield value ]
 
   let inline mergeWith f =
     Map.fold (fun (map: Map<_,_>) k v1 ->
@@ -33,9 +42,15 @@ module Types =
   let positive = max 0
   let positivef = max 0.0
 
-  let optionToString f = function
+  let inline sortMode ascending = if ascending then List.sortBy else List.sortByDescending
+
+  let listWithNone list = None::(List.map Some list)
+
+  let inline optionMapDefault f value = function
     | Some x -> f x
-    | None -> "None"
+    | None -> value
+
+  let optionToString f = optionMapDefault f "None"
   
   let stringToOption f = function
     | "None" -> None
@@ -72,6 +87,8 @@ module Types =
 
 open Types
 
+// Not a [<StringEnum>] since the underlying case number is needed for date comparisons.
+// I'd also rather not use regular enums even though they have a more explicit integral value, because they give a warning when pattern matching unless you include a wildcard, they require qualified access, etc.
 type Season =
   | Spring
   | Summer
@@ -86,13 +103,15 @@ module Season =
     | Fall -> Winter
     | Winter -> Spring
 
+  // Needs a parse function since it is used in a <select/> (the event change value is of type string) and it is not a [<StringEnum>]
+  // This is one case where using an actual Enum might be better (i.e. Enum.Parse<Season>)
   let parse str =
     match str with
     | "Spring" -> Spring
     | "Summer" -> Summer
     | "Fall" -> Fall
     | "Winter" -> Winter
-    | _ -> invalidArg "str" (sprintf "'%s' is not the name of a Season." str)
+    | _ -> invalidArg "str" (sprintf "'%s' is not a Season." str)
 
   let all =
     [ Spring
@@ -131,9 +150,7 @@ type Status =
 module Status =
   let ofBool value = if value then Valid else Invalid
 
-  let ofOverride defaultValue = function
-    | Some x -> ofBool x
-    | None -> defaultValue
+  let ofOverride = optionMapDefault ofBool
 
   let ofBoolOverride = ofBool >> ofOverride
 

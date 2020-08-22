@@ -93,7 +93,7 @@ module Skill =
                   Name = "Agriculturist"
                   Requires = Some <| Name "Tiller"
                   ExclusiveWith = Some <| Name "Artisan" } ]
-            |> listToMap Profession.nameOf
+            |> listToMapByKey Profession.nameOf
           ProfessionLayout =
             [ [ Name "Tiller" ]
               [ Name "Artisan"; Name "Agriculturist" ] ] }
@@ -107,7 +107,7 @@ module Skill =
               { Profession.initial with
                   Name = "Botanist"
                   Requires = Some <| Name "Gatherer" } ]
-            |> listToMap Profession.nameOf
+            |> listToMapByKey Profession.nameOf
           ProfessionLayout =
             [ [ Name "Gatherer" ]
               [ Name "Botanist" ] ] } ]

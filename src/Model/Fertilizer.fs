@@ -19,12 +19,18 @@ type FertilizerSort =
 
 module Fertilizer =
   let name fertilizer = fertilizer.Name
+  let nameOfOption = optionToString name
   let selected fertilizer = fertilizer.Selected
   let quality fertilizer = fertilizer.Quality
+  let qualityOfOption = optionMapDefault quality 0
   let speed fertilizer = fertilizer.Speed
+  let speedOfOption = optionMapDefault speed 0.0
   let priceFrom fertilizer = fertilizer.PriceFrom
 
   let nameOf = toNameOf name
+  let private img name = "img/Fertilizers/" + name + ".png"
+  let image = name >> img
+  let imageOfName (name: NameOf<Fertilizer>) = img <| ofName name
 
   let create
     name
@@ -35,7 +41,7 @@ module Fertilizer =
       Selected = true
       Quality = quality
       Speed = speed
-      PriceFrom = prices |> listToMap Buy.source }
+      PriceFrom = prices |> listToMapByKey Buy.source }
 
   let all =
     [ create

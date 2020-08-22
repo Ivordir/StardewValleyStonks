@@ -15,7 +15,7 @@ module HarvestedCrop =
   let create item products =
     { Item = item
       SellRaw = None
-      Products = Product.createAll item products |> listToMap Product.processor }
+      Products = Product.createAll item products |> listToMapByKey Product.processor }
 
 type HarvestItem =
   { Item: HarvestCrop
@@ -175,6 +175,9 @@ module Crop =
   let addGrowthMultiplier = modifyBaseWith baseAddGrowthMultiplier
 
   let nameOf = toNameOf name
+  let private img name = "img/Crops/" + name + ".png"
+  let image = name >> img
+  let imageOfName (name: NameOf<Crop>) = img <| ofName name
 
   let private toF32 = Fable.Core.JS.Constructors.Float32Array.Create 1
   // (x: float) |> float32 |> float doesn't actually do a conversion (thanks javascript...), so here we use typed arrays to achieve the same effect.
@@ -210,7 +213,7 @@ module Crop =
       if selectedSeasons crop |> Set.contains season
       then helper (sum + Date.daysIn season startDate endDate) (Season.next season)
       else sum
-    helper 0 (max startDate.Season (selectedSeasons crop |> Set.minElement))
+    (helper 0 (max startDate.Season (selectedSeasons crop |> Set.minElement))) - 1
 
   let harvestsWithin startDate endDate speed = function
   | RegularCrop _ | GiantCrop _ | ForageCrop _ as crop -> (growthDays startDate endDate crop) / (growthTimeWith speed crop)
@@ -219,7 +222,7 @@ module Crop =
       let growthTime = growthTimeWith speed crop
       if days < growthTime
       then 0
-      else ((days - growthTime) / r.RegrowTime) + 1
+      else (days - growthTime) / r.RegrowTime + 1
   | Bush b as crop ->
       let matureDate = startDate + growthTimeWith speed crop
       // Does not provide accurate results if HarvestDayStart = 1 and HarvestDayEnd = 28
@@ -246,7 +249,7 @@ module Crop =
       TotalGrowthTime = List.sum growthStages
       GrowthMultipliers = Multiplier.agri
       Seed = seed
-      PriceFrom = Buy.createAll seed.BasePrice createPrices |> listToMap Buy.source
+      PriceFrom = Buy.createAll seed.BasePrice createPrices |> listToMapByKey Buy.source
       BuySeeds = None }
 
   let private createSeed name = function
@@ -479,9 +482,9 @@ module Crop =
         "Tulip"
         [ Spring ]
         [ 1; 1; 2; 2 ]
-        (SeedSell 30)
+        (Seed <| Item.create "Tulip Bulb" 10)
         PierreAndJoja
-        (CropItem <| Item.createCrop "Tulip Bulb" 10)
+        (SellPrice 30)
         NoProduct
 
       createAmount

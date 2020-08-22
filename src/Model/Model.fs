@@ -14,15 +14,14 @@ module Mode =
     | "plan" -> Ok Plan
     | "find" -> Ok Find
     | _ -> Error <| sprintf "'%s' is not a Mode." str
+  
+  open Elmish.UrlParser
+  let parseUrl state = custom "Mode" tryParseUrl state
 
   let all =
     [ Compare
       Plan
       Find ]
-
-  open Elmish.UrlParser
-
-  let parseUrl state = custom "Mode" tryParseUrl state
 
 
 type Page =
@@ -65,24 +64,25 @@ module SidebarTab =
       Settings
       Mod ]
 
+[<Fable.Core.StringEnum>]
+type CompareMode =
+  | [<CompiledName("Combinations")>] Combos
+  | [<CompiledName("Crops")>] CompareCrops
+  | [<CompiledName("Fertilizers")>] CompareFertilizers
+
+module CompareMode =
+  let all =
+    [ Combos
+      CompareCrops
+      CompareFertilizers ]
+
+[<Fable.Core.StringEnum>]
 type ProfitMode =
-  | NetProfit
-  | NetProfitMargin
-  | ROI
+  | [<CompiledName("Net Profit")>] NetProfit
+  | [<CompiledName("Profit Margin")>] NetProfitMargin
+  | [<CompiledName("Return On Investment")>] ROI
 
 module ProfitMode =
-  let toString = function
-    | NetProfit -> "Net Profit"
-    | NetProfitMargin -> "Profit Margin"
-    | ROI -> "Return on Investment"
-
-  let parse str =
-    match str with
-    | "Net Profit" -> NetProfit
-    | "Profit Margin" -> NetProfitMargin
-    | "Return on Investment" -> ROI
-    | _ -> invalidArg "str" (sprintf "'%s' is not a ProfitMode." str)
-
   let all =
     [ NetProfit
       NetProfitMargin
@@ -100,7 +100,7 @@ type Model =
     IgnoreProfessionRelationships: bool
 
     BuySources: Map<NameOf<Source>, Source>
-    BuySourceList: NameOf<Source> list //lists are necessary to enforce a display order, haven't thought of another way (could switch to ID's...)
+    BuySourceList: NameOf<Source> list //lists are necessary to enforce a display order, haven't thought of another way
 
     MatchConditions: Map<NameOf<MatchCondition>, MatchCondition>
     MatchConditionList: NameOf<MatchCondition> list
@@ -113,11 +113,13 @@ type Model =
 
     BuySeeds: bool
     SeedMakerReplant: bool
-    RawReplant: bool
+    HarvestReplant: bool
 
     Crops: Map<NameOf<Crop>, Crop>
     CropSort: CropSort
     CropSortAscending: bool
+    CropList: NameOf<Crop> list
+    SelectedCrop: NameOf<Crop> option
     ShowOutOfSeasonCrops: bool
     AllowCropClearings: bool
     AllowCrossSeason: bool
@@ -127,8 +129,9 @@ type Model =
     FertilizerSort: FertilizerSort
     FertilizerSortAscending: bool
     FertilizerList: NameOf<Fertilizer> list
+    SelectedFertilizer: NameOf<Fertilizer> option
     AccountForFertilizerCost: bool
-    StartingFertilizer: NameOf<Fertilizer> option
+    FertilizerLossProb: float
   
     Multipliers: Map<NameOf<Multiplier>, Multiplier>
     RawMultipliers: NameOf<Multiplier> list
@@ -138,15 +141,39 @@ type Model =
     EndDate: Date
     Year: int
 
+    // Compare Mode
+    CompareMode: CompareMode
+    ShowUnprofitableCombos: bool
+    SelectedCombo: (NameOf<Crop> * NameOf<Fertilizer> option) option
+
+    SelectedCompareCrop: NameOf<Crop> option
+    CompareCropsUsingFertilizer: NameOf<Fertilizer> option
+
+    SelectedCompareFertilizer: NameOf<Fertilizer> option option
+    CompareFertilizersUsingCrop: NameOf<Crop>
+
+    // Plan Mode
+
+    // Find Mode
+    StartingFertilizer: NameOf<Fertilizer> option
+
+
     // Settings
     ProfitMode:ProfitMode
     Greenhouse: bool
+
+    ShowTips: bool
+    SaveSettings: bool
 
     SkillLevelRequirementsShould: RequirementsShould
     YearRequirementsShould: RequirementsShould
 
     SpecialCharm: bool
     LuckBuff: int
+
+    TrelisPenalty: bool
+    TrelisPercentage: float
+    AllowTrelisPair: bool
 
     BaseGiantCropChance: float
     GiantCropChecksPerTile: float
@@ -161,8 +188,8 @@ type Model =
 
 module Model =
   let requirementMet model = function
-    | SkillLevel (skill, level) -> model.SkillLevelRequirementsShould <> Invalidate || model.Skills.[skill].Level >= level
-    | Year y -> model.YearRequirementsShould <> Invalidate || model.Year >= y
+    | SkillLevel (skill, level) -> model.SkillLevelRequirementsShould <> Require || model.Skills.[skill].Level >= level
+    | Year y -> model.YearRequirementsShould <> Require || model.Year >= y
 
   let requirementsMet model = List.forall (requirementMet model)
 
@@ -303,7 +330,7 @@ module Model =
     | Profession p ->
         let skill = model.Skills.[p.Skill]
         if skill.Professions.[p.Profession].Selected
-          && (model.SkillLevelRequirementsShould <> Invalidate || p.Profession |> Profession.isUnlocked skill)
+          && (model.SkillLevelRequirementsShould <> Require || p.Profession |> Profession.isUnlocked skill)
         then p.Value
         else defaultValue
 
@@ -359,14 +386,14 @@ module Model =
       || match c.HarvestItem with
          | Some h ->
              match h.Replant with
-             | Some x -> defaultArg x model.RawReplant
+             | Some x -> defaultArg x model.HarvestReplant
              | None -> false
          | None -> false
     | RegrowCrop r ->
         cropHasAPrice model r.Base
         || match r.Replant with
            | SeedMakerPlant s -> seedMakerReplantActive model s
-           | RawPlant p -> defaultArg p model.RawReplant
+           | RawPlant p -> defaultArg p model.HarvestReplant
     | GiantCrop g ->
         cropHasAPrice model g.Base
         || seedMakerReplantActive model g.SeedMaker
@@ -392,19 +419,21 @@ module Model =
       if not <| cropHasAReplant model crop then
         AlertList ("Cannot be replanted:", []) ]
 
-  let inline sortMode ascending = if ascending then List.sortBy else List.sortByDescending
+  let allCrops model = mapValues model.Crops
+  let allFertilizers model = mapValues model.Fertilizers
+
+  let activeCrops model = List.filter (fun c -> cropActive model model.Crops.[c]) model.CropList
+  let activeFertilizers model = List.filter (fun f -> fertilizerActive model model.Fertilizers.[f]) model.FertilizerList
 
   let sortedFertilizers model =
-    [ for KeyValue(_, fert) in model.Fertilizers do
-        fert ]
+    allFertilizers model
     //|> List.sortBy Fertilizer.name // already sorted by name, since the key of the map is the fertilizer's name
-    |> (fun list ->
-      match model.FertilizerSort with
-      | FertilizerSort.ByName -> if model.FertilizerSortAscending then list else List.rev list
-      | FertilizerSort.Selected -> (sortMode model.FertilizerSortAscending) Fertilizer.selected list
-      | Quality -> (sortMode model.FertilizerSortAscending) Fertilizer.quality list
-      | Speed -> (sortMode model.FertilizerSortAscending) Fertilizer.speed list
-      | Price -> (sortMode model.FertilizerSortAscending) (Fertilizer.priceFrom >> priceSort model) list)
+    |> (match model.FertilizerSort with
+        | FertilizerSort.ByName -> (fun list -> if model.FertilizerSortAscending then list else List.rev list)
+        | FertilizerSort.Selected -> sortMode model.FertilizerSortAscending Fertilizer.selected
+        | Quality -> sortMode model.FertilizerSortAscending Fertilizer.quality
+        | Speed -> sortMode model.FertilizerSortAscending Fertilizer.speed
+        | Price -> sortMode model.FertilizerSortAscending (Fertilizer.priceFrom >> priceSort model))
   
   let sortedCrops model =
     [ for KeyValue(_, crop) in model.Crops do
@@ -412,16 +441,15 @@ module Model =
           crop ]
     //|> List.sortBy Crop.name
     |> List.sortBy Crop.seasons
-    |> (fun list ->
-      match model.CropSort with
-      | CropSort.ByName -> (sortMode model.CropSortAscending) Crop.name list
-      | CropSort.Selected -> (sortMode model.CropSortAscending) Crop.selected list
-      | Seasons -> if model.CropSortAscending then list else List.rev list
-      | TotalGrowthTime -> (sortMode model.CropSortAscending) Crop.totalGrowthTime list
-      | RegrowTime -> (sortMode model.CropSortAscending) Crop.regrowTime list
-      | SeedPrice -> (sortMode model.CropSortAscending) (fun c -> priceSort model (Crop.priceFrom c)) list)
+    |> ( match model.CropSort with
+        | CropSort.ByName -> sortMode model.CropSortAscending Crop.name
+        | CropSort.Selected -> sortMode model.CropSortAscending Crop.selected
+        | Seasons -> (fun list -> if model.CropSortAscending then list else List.rev list)
+        | TotalGrowthTime -> sortMode model.CropSortAscending Crop.totalGrowthTime
+        | RegrowTime -> sortMode model.CropSortAscending Crop.regrowTime
+        | SeedPrice -> sortMode model.CropSortAscending (Crop.priceFrom >>priceSort model))
 
-  let doubleCropProb model = 0.0001 + float model.LuckBuff / 1500.0 + (if model.SpecialCharm then 0.025 else 0.0)
+  let doubleCropProb model = 0.0001 + float model.LuckBuff / 1500.0 + if model.SpecialCharm then 0.025 else 0.0
 
   let noGiantCropProb model = (1.0 - model.BaseGiantCropChance) ** model.GiantCropChecksPerTile
 
@@ -497,18 +525,24 @@ module Model =
   let bestProductsAll = bestProductsWith Quality.all
 
   let validFertilizers model =
-    [ for KeyValue(_, fert) in model.Fertilizers do
-        if fertilizerActive model fert then
-          let data = priceData model fert.PriceFrom |> Option.get
-          { Fertilizer = fert
-            Price = fst data
-            Sources = snd data } ]
+    [ for KeyValue(_, fertilizer) in model.Fertilizers do
+        if fertilizerActive model fertilizer then
+          fertilizer ]
+
+  let cacheFertilizers model =
+    List.map (fun (fert: Fertilizer) ->
+      let data = Option.get <| priceData model fert.PriceFrom
+      { Fertilizer = fert
+        Price = fst data
+        Sources = snd data } )
+
+  let fertilizerPrices model = listToMapByValue (Fertilizer.priceFrom >> priceData model >> Option.get >> fst)
 
   open System.Collections.Generic
   let calculate model =
     let cache = Dictionary<Date * Fertilizer, _>()
 
-    let validFerts = validFertilizers model
+    let validFerts = cacheFertilizers model (validFertilizers model)
 
     let compareFertilizer fert (better, equal) other =
       match CacheFertilizer.compare model.AccountForFertilizerCost fert other with
@@ -567,7 +601,7 @@ module Model =
     //                TeaSell = bestProducts model t.Base Normal t.TeaLeaves |} ]
     model
 
-  let singleAmount quality amount = Map.ofList [ quality, amount ]
+  let singleAmount quality amount : Map<Quality, float> = Map.ofList [ quality, amount ]
 
   let qualityDistribution fertQuality farmBuffLevel =
     let gold = 0.01 + 0.2 * (float farmBuffLevel / 10.0 + float fertQuality * float (farmBuffLevel + 2) / 12.0)
@@ -578,15 +612,12 @@ module Model =
       Gold, gold ]
     |> Map.ofList
 
-  let doCompare model =
-    let fertilizers = validFertilizers model
+  let doCompare model crops ferts =
+    let doubleCrops = doubleCropProb model
+    let noGiantProb = noGiantCropProb model
+    let giantProb = 1.0 - noGiantProb
 
-    let qualityDistributions =
-      fertilizers
-      |> List.map (fun f -> f, qualityDistribution f.Fertilizer.Quality (Skill.buffedLevel model.Skills.[Name "Farming"]))
-      |> Map.ofList
-
-    let bestReplants model rawReplantPrices seedMakerData (baseCrop: BaseCrop) =
+    let bestReplants (baseCrop: BaseCrop) seedMakerData rawReplantPrices =
       [ for KeyValue(quality, sellPrice) in rawReplantPrices do
           UseRawCrop quality, sellPrice
         if defaultArg baseCrop.BuySeeds model.BuySeeds then
@@ -623,76 +654,189 @@ module Model =
             helper2 totalCost seedsNeeded first
       helper 0.0 1.0
 
-    let cropProfit fertilizers crop =
+    let cropProfit crop (fertilizers: (_*_* Map<_,_>) seq) =
       let speed = growthMultipler model crop
 
       match crop with
       | RegularCrop c ->
           let cropSell = bestSell model (Some (c.Base.Seed, c.SeedMaker)) c.Crop
-          let rawReplant, harvestItemAmount, harvestItemProfit =
+          let replants, harvestItemAmount, harvestItemProfit =
+            let replantsWith = bestReplants c.Base (Some (c.Base.Seed, c.SeedMaker, cropSell))
             match c.HarvestItem with
             | Some h ->
                 let amount = singleAmount Normal h.Amount
                 let profit = h.Amount * bestSellOne model Normal h.Item
                 match h.Replant with
-                | Some r ->
-                    if defaultArg r model.RawReplant 
-                    then bestSellNormal model None h.Item, amount, profit
-                    else Map.empty, amount, profit
-                | None -> Map.empty, amount, profit
-            | None -> Map.empty, Map.empty, 0.0
+                | Some over when defaultArg over model.HarvestReplant -> replantsWith (bestSellNormal model None h.Item), amount, profit
+                | _ -> replantsWith Map.empty, amount, profit
+            | None -> replantsWith Map.empty, Map.empty, 0.0
 
-          [ for fertilizer in fertilizers do
-              let cropAmounts =
-                qualityDistributions.[fertilizer].Add(
-                  Normal,
-                  qualityDistributions.[fertilizer].[Normal]
-                  + if c.DoubleCrops then c.ExtraCrops * doubleCropProb model + doubleCropProb model else 0.0
-                  + c.ExtraCrops)
-              let cost, seedsLeft =
-                replantCost
-                  c.Base.Seed
-                  cropAmounts
-                  harvestItemAmount
-                  (bestReplants
-                    model
-                    rawReplant
-                    (Some (c.Base.Seed, c.SeedMaker, cropSell))
-                    c.Base)
+          let extraCrops =
+            if c.DoubleCrops
+            then c.ExtraCrops * doubleCrops + doubleCrops
+            else 0.0
+            + c.ExtraCrops
+
+          [ for fertilizer, fertilizerCost, qualityDistribution in fertilizers do
+            let numHarvests = Crop.harvestsWithin model.StartDate model.EndDate (speed + Fertilizer.speedOfOption fertilizer) crop
+            if numHarvests > 0 then
+              let cropAmounts = qualityDistribution.Add(Normal, qualityDistribution.[Normal] + extraCrops)
+              let costPerHarvest, seedsLeft = replantCost c.Base.Seed cropAmounts harvestItemAmount replants
               if seedsLeft = 0.0 then
-                let numHarvests = Crop.harvestsWithin model.StartDate model.EndDate (speed + fertilizer.Fertilizer.Speed) crop
-                let profit =
+                let profitPerHarvest =
                   Map.fold (fun sum quality amount ->
                     sum + amount * cropSell.[quality])
                     0.0
                     cropAmounts
                   + harvestItemProfit
-                Some (crop, fertilizer, float numHarvests * (profit - cost))
-              else
-                None ]
-      | RegrowCrop r -> [ None ]
-      | GiantCrop g -> [ None ]
-      | ForageCrop f -> [ None ]
-      | Bush t -> [ None ]
 
-    ()
+                
+                Crop.nameOf crop,
+                Option.bind (Fertilizer.nameOf >> Some) fertilizer,
+                profitPerHarvest * float numHarvests,
+                costPerHarvest * float numHarvests,
+                float fertilizerCost ]
+
+      | RegrowCrop r ->
+          let cropSell, replants =
+            match r.Replant with
+            | SeedMakerPlant s ->
+                let sell = bestSell model (Some (r.Base.Seed, s)) r.Crop
+                sell, bestReplants r.Base (Some (r.Base.Seed, s, sell)) Map.empty
+            | RawPlant over ->
+                let sell = bestSell model None r.Crop
+                if defaultArg over model.HarvestReplant
+                then sell, bestReplants r.Base None sell
+                else sell, bestReplants r.Base None Map.empty
+
+          let extraCrops = r.ExtraCrops * doubleCrops + doubleCrops + r.ExtraCrops
+
+          [ for fertilizer, fertilizerCost, qualityDistribution in fertilizers do
+            let numHarvests = Crop.harvestsWithin model.StartDate model.EndDate (speed + Fertilizer.speedOfOption fertilizer) crop
+            if numHarvests > 0 then
+              let cropAmounts = qualityDistribution.Add(Normal, qualityDistribution.[Normal] + extraCrops)
+              let replantCost, seedsLeft = replantCost r.Base.Seed cropAmounts cropAmounts replants
+              if seedsLeft = 0.0 then
+                let profitPerHarvest =
+                  Map.fold (fun sum quality amount ->
+                    sum + amount * cropSell.[quality])
+                    0.0
+                    cropAmounts
+
+                Crop.nameOf crop,
+                Option.bind (Fertilizer.nameOf >> Some) fertilizer,
+                profitPerHarvest * float numHarvests,
+                replantCost,
+                float fertilizerCost ]
+
+      | GiantCrop g ->
+          let cropSell = bestSell model (Some (g.Base.Seed, g.SeedMaker)) g.Crop
+          let replants = bestReplants g.Base (Some (g.Base.Seed, g.SeedMaker, cropSell)) Map.empty
+
+          let giantCrops = giantProb * 2.0
+
+          [ for fertilizer, fertilizerCost, qualityDistribution in fertilizers do
+            let numHarvests = Crop.harvestsWithin model.StartDate model.EndDate (speed + Fertilizer.speedOfOption fertilizer) crop
+            if numHarvests > 0 then
+              let cropAmounts =
+                qualityDistribution
+                |> Map.map (fun _ amount -> amount * noGiantProb)
+                |> (fun map -> map.Add(Normal, map.[Normal] + giantCrops))
+              let costPerHarvest, seedsLeft = replantCost g.Base.Seed cropAmounts Map.empty replants
+              if seedsLeft = 0.0 then
+                let profitPerHarvest =
+                  Map.fold (fun sum quality amount ->
+                    sum + amount * cropSell.[quality])
+                    0.0
+                    cropAmounts
+
+                Crop.nameOf crop,
+                Option.bind (Fertilizer.nameOf >> Some) fertilizer,
+                profitPerHarvest * float numHarvests,
+                costPerHarvest * float numHarvests,
+                (1.0 + (numHarvests - 1 |> float) * model.FertilizerLossProb * giantProb) * float fertilizerCost ]
+
+      | ForageCrop f -> []
+      | Bush b ->
+          let numHarvests = Crop.harvestsWithin model.StartDate model.EndDate speed crop
+          [ if Seq.exists (fun (f, _, _) -> f = None) fertilizers && numHarvests > 0 then
+              let profitPerHarvest = bestSellPrice model Normal (activeProducts model None b.Crop)
+              let seedCost = bestPriceOption model b.Base.PriceFrom |> Option.get
+
+              Crop.nameOf crop,
+              None,
+              profitPerHarvest * float numHarvests,
+              float seedCost,
+              0.0 ]
+    
+    [ for crop in crops do
+        for c, f, profit, replantCost, fertCost in cropProfit crop ferts do
+          let netProfit =
+            profit
+            - if model.AccountForReplant then replantCost else 0.0
+            - if model.AccountForFertilizerCost then fertCost else 0.0 
+          
+          if model.ShowUnprofitableCombos || netProfit > 0.0 then
+            c,
+            f,
+            netProfit ]
+    |> List.sortByDescending (fun (_,_, p) -> p)
+
+  let fertilizerData model farmBuffLevel = function
+    | Some fert as f ->
+        f,
+        fert |> Fertilizer.priceFrom |> bestPriceOption model |> Option.get,
+        qualityDistribution fert.Quality farmBuffLevel
+    | None -> None, 0, qualityDistribution 0 farmBuffLevel
+
+  let validCrops model =
+    [ for KeyValue(_, crop) in model.Crops do
+        if cropActive model crop then
+          crop ]
+
+  let farmBuffLevel model = Skill.buffedLevel model.Skills.[Name "Farming"]
+
+  let allFertilizerData model =
+    validFertilizers model
+    |> listWithNone
+    |> List.map (fertilizerData model (farmBuffLevel model))
+
+  let doComboCompare model =
+    doCompare
+      model
+      (validCrops model)
+      (allFertilizerData model)
+
+  let doCropCompare model withFertilizer =
+    doCompare
+      model
+      (validCrops model)
+      [ fertilizerData model (farmBuffLevel model) withFertilizer ]
+
+  let doFertilizerCompare model withCrop =
+    doCompare
+      model
+      [ withCrop ]
+      (allFertilizerData model)
+
+
 
   let initial =
     { Page = Home
       SidebarTab = Skills
       SidebarOpen = false
 
-      Skills = Skill.all |> listToMap Skill.nameOf
+      Skills = Skill.all |> listToMapByKey Skill.nameOf
       SkillList = Skill.all |> List.map Skill.nameOf
       IgnoreProfessionRelationships = false
 
       BuySourceList = Source.all |> List.map Source.nameOf
-      BuySources = Source.all |> listToMap Source.nameOf
+      BuySources = Source.all |> listToMapByKey Source.nameOf
 
-      MatchConditions = MatchCondition.all |> listToMap MatchCondition.nameOf
+      MatchConditions = MatchCondition.all |> listToMapByKey MatchCondition.nameOf
       MatchConditionList = MatchCondition.all |> List.map MatchCondition.nameOf
 
-      Processors = Processor.all |> listToMap Processor.nameOf
+      Processors = Processor.all |> listToMapByKey Processor.nameOf
       ProcessorList = Processor.all |> List.map Processor.nameOf
 
       SellRawCrop = true
@@ -700,24 +844,27 @@ module Model =
 
       BuySeeds = true
       SeedMakerReplant = true
-      RawReplant = true
+      HarvestReplant = true
 
-      Crops = Crop.all |> listToMap Crop.nameOf
+      Crops = Crop.all |> listToMapByKey Crop.nameOf
       CropSort = Seasons
       CropSortAscending = true
+      CropList = Crop.all |> List.map Crop.nameOf
+      SelectedCrop = None
       ShowOutOfSeasonCrops = false
       AllowCropClearings = false
       AllowCrossSeason = true
       AccountForReplant = true
 
-      Fertilizers = Fertilizer.all |> listToMap Fertilizer.nameOf
+      Fertilizers = Fertilizer.all |> listToMapByKey Fertilizer.nameOf
       FertilizerSort = Speed
       FertilizerSortAscending = true
       FertilizerList = Fertilizer.all |> List.map Fertilizer.nameOf
+      SelectedFertilizer = None
       AccountForFertilizerCost = true
-      StartingFertilizer = None
+      FertilizerLossProb = 0.1
 
-      Multipliers = Multiplier.all |> listToMap Multiplier.nameOf
+      Multipliers = Multiplier.all |> listToMapByKey Multiplier.nameOf
       RawMultipliers =
         Multiplier.all
         |> List.filter Multiplier.isRawMultiplier
@@ -731,14 +878,33 @@ module Model =
           Day = 28 }
       Year = 1
 
+      CompareMode = Combos
+      ShowUnprofitableCombos = false
+      SelectedCombo = None
+
+      SelectedCompareCrop = None
+      CompareCropsUsingFertilizer = None
+
+      SelectedCompareFertilizer = None
+      CompareFertilizersUsingCrop = Crop.nameOf Crop.all.Head
+
+      StartingFertilizer = None
+
       ProfitMode = NetProfit
       Greenhouse = false
+
+      ShowTips = true
+      SaveSettings = false
 
       YearRequirementsShould = Warn
       SkillLevelRequirementsShould = Warn
 
       SpecialCharm = false
       LuckBuff = 0
+
+      TrelisPenalty = false
+      TrelisPercentage = 0.66
+      AllowTrelisPair = false
 
       BaseGiantCropChance = 0.01
       GiantCropChecksPerTile = 8.0

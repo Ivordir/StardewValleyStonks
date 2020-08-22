@@ -42,22 +42,16 @@ module MatchCondition =
     [ "Joja Membership" ]
     |> List.map create
 
+[<Fable.Core.StringEnum>]
 type RequirementsShould =
-  | Warn
-  | Invalidate
-  | Ignore
+  | [<CompiledName("Require")>] Require
+  | [<CompiledName("Warn")>] Warn
+  | [<CompiledName("Ignore")>] Ignore
 
 module RequirementsShould =
-  let parse str =
-    match str with
-    | "Warn" -> Warn
-    | "Invalidate" -> Invalidate
-    | "Ignore" -> Ignore
-    | _ -> invalidArg "str" (sprintf "'%s' does not correspond to a RequirementsShould." str)
-
   let all =
-    [ Warn
-      Invalidate
+    [ Require
+      Warn
       Ignore ]
 
 type Requirement =
@@ -67,9 +61,9 @@ type Requirement =
 module Requirement =
   let status isMet = function
     | Ignore -> Valid
-    | Warn | Invalidate when isMet -> Valid
+    | Warn | Require when isMet -> Valid
     | Warn -> Warning
-    | Invalidate -> Invalid
+    | Require -> Invalid
 
   let seedMaker = [ SkillLevel (Name "Farming", 9) ]
   let year2 = [ Year 2 ]
