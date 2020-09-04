@@ -4,12 +4,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="./Model/Types.fs" />
-    <Compile Include="./Model/Skills.fs" />
     <Compile Include="./Model/Price.fs" />
     <Compile Include="./Model/Fertilizer.fs" />
+    <Compile Include="./Model/Skills.fs" />
     <Compile Include="./Model/Items.fs" />
     <Compile Include="./Model/Crops.fs" />
     <Compile Include="./Model/Model.fs" />
+    <Compile Include="./Model/Data.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />

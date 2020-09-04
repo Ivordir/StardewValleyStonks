@@ -3,19 +3,9 @@ namespace StardewValleyStonks
 open Types
 
 type HarvestCrop =
-  { Item: Item
+  { Crop: Item
     SellRaw: Override
     Products: Map<NameOf<Processor>, Product> }
-
-module HarvestedCrop =
-  let crop harvestedCrop = harvestedCrop.Item
-
-  let nameOfCrop = crop >> Item.nameOf
-
-  let create item products =
-    { Item = item
-      SellRaw = None
-      Products = Product.createAll item products |> listToMapByKey Product.processor }
 
 type HarvestItem =
   { Item: HarvestCrop
@@ -46,7 +36,7 @@ type BaseCrop =
     SelectedSeasons: Set<Season>
     GrowthStages: int list
     TotalGrowthTime: int
-    GrowthMultipliers: Set<NameOf<Multiplier>>
+    GrowthMultipliers: Set<Multiplier>
     Seed: Item
     PriceFrom: Map<NameOf<Source>, Buy>
     BuySeeds: Override }
@@ -87,20 +77,40 @@ type Crop =
 
 type CropSort =
   | ByName
-  | Selected
   | Seasons
   | TotalGrowthTime
   | RegrowTime
   | SeedPrice
 
+type CreateCropItem =
+  | SellPrice of int
+  | CropItem of Item
+
+module CropItem =
+  let create name = function
+    | SellPrice price -> Item.createCrop name price
+    | CropItem item -> item 
+
 type CreateSeed =
   | SeedSell of int
   | Seed of Item
 
-type CreateCropItem =
-  | SellPrice of int
-  | CropItem of Item
-  | SameAsSeed
+module Seed =
+ let create name = function
+  | SeedSell price -> Item.create (name + " Seeds") price
+  | Seed item -> item
+
+module HarvestCrop =
+  let crop harvestCrop = harvestCrop.Crop
+
+  let nameOfCrop = crop >> Item.nameOf
+
+  let createWith item products =
+    { Crop = item
+      SellRaw = None
+      Products = Product.createAll item products |> toMapByKey Product.processor }
+
+  let create = CropItem.create >>| createWith
 
 module Crop =
   let private baseName crop = crop.Name
@@ -181,6 +191,33 @@ module Crop =
 
   let private toF32 = Fable.Core.JS.Constructors.Float32Array.Create 1
   // (x: float) |> float32 |> float doesn't actually do a conversion (thanks javascript...), so here we use typed arrays to achieve the same effect.
+  // This is necessary, because Stardew Valley passes speed around as a float32 which then gets coverted to a float, introducing some small error (or something like that).
+  // This small error is sometimes enough to give an extra day of reduction since the value is later passed into the ceiling function.
+  // Some case studies:
+  //       Case 1: 0.2f < 0.2
+  //   float32               -> float
+  //   0.2                   0.200000002980232
+  //   * 10.0 growth days    * 10.0 growth days
+  //   = 2.0                 = 2.00000002980232
+  //   |> ceil |> int        |> ceil |> int
+  //   = 2                   = 3 (not the same!)
+  //   This effect can be seen on crops with a total of 10 growth days (e.g green bean, coffee)
+  //   A 0.1 speed reduces the total time to 8 days (instead of 9),
+  //   and a 0.2 speed reduces the total time to 7 days (instead of 8).
+  //
+  //      Case 2: 0.25f = 0.25 (all numbers where 1/(2^n))
+  //  float32        -> float
+  //  0.25           0.25
+  //  ...   Same    ...
+  //
+  //      Case3: 0.35f > 0.35
+  //  float32               -> float
+  //  0.35                  0.349999994039536
+  //  * 20.0 growth days    * 20.0 growth days
+  //  = 7.0                 = 6.99999988079071
+  //  |> ceil |> int        |> ceil |> int
+  //  = 7                   = 7 (wouldn't be equal if a floor was used instead of ceil)
+
   let private toF32AndBack (value: float) =
     toF32.[0] <- float32 value
     float toF32.[0]
@@ -190,581 +227,260 @@ module Crop =
       totalGrowthTime crop
     else
       let growthStages = Array.ofList <| growthStages crop
-      let mutable maxReduction = ((speed |> toF32AndBack) * (totalGrowthTime crop |> float)) |> ceil |> int
+      let mutable reductionDays = (speed |> toF32AndBack) * (totalGrowthTime crop |> float) |> ceil |> int
       let mutable daysReduced = 0
       let mutable traverses = 0
-      while daysReduced < maxReduction && traverses < 3 do
+      while daysReduced < reductionDays && traverses < 3 do
         let mutable stage = 0
-        while daysReduced < maxReduction && stage < growthStages.Length do
-          if growthStages.[stage] > (if stage = 0 then 1 else 0) then
-            growthStages.[stage] <- growthStages.[stage] - 1
-            daysReduced <- daysReduced + 1
+        while daysReduced < reductionDays && stage < growthStages.Length do
+          if stage > 0 || growthStages.[stage] > 1 then
+            if growthStages.[stage] > 0 then
+              growthStages.[stage] <- growthStages.[stage] - 1
+              daysReduced <- daysReduced + 1
+            else
+              // A reduction day was wasted reducing a stage below 0 days.
+              reductionDays <- reductionDays - 1
           stage <- stage + 1
-        maxReduction <- maxReduction - 1
+        reductionDays <- reductionDays - 1
+        // Note the subtraction of a day of reduction after a full traverse.
+        // This is because Stardew Valley keeps a "shadow" growth stage of 99999 at the end of growth stage arrays.
+        // A day of reduction is wasted on this shadow stage every traverse, leading to a lower than expected reduction in growth time.
+        // For example, Cauliflower (growth time = 12 days) with 0.35 speed should be reduced by 12 * 0.35 = 4.2 |> ceil |> int = 5 days,
+        // but it is only actually reduced by 4 for a final growth time of 8 days.
         traverses <- traverses + 1
       totalGrowthTime crop - daysReduced
 
   let isInSeason startDate endDate crop =
-    selectedSeasons crop |> Set.minElement <= endDate.Season
-    && selectedSeasons crop |> Set.maxElement >= startDate.Season
+    let seasons = selectedSeasons crop
+    let isInRange = Season.isBetween startDate.Season endDate.Season
+    not seasons.IsEmpty
+    && startDate = endDate || isInRange seasons.MinimumElement || isInRange seasons.MaximumElement
 
-  let growthDays startDate endDate crop =
-    let rec helper sum season =
-      if selectedSeasons crop |> Set.contains season
-      then helper (sum + Date.daysIn season startDate endDate) (Season.next season)
-      else sum
-    (helper 0 (max startDate.Season (selectedSeasons crop |> Set.minElement))) - 1
+  let growthPeriods startDate endDate crop =
+    let maxSeasons = 1 + Season.distance startDate.Season endDate.Season
+    let mutable days = 0
+    let mutable seasonsPassed = 0
+    let mutable season = startDate.Season
+    seq {
+      while seasonsPassed < maxSeasons do
+        if selectedSeasons crop |> Set.contains season then
+          while seasonsPassed < maxSeasons && selectedSeasons crop |> Set.contains season do
+            days <- days + Date.daysIn season startDate endDate
+            season <- Season.next season
+            seasonsPassed <- seasonsPassed + 1
+          days - 1
+          days <- 0
+        else
+          season <- Season.next season
+          seasonsPassed <- seasonsPassed + 1
+    }
 
-  let harvestsWithin startDate endDate speed = function
-  | RegularCrop _ | GiantCrop _ | ForageCrop _ as crop -> (growthDays startDate endDate crop) / (growthTimeWith speed crop)
+  let harvestsWithin startDate endDate fertSpeed multiplierSpeed = function
+  | RegularCrop _ | GiantCrop _ | ForageCrop _ as crop ->
+      let growthTime = growthTimeWith (fertSpeed + multiplierSpeed) crop
+      Seq.sumBy (fun growthPeriod -> growthPeriod / growthTime) (growthPeriods startDate endDate crop)
   | RegrowCrop r as crop ->
-      let days = growthDays startDate endDate crop
-      let growthTime = growthTimeWith speed crop
-      if days < growthTime
-      then 0
-      else (days - growthTime) / r.RegrowTime + 1
+      let growthTime = growthTimeWith (fertSpeed + multiplierSpeed) crop
+      Seq.sumBy (fun growthPeriod ->
+        if growthPeriod < growthTime
+        then 0
+        else (growthPeriod - growthTime) / r.RegrowTime + 1)
+        (growthPeriods startDate endDate crop)
   | Bush b as crop ->
-      let matureDate = startDate + growthTimeWith speed crop
+      let matureDate = startDate + growthTimeWith multiplierSpeed crop
       // Does not provide accurate results if HarvestDayStart = 1 and HarvestDayEnd = 28
-      if matureDate > endDate then
+      if matureDate |> Date.isNotBetween startDate endDate then
         0
       elif matureDate.Day > b.HarvestDayStart then
         (b.HarvestDayEnd - matureDate.Day + 1) / b.RegrowTime
-        + (b.HarvestDayEnd - b.HarvestDayStart + 1) / b.RegrowTime * (endDate.Season - matureDate.Season)
+        + (b.HarvestDayEnd - b.HarvestDayStart + 1) / b.RegrowTime * Season.distance matureDate.Season endDate.Season
       else
-        (b.HarvestDayEnd - b.HarvestDayStart + 1) / b.RegrowTime * (matureDate.Season - endDate.Season + 1)
+        (b.HarvestDayEnd - b.HarvestDayStart + 1) / b.RegrowTime * (1 + Season.distance matureDate.Season endDate.Season)
 
-  let private createBase
+
+  let private createBaseWith
+    growthMultipliers
     name
-    (seasons: Season list)
-    growthStages
     seed
-    createPrices =
+    prices
+    (seasons: Season list)
+    growthStages =
     let seasonsSet = set seasons
     { Name = name
       Selected = true
       Seasons = seasonsSet
       SelectedSeasons = seasonsSet
       GrowthStages = growthStages
-      TotalGrowthTime = List.sum growthStages
-      GrowthMultipliers = Multiplier.agri
+      TotalGrowthTime = Seq.sum growthStages
+      GrowthMultipliers = growthMultipliers
       Seed = seed
-      PriceFrom = Buy.createAll seed.BasePrice createPrices |> listToMapByKey Buy.source
+      PriceFrom = Buy.createAll seed.BasePrice prices |> toMapByKey Buy.source
       BuySeeds = None }
 
-  let private createSeed name = function
-    | SeedSell price -> Item.create (name + " Seeds") price
-    | Seed item -> item
+  let private onlyAgri = set [ Multiplier.agri ]
 
-  let private createCropItem name seed = function
-    | SellPrice price -> Item.createCrop name price
-    | CropItem item -> item
-    | SameAsSeed -> seed
+  let private createBaseSeed = createBaseWith onlyAgri
 
-  let private createSeedAndCropItem name seed cropItem =
-    let createdSeed = createSeed name seed
-    createdSeed, createCropItem name createdSeed cropItem
+  let private createBase name seed = createBaseSeed name (Seed.create name seed)
 
-  let private createRegular
+
+  let private createRegularWith
+    harvestItem
     doubleCropChance
     extraCrops
     name
-    (seasons: Season list)
-    growthStages
     seed
     prices
+    seasons
+    growthStages
     cropItem
     products =
-    let createdSeed, createdCropItem = createSeedAndCropItem name seed cropItem
     RegularCrop
-      {| Base = createBase name seasons growthStages createdSeed prices
-         Crop = HarvestedCrop.create createdCropItem products
+      {| Base = createBaseSeed name seed prices seasons growthStages
+         Crop = HarvestCrop.create name cropItem products
          ExtraCrops = extraCrops
          DoubleCrops = doubleCropChance
          SeedMaker = SeedMaker.initial
-         HarvestItem = None |}
+         HarvestItem = harvestItem |}
 
-  let createAmount = createRegular true
+  let private createRegular doubleCropChance extraCrops name seed = createRegularWith None doubleCropChance extraCrops name (Seed.create name seed)
+
   let createScythe = createRegular false 0.0
+  let createAmount = createRegular true
   let create = createAmount 0.0
+
+  let private createHarvestItemAmount
+    doubleCropChance
+    extraCrops
+    harvestItem
+    harvestAmount
+    harvestProducts
+    name
+    seed =
+    match harvestItem with
+    | Some item ->
+        createRegularWith
+          (Some
+            { Amount = harvestAmount
+              Item = HarvestCrop.createWith item harvestProducts
+              Replant = None } )
+          doubleCropChance
+          extraCrops
+          name
+          (Seed.create name seed)
+    | None ->
+        let createdSeed = Seed.create name seed
+        createRegularWith
+          (Some
+            { Amount = harvestAmount
+              Item = HarvestCrop.createWith createdSeed harvestProducts
+              Replant = Some None } )
+          doubleCropChance
+          extraCrops
+          name
+          createdSeed
+
+  let private createHarvestItemWith = createHarvestItemAmount false 0.0
+
+  let createHarvestItem = createHarvestItemWith << Some
+  let createHarvestReplant = createHarvestItemWith None
+
 
   let private createRegrowCrop
     indoorsOnly
     trelis
     extraCrops
     name
+    seed
+    prices
     seasons
     growthStages
     regrowTime
-    seed
-    createPrices
     cropItem
     products =
-    let createdSeed, createdCropItem = createSeedAndCropItem name seed cropItem
     RegrowCrop
-      {| Base = createBase name seasons growthStages createdSeed createPrices
+      {| Base = createBase name seed prices seasons growthStages 
          RegrowTime = regrowTime
-         Crop = HarvestedCrop.create createdCropItem products
+         Crop = HarvestCrop.create name cropItem products
          ExtraCrops = extraCrops
          Trelis = trelis
          IndoorsOnly = indoorsOnly
-         Replant =
-           if cropItem = SameAsSeed then
-             RawPlant None
-           else
-             SeedMakerPlant SeedMaker.initial |}
+         Replant = SeedMakerPlant SeedMaker.initial |}
 
   let private createOutdoors = createRegrowCrop false
-  let createTrelis = createOutdoors true 0.0
+  
+  let private createTrelisAmount = createOutdoors true
+  let createTrelis = createTrelisAmount 0.0
+
   let createRegrow = createOutdoors false
   let createRegrowNoExtra = createRegrow 0.0
 
-  let createGiantCrop
+  let private createRegrowCropHarvestReplant
+    indoorsOnly
+    trelis
+    extraCrops
     name
-    season
-    growthStages
     seed
-    createPrices
-    cropItem
-    products =
-    let createdSeed, createdCropItem = createSeedAndCropItem name seed cropItem
-    GiantCrop
-      {| Base = createBase name [ season ] growthStages createdSeed createPrices
-         Crop = HarvestedCrop.create createdCropItem products
-         SeedMaker = SeedMaker.initial |}
-
-  let createWithHarvestItem
-    name
+    prices
     seasons
     growthStages
-    seed
-    createPrices
-    cropItem
-    products
-    harvestItem
-    harvestProducts
-    harvestAmount =
-    let createdSeed, createdCropItem = createSeedAndCropItem name seed cropItem
-    let createdHarvestItem = createCropItem name createdSeed cropItem
-    RegularCrop
-      {| Base = createBase name seasons growthStages createdSeed createPrices
-         Crop = HarvestedCrop.create createdCropItem products
-         ExtraCrops = 0.0
-         DoubleCrops = false
-         SeedMaker = SeedMaker.initial
-         HarvestItem =
-           Some
-             { Amount = harvestAmount
-               Item = HarvestedCrop.create createdHarvestItem harvestProducts
-               Replant = if harvestItem = SameAsSeed then Some None else None } |}
+    regrowTime
+    products =
+    let createdSeed = Seed.create name seed
+    RegrowCrop
+      {| Base = createBaseSeed name createdSeed prices seasons growthStages 
+         RegrowTime = regrowTime
+         Crop = HarvestCrop.createWith createdSeed products
+         ExtraCrops = extraCrops
+         Trelis = trelis
+         IndoorsOnly = indoorsOnly
+         Replant = RawPlant None |}
 
-  let private createBush
+  let createRegrowHarvestReplant = createRegrowCropHarvestReplant false false
+
+
+  let createGiantCrop
     name
+    seed
+    prices
+    seasons
+    growthStages
+    cropItem
+    products =
+    GiantCrop
+      {| Base = createBase name seed prices seasons growthStages
+         Crop = HarvestCrop.create name cropItem products
+         SeedMaker = SeedMaker.initial |}
+
+
+  let createBush
+    name
+    seed
+    prices
     seasons
     growthStages
     regrowTime
     harvestDayStart
     harvestDayEnd
-    seed
-    createPrices
     cropItem
     products =
-    let createdSeed, createdCropItem = createSeedAndCropItem name seed cropItem
     Bush
-      {| Base = createBase name seasons growthStages createdSeed createPrices
+      {| Base = createBaseWith Set.empty name (Seed.create name seed) prices seasons growthStages
          RegrowTime = regrowTime
          HarvestDayStart = harvestDayStart
          HarvestDayEnd = harvestDayEnd
-         Crop = HarvestedCrop.create createdCropItem products |}
+         Crop = HarvestCrop.create name cropItem products |}
+
 
   let withExtraChance chance = 1.0 / (1.0 - min chance 0.9) - 1.0
   let withYield cropYield = cropYield - 1 |> float
   let withExtraCrops cropYield extraChance = withYield cropYield + withExtraChance extraChance
 
-  let all =
-    [ create
-        "Blue Jazz"
-        [ Spring ]
-        [ 1; 2; 2; 2 ]
-        (Seed <| Item.create "Jazz Seeds" 15)
-        PierreAndJoja
-        (SellPrice 50)
-        NoProduct
-
-      createGiantCrop
-        "Cauliflower"
-        Spring
-        [ 1; 2; 4; 4; 1 ]
-        (SeedSell 40)
-        PierreAndJoja
-        (SellPrice 175)
-        Vegetable
-
-      createRegrow
-        (withExtraCrops 4 0.02)
-        "Coffee"
-        [ Spring; Summer ]
-        [ 1; 2; 2; 3; 2 ]
-        2
-        (Seed <| Item.create "Coffee Bean" 15)
-        (PriceList [ Buy.create 2500 "Traveling Merchant" ] )
-        SameAsSeed
-        (ProductList [ Product.createRatio 5 "Keg" (Item.create "Coffee" 150) 1.0 ] )
-
-      create
-        "Garlic"
-        [ Spring ]
-        [ 1; 1; 1; 1 ]
-        (SeedSell 20)
-        (PriceList [ Buy.createYear2 40 "Pierre" ] )
-        (SellPrice 60)
-        Vegetable
-
-      createTrelis
-        "Green Bean"
-        [ Spring ]
-        [ 1; 1; 1; 3; 4 ]
-        3
-        (Seed <| Item.create "Bean Starter" 30)
-        PierreAndJoja
-        (SellPrice 40)
-        Vegetable
-
-      createScythe
-        "Kale"
-        [ Spring ]
-        [ 1; 2; 2; 1 ]
-        (SeedSell 35)
-        PierreAndJoja
-        (SellPrice 110)
-        Vegetable
-
-      create
-        "Parsnip"
-        [ Spring ]
-        [ 1; 1; 1; 1 ]
-        (SeedSell 10)
-        PierreAndJoja
-        (SellPrice 35)
-        Vegetable
-
-      createAmount
-        (withExtraChance 0.2)
-        "Potato"
-        [ Spring ]
-        [ 1; 1; 1; 2; 1 ]
-        (SeedSell 25)
-        PierreAndJoja
-        (SellPrice 80)
-        Vegetable
-
-      create
-        "Rhubarb"
-        [ Spring ]
-        [ 2; 2; 2; 3; 4]
-        (SeedSell 50)
-        Oasis
-        (SellPrice 220)
-        Fruit
-
-      createRegrow
-        (withExtraChance 0.02)
-        "Strawberry"
-        [ Spring ]
-        [ 1; 1; 2; 2; 2 ]
-        4
-        (SeedSell 0)
-        (PriceList [ Buy.create 100 "Pierre" ] )
-        (SellPrice 120)
-        Fruit
-
-      create
-        "Tulip"
-        [ Spring ]
-        [ 1; 1; 2; 2 ]
-        (Seed <| Item.create "Tulip Bulb" 10)
-        PierreAndJoja
-        (SellPrice 30)
-        NoProduct
-
-      createAmount
-        (withExtraChance 0.1)
-        "Rice"
-        [ Spring ]
-        [ 1; 2; 2; 3 ]
-        (Seed <| Item.create "Rice Shoot" 20)
-        Pierre
-        (CropItem <| Item.createCrop "Unmilled Rice" 30)
-        (CreateAndList (Vegetable, [ Product.create "Mill" (Item.create "Rice" 100) ] ))
-      |> addGrowthMultiplier (Name "Irrigated")
-
-      createRegrow
-        (withExtraCrops 3 0.02)
-        "Blueberry"
-        [ Summer ]
-        [ 1; 3; 3; 4; 2 ]
-        4
-        (SeedSell 40)
-        Pierre
-        (SellPrice 50)
-        Fruit
-
-      createRegrowNoExtra
-        "Corn"
-        [ Summer; Fall ]
-        [ 2; 3; 3; 3; 3 ]
-        4
-        (SeedSell 75)
-        PierreAndJoja
-        (SellPrice 50)
-        (CreateAndList (Vegetable, [ Product.oil ] ))
-
-      createTrelis
-        "Hops"
-        [ Summer ]
-        [ 1; 1; 2; 3; 4 ]
-        4
-        (Seed <| Item.create "Hops Starter" 30)
-        PierreAndJoja
-        (SellPrice 25)
-        (CreateAndList (Jar Pickle, [ Product.createKeg "Pale Ale" 300 ] ))
-
-      createRegrow
-        (withExtraChance 0.03)
-        "Hot Pepper"
-        [ Summer ]
-        [ 1; 1; 1; 1; 1 ]
-        3
-        (Seed <| Item.create "Pepper Seeds" 20)
-        PierreAndJoja
-        (SellPrice 40)
-        Fruit
-
-      createGiantCrop
-        "Melon"
-        Summer
-        [ 1; 2; 3; 3; 3 ]
-        (SeedSell 40)
-        PierreAndJoja
-        (SellPrice 250)
-        Fruit
-
-      create
-        "Poppy"
-        [ Summer ]
-        [ 1; 2; 2; 2 ]
-        (SeedSell 50)
-        PierreAndJoja
-        (SellPrice 140)
-        NoProduct
-
-      create
-        "Radish"
-        [ Summer ]
-        [ 2; 1; 2; 1 ]
-        (SeedSell 20)
-        PierreAndJoja
-        (SellPrice 90)
-        Vegetable
-
-      create
-        "Red Cabbage"
-        [ Summer ]
-        [ 2; 1; 2; 2; 2 ]
-        (SeedSell 50)
-        (PriceList [ Buy.createYear2 100 "Pierre" ] )
-        (SellPrice 260)
-        Vegetable
-
-      create
-        "Starfruit"
-        [ Summer ]
-        [ 2; 3; 2; 3; 3 ]
-        (SeedSell 200)
-        Oasis
-        (SellPrice 750)
-        Fruit
-
-      create
-        "Summer Spangle"
-        [ Summer ]
-        [ 1; 2; 3; 2 ]
-        (Seed <| Item.create "Spangle Seeds" 25)
-        PierreAndJoja
-        (SellPrice 90)
-        NoProduct
-
-      let oilProduct = ProductList [ Product.oil ]
-      createWithHarvestItem
-        "Sunflower"
-        [ Summer; Fall ]
-        [ 1; 2; 3; 2 ]
-        (SeedSell 20)
-        (PriceList
-          [ Buy.create 200 "Pierre"
-            Buy.create 125 "Joja" ] )
-        (SellPrice 80)
-        oilProduct
-        SameAsSeed
-        oilProduct
-        1.0
-
-      createRegrow
-        (withExtraChance 0.05)
-        "Tomato"
-        [ Summer ]
-        [ 2; 2; 2; 2; 3 ]
-        4
-        (SeedSell 25)
-        PierreAndJoja
-        (SellPrice 60)
-        Fruit
-
-      createWithHarvestItem
-        "Wheat"
-        [ Summer; Fall ]
-        [ 1; 1; 1; 1 ]
-        (SeedSell 5)
-        PierreAndJoja
-        (SellPrice 25)
-        (CreateAndList
-          ( Jar Pickle,
-            [ Product.createKeg "Beer" 200
-              Product.create "Mill" (Item.create "Wheat Flour" 50) ] ))
-        (CropItem <| Item.create "Hay" 50)
-        NoProduct
-        0.4
-
-      createScythe
-        "Amaranth"
-        [ Fall ]
-        [ 1; 2; 2; 2 ]
-        (SeedSell 35)
-        PierreAndJoja
-        (SellPrice 150)
-        Vegetable
-
-      create
-        "Artichoke"
-        [ Fall ]
-        [ 2; 2; 1; 2; 1 ]
-        (SeedSell 15)
-        (PriceList [ Buy.createYear2 30 "Pierre" ] )
-        (SellPrice 160)
-        Vegetable
-
-      create
-        "Beet"
-        [ Fall ]
-        [ 1; 1; 2; 2 ]
-        (SeedSell 10)
-        Oasis
-        (SellPrice 100)
-        (CreateAndList (Vegetable, [ Product.createRatio 1 "Mill" (Item.create "Sugar" 50) 3.0 ] ))
-
-      create
-        "Bok Choy"
-        [ Fall ]
-        [ 1; 1; 1; 1 ]
-        (SeedSell 25)
-        PierreAndJoja
-        (SellPrice 80)
-        Vegetable
-
-      createRegrow
-        (withExtraCrops 2 0.1)
-        "Cranberries"
-        [ Fall ]
-        [ 1; 2; 1; 1; 2 ]
-        5
-        (SeedSell 60)
-        (JojaWith <| Price.create 240 "Pierre")
-        (SellPrice 75)
-        Fruit
-
-      createRegrow
-        (withExtraChance 0.002)
-        "Eggplant"
-        [ Fall ]
-        [ 1; 1; 1; 1; 1 ]
-        5
-        (SeedSell 10)
-        PierreAndJoja
-        (SellPrice 60)
-        Vegetable
-
-      create
-        "Fairy Rose"
-        [ Fall ]
-        [ 1; 4; 4; 3 ]
-        (Seed <| Item.create "Fairy Seeds" 100)
-        PierreAndJoja
-        (SellPrice 290)
-        NoProduct
-
-      createTrelis
-        "Grape"
-        [ Fall ]
-        [ 1; 1; 2; 3; 3 ]
-        3
-        (Seed <| Item.create "Grape Starter" 30)
-        PierreAndJoja
-        (SellPrice 30)
-        Fruit
-
-      createGiantCrop
-        "Pumpkin"
-        Fall
-        [ 1; 2; 3; 4; 3 ]
-        (SeedSell 50)
-        PierreAndJoja
-        (SellPrice 320)
-        Vegetable
-
-      create
-        "Sweet Gem Berry"
-        [ Fall ]
-        [ 2; 4; 6; 6; 6 ]
-        (Seed <| Item.create "Rare Seed" 200)
-        (PriceList [ Buy.create 1000 "Traveling Merchant" ] )
-        (CropItem <| Item.create "Sweet Gem Berry" 3000)
-        NoProduct
-
-      create
-        "Yam"
-        [ Fall ]
-        [ 1; 3; 3; 3 ]
-        (SeedSell 30)
-        PierreAndJoja
-        (SellPrice 160)
-        Vegetable
-
-      createRegrowNoExtra
-        "Ancient Fruit"
-        [ Spring; Summer; Fall ]
-        [ 2; 7; 7; 7; 5 ]
-        7
-        (Seed <| Item.create "Ancient Seeds" 30)
-        NoPrice
-        (SellPrice 550)
-        Fruit
-
-      createBush
-        "Tea"
-        [ Spring; Summer; Fall ]
-        [ 10; 10 ]
-        1
-        22
-        28
-        (Seed <| Item.create "Tea Sapling" 500)
-        (PriceList [ Buy.create 100 "Crafting" ])
-        (CropItem <| Item.createCrop "Tea Leaves" 50)
-        (CreateAndList (Vegetable, [ Product.createKeg "Green Tea" 100 ] )) ]
 
 type Sell =
-  | RawCrop of Crop: Item
+  | RawCrop of Item
   | Product of Product
-  | SeedsFromSeedMaker of Seed: Item
+  | SeedsFromSeedMaker of Item
 
 type Replant =
   | BuySeeds

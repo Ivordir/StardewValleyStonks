@@ -12,19 +12,21 @@ type Fertilizer =
 
 type FertilizerSort =
   | ByName
-  | Selected
   | Quality
   | Speed
   | Price
 
 module Fertilizer =
   let name fertilizer = fertilizer.Name
-  let nameOfOption = optionToString name
+  
+  let none = "No Fertilizer"
+
+  let nameOfOption = ofNameOptionWith<Fertilizer> none
   let selected fertilizer = fertilizer.Selected
   let quality fertilizer = fertilizer.Quality
-  let qualityOfOption = optionMapDefault quality 0
+  let qualityOfOption = defaultProjection 0 quality
   let speed fertilizer = fertilizer.Speed
-  let speedOfOption = optionMapDefault speed 0.0
+  let speedOfOption = defaultProjection 0.0 speed
   let priceFrom fertilizer = fertilizer.PriceFrom
 
   let nameOf = toNameOf name
@@ -41,33 +43,30 @@ module Fertilizer =
       Selected = true
       Quality = quality
       Speed = speed
-      PriceFrom = prices |> listToMapByKey Buy.source }
+      PriceFrom = prices |> toMapByKey Buy.source }
 
-  let all =
-    [ create
-        "Basic Fertilizer"
-        1
-        0.0
-        [ Buy.create 100 "Pierre" ]
+type Comparison =
+  | Better
+  | Equal
+  | Worse
 
-      create
-        "Quality Fertilizer"
-        2
-        0.0
-        [ Buy.createYear2 150 "Pierre" ]
+module Comparison =
+  let ofInt = function
+    | 0 -> Equal
+    | x when x > 0 -> Better
+    | _ -> Worse
 
-      create
-        "Speed-Gro"
-        0
-        0.1
-        [ Buy.create 100 "Pierre" ]
-
-      create
-        "Deluxe Speed-Gro"
-        0
-        0.25
-        [ Buy.createYear2 150 "Pierre"
-          Buy.create 80 "Oasis" ] ]
+  let overall = function
+    | [] -> None
+    | first::rest ->
+        let rec helper comparison list =
+          match list with
+          | [] -> Some comparison
+          | head::tail ->
+              match ofInt head with
+              | Equal -> helper comparison tail
+              | x -> if x = comparison then helper comparison tail else None
+        helper (ofInt first) rest
 
 type CacheFertilizer =
   { Fertilizer: Fertilizer
@@ -79,5 +78,4 @@ module CacheFertilizer =
     [ if comparePrice then compare b.Price a.Price
       compare a.Fertilizer.Quality b.Fertilizer.Quality
       compare a.Fertilizer.Speed b.Fertilizer.Speed ]
-    |> List.map Comparison.ofInt
     |> Comparison.overall

@@ -2,10 +2,22 @@ namespace StardewValleyStonks
 
 open Types
 
+[<Fable.Core.StringEnum>]
+type RequirementPolicy =
+  | [<CompiledName("Enforce")>] Enforce
+  | [<CompiledName("Warn")>] Warn
+  | [<CompiledName("Ignore")>] Ignore
+
+module RequirementPolicy =
+  let all =
+    [ Enforce
+      Warn
+      Ignore ]
+
 type Processor =
   { Name: string
     Selected: bool
-    Requirements: Requirement list
+    SkillUnlock: SkillUnlock option
     PreservesQuality: bool }
   member this.Toggle = { this with Selected = not this.Selected }
   member this.TogglePreservesQuality = { this with PreservesQuality = not this.PreservesQuality }
@@ -15,89 +27,69 @@ module Processor =
 
   let nameOf = toNameOf name
 
-  let create name requirements =
+  let private createWith unlock name =
     { Name = name
       Selected = true
-      Requirements = requirements
+      SkillUnlock = unlock
       PreservesQuality = false }
 
-  let all =
-    [ create "Preserves Jar" [ SkillLevel (Name "Farming", 4) ]
-      create "Keg" [ SkillLevel (Name "Farming", 8) ]
-      create "Oil Maker" [ SkillLevel (Name "Farming", 8) ]
-      create "Mill" [] ]
+  let create name skill level = createWith (Some <| SkillUnlock.create skill level) name
+  let createNoUnlock = createWith None
 
-type Quality =
-  | Normal
-  | Silver
-  | Gold
-  | Iridium
 
-module Quality =
-  let multiplier = function
-    | Normal -> 1.0
-    | Silver -> 1.25
-    | Gold -> 1.5
-    | Iridium -> 2.0
+type RawMultiplier =
+  { Name: string
+    Value: float
+    Selected: bool }
 
-  let common =
-    [ Normal
-      Silver
-      Gold ]
+module RawMultiplier =
+  let name (multiplier: RawMultiplier) = multiplier.Name
+  
+  let nameOf = toNameOf name
 
-  let all =
-    [ Normal
-      Silver
-      Gold
-      Iridium ]
+  let create name value =
+    { Name = name
+      Value = value 
+      Selected = false }
+
+type ProfessionMultiplier =
+  { Skill: Skills
+    Profession: NameOf<Profession>
+    Value: float }
+
+module ProfessionMultiplier =
+  let name multiplier = ofName multiplier.Profession
+
+  let nameOf multiplier = multiplier.Profession
+
+  let create skill name value =
+      { Skill = skill
+        Profession = Name name
+        Value = value }
 
 type Multiplier =
-  | RawMultiplier of
-      {| Name: string
-         Value: float
-         Selected: bool |}
-  | Profession of
-      {| Skill: NameOf<Skill>
-         Profession: NameOf<Profession>
-         Value: float |}
+  | Raw of NameOf<RawMultiplier>
+  | Profession of Skills * NameOf<Profession>
 
 module Multiplier =
   let name = function
-    | RawMultiplier m -> m.Name
-    | Profession p -> ofName p.Profession
+    | Raw r -> ofName r
+    | Profession (_, p) -> ofName p
 
   let nameOf = toNameOf name
 
-  let isRawMultiplier = function
-    | RawMultiplier _ -> true
-    | Profession _ -> false
+  let raw = Name >> Raw
 
-  let createRaw name value =
-    RawMultiplier
-      {| Name = name
-         Selected = false
-         Value = value |}
+  let profession skill profession = Profession (skill, Name profession)
 
-  let createProfession skill name value =
-    Profession
-      {| Skill = Name skill
-         Profession = Name name
-         Value = value |}
-
-  let all =
-    [ createProfession "Farming" "Tiller" 1.1
-      createProfession "Farming" "Artisan" 1.4
-      createProfession "Farming" "Agriculturist" 0.1
-      createProfession "Foraging" "Gatherer" 1.2
-      createRaw "Irrigated" 1.1
-      createRaw "Bear's Knowledge" 3.0 ]
-
-  let agri: Set<NameOf<Multiplier>> = set [ Name "Agriculturist" ]
+  let tiller = profession Farming "Tiller"
+  let agri = profession Farming "Agriculturist"
+  let artisan = profession Farming "Artisan"
 
 type Item =
   { Name: string
     BasePrice: int
-    Multiplier: NameOf<Multiplier> option }
+    Multiplier: Multiplier option }
 
 module Item =
   let name item = item.Name
@@ -109,14 +101,14 @@ module Item =
       BasePrice = -1
       Multiplier = None }
 
-  let createWith multiplier name basePrice =
+  let private createWith multiplier name basePrice =
     { Name = name
       BasePrice = basePrice
       Multiplier = multiplier }
 
   let create = createWith None
-  let createCrop = createWith (Some <| Name "Tiller")
-  let createArtisan = createWith (Some <| Name "Artisan")
+  let createCrop = createWith (Some Multiplier.tiller)
+  let createArtisan = createWith (Some Multiplier.artisan)
 
 type Process =
   { Processor: NameOf<Processor>
@@ -149,8 +141,8 @@ type CreateProducts =
   | Vegetable
   | Keg of KegProduct
   | Jar of JarProduct
-  | ProductList of Product list
-  | CreateAndList of CreateProducts * Product list
+  | Products of Product list
+  | CreateAndAlso of CreateProducts * Product list
   | NoProduct
 
 module Product =
@@ -180,7 +172,7 @@ module Product =
     | FromProcess p -> p.ProcessorOverride
     | RatioProcess r -> r.Process.ProcessorOverride
 
-  let create processor output = FromProcess <| Process.create processor output
+  let create = Process.create >>| FromProcess
 
   let createRatio inputAmount processor output outputAmount =
     RatioProcess
@@ -195,7 +187,7 @@ module Product =
 
   let createKegProduct (cropItem: Item) = function
     | Wine -> createKeg (cropItem.Name + " Wine") (cropItem.BasePrice * 3)
-    | Juice -> createKeg (cropItem.Name + " Juice") (2.25 |> applyTo cropItem.BasePrice)
+    | Juice -> createKeg (cropItem.Name + " Juice") (cropItem.BasePrice |> apply 2.25)
 
   let createJarProduct (cropItem: Item) = function
     | Jam -> createJar (cropItem.Name + " Jam") (cropItem.BasePrice * 2 + 50)
@@ -210,8 +202,6 @@ module Product =
           createJarProduct cropItem Pickle ]
     | Keg product -> [ createKegProduct cropItem product ]
     | Jar product -> [ createJarProduct cropItem product ]
-    | ProductList list -> list
-    | CreateAndList (products, list) -> createAll cropItem products @ list
-    | NoProduct -> List.empty
-
-  let oil = create "Oil Maker" (Item.create "Oil" 100)
+    | Products list -> list
+    | CreateAndAlso (products, list) -> createAll cropItem products @ list
+    | NoProduct -> []

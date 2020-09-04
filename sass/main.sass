@@ -17,17 +17,31 @@ body
   font-family: StardewValley, Nunito, Helvetica, sans-serif
   font-size: 2em
 
-  --table-header-height: 3em
+  --sidebar-width: 40%
 
 %pixel-art
   image-rendering: pixelated
   image-rendering: -moz-crisp-edges
   image-rendering: crisp-edges
 
-.checkbox-img
+.pixel-img
   @extend %pixel-art
   width: 1em
   height: 1em
+
+.checkbox
+  &-label
+    cursor: pointer
+
+    & > input
+      visibility: hidden
+      position: absolute
+
+  &-img
+    @extend .pixel-img
+    
+    &:hover
+      transform: scale(1.1)
 
 .fertilizer-img
   @extend %pixel-art
@@ -71,6 +85,9 @@ body
 footer
   background: black
 
+.app
+  --sidebar-transition-speed: 0.25s
+
 .cover
   position: fixed
   left: 0
@@ -82,20 +99,21 @@ footer
   visibility: hidden
   transition: opacity var(--sidebar-transition-speed), visibility var(--sidebar-transition-speed)
 
-  &--open
-    @extend .cover
-    opacity: 1
-    visibility: visible
-
+%sidebar-body
+  display: flex
+  flex-direction: column
+  height: 100%
+  opacity: 1
+  visibility: hidden
+  transition: opacity var(--sidebar-transition-speed), visibility var(--sidebar-transition-speed)
 
 .sidebar
   background-color: lightblue
-  width: 40%
+  width: var(--sidebar-width)
   height: 100%
   position: fixed
   top: 0
   z-index: 50
-  --sidebar-transition-speed: 0.25s
   transform: translateX(-100%)
   transition: transform var(--sidebar-transition-speed)
 
@@ -103,79 +121,85 @@ footer
     @extend .sidebar
     transform: translateX(0%)
 
-.sidebar-content
-  display: flex
-  height: 100%
-  flex-direction: column
-  justify-content: space-around
-  opacity: 1
-  visibility: hidden
-  transition: opacity var(--sidebar-transition-speed), visibility var(--sidebar-transition-speed)
+  &-table
+    @extend %sidebar-body
+    --table-filters-height: 10%
+    --fertilizer-settings-height: 35%
 
-  //overflow: auto
+  &-info
+    @extend %sidebar-body
+    justify-content: space-between
 
-  &--open
-    @extend .sidebar-content
-    opacity: 1
-    visibility: visible
+  &-content
+    @extend %sidebar-body
+    justify-content: space-around
 
-.sidebar-tabs
-  @extend %list
-  position: absolute
-  left: 100%
-  top: 50%
-  transform: translateY(-50%)
+  &-tabs
+    @extend %list
+    position: absolute
+    left: 100%
+    top: 50%
+    transform: translateY(-50%)
+  
+  &-tab
+    color: white
+    background-color: gray
+    border: 1px solid black
+    padding: 5px 10px 5px 10px
+    cursor: pointer
+    width: 3.75em
+    text-align: center
+    border-radius: 0 5px 5px 0
 
-.sidebar-tab
-  color: white
-  background-color: gray
-  border: 1px solid black
-  padding: 5px 10px 5px 10px
-  cursor: pointer
-  width: 3.75em
-  text-align: center
-  border-radius: 0 5px 5px 0
+    &--active
+      @extend .sidebar-tab
+      color: black
+      width: 4.25em
 
-  &--active
-    @extend .sidebar-tab
-    color: black
-    width: 4.25em
-
-  &:hover
-    width: 4.75em
+    &:hover
+      width: 4.75em
 
 .skills
   @extend %list
-  overflow-y: auto
 
-.skill
-  display: flex
-  flex-direction: column
+  & > li
+    display: flex
+    flex-direction: column
 
-  &-header
-    text-align: center
+    & > span
+      text-align: center
 
-  &-input
-    color: brown
-    text-align: left
+      & > img
+        @extend %pixel-art
+        width: 1em
+        height: 1em
 
-  &-number-input
-    font-family: Stardew Valley
+    & > label
+      color: brown
+      text-align: left
 
-  &-range-input
-    font-family: Stardew Valley
+      & > input[type="number"]
+        font-family: Stardew Valley
 
+      & > input[type="range"]
+        font-family: Stardew Valley
 
 .professions
   display: flex
-  flex-direction: column
-  align-items: center
+  justify-content: center
+  flex-wrap: wrap
+  
+  & > div
+    display: flex
+    width: 50%
+    align-items: center
 
-.profession-row
-  display: flex
+    & > div
+      width: 50%
 
 .profession
-  width: 7.5em
+  display: block
+  width: 100%
   height: 2.5em
   font-size: 0.75em
   color: purple
@@ -189,6 +213,9 @@ footer
   &--error
     @extend .profession
     color: red
+
+.quality
+  display: inline-block
 
 .source-tabs
   @extend %list
@@ -234,36 +261,72 @@ footer
     background-color: red
     display: block
 
-.sidebar-table-content
-  @extend .sidebar-content
-  justify-content: space-between
+.season-slot
+  display: inline-block
+  width: 25%
 
-  &--open
-    @extend .sidebar-table-content
-    opacity: 1
-    visibility: visible
+.season
+  @extend %pixel-art
+  @extend .season-slot
+
+.fertilizer-settings
+  display: flex
+  flex-direction: column
+  justify-content: space-around
+  flex-grow: 1
 
 .table
-  table-layout: fixed
+  display: flex
+  flex-direction: column
 
-  &-body-container
-    margin-top: var(--table-header-height)
-    overflow: auto
+  &-filters
+    height: var(--table-filters-height)
 
-  & > tbody
-    & > tr
-      & > td
-        padding: 0
-        overflow: hidden
+  &-crop
+    @extend .table
+    height: calc(100% - var(--table-filters-height))
+
+  &-fertilizer
+    @extend .table
+    max-height: calc(100% - var(--fertilizer-settings-height))
+
+  %table-style
+    table-layout: fixed
+    border-collapse: collapse
 
   &-header
-    table-layout: fixed
-    & > thead
-    position: absolute
-    top: 0
+    @extend %table-style
     width: 100%
-    height: var(--table-header-height)
     background-color: lavender
 
-    & > tr
-      & > th
+    & > thead
+      & > tr
+        & > th
+          cursor: auto
+
+  &-body
+    @extend %table-style
+
+    &-container
+      overflow: auto
+
+    & > tbody
+      & > tr
+        cursor: pointer
+
+        &:hover
+          background-color: blue
+
+        & > td
+          padding: 0
+          overflow: visible
+
+.disabled
+  opacity: 0.5
+
+.open
+  opacity: 1
+  visibility: visible
+
+.hidden
+  display: none
