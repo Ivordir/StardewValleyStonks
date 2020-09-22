@@ -141,7 +141,7 @@ type CreateProducts =
   | Vegetable
   | Keg of KegProduct
   | Jar of JarProduct
-  | Products of Product list
+  | ProductList of Product list
   | CreateAndAlso of CreateProducts * Product list
   | NoProduct
 
@@ -202,6 +202,6 @@ module Product =
           createJarProduct cropItem Pickle ]
     | Keg product -> [ createKegProduct cropItem product ]
     | Jar product -> [ createJarProduct cropItem product ]
-    | Products list -> list
+    | ProductList list -> list
     | CreateAndAlso (products, list) -> createAll cropItem products @ list
     | NoProduct -> []

@@ -3,6 +3,20 @@ namespace StardewValleyStonks
 open Types
 
 [<Fable.Core.StringEnum>]
+type CropTab =
+  | [<CompiledName("Growth")>] Growth
+  | [<CompiledName("Seed Prices")>] SeedPrices
+  | [<CompiledName("Products")>] Products
+  | [<CompiledName("Replant")>] Replants
+
+module CropTab =
+  let all =
+    [ Growth
+      SeedPrices
+      Products
+      Replants ]
+
+[<Fable.Core.StringEnum>]
 type Mode =
   | [<CompiledName("Compare")>] Compare
   | [<CompiledName("Plan")>] Plan
@@ -23,7 +37,6 @@ module Mode =
     [ Compare
       Plan
       Find ]
-
 
 type Page =
   | Home
@@ -125,6 +138,7 @@ type Model =
     CropSortAscending: bool
     CropList: NameOf<Crop> list
     SelectedCrop: NameOf<Crop> option
+    CropTab: CropTab
     ShowOutOfSeasonCrops: bool
     ShowInvalidCrops: bool
     AllowCropClearings: bool
@@ -269,25 +283,22 @@ module Model =
     | Farming -> Skill.farmingDistribution skill
     | Foraging -> Skill.foargeDistribution (Name "Botanist" |> professionActive model Foraging) skill
 
-  let multiplierValue defaultValue model = function
-    | Raw r ->
-        let multiplier = model.RawMultipliers.[r]
-        if multiplier.Selected
-        then multiplier.Value
-        else defaultValue
-    | Profession (s, p) ->
-        if professionActive model s p
-        then model.ProfessionMultipliers.[p].Value
-        else defaultValue
+  let multiplierActive model = function
+    | Raw r -> model.RawMultipliers.[r].Selected
+    | Profession (s, p) -> professionActive model s p
 
-  let growthMultiplierValue = multiplierValue 0.0
-  let priceMultiplierValue = multiplierValue 1.0
+  let multiplierValue model = function
+    | Raw r -> model.RawMultipliers.[r].Value
+    | Profession (_, p) -> model.ProfessionMultipliers.[p].Value
 
-  let growthMultipler model crop =
+  let growthMultipler model =
+    Crop.growthMultipliers >>
     Set.fold (fun sum multiplier ->
-      sum + growthMultiplierValue model multiplier)
+      if multiplierActive model multiplier then
+        sum + multiplierValue model multiplier
+      else
+        sum)
       0.0
-      (Crop.growthMultipliers crop)
 
   let cropIsInSeason model = Crop.isInSeason model.StartDate model.EndDate
 
@@ -383,7 +394,7 @@ module Model =
 
   let itemPrice model item =
     match item.Multiplier with
-    | Some m -> item.BasePrice |> apply (priceMultiplierValue model m)
+    | Some m -> item.BasePrice |> applyWhen (multiplierActive model m) (multiplierValue model m)
     | None -> item.BasePrice
 
   let qualityPrice = itemPrice >>| flip Quality.multiply

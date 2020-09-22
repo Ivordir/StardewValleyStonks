@@ -19,8 +19,10 @@ module Types =
   let inline flip f a b = f b a
 
   let inline swap (a, b) = b, a
- 
-  let inline swapWhen condition = if condition then swap else id
+
+  let inline conditional func condition = if condition then func else id
+
+  let inline whenever condition func = if condition then func else id
 
   let inline defaultProjection defaultValue projection = function
     | Some x -> projection x
@@ -67,6 +69,15 @@ module Types =
 
   let listWithNone list = None::(List.map Some list)
 
+  let listToStringWith toString = function
+    | [] -> ""
+    | head::tail ->
+        List.fold (fun text value ->
+          text + ", " + toString value)
+          (toString head)
+          tail
+
+  let inline listToString list = listToStringWith string list
 
   let inline apply multiplier (value: int) = multiplier * float value |> int
 
@@ -78,7 +89,7 @@ module Types =
     | None -> map.Add(key, Set.singleton value)
 
 
-  let inline allExtremes empty singleton add extreme projection items =
+  let inline allExtremes empty singleton add moreExtreme projection items =
     if Seq.isEmpty items then
       empty
     else
@@ -89,7 +100,7 @@ module Types =
         let thisExtreme = projection x
         if thisExtreme = currentExtreme then
           extremes <- extremes |> add x
-        elif extreme thisExtreme currentExtreme then
+        elif moreExtreme thisExtreme currentExtreme then
           extremes <- singleton x
           currentExtreme <- thisExtreme
       extremes
@@ -117,7 +128,7 @@ module Seasons =
   let winter = Season.Winter
 
 module Season =
-  // Normal 'string' function returns the int value and not the name.
+  // Normal 'string' function returns the stringified int value and not the name.
   let name season = System.Enum.GetName(typeof<Season>, season)
 
   let add value (season: Season) =
@@ -162,7 +173,7 @@ module Date =
   let validDay = clamp 1 28
 
   let daysIn season startDate endDate =
-    if startDate = endDate then 28
+    if startDate = endDate then 28 // full year, infinite mode
     elif season |> Season.isNotBetween startDate.Season endDate.Season then 0
     elif startDate.Season = endDate.Season then endDate.Day - startDate.Day + 1
     elif season = startDate.Season then 29 - startDate.Day

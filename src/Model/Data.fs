@@ -96,11 +96,11 @@ let crops =
       (withExtraCrops 4 0.02)
       "Coffee"
       (Seed <| Item.create "Coffee Bean" 15)
-      (Prices [ Buy.create 2500 "Traveling Merchant" ] )
+      (PriceList [ Buy.create 2500 "Traveling Merchant" ] )
       [ spring; summer ]
       [ 1; 2; 2; 3; 2 ]
       2
-      (Products [ Product.createRatio 5 "Keg" (Item.create "Coffee" 150) 1.0 ] )
+      (ProductList [ Product.createRatio 5 "Keg" (Item.create "Coffee" 150) 1.0 ] )
 
     create
       "Garlic"
@@ -162,7 +162,7 @@ let crops =
       (withExtraChance 0.02)
       "Strawberry"
       (SeedSell 0)
-      (Prices [ Buy.create 100 "Pierre" ] )
+      (PriceList [ Buy.create 100 "Pierre" ] )
       [ spring ]
       [ 1; 1; 2; 2; 2 ]
       4
@@ -285,13 +285,13 @@ let crops =
       (SellPrice 90)
       NoProduct
 
-    let oilProduct = Products [ oil ]
+    let oilProduct = ProductList [ oil ]
     createHarvestReplant
       1.0
       oilProduct
       "Sunflower"
       (SeedSell 20)
-      (Prices
+      (PriceList
         [ Buy.create 200 "Pierre"
           Buy.create 125 "Joja" ] )
       [ summer; fall ]
@@ -414,7 +414,7 @@ let crops =
     create
       "Sweet Gem Berry"
       (Seed <| Item.create "Rare Seed" 200)
-      (Prices [ Buy.create 1000 "Traveling Merchant" ] )
+      (PriceList [ Buy.create 1000 "Traveling Merchant" ] )
       [ fall ]
       [ 2; 4; 6; 6; 6 ]
       (CropItem <| Item.create "Sweet Gem Berry" 3000)
@@ -442,7 +442,7 @@ let crops =
     createBush
       "Tea"
       (Seed <| Item.create "Tea Sapling" 500)
-      (Prices [ Buy.create 100 "Crafting" ] )
+      (PriceList [ Buy.create 100 "Crafting" ] )
       [ spring; summer; fall ]
       [ 10; 10 ]
       1
@@ -485,6 +485,7 @@ let initialModel page =
     CropSortAscending = true
     CropList = crops |> List.map Crop.nameOf
     SelectedCrop = None
+    CropTab = Growth
     ShowOutOfSeasonCrops = false
     ShowInvalidCrops = true
     AllowCropClearings = false

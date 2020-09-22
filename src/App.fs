@@ -33,6 +33,7 @@ type Message =
   | ToggleCropSelected of NameOf<Crop>
   | SetCropSort of CropSort
   | SetSelectedCrop of NameOf<Crop> option
+  | SetCropTab of CropTab
   | ToggleShowOutOfSeasonCrops
   | ToggleShowInvalidCrops
   | ToggleAllowCropClearings
@@ -126,6 +127,7 @@ let update message model =
             CropSort = sort
             CropSortAscending = true }, []
   | SetSelectedCrop crop -> { model with SelectedCrop = crop }, []
+  | SetCropTab tab -> { model with CropTab = tab }, []
   | ToggleShowOutOfSeasonCrops -> { model with ShowOutOfSeasonCrops = not model.ShowOutOfSeasonCrops }, []
   | ToggleShowInvalidCrops -> { model with ShowInvalidCrops = not model.ShowInvalidCrops }, []
   | ToggleAllowCropClearings -> { model with AllowCropClearings = not model.AllowCropClearings }, []
@@ -183,15 +185,11 @@ open Fable.React
 open Fable.React.Props
 open Elmish.React.Helpers
 
-let inline append suffix text = text + suffix
-let colon = append ":"
-let gold (price: int) = string price |> append "g"
-let percent value = value * 100.0 |> string |> append "%"
+let gold (price: int) = string price + "g"
+let percent value = string (value * 100.0) + "%"
 let percent2 value = sprintf "%.2f%%" (value * 100.0)
 
 let strOption text = ofOption <| Option.bind (str >> Some) text
-let strOptionWith append text = ofOption <| Option.bind (append >> str >> Some) text
-let strOptionColon = strOptionWith colon
 
 let classModifier baseClass modifier apply =
   ClassName <| if apply then baseClass + "--" + modifier else baseClass
@@ -211,44 +209,30 @@ let checkboxCss css alsoDisplay (message: Message) isChecked dispatch =
 
 let checkboxWith = checkboxCss (ClassName "checkbox-label")
 
-let checkboxDisabled2With alsoDisplay disabled =
+let checkboxDisabledWith alsoDisplay disabled =
   checkboxCss (classBase "checkbox-label" "disabled" disabled) alsoDisplay
-
-let checkboxDisabled2 = checkboxDisabled2With []
-
-let checkboxDisabledText2 text = checkboxDisabled2With [ str text ]
-
-let checkbox = checkboxWith []
-
-let checkboxText text = checkboxWith [ str text ]
-
-let checkboxDisabledWith alsoDisplay (message: Message) disabled isChecked dispatch =
-  label [ classBase "checkbox-label" "disabled" disabled ]
-    ( [ input
-          [ Type "checkbox"
-            Checked isChecked
-            Disabled disabled
-            OnChange <| fun _ -> dispatch message ]
-        img [ Src <| if isChecked then "img/UI/CheckboxGreen.png" else "img/UI/Checkbox.png" ] ]
-      @ alsoDisplay)
 
 let checkboxDisabled = checkboxDisabledWith []
 
 let checkboxDisabledText text = checkboxDisabledWith [ str text ]
 
-let viewTab toString css message tab active dispatch =
+let checkbox = checkboxWith []
+
+let checkboxText text = checkboxWith [ str text ]
+
+let viewTab toString message tab active dispatch =
   li
-    [ classModifier (css + "-tab") "active" active
+    [ if active then ClassName "active"
       OnClick <| fun _ -> dispatch <| message tab ]
     [ str <| toString tab ]
 
-let viewTabsWith activeFun toString css message list dispatch =
-  ul [ ClassName <| css + "-tabs" ]
+let viewTabsWith toString css message list activeFun dispatch =
+  ul [ ClassName css ]
     [ for tab in list do
-        viewTab toString css message tab (activeFun tab) dispatch ]
+        viewTab toString message tab (activeFun tab) dispatch ]
 
-let viewTabs css message list currentTab dispatch =
-  viewTabsWith ((=) currentTab) css message list dispatch
+let inline viewTabs css message list currentTab =
+  viewTabsWith string css message list ((=) currentTab)
 
 let warningIcon =
   img
@@ -260,18 +244,9 @@ let errorIcon =
     [ ClassName "alert"
       Src "img/UI/Error.png" ]
 
-let levelInput mode name level dispatch =
-  input
-    [ Type mode
-      Min 0
-      Max 10
-      valueOrDefault level
-      ClassName <| "skill-" + mode + "-input"
-      OnBlur <| fun l -> dispatch <| SetSkillLevel (name, !!l.Value) ]
-
 let skillLevelInput name level dispatch =
   label []
-    [ str <| colon "Level"
+    [ str "Level:"
       input
         [ Type "range"
           Min 0
@@ -287,7 +262,7 @@ let skillLevelInput name level dispatch =
 
 let skillBuffInput name buff dispatch =
   label []
-    [ str <| colon "Buff"
+    [ str "Buff:"
       input
         [ Type "number"
           Min 0
@@ -298,16 +273,13 @@ let profession requirementsShould profession skill dispatch =
   let selected = skill.Professions.[profession].Selected
   let unlocked = profession |> Profession.isUnlocked skill
   button
-    [ classBaseList
-        "profession"
-        [ "profession--active", selected
+    [ classList
+        [ "active", selected
           "disabled", not unlocked && requirementsShould = Enforce ]
       OnClick <| fun _ -> dispatch <| ToggleProfession (Skill.which skill, profession) ]
     [ if selected && not unlocked && requirementsShould = Warn then
         warningIcon
-      img
-        [ ClassName "profession-img"
-          Src <| "img/Skills/" + ofName profession + ".png" ]
+      img [ Src <| "img/Skills/" + ofName profession + ".png" ]
       str <| ofName profession ]
 
 let professionTree requirementsShould tree skill dispatch =
@@ -316,7 +288,7 @@ let professionTree requirementsShould tree skill dispatch =
         [ profession requirementsShould tree.Level5Profession skill dispatch ]
       match tree.Level10Profession with
       | NoLevel10 -> nothing
-      | Single p -> 
+      | Single p ->
           div []
             [ profession requirementsShould p skill dispatch ]
       | Pair (l, r) ->
@@ -330,14 +302,13 @@ let viewProfessions requirementsShould skill dispatch =
         professionTree requirementsShould tree skill dispatch ]
 
 let viewDistribution (dist: Map<_,_>) =
-  div [ Style [ Width "100%" ] ]
+  div [ ClassName "quality-distribution" ]
     [ for KeyValue(quality, prob) in dist do
         div
-          [ ClassName "quality"
-            Style
+          [ Style
               [ Width (percent prob)
                 BackgroundColor (Quality.color quality) ] ]
-          [ str <| (string quality + ": " + percent2 prob) ] ]
+          [ str <| string quality + ": " + percent2 prob ] ]
 
 let viewSkillDistribution = Model.distribution >>| viewDistribution
 
@@ -376,7 +347,7 @@ let replants model dispatch =
 
 let selectBase toValue (toString: 't -> _) parse list text (message: 't -> _) (value: 't) dispatch =
   label []
-    [ strOptionColon text
+    [ strOption text
       select
         [ valueOrDefault <| toValue value
           OnChange <| fun x -> dispatch <| message (parse x.Value) ]
@@ -390,7 +361,7 @@ let selectWith toString = selectBase toString toString
 let inline selectParse parse = selectWith string parse
 
 // For types that erase into strings (i.e. [<StringEnum>] and [<Erase>] on DU's)
-let inline selectString list = selectWith string (!!) list
+let inline selectString list = selectParse (!!) list
 
 let inline selectStringOptionWith none list = selectWith (optionToStringWith none string) (stringToOptionWith none (!!)) (listWithNone list)
 
@@ -398,28 +369,34 @@ let inline selectStringOption list = selectWith (optionToString string) (stringT
 
 let selectFertilizerOption = selectStringOptionWith Fertilizer.none
 
-let viewPrice model (priceFrom: Map<_,_>) price =
-  [ img
-      [ ClassName "price-img"
-        Src <| "img/BuyAndSell/" + Buy.sourceName price + ".png" ]
-    match price with
-    | BuyPrice p -> str <| gold p.Value
-    | RelativePrice r ->
-        let multiplier = model.PriceMultipliers.[r.Multiplier]
-        let a, b =
-          let basePrice = Model.priceValue model priceFrom r.RelativeTo
-          (basePrice, basePrice |> apply multiplier.Value)
-          |> swapWhen (not multiplier.MultiplyWhenSelected)
-        if multiplier.Selected then
-          span [ Style [ TextDecoration "line-through" ] ]
-            [ str <| gold a ]
-          span []
-            [ str <| gold b ]
-        else
-          span []
-            [ str <| gold a ] ]
+let viewPrice model (priceFrom: Map<_,_>) source price =
+  li [ if not <| Model.priceActive model source price then ClassName "disabled" ]
+    [ img
+        [ ClassName "price-img"
+          Src <| "img/BuyAndSell/" + Buy.sourceName price + ".png" ]
+      match price with
+      | BuyPrice p -> str <| gold p.Value
+      | RelativePrice r ->
+          let multiplier = model.PriceMultipliers.[r.Multiplier]
+          let a, b =
+            let basePrice = Model.priceValue model priceFrom r.RelativeTo
+            (basePrice, basePrice |> apply multiplier.Value)
+            |> conditional swap (not multiplier.MultiplyWhenSelected)
+          if multiplier.Selected then
+            span [ Style [ TextDecoration "line-through" ] ]
+              [ str <| gold a ]
+            span []
+              [ str <| gold b ]
+          else
+            span []
+              [ str <| gold a ] ]
 
 let viewPrices model (priceFrom: Map<_,_>) =
+  ul []
+    [ for KeyValue(source, price) in priceFrom do
+        viewPrice model priceFrom source price ]
+
+let viewPriceIcons model (priceFrom: Map<_,_>) =
   if priceFrom.IsEmpty then
     [ str "N/A" ]
   else
@@ -446,27 +423,23 @@ let dayInput message day dispatch =
 
 let date text seasonMsg dayMsg date dispatch =
   div [ ClassName "date" ]
-    [ str <| colon text
+    [ str <| text + ":"
       selectBase int Season.name ((!!) >> enum<Season>) Season.all None seasonMsg date.Season dispatch
       dayInput dayMsg date.Day dispatch ]
 
-let viewTable tableCss columns sortMessage selectMsg toKey disabled items dispatch =
+let viewTable tableCss columns toKey disabled items =
   div [ ClassName tableCss ]
     [ let colGroup =
         colgroup []
-          [ for width, _,_,_ in columns do
+          [ for width, _,_ in columns do
               col [ Style [ Width (percent width) ] ] ]
 
       table [ ClassName "table-header" ]
         [ colGroup
           thead []
             [ tr []
-                [ for _, header, sort, _ in columns do
-                    th
-                      (match sort with
-                       | Some s -> [ OnClick <| fun _ -> dispatch <| sortMessage s ]
-                       | None -> [] )
-                      header ] ] ]
+                [ for _, header, _ in columns do
+                    yield header ] ] ]
 
       div [ ClassName "table-body-container" ]
         [ table [ ClassName "table-body" ]
@@ -477,11 +450,15 @@ let viewTable tableCss columns sortMessage selectMsg toKey disabled items dispat
                         tr
                           [ if disabled item then ClassName "disabled"
                             Key <| toKey item ]
-                          [ td []
-                              (Seq.head columns |> fun (_,_,_, property) -> property item)
-                            for _,_,_, property in Seq.skip 1 columns do
-                              td [ OnClick <| fun _ -> dispatch <| selectMsg item ]
-                                (property item) ] ] ] ] ] ]
+                          [ for _,_, dataCell in columns do
+                              yield dataCell item ] ] ] ] ] ]
+
+let tableHeaderCell sortMsg dispatch header sort =
+  th [ OnClick <| fun _ -> dispatch <| sortMsg sort ] header
+
+let tableCell select dispatch property item =
+  td [ OnClick <| fun _ -> dispatch <| select item ]
+    (property item)
 
 let tableImage imgPath name item =
   [ img
@@ -491,6 +468,11 @@ let tableImage imgPath name item =
 
 let tableCheckbox selectedMsg toNameOf selected dispatch item =
   [ checkbox (selectedMsg <| toNameOf item) (selected item) dispatch ]
+
+let viewGrowthMultiplier imgPath active name =
+  div [ if not active then ClassName "disabled" ]
+    [ img [ Src imgPath ]
+      str <| ofName name ]
 
 let sidebarContent model dispatch =
   [ match model.SidebarTab with
@@ -517,39 +499,86 @@ let sidebarContent model dispatch =
                 "open", model.SidebarOpen ] ]
           [ div [ ClassName "table-filters" ]
               [ checkboxText "Show Invalid Crops" ToggleShowInvalidCrops model.ShowInvalidCrops dispatch
-                checkboxDisabledText2 "Show Out of Season Crops" (not model.ShowInvalidCrops) ToggleShowOutOfSeasonCrops model.ShowOutOfSeasonCrops dispatch ]
+                checkboxDisabledText "Show Out of Season Crops" (not model.ShowInvalidCrops) ToggleShowOutOfSeasonCrops model.ShowOutOfSeasonCrops dispatch ]
+            let cropCell = tableCell (Crop.nameOf >> Some >> SetSelectedCrop) dispatch
+            let cropHeaderCell = tableHeaderCell SetCropSort dispatch
             viewTable
               "table-crop"
-              [ 0.05, [ str "" ], None, tableCheckbox ToggleCropSelected Crop.nameOf Crop.selected dispatch
-                0.4, [ str "Crop" ], Some CropSort.ByName, tableImage Crop.image Crop.name
-                0.1, [ str "Growth Time" ], Some TotalGrowthTime, Crop.totalGrowthTime >> ofInt >> List.singleton
-                0.1, [ str "Regrow Time" ], Some RegrowTime, Crop.regrowTime >> Option.bind (ofInt >> Some) >> ofOption >> List.singleton
-                0.15, [ str "Seasons" ], Some Seasons, fun crop ->
-                  [ for season in Season.all do
-                      if Crop.seasons crop |> Set.contains season then
-                        img
-                          [ classBase "season" "disabled" (Crop.selectedSeasons crop |> Set.contains season |> not)
-                            Src <| "img/Seasons/" + Season.name season + ".png" ]
-                      else
-                        span [ ClassName "season-slot" ] [] ]
-                0.20, [ str "Seed Price" ], Some SeedPrice, Crop.priceFrom >> viewPrices model ]
-              SetCropSort
-              (Crop.nameOf >> Some >> SetSelectedCrop)
+              [ 0.05, th [] [ str "" ], tableCheckbox ToggleCropSelected Crop.nameOf Crop.selected dispatch >> td []
+                0.4, cropHeaderCell [ str "Crop" ] CropSort.ByName, cropCell (tableImage Crop.image Crop.name)
+                0.1, cropHeaderCell [ str "Growth Time" ] TotalGrowthTime, cropCell (Crop.totalGrowthTime >> ofInt >> List.singleton)
+                0.1, cropHeaderCell [ str "Regrow Time" ] RegrowTime, cropCell (Crop.regrowTime >> Option.bind (ofInt >> Some) >> ofOption >> List.singleton)
+                0.15, cropHeaderCell [ str "Seasons" ] Seasons,
+                  cropCell
+                    (fun crop ->
+                      [ for season in Season.all do
+                          if Crop.seasons crop |> Set.contains season then
+                            img
+                              [ classBase "season" "disabled" (Crop.selectedSeasons crop |> Set.contains season |> not)
+                                Src <| "img/Seasons/" + Season.name season + ".png" ]
+                          else
+                            span [ ClassName "season-slot" ] [] ] )
+                0.20, cropHeaderCell [ str "Seed Price" ] SeedPrice, cropCell (Crop.priceFrom >> viewPriceIcons model) ]
               Crop.name
               (Model.cropValid model >> not)
-              (Model.sortedCrops model)
-              dispatch ]
+              (Model.sortedCrops model) ]
 
         match model.SelectedCrop with
         | Some crop ->
             let crop = model.Crops.[crop]
             div [ classBase "sidebar-info" "open" model.SidebarOpen ]
               [ div []
-                  (tableImage Crop.imageOfName ofName (Option.get model.SelectedCrop))
-                ul []
-                    [ for KeyValue(_, price) in Crop.priceFrom crop do
-                        li []
-                          (viewPrice model (Crop.priceFrom crop) price) ]
+                  [ yield! tableImage Crop.imageOfName ofName (Option.get model.SelectedCrop)
+                    ofOption (Option.bind (str >> Some) (Crop.flags crop)) ]
+                
+                viewTabs "crop-tabs" SetCropTab CropTab.all model.CropTab dispatch
+
+                let baseCrop = Crop.baseCrop crop
+
+                match model.CropTab with
+                | Growth ->
+                    ul []
+                      [ str "Seasons:"
+                        for season in baseCrop.Seasons do
+                          li []
+                            [ img
+                                [ classBase "season" "disabled" (not <| baseCrop.SelectedSeasons.Contains season)
+                                  Src <| "img/Seasons/" + Season.name season + ".png" 
+                                  OnClick <| ignore ] ] ]
+                    div []
+                      [ str <| sprintf "Growth Time: %i (%s)" baseCrop.TotalGrowthTime (baseCrop.GrowthStages |> listToString) ]
+                    match Crop.regrowTime crop with
+                    | Some time ->
+                        div []
+                          [ str <| sprintf "Regrow Time: %i" time ]
+                    | None -> nothing
+                    if not baseCrop.GrowthMultipliers.IsEmpty then
+                      div []
+                        [ str "Growth Multipliers:"
+                          ul []
+                            [ for multipler in baseCrop.GrowthMultipliers do 
+                                li []
+                                  [ match multipler with
+                                    | Profession (skill, name) ->
+                                        viewGrowthMultiplier ("img/Skills/" + ofName name + ".png") (Model.professionActive model skill name) name
+                                    | Raw name ->
+                                        viewGrowthMultiplier ("img/Multipliers/" + ofName name + ".png") (model.RawMultipliers.[name].Selected) name ] ] ]
+                    match crop with
+                    | Bush b ->
+                        div []
+                          [ str <| sprintf "Harvest Days: %i - %i" b.HarvestDayStart b.HarvestDayEnd ]
+                    | _ -> nothing
+                | SeedPrices ->
+                    div []
+                      [ div []
+                          [ str "Seed Prices:"
+                            viewPrices model baseCrop.PriceFrom ]
+                        div []
+                          [ str "Best Seed Price(s):"
+                            yield! viewPriceIcons model baseCrop.PriceFrom ] ]
+                | Products -> span [] []
+                | Replants -> span [] []
+
                 button [ OnClick <| fun _ -> dispatch <| SetSelectedCrop None ]
                   [ str "Back" ] ]
         | None -> nothing
@@ -561,19 +590,18 @@ let sidebarContent model dispatch =
               "sidebar-table"
               [ "hidden", model.SelectedFertilizer.IsSome
                 "open", model.SidebarOpen ] ]
-          [ viewTable
+          [ let fertilizerCell = tableCell (Fertilizer.nameOf >> Some >> SetSelectedFertilizer) dispatch
+            let fertilizerHeaderCell = tableHeaderCell SetFertilizerSort dispatch
+            viewTable
               "table-fertilizer"
-              [ 0.05, [ str "" ], None, tableCheckbox ToggleFertilizerSelected Fertilizer.nameOf Fertilizer.selected dispatch
-                0.5, [ str "Fertilizer" ], Some FertilizerSort.ByName, tableImage Fertilizer.image Fertilizer.name
-                0.1, [ str "Quality" ], Some Quality, Fertilizer.quality >> ofInt >> List.singleton
-                0.1, [ str "Speed Bonus" ], Some Speed, Fertilizer.speed >> percent >> str >> List.singleton
-                0.25, [ str "Price" ], Some Price, Fertilizer.priceFrom >> viewPrices model ]
-              SetFertilizerSort
-              (Fertilizer.nameOf >> Some >> SetSelectedFertilizer)
+              [ 0.05, th [] [ str "" ], tableCheckbox ToggleFertilizerSelected Fertilizer.nameOf Fertilizer.selected dispatch >> td []
+                0.5, fertilizerHeaderCell [ str "Fertilizer" ] FertilizerSort.ByName, fertilizerCell (tableImage Fertilizer.image Fertilizer.name)
+                0.1, fertilizerHeaderCell [ str "Quality" ] Quality, fertilizerCell (Fertilizer.quality >> ofInt >> List.singleton)
+                0.1, fertilizerHeaderCell [ str "Speed Bonus" ] Speed, fertilizerCell (Fertilizer.speed >> percent >> str >> List.singleton)
+                0.25, fertilizerHeaderCell [ str "Price" ] Price, fertilizerCell (Fertilizer.priceFrom >> viewPriceIcons model) ]
               Fertilizer.name
               (Model.fertilizerValid model >> not)
               (Model.sortedFertilizers model)
-              dispatch
 
             div [ ClassName "fertilizer-settings" ]
               [ checkboxText "Account for Fertilizer Cost" ToggleAccountForFertilizerCost model.AccountForFertilizerCost dispatch
@@ -590,10 +618,21 @@ let sidebarContent model dispatch =
             div [ classBase "sidebar-info" "open" model.SidebarOpen ]
               [ div []
                   (tableImage Fertilizer.image Fertilizer.name fertilizer)
-                ul []
-                  [ for KeyValue(_, price) in fertilizer.PriceFrom do
-                      li []
-                        (viewPrice model fertilizer.PriceFrom price) ]
+                div []
+                  [ span [] [ str <| sprintf "Quality: %i" fertilizer.Quality ]
+                    span [] [ str <| sprintf "Speed Bonus: %s" (percent fertilizer.Speed) ] ]
+                div []
+                  [ str "Crop Quality Distribution:"
+                    Skill.farmingDistributionWith fertilizer model.Skills.[Farming]
+                    |> viewDistribution ]
+                if not fertilizer.PriceFrom.IsEmpty then
+                  div []
+                    [ div []
+                        [ str "Prices:"
+                          viewPrices model fertilizer.PriceFrom ]
+                      div []
+                        [ str "Best Price(s):"
+                          yield! viewPriceIcons model fertilizer.PriceFrom ] ]
                 button [ OnClick <| fun _ -> dispatch <| SetSelectedFertilizer None ]
                   [ str "Back" ] ]
         | None -> nothing
@@ -634,7 +673,7 @@ let sidebarContent model dispatch =
             selectString RequirementPolicy.all (Some "Skill Level Unlocks") SetSkillLevelPolicy model.SkillLevelPolicy dispatch
             checkboxText "Special Charm" ToggleSpecialCharm model.SpecialCharm dispatch
             label [ ClassName "setting-input" ]
-              [ str <| colon "Luck Buff"
+              [ str "Luck Buff:"
                 input
                   [ Type "number"
                     Min 0
@@ -642,7 +681,7 @@ let sidebarContent model dispatch =
                     ClassName "setting-number-input"
                     OnChange <| fun b -> dispatch <| SetLuckBuff !!b.Value ] ]
             label [ ClassName "setting-input" ]
-              [ str <| colon "Giant Crop Checks Per Tile"
+              [ str "Giant Crop Checks Per Tile:"
                 input
                   [ Type "number"
                     Min 0.0
@@ -663,26 +702,14 @@ let sidebarContent model dispatch =
                         (buyAndSellIcon <| ofName processor)
                         (TogglePreservesQuality processor)
                         model.Processors.[processor].PreservesQuality
-                        dispatch
-                      // label
-                      //   [ ClassName "checkbox-label" ]
-                      //   ( [ input
-                      //         [ Type "checkbox"
-                      //           Disabled <| not model.QualityProducts
-                      //           Checked model.Processors.[processor].PreservesQuality
-                      //           OnChange <| fun _ -> dispatch <| TogglePreservesQuality processor ]
-                      //       img
-                      //         [ ClassName "checkbox-img"
-                      //           Src <| if model.Processors.[processor].PreservesQuality then "img/UI/CheckboxGreen.png" else "img/UI/Checkbox.png" ] ]
-                      //     @ ) 
-                          ] ]
+                        dispatch ] ]
             checkboxText "Quality Seed Maker" ToggleQualitySeedMaker model.QualitySeedMaker dispatch
-            str <| colon "(Average) Seed Amounts"
+            str "(Average) Seed Amounts:"
             ul []
               [ for KeyValue(quality, amount) in model.QualitySeedMakerAmounts do
                   li []
                     [ label [ classBase "" "disabled" (not model.QualitySeedMaker) ]
-                        [ str <| colon (string quality)
+                        [ str <| string quality + ":"
                           input
                             [ Type "number"
                               Min 0
@@ -698,14 +725,14 @@ let cover sidebarOpen dispatch =
 
 let sidebar model dispatch =
   div [ classModifier "sidebar" "open" model.SidebarOpen ]
-    [ viewTabsWith (fun t -> model.SidebarOpen && t = model.SidebarTab) string "sidebar" SetSidebarTab SidebarTab.all dispatch
+    [ viewTabsWith string "sidebar-tabs" SetSidebarTab SidebarTab.all (fun t -> model.SidebarOpen && t = model.SidebarTab) dispatch
       yield! sidebarContent model dispatch ]
 
 let view model dispatch =
   match model.Page with
   | Home ->
       div []
-        [ str <| colon "Select a mode"
+        [ str "Select a mode:"
           for mode in Mode.all do
             a [ Href (mode |> Mode |> Page.url) ]
               [ button [ ClassName "mode" ]

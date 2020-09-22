@@ -59,7 +59,7 @@ type CreatePrices =
   | JojaWith of PierrePrice: Price
   | PierreAndJoja
   | Oasis
-  | Prices of Buy list
+  | PriceList of Buy list
   | NoPrice
 
 module Buy =
@@ -96,7 +96,7 @@ module Buy =
         [ createBuySeed seedSellPrice "Pierre"
           joja ]
     | Oasis -> [ createBuySeed seedSellPrice "Oasis" ]
-    | Prices prices -> prices
+    | PriceList prices -> prices
     | NoPrice -> []
 
 type Quality =

@@ -144,6 +144,18 @@ module Crop =
   let priceFrom = baseCrop >> basePriceFrom
   let buySeedsOverride = baseCrop >> baseBuySeedsOverride
 
+  let flags = function
+    | RegularCrop _ -> None
+    | RegrowCrop r ->
+        match r.Trelis, r.IndoorsOnly with
+        | true, true -> Some "Trelis, Indoors Only"
+        | true, false -> Some "Trelis"
+        | false, true -> Some "Indoors Only"
+        | false, false -> None
+    | GiantCrop _ -> Some "Giant Crop"
+    | ForageCrop _ -> Some "Forage Crop"
+    | Bush _ -> Some "Bush"
+
   let regrowTime = function
     | RegrowCrop r -> Some r.RegrowTime
     | Bush t -> Some t.RegrowTime
