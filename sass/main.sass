@@ -1,0 +1,312 @@
+@font-face
+  font-family: Stardew Valley
+  src: url('../public/Stardew Valley.woff2') format('woff2'), url('../public/Stardew Valley.woff') format('woff')
+
+@font-face
+  font-family: Stardew Valley Dialogue
+  src: url('../public/Stardew Valley Dialogue.woff2') format('woff2'), url('../public/Stardew Valley Dialogue.woff') format('woff')
+
+body
+  background-color: antiquewhite
+  margin: 0
+  font-family: Stardew Valley, Nunito, Helvetica, sans-serif
+  font-size: 2em
+  --sidebar-transition-speed: 0.25s
+  --sidebar-width: 40%
+
+ul
+  list-style: none
+  padding: 0
+  margin: 0
+
+%pixel-art
+  image-rendering: pixelated
+  image-rendering: -moz-crisp-edges
+  image-rendering: crisp-edges
+
+.pixel-img
+  @extend %pixel-art
+  width: 1em
+  height: 1em
+
+.checkbox
+  &-label
+    cursor: pointer
+
+    & > input
+      visibility: hidden
+      position: absolute
+
+    & > img
+      @extend .pixel-img
+      
+      &:hover
+        transform: scale(1.1)
+
+.settings
+  & > ul
+    display: flex
+    flex-direction: row
+
+    & > li
+      color: white
+      background-color: gray
+      border: 1px solid black
+      padding: 5px 10px 5px 10px
+      cursor: pointer
+      width: 3.75em
+      text-align: center
+      border-radius: 0 5px 5px 0
+
+      &.active
+        color: black
+        width: 4.25em
+
+      &:hover
+        width: 4.75em
+
+  & > .skills
+    & > ul
+      & > li
+        display: flex
+        flex-direction: column
+
+        & > span
+          text-align: center
+
+          & > img
+            @extend %pixel-art
+            width: 1em
+            height: 1em
+
+        & > label
+          color: brown
+          text-align: left
+
+          & > input[type="number"]
+            font-family: Stardew Valley
+
+          & > input[type="range"]
+            font-family: Stardew Valley
+  
+  & > .fertilizer
+    width: 100%
+
+
+.professions
+  display: flex
+  width: 50%
+  align-items: center
+
+  & > div
+    width: 50%
+
+    & > button
+      display: block
+      width: 100%
+      height: 2.5em
+      font-size: 0.75em
+      color: purple
+      border-radius: 10px
+      font-family: inherit
+
+      &.active
+        color: green
+
+      & > img
+        @extend .pixel-img
+
+.quality-distribution
+  width: 100%
+
+  & > div
+    display: inline-block
+
+.top
+  display: flex
+  justify-content: space-between
+
+  & > span
+    margin-left: 2.5em
+
+  & > nav
+  display: flex
+  justify-content: space-around
+
+  
+.checkbox-hidden
+  width: 1em
+  height: 0.5em
+
+.season
+  @extend %pixel-art
+  @extend .season-slot
+
+  &-slot
+  display: inline-block
+  width: 25%
+
+.fertilizer-settings
+  display: flex
+  flex-direction: column
+  justify-content: space-around
+  flex-grow: 1
+
+.table
+  display: flex
+  flex-direction: column
+
+  &-filters
+    height: var(--table-filters-height)
+
+  &-crop
+    @extend .table
+    height: calc(100% - var(--table-filters-height))
+
+  &-fertilizer
+    @extend .table
+    max-height: calc(100% - var(--fertilizer-settings-height))
+
+  %table-style
+    table-layout: fixed
+    border-collapse: collapse
+
+  &-header
+    @extend %table-style
+    width: 100%
+    background-color: lavender
+
+    & > thead
+      & > tr
+        & > th
+          cursor: auto
+
+  &-body
+    @extend %table-style
+
+    &-container
+      overflow: auto
+
+    & > tbody
+      & > tr
+        cursor: pointer
+
+        &:hover
+          background-color: blue
+
+        & > td
+          padding: 0
+          overflow: visible
+
+.crop-tabs
+  display: flex
+  flex-direction: row
+
+  & > li
+    flex-grow: 1
+    background-color: white
+    cursor: pointer
+    text-align: center
+
+    &.active
+      color: magenta
+
+    &:hover
+      transform: scale(1.1)
+
+.seasons
+  display: flex
+  flex-direction: row
+
+  & > li
+    @extend %pixel-art
+
+.home
+  text-align: center
+
+  & > nav
+    display: flex
+    justify-content: space-around
+
+    & > a
+
+.combos
+  display: flex
+  flex-direction: row
+  flex-wrap: nowrap
+  overflow: scroll
+  height: 500px
+
+  & > li
+    width: 200px
+    flex-shrink: 0
+    display: flex
+    flex-direction: column-reverse
+
+.disabled
+  opacity: 0.5
+
+.open
+  opacity: 1
+  visibility: visible
+
+.hidden
+  display: none
+
+footer
+  background: black
+
+
+
+
+
+.cover
+  position: fixed
+  left: 0
+  top: 0
+  width: 100%
+  height: 100%
+  background-color: rgba(0, 0, 0, 0.5)
+  opacity: 0
+  visibility: hidden
+  transition: opacity var(--sidebar-transition-speed), visibility var(--sidebar-transition-speed)
+
+%sidebar-body
+  display: flex
+  flex-direction: column
+  height: 100%
+  opacity: 1
+  visibility: hidden
+  transition: opacity var(--sidebar-transition-speed), visibility var(--sidebar-transition-speed)
+
+.sidebar
+  background-color: lightblue
+  width: var(--sidebar-width)
+  height: 100%
+  position: fixed
+  top: 0
+  z-index: 50
+  transform: translateX(-100%)
+  transition: transform var(--sidebar-transition-speed)
+
+  &--open
+    @extend .sidebar
+    transform: translateX(0%)
+
+  &-table
+    @extend %sidebar-body
+    --table-filters-height: 10%
+    --fertilizer-settings-height: 35%
+
+  &-info
+    height: 100%
+    opacity: 1
+    visibility: hidden
+    transition: opacity var(--sidebar-transition-speed), visibility var(--sidebar-transition-speed)
+    
+    & > button
+      width: 100%
+
+  &-content
+    @extend %sidebar-body
+    justify-content: space-around

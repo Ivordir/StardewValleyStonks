@@ -1,0 +1,39 @@
+{
+  "name": "StardewValleyStonks",
+  "version": "0.0.1",
+  "description": "A Thing",
+  "private": true,
+  "scripts": {
+    "start": "webpack-dev-server",
+    "build": "webpack"
+  },
+  "author": "Ivordir",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.12.10",
+    "@babel/preset-env": "^7.12.11",
+    "babel-loader": "^8.1.0",
+    "copy-webpack-plugin": "^6.4.1",
+    "core-js": "^3.8.1",
+    "css-loader": "^3.6.0",
+    "fable-compiler": "^2.13.0",
+    "fable-loader": "2.1.8",
+    "fable-splitter": "^2.2.1",
+    "fable-utils": "^1.2.0",
+    "file-loader": "^5.1.0",
+    "html-webpack-plugin": "^3.2.0",
+    "mini-css-extract-plugin": "^0.9.0",
+    "node-sass": "^4.14.1",
+    "sass": "^1.30.0",
+    "sass-loader": "^8.0.2",
+    "style-loader": "^1.2.1",
+    "webpack": "^4.44.2",
+    "webpack-cli": "^3.3.12",
+    "webpack-dev-server": "^3.11.0"
+  },
+  "dependencies": {
+    "react": "^16.14.0",
+    "react-dom": "^16.14.0",
+    "sorted-set-collections": "^1.0.0"
+  }
+}
