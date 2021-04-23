@@ -400,6 +400,47 @@ let viewQualitySeedMaker qualitySeedMaker (seedMakerAmounts: _ array) dispatch =
         [ for i = 0 to seedMakerAmounts.Length - 1 do
             seedMakerAmountInput (enum i) seedMakerAmounts.[i] dispatch ] ]
 
+let productTable data dispatch =
+  table [ ClassName "products" ]
+    [ //colWidths [ 0.2; 0.2 ]
+      thead []
+        [ tr []
+            [ th [ ColSpan 2 ]
+                [ str "Crop" ]
+              let allSelected processor =
+                data.Crops |> Map.values |> Seq.collect Crop.rawCrops |> Seq.forall (RawCrop.processorSelected processor)
+              yield! data.ProductProcessors |> Seq.map (fun processor ->
+                th []
+                  [ checkbox (ToggleProductProcessor processor) (allSelected processor) dispatch
+                    yield! Image.processorNameOption processor ] ) ] ]
+
+      let row name rawCrop =
+        data.ProductProcessors |> Seq.map (fun processor ->
+          td []
+            [ rawCrop.Products.TryFind processor
+              |> ofOptionMap (fun product -> 
+                checkbox (ToggleProduct (name, rawCrop.Item, product)) (rawCrop.Selected.Contains product) dispatch) ] )
+      
+      tbody [] (data.Crops |> Map.keys |> Seq.collect (fun name ->
+        let rawCrops = data.Crops.[name] |> Crop.rawCrops
+        let count = Seq.length rawCrops
+        
+        [ tr []
+            [ if count > 1 then
+                td [ RowSpan count ]
+                  (Image.cropName name)
+                td []
+                  [ str (Seq.head rawCrops).Item.Name ]
+              else
+                td [ ColSpan 2 ]
+                  (Image.cropName name)
+              yield! Seq.head rawCrops |> row name ]
+          yield! Seq.tail rawCrops |> Seq.map (fun rawCrop ->
+            tr []
+              [ td []
+                  [ str rawCrop.Item.Name ]
+                yield! row name rawCrop ] ) ] )) ]
+
 let settings ((ui, data) as model) dispatch =
   div [ ClassName "settings" ]
     [ lazyView2 (viewTabs "tabs" SetSettingsTab SettingsTab.all) ui.SettingsTab dispatch
@@ -429,46 +470,7 @@ let settings ((ui, data) as model) dispatch =
                     data.SeedSources
                     (DataModel.cropOrder data)
                     dispatch
-              | Products ->
-                  table [ ClassName "products" ]
-                    [ //colWidths [ 0.2; 0.2 ]
-                      thead []
-                        [ tr []
-                            [ th [ ColSpan 2 ]
-                                [ str "Crop" ]
-                              let allSelected processor =
-                                data.Crops |> Map.values |> Seq.collect Crop.rawCrops |> Seq.forall (RawCrop.processorSelected processor)
-                              yield! data.ProductProcessors |> Seq.map (fun processor ->
-                                th []
-                                  [ checkbox (ToggleProductProcessor processor) (allSelected processor) dispatch
-                                    yield! Image.processorNameOption processor ] ) ] ]
-
-                      let row name rawCrop =
-                        data.ProductProcessors |> Seq.map (fun processor ->
-                          td []
-                            [ rawCrop.Products.TryFind processor
-                              |> ofOptionMap (fun product -> 
-                                checkbox (ToggleProduct (name, rawCrop.Item, product)) (rawCrop.Selected.Contains product) dispatch) ] )
-                      
-                      tbody [] (data.Crops |> Map.keys |> Seq.collect (fun name ->
-                        let rawCrops = data.Crops.[name] |> Crop.rawCrops
-                        let count = Seq.length rawCrops
-                        
-                        [ tr []
-                            [ if count > 1 then
-                                td [ RowSpan count ]
-                                  (Image.cropName name)
-                                td []
-                                  [ str (Seq.head rawCrops).Item.Name ]
-                              else
-                                td [ ColSpan 2 ]
-                                  (Image.cropName name)
-                              yield! Seq.head rawCrops |> row name ]
-                          yield! Seq.tail rawCrops |> Seq.map (fun rawCrop ->
-                            tr []
-                              [ td []
-                                  [ str rawCrop.Item.Name ]
-                                yield! row name rawCrop ] ) ] )) ]
+              | Products -> productTable data dispatch
               | Replants ->
                   table [ ClassName "products" ]
                     [ //colWidths [ 0.2; 0.2 ]
