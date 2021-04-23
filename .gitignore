@@ -1,0 +1,39 @@
+Extractor/
+
+node_modules/
+.parcel-cache
+dist
+
+fable
+
+# Paket dependency manager
+.paket/paket.exe
+paket-files/
+
+# Ionide (cross platform F# VS Code tools) working folder
+.ionide/
+
+# VS Code files for those working on multiple tools
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.history/
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/

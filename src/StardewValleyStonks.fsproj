@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Prelude.fs" />
+    <Compile Include="Skills.fs" />
+    <Compile Include="Items.fs" />
+    <Compile Include="Crops.fs" />
+    <Compile Include="Model.fs" />
+    <Compile Include="Solver.fs" />
+    <Compile Include="App.fs" />
+    <Compile Include="Data.fs" />
+    <Compile Include="View.fs" />
+  </ItemGroup>
+  <Import Project="..\.paket\Paket.Restore.targets" />
+</Project>

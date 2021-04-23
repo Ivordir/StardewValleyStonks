@@ -1,0 +1,42 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug with Chrome",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "preLaunchTask": "Start",
+      "url": "http://localhost:1234",
+      "webRoot": "${workspaceFolder}",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "/__parcel_source_root/*": "${webRoot}/*",
+      }
+    },
+    {
+      "name": "Debug with Firefox",
+      "type": "firefox",
+      "request": "launch",
+      "preLaunchTask": "Start",
+      "url": "http://localhost:1234",
+      "webRoot": "${workspaceFolder}",
+      "pathMappings": [
+        {
+          "url": "file:///__parcel_source_root/src",
+          "path": "${webRoot}/src",
+        }
+      ]
+    },
+    {
+      "name": ".NET Core Launch (console): Extractor",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "Build Extractor",
+      "program": "${workspaceFolder}/Extractor/bin/Debug/net5.0/StardewValleyStonks.Extractor.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Extractor/",
+      "stopAtEntry": false,
+      "console": "integratedTerminal"
+    }
+  ],
+}
