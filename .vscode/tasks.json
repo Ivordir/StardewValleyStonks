@@ -1,53 +1,33 @@
 {
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
     "version": "2.0.0",
-    "presentation": {
-        "reveal": "always"
-    },
-    "type": "shell",
     "tasks": [
         {
-            "command": "${workspaceRoot}/build.sh",
-            "windows": {
-                "command": "${workspaceRoot}/build.cmd"
-            },
-            "label": "Build",
-            "args": [],
-            "group": "build",
-            "problemMatcher": [
-                "$msCompile"
-            ]
-        },
-        {
-            "command": "${workspaceRoot}/build.sh",
-            "windows": {
-                "command": "${workspaceRoot}/build.cmd"
-            },
-            "label": "Watch",
-            "args": [
-                "-t",
-                "Watch"
-            ],
+            "label": "Start",
+            "command": "npm",
+            "args": [ "start" ],
+            "type": "shell",
             "group": "build",
             "isBackground": true,
-            "problemMatcher": [
-                "$fable-webpack"
-            ]
-        },
-        {
-            "command": "${workspaceRoot}/build.sh",
-            "windows": {
-                "command": "${workspaceRoot}/build.cmd"
-            },
-            "label": "Run",
-            "args": [
-                "-t",
-                "RunDebug"
-            ],
-            "group": "build",
-            "isBackground": true,
-            "problemMatcher": [
-                "$fable-webpack"
-            ]
+            "problemMatcher": {
+                "fileLocation": "absolute",
+                "background": {
+                    "beginsPattern": { "regexp": "run Run" },
+                    "endsPattern": { "regexp": "i ｢wdm｣: Compiled|ℹ ｢wdm｣: Compiled|The terminal process terminated" },
+                    "activeOnStart": true
+                },
+                "pattern": {
+                    "regexp": "^(.*)\\((\\d+),(\\d+)\\): \\((\\d+),(\\d+)\\) (warning|error) FABLE: (.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "endLine": 4,
+                    "endColumn": 5,
+                    "severity": 6,
+                    "message": 7
+                }
+            }
         }
     ]
 }

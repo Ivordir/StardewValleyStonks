@@ -1,298 +1,167 @@
 namespace StardewValleyStonks
 
-open FSharp.Data.Adaptive
-open Adaptive
-open Util
-
-module Mod =
-  let qualityProducts = cval false
-  let qualitySeedMaker = cval false
-  let qualitySeedMakerAmounts =
-    [ Normal, cval 2
-      Silver, cval 3
-      Gold, cval 4
-      Iridium, cval 5 ]
-    |> Map.ofList
-
-type OutputQuality =
-  | Constant of bool
-  | QualityProducts of bool cval
-
-[<CustomEquality; CustomComparison>]
-type Processor =
-  { Name: string
-    SkillUnlock: SkillUnlock option
-    OutputQuality: OutputQuality
-    PreservesQuality: bool aval }
-  override this.Equals(x) =
-    match x with
-    | :? Processor as processor -> this.Name = processor.Name
-    | _ -> false
-  interface System.IEquatable<Processor> with
-    member this.Equals(x) = this.Name = x.Name
-  interface System.IComparable with
-    member this.CompareTo(x) =
-      match x with
-      | :? Processor as processor -> compare this.Name processor.Name
-      | _ -> invalidArg "x" "x is not a processor."
-  interface System.IComparable<Processor> with
-    member this.CompareTo(x) = compare this.Name x.Name
-  override this.GetHashCode() = hash this.Name
-
-module Processor =
-  let name processor = processor.Name
-  let skillUnlock processor = processor.SkillUnlock
-  let outputQuality processor = processor.OutputQuality
-  let preservesQuality processor = processor.PreservesQuality
-  let preservesQualityOption = defaultMap !@true preservesQuality
-  let unlocked = skillUnlock >> defaultMap !@true SkillUnlock.unlocked
-
-  let private createWithQuality preservesQuality outputQuality name unlock =
-    { Name = name
-      SkillUnlock = unlock
-      OutputQuality = outputQuality
-      PreservesQuality = preservesQuality }
-
-  let createConstant name preservesQuality = createWithQuality !@preservesQuality (Constant preservesQuality) name
-  let createQuality name preservesQuality =
-    let qualityProducts = cval preservesQuality
-    createWithQuality (qualityProducts .&& Mod.qualityProducts) (QualityProducts qualityProducts) name
-
-module Processors =
-  open Processor
-  let private withFarmLvl = SkillUnlock.create Skills.farming >> Some
-
-  let preservesJar = createQuality "Preserves Jar" true (withFarmLvl 4)
-  let keg = createQuality "Keg" true (withFarmLvl 8)
-  let oilMaker = createQuality "Oil Maker" true (withFarmLvl 8)
-  let mill = createQuality "Mill" false None
-  let seedMaker = createConstant "Seed Maker" false (withFarmLvl 9)
-
-  let all =
-    [ preservesJar
-      keg
-      oilMaker
-      mill
-      seedMaker ]
-  
-  let allOption = listWithNone all
-
-  let qualityProducts = all |> List.filter (fun p ->
-    match p.OutputQuality with
-    | QualityProducts _ -> true
-    | _ -> false)
-
-
-type RawMultiplier =
-  { Name: string
-    Value: float aval
-    Selected: bool cval }
+[<Fable.Core.Erase>]
+type RawMultiplier = RawMultiplier of name: string * value: float
 
 module RawMultiplier =
-  let name multiplier = multiplier.Name
-  let value multiplier = multiplier.Value
-  let selected multiplier = multiplier.Selected
-
-  let create name value =
-    { Name = name
-      Value = !@value
-      Selected = cval false }
-
-
-
-type ProfessionMultiplier =
-  { Profession: Profession
-    Value: float aval }
-
-module ProfessionMultiplier =
-  let profession multiplier = multiplier.Profession
-  let name = profession >> Profession.name
-  let active = profession >> Profession.active
-  let value multiplier = multiplier.Value
-
-  let create profession value =
-    { Profession = profession
-      Value = !@value }
-
-
+  let inline name (RawMultiplier(name, _)) = name
+  let inline value (RawMultiplier(_, value)) = value
 
 type Multiplier =
   | Raw of RawMultiplier
-  | Profession of ProfessionMultiplier
+  | Profession of skill: Skills * profession: Profession * value: float
 
 module Multiplier =
   let name = function
-    | Raw r -> r.Name
-    | Profession p -> ProfessionMultiplier.name p
+    | Raw (RawMultiplier (name, _)) -> name
+    | Profession (_, ProfessionName p, _) -> p
+
   let value = function
-    | Raw r -> r.Value
-    | Profession p -> p.Value
-  let active = function
-    | Raw r -> !>r.Selected
-    | Profession p -> ProfessionMultiplier.active p
+    | Raw (RawMultiplier (_, v)) -> v
+    | Profession (_,_, v) -> v
 
-  let sum = memoize <| AList.ofList >> AList.filterA active >> AList.sumByA value
+  let apply multiplierActive multiplier =
+    if multiplierActive multiplier
+    then intMulti (value multiplier)
+    else id
 
-  let createRaw = RawMultiplier.create >>| Raw
-  let createProfession = ProfessionMultiplier.create >>| Profession
-
-module Multipliers =
-  open Skills
-  open Multiplier
-
-  let tiller = createProfession farming.Lvl5Profession 1.1
-  let agri = createProfession farming.Lvl10ProfessionA 0.1
-  let artisan = createProfession (Option.get farming.Lvl10ProfessionB) 1.4
-
-  let irrigated = createRaw "Irrigated" 0.25
-  let bearsKnowledge = createRaw "Bear's Knowledge" 3.0
-
-  let growth =
-    [ irrigated ]
-
-  let raw =
-    [ bearsKnowledge ]
+  let create = tuple2 >>| RawMultiplier
+  let createProfession = tuple3 >>>| Profession
 
 
 type Item =
   { Name: string
-    BasePrice: int aval
-    Multiplier: Multiplier option
-    Price: int aval }
+    BasePrice: int
+    Multiplier: Multiplier option }
 
 module Item =
   let name item = item.Name
   let basePrice item = item.BasePrice
   let multiplier item = item.Multiplier
-  let price item = item.Price
+  let price multiplierActive item =
+    item.BasePrice |> Option.foldBack (Multiplier.apply multiplierActive) item.Multiplier
 
-  let aCreateMultiplier multiplier name basePrice =
+  let validPrice = positive
+
+  let createWith multiplier name basePrice =
     { Name = name
-      BasePrice = basePrice
-      Multiplier = multiplier
-      Price =
-        match multiplier with
-        | Some m -> aCondApply basePrice (Multiplier.value m) (Multiplier.active m)
-        | None -> basePrice }
+      BasePrice = validPrice basePrice
+      Multiplier = multiplier }
 
-  open Multipliers
-  type private CreateItem = string -> int aval -> Item
-
-  let aCreate: CreateItem = aCreateMultiplier None
-  let aCreateCrop: CreateItem = aCreateMultiplier (Some tiller)
-  let aCreateArtisan: CreateItem = aCreateMultiplier (Some artisan)
-
-  let createMultiplier multiplier name basePrice = aCreateMultiplier multiplier name !@basePrice
-
-  let create = createMultiplier None
-  let createCrop = createMultiplier (Some tiller)
-  let createArtisan = createMultiplier (Some artisan)
+  let createMultiplier = Some >> createWith
+  let create = createWith None
 
 
 
-type ProductBase =
-  { Processor: Processor option
-    Item: Item
-    ProcessorOverride: Override cval
-    Selected: bool aval }
+type PreservesQuality =
+  | Always of bool
+  | QualityProcessor of bool
+
+[<Fable.Core.Erase>]
+type ProcessorAmount =
+  | QualityIndependent of float
+  | QualityDependent of float array
+
+type Processor =
+  { Name: string
+    PerservesQuality: PreservesQuality
+    SkillUnlock: SkillUnlock option
+    Amount: ProcessorAmount option }
+
+module Processor =
+  let name processor = processor.Name
+  let nameKey: _ -> Processor name = name >> Name
+  let nameOption = defaultMap "Raw Crop" name
+  let unlock processor = processor.SkillUnlock
+  let unlocked skills = unlock >> Option.forall (SkillUnlock.unlocked skills)
+  let unlockedOption = unlocked >> Option.forall
+
+  let preservesQualityData processor = processor.PerservesQuality
+  let qualityProcessor = preservesQualityData >> function
+    | QualityProcessor _ -> true
+    | Always _ -> false
+  let qualityProcessorOption = Option.exists qualityProcessor
+  let preservesQuality qualityProducts = preservesQualityData >> function
+    | Always b -> b
+    | QualityProcessor q -> qualityProducts && q
+  let preservesQualityOption = preservesQuality >> Option.forall
+
+  let amountData processor = processor.Amount
+  let amount (quality: Quality) = function
+    | QualityIndependent a -> a
+    | QualityDependent dist -> dist.[int quality]
+  let amountOption quality = amountData >> Option.map (amount quality)
+
+  let qualityProductsSelected = preservesQualityData >> function
+    | QualityProcessor q -> q
+    | Always _ -> false
+
+  let toggleQualityProcessor processor =
+    { processor with
+        PerservesQuality =
+          match processor.PerservesQuality with
+          | QualityProcessor b -> QualityProcessor <| not b
+          | _ -> invalidArg "processor" "The processor is not a quality processor." }
+
+  let withAmount amount processor =
+    { processor with Amount = amount }
+
+  let createWith amount preservesQuality name unlock =
+    { Name = name
+      SkillUnlock = unlock
+      PerservesQuality = preservesQuality
+      Amount = amount }
+
+  let create name preservesQuality = createWith None (QualityProcessor preservesQuality) name
+
+
+
+// Override/modify the processor amount.
+type ProductAmount =
+  | Ratio of input: int * output: int
+  | Additional of float
 
 type Product =
-  | Product of ProductBase
-  | RatioProduct of
-      {| Product: ProductBase
-         InputAmount: int
-         OutputAmount: int
-         OutputPerInput: float |}
-  | QualityProduct of
-      {| //InputAmount: int aval = 1
-         Product: ProductBase
-         OutputAmount: Map<Quality, float aval> |}
+  { Item: Item
+    Processor: Processor name option
+    Amount: ProductAmount option }
 
 module Product =
-  let private itemBase product = product.Item
-  let private processorBase product = product.Processor
-  let private processorOverrideBase product = product.ProcessorOverride
-  let private selectedBase product = product.Selected
-
-  let productBase = function
-    | Product p -> p
-    | RatioProduct r -> r.Product
-    | QualityProduct q -> q.Product
-
-  let item = productBase >> itemBase
+  let item product = product.Item
   let name = item >> Item.name
-  let processor = productBase >> processorBase
-  let processorOverride = productBase >> processorOverrideBase
-  let selected = productBase >> selectedBase
+  let processor product = product.Processor
+  //let valid processorActive = processor >> Option.forall processorActive
+  let amount product = product.Amount
 
-  let inputAmount = function
-    | Product _ -> 1
-    | RatioProduct r -> r.InputAmount
-    | QualityProduct _ -> 1
+  let price itemPrice preservesQuality quality product =
+    itemPrice product.Item
+    |>  if preservesQuality product.Processor
+        then Quality.multiply quality
+        else id
 
-  let unitOutputAmount quality = function
-    | Product _ -> !@1.0
-    | RatioProduct r -> !@r.OutputPerInput
-    | QualityProduct q -> q.OutputAmount.[quality]
+  let private outputAmount processors quality =
+    processor
+    >> Option.bind (processors >> Processor.amountOption quality)
+    >> defaultValue 1.0
 
-  let private qualityPrice product = function
-    | Normal -> product.Item.Price
-    | quality -> aCondApply product.Item.Price !@(Quality.multiplier quality) (Processor.preservesQualityOption product.Processor)
+  let unitOutput processors quality product =
+    match product.Amount with
+    | Some (Ratio (i, o)) -> float o / float i
+    | Some (Additional a) -> outputAmount processors quality product + a
+    | None -> outputAmount processors quality product
 
-  let unitProfit quality = function
-    | Product p -> qualityPrice p quality |> aFloat
-    | RatioProduct r -> (qualityPrice r.Product quality |> aFloat) .* !@r.OutputPerInput
-    | QualityProduct q -> (qualityPrice q.Product quality |> aFloat) .* q.OutputAmount.[quality]
+  let unitProfit priceFun outputFun (quality: Quality) (product: Product) =
+    (priceFun quality product |> float) * outputFun quality product
 
-  let setOverride = processorOverride >> setValue
+  let validInputAmount = max 1
+  let validOutputAmount = max 1
 
-  let private bestProfit quality = AList.filterA selected >> AList.mapA (unitProfit quality) >> AList.tryMax
-  let test quality bestProfit product =
-    match product with
-    | RatioProduct r ->
-        printf "%A" r.Product.Item
-    | _ -> ()
-    let p = unitProfit quality product
-    p .= aDefaultValue -1.0 bestProfit
-  let private bestProducts bestProfit quality = AList.filterA (unitProfit quality >> (.=) (aDefaultValue -1.0 bestProfit))
-  let bestProfitAndProducts list =
-    let products = AList.ofList list
-    let bestProfits = Quality.all |> mapOfKeys (flip bestProfit products)
-    bestProfits,
-    Quality.all |> mapOfKeys (fun quality -> bestProducts bestProfits.[quality] quality products)
+  let createWith amount processor item =
+    { Item = item
+      Processor = processor
+      Amount = amount }
+  let create = Some >> createWith None
+  let createRaw = createWith None None
 
-  let private createBaseWith processorSelected processor item =
-    let over = cval None
-    { Processor = processor
-      Item = item
-      ProcessorOverride = over
-      Selected =
-        let selected = processorSelected processor |> aSelectedOverride over
-        match processor with
-        | Some p -> Processor.unlocked p .&& selected
-        | None -> selected }
-
-  let private createWith selected = Some >> createBaseWith selected >>| Product
-  let createRawWith selected = createBaseWith selected None >> Product
-  let createItemWith selected processor = Item.create >>| createWith selected processor
-  let createTillerWith selected processor = Item.createCrop >>| createWith selected processor
-  let createArtisanWith selected processor = Item.createArtisan >>| createWith selected processor
-
-  let aCreateArtisanWith selected processor = Item.aCreateArtisan >>| createWith selected processor
-
-
-  let private createRatioWith processorSelected processor output inputAmount outputAmount =
-    RatioProduct
-      {| Product = createBaseWith processorSelected (Some processor) output
-         InputAmount = inputAmount
-         OutputAmount = outputAmount
-         OutputPerInput = float outputAmount / float inputAmount |}
-  //let createRatioItemWith selected processor = Item.create >>| createRatioWith selected processor
-  //the runtime did not like the version above for some reason, gave undefined errors
-  let createRatioItemWith selected processor name price = createRatioWith selected processor (Item.create name price)
-
-
-  let createQualityWith selected processor outputAmounts output =
-    QualityProduct
-      {| Product = createBaseWith selected (Some processor) output
-         OutputAmount = outputAmounts |}
+  let createRatio processor inputAmount outputAmount =
+    createWith (Some <| Ratio (validInputAmount inputAmount, validOutputAmount outputAmount)) (Some processor)

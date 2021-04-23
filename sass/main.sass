@@ -6,22 +6,52 @@
   font-family: Stardew Valley Dialogue
   src: url('../public/Stardew Valley Dialogue.woff2') format('woff2'), url('../public/Stardew Valley Dialogue.woff') format('woff')
 
+$phi: 1.618
+
 body
   background-color: antiquewhite
   margin: 0
   font-family: Stardew Valley, Nunito, Helvetica, sans-serif
   font-size: 2em
-  --sidebar-transition-speed: 0.25s
-  --sidebar-width: 40%
+  overflow-y: hidden
 
 ul
   list-style: none
   padding: 0
   margin: 0
 
+button
+  font-family: inherit
+
+input[type="number"]
+  font-family: Stardew Valley
+
+input[type="range"]
+  font-family: Stardew Valley
+
+.app
+  display: grid
+  //grid-template-rows: 50px (100% / $phi)
+  grid-template-columns: ($phi * 1fr) 1fr
+  grid-template-rows: 100px 500px
+  grid-template-areas: ". settings" "stonks settings"
+
+.settings
+  grid-area: settings
+  height: 100%
+  display: flex
+  flex-direction: column
+
+  & > :last-child
+    flex-grow: 1
+    overflow-y: auto
+
+.misc
+  display: flex
+  flex-direction: column
+
 %pixel-art
   image-rendering: pixelated
-  image-rendering: -moz-crisp-edges
   image-rendering: crisp-edges
 
 .pixel-img
@@ -37,17 +67,70 @@ ul
       visibility: hidden
       position: absolute
 
-    & > img
-      @extend .pixel-img
-      
-      &:hover
-        transform: scale(1.1)
+  &-img
+    @extend .pixel-img
+    
+    &:hover
+      transform: scale(1.1)
 
-.settings
-  & > ul
-    display: flex
-    flex-direction: row
 
+.cover
+  position: fixed
+  left: 0
+  top: 0
+  width: 100%
+  height: 100%
+  background-color: rgba(0, 0, 0, 0.5)
+  opacity: 0
+  visibility: hidden
+  transition: opacity var(--sidebar-transition-speed), visibility var(--sidebar-transition-speed)
+
+%sidebar-body
+  display: flex
+  flex-direction: column
+  height: 100%
+  opacity: 1
+  visibility: hidden
+  transition: opacity var(--sidebar-transition-speed), visibility var(--sidebar-transition-speed)
+
+.sidebar
+  background-color: lightblue
+  width: var(--sidebar-width)
+  height: 100%
+  position: fixed
+  top: 0
+  z-index: 50
+  transform: translateX(-100%)
+  transition: transform var(--sidebar-transition-speed)
+
+  &--open
+    @extend .sidebar
+    transform: translateX(0%)
+
+  &-table
+    @extend %sidebar-body
+    --table-filters-height: 10%
+    --fertilizer-settings-height: 35%
+
+  &-info
+    height: 100%
+    opacity: 1
+    visibility: hidden
+    transition: opacity var(--sidebar-transition-speed), visibility var(--sidebar-transition-speed)
+    
+    & > button
+      width: 100%
+
+  &-content
+    @extend %sidebar-body
+    justify-content: space-around
+
+  &-tabs
+    position: absolute
+    left: 100%
+    top: 50%
+    transform: translateY(-50%)
+  
     & > li
       color: white
       background-color: gray
@@ -65,41 +148,40 @@ ul
       &:hover
         width: 4.75em
 
-  & > .skills
-    & > ul
-      & > li
-        display: flex
-        flex-direction: column
+.skills
+  & > div
+    display: flex
+    flex-direction: column
 
-        & > span
-          text-align: center
+    & > span
+      text-align: center
 
-          & > img
-            @extend %pixel-art
-            width: 1em
-            height: 1em
+      & > img
+        @extend %pixel-art
+        width: 1em
+        height: 1em
 
-        & > label
-          color: brown
-          text-align: left
+    & > label
+      color: brown
+      text-align: left
 
-          & > input[type="number"]
-            font-family: Stardew Valley
+      & > input[type="number"]
+        font-family: Stardew Valley
 
-          & > input[type="range"]
-            font-family: Stardew Valley
-  
-  & > .fertilizer
-    width: 100%
-
+      & > input[type="range"]
+        font-family: Stardew Valley
 
 .professions
   display: flex
-  width: 50%
+  justify-content: center
   align-items: center
-
+  flex-wrap: wrap
+  
   & > div
+    display: flex
+    flex-direction: column
     width: 50%
+    align-items: center
 
     & > button
       display: block
@@ -118,9 +200,23 @@ ul
 
 .quality-distribution
   width: 100%
+  height: 2em
 
-  & > div
+  & .bars
+    height: 50%
+
+  & .probs
+    height: 50%
+    display: flex
+
+    & > div
+      width: min-content
+      flex-basis: 0
+      text-align: center
+
+  & > div > div
     display: inline-block
+    height: 100%
 
 .top
   display: flex
@@ -133,18 +229,46 @@ ul
   display: flex
   justify-content: space-around
 
-  
+.source-tab
+  color: white
+  background-color: green
+  border: 1px solid black
+  cursor: pointer
+
+  &--active
+    @extend .source-tab
+    color: blue
+
 .checkbox-hidden
   width: 1em
   height: 0.5em
 
+.alert-list
+  //@extend %list
+  color: green
+
+.alerts
+  padding: 0.1em
+  display: none
+
+.alerts-label
+  color: blue
+
+.alerts-toggle
+  @extend .checkbox-hidden
+  display: none
+
+  &:checked + .alerts
+    background-color: red
+    display: block
+
+.season-slot
+  display: inline-block
+  width: 25%
+
 .season
   @extend %pixel-art
   @extend .season-slot
-
-  &-slot
-  display: inline-block
-  width: 25%
 
 .fertilizer-settings
   display: flex
@@ -214,6 +338,7 @@ ul
     &:hover
       transform: scale(1.1)
 
+
 .seasons
   display: flex
   flex-direction: row
@@ -230,18 +355,26 @@ ul
 
     & > a
 
-.combos
-  display: flex
-  flex-direction: row
-  flex-wrap: nowrap
+.graph
+  //display: flex
+  //flex-direction: row
+  //flex-wrap: nowrap
   overflow: scroll
-  height: 500px
+  //height: 500px
 
-  & > li
-    width: 200px
-    flex-shrink: 0
-    display: flex
-    flex-direction: column-reverse
+  // & > li
+  //   width: 50px
+  //   flex-shrink: 0
+  //   display: flex
+  //   flex-direction: column-reverse
+.crisp
+  image-rendering: pixelated
+  image-rendering: crisp-edges
+
+.bar
+  fill: blue
+
+
 
 .disabled
   opacity: 0.5
@@ -255,58 +388,3 @@ ul
 
 footer
   background: black
-
-
-
-
-
-.cover
-  position: fixed
-  left: 0
-  top: 0
-  width: 100%
-  height: 100%
-  background-color: rgba(0, 0, 0, 0.5)
-  opacity: 0
-  visibility: hidden
-  transition: opacity var(--sidebar-transition-speed), visibility var(--sidebar-transition-speed)
-
-%sidebar-body
-  display: flex
-  flex-direction: column
-  height: 100%
-  opacity: 1
-  visibility: hidden
-  transition: opacity var(--sidebar-transition-speed), visibility var(--sidebar-transition-speed)
-
-.sidebar
-  background-color: lightblue
-  width: var(--sidebar-width)
-  height: 100%
-  position: fixed
-  top: 0
-  z-index: 50
-  transform: translateX(-100%)
-  transition: transform var(--sidebar-transition-speed)
-
-  &--open
-    @extend .sidebar
-    transform: translateX(0%)
-
-  &-table
-    @extend %sidebar-body
-    --table-filters-height: 10%
-    --fertilizer-settings-height: 35%
-
-  &-info
-    height: 100%
-    opacity: 1
-    visibility: hidden
-    transition: opacity var(--sidebar-transition-speed), visibility var(--sidebar-transition-speed)
-    
-    & > button
-      width: 100%
-
-  &-content
-    @extend %sidebar-body
-    justify-content: space-around
