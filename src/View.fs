@@ -21,14 +21,14 @@ let classBase baseClass single add = classBaseList baseClass [ single, add ]
 
 let checkboxCss css alsoDisplay (message: Message) isChecked dispatch =
   label [ css ]
-    ( [ input
+    [ input
           [ Type "checkbox"
             Checked isChecked
             OnChange <| fun _ -> dispatch message ]
         img
           [ ClassName "checkbox-img"
-            Src <| if isChecked then "img/UI/Checkedbox.png" else "img/UI/Checkbox.png" ] ]
-      @ alsoDisplay)
+            Src <| if isChecked then "img/UI/Checkedbox.png" else "img/UI/Checkbox.png" ]
+      yield! alsoDisplay ]
 
 let checkboxWith = checkboxCss (ClassName "checkbox-label")
 let checkboxDisabledWith alsoDisplay disabled =
