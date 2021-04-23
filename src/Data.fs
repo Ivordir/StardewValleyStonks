@@ -2,7 +2,7 @@ module StardewValleyStonks.AppData
 
 open Fable.Core.JsInterop
 
-//todo: document types and consturction
+//todo: documentation for types and construction
 //create json file based off this
 
 

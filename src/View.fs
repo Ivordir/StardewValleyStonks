@@ -919,10 +919,12 @@ let view ((ui, data) as model) dispatch =
 //--App--
 open Elmish
 open Elmish.UrlParser
+open Elmish.Navigation
 #if DEBUG
-open Elmish.Debug
 open Elmish.HMR
+open Elmish.Debug
 #endif
+
 
 Program.mkProgram AppData.initialModel Update.update view
 #if DEBUG

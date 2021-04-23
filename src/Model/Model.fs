@@ -127,9 +127,6 @@ module DataModel =
     && (data.SkillLevelPolicy <> Enforce || Skill.professionUnlocked skill profession)
 
   let professionActiveAlt data skill = professionActive data data.Skills.[skill]
-  // let professionActiveAlt model profession =
-  //   let skill = model.Skills.[model.ProfessionSkill.[profession]]
-  //   professionActive model skill profession
 
   let farmingDistribution data = Skill.farmingDistribution data.Skills.[Farming]
   let foragingAmounts data = Skill.foragingAmounts (professionActive data) data.Skills.[Foraging]

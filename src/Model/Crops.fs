@@ -436,11 +436,11 @@ module Crop =
       crop.TotalGrowthTime
     else
       let growthStages = crop.GrowthStages |> List.toArray
-      let mutable reduceDays = (toF32AndBack speed) * (float crop.TotalGrowthTime) |> ceil |> int
+      let mutable daysToReduce = (toF32AndBack speed) * (float crop.TotalGrowthTime) |> ceil |> int
       let mutable daysReduced = 0
       let mutable traverses = 0
 
-      while daysReduced < reduceDays && traverses < 3 do
+      while daysReduced < daysToReduce && traverses < 3 do
         // Handle the first stage
         if growthStages.[0] > 1 then
           growthStages.[0] <- growthStages.[0] - 1
@@ -448,12 +448,12 @@ module Crop =
 
         // Handle the other stages
         let mutable stage = 1
-        while daysReduced < reduceDays && stage < growthStages.Length do
+        while daysReduced < daysToReduce && stage < growthStages.Length do
           if growthStages.[stage] > 0 then
             growthStages.[stage] <- growthStages.[stage] - 1
             daysReduced <- daysReduced + 1
           else // A reduction day was wasted reducing a stage below 0 days. Potentially possible?, as the game code does not prevent this from happening on stages except the first.
-            reduceDays <- reduceDays - 1
+            daysToReduce <- daysToReduce - 1
           stage <- stage + 1
 
         traverses <- traverses + 1

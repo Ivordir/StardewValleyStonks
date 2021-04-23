@@ -58,8 +58,11 @@ module Prices =
   let selected prices = prices.Selected
   let sourceSelected source prices = prices.From.TryFind source |> Option.forall prices.Selected.Contains
 
-  let lowest priceValue prices = prices.Selected |> Seq.map priceValue |> Seq.tryMin
-  let hasOne (lowest: Prices -> _) = lowest >> Option.isSome
+  let hasOne = selected >> Set.isEmpty >> not
+  let lowest priceValue prices =
+    if hasOne prices
+    then prices.Selected |> Seq.map priceValue |> Seq.min |> Some
+    else None
 
   let setSelected add source prices =
     match prices.From.TryFind source with
@@ -107,8 +110,8 @@ module Fertilizer =
   let prices fertilizer = fertilizer.Prices
   let lowestPrice (lowest: Prices -> int option) = prices >> lowest
   let lowestPriceOption (lowest: Prices -> _) = defaultMap (Some 0) (prices >> lowest)
-  let hasAPrice (hasOne: Prices -> bool) = prices >> hasOne
-  let hasAPriceOption = hasAPrice >> Option.forall
+  let hasAPrice = prices >> Prices.hasOne
+  let hasAPriceOption = Option.forall hasAPrice
 
   let validQuality = positive
   let validSpeed = positive
