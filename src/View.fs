@@ -637,7 +637,7 @@ module Crops =
       cropSort
       crops
 
-  let products model productSort crops dispatch =
+  let products model productSort productQuality crops dispatch =
     let appDispatch = dispatch
     let dispatch = SetModel >> dispatch
 
@@ -663,7 +663,7 @@ module Crops =
         ]
         td [
           checkbox (model.SellRawItems.Contains (seed, item)) (curry SetSelected (seed, item) >> SelectSellRawItems >> dispatch)
-          ofNat <| Model.itemPrice model (Model.getItem model item) Quality.Normal
+          ofNat <| Model.itemPrice model (Model.getItem model item) productQuality
         ]
         yield! model.Data.Processors |> Block.mapi' (fun i processor ->
           match products.TryFind processor with
@@ -672,7 +672,7 @@ module Crops =
               if not processorUnlocked[i] then Class.disabled
               children [
                 checkbox (selected.Contains processor) (curry SetSelected (seed, item) >> curry SelectProducts processor >> dispatch)
-                ofNat <| Model.productPrice model (Model.getItem model item) Quality.Normal product
+                ofNat <| Model.productPrice model (Model.getItem model item) productQuality product
               ]
             ]
           | None -> td [] )
@@ -700,103 +700,119 @@ module Crops =
     let keyColWidth = 0.4
     let productWidth = 100.0 * (1.0 - keyColWidth) / float (model.Data.Processors.Length + 2)
 
-    sortTableWith [ className "products" ] [
-      {
-        Header = ofStr "Crop"
-        Width = 100.0 * keyColWidth
-        Sort = Some <| compareBy (Crop.name <| Model.getItem model)
-      }
-      {
-        Header = fragment [
-          checkboxWith
-              [ onClick (fun e -> e.stopPropagation ()) ]
-              none
-              (model.Data.Crops
-                |> Table.toSeq
-                |> Seq.collect (fun (seed, crop) ->
-                  Crop.items crop |> Block.map' (tuple2 seed))
-                |> Seq.forall model.SellRawItems.Contains)
-              (selectMany (konst true) >> SelectSellRawItems >> dispatch)
-          ofStr "Raw Crop"
+    fragment [
+      label [
+        ofStr "View with quality: "
+        select [
+          valueOrDefault (Quality.name productQuality)
+          onChange ((Quality.Parse: string -> _) >> SetProductQuality >> appDispatch)
+          children (Quality.all |> Block.map' (fun quality ->
+            option [
+              text <| Quality.name quality
+              valueOrDefault (Quality.name quality)
+            ]
+          ))
         ]
-        Width = productWidth
-        Sort = Some <| compareByRev (fun crop -> Model.cropBestItemPriceFrom model crop Quality.Normal)
-      }
-      yield! model.Data.Processors |> Block.mapi' (fun i processor ->
+      ]
+
+      sortTableWith [ className "products" ] [
+        {
+          Header = ofStr "Crop"
+          Width = 100.0 * keyColWidth
+          Sort = Some <| compareBy (Crop.name <| Model.getItem model)
+        }
+        {
+          Header = fragment [
+            checkboxWith
+                [ onClick (fun e -> e.stopPropagation ()) ]
+                none
+                (model.Data.Crops
+                  |> Table.toSeq
+                  |> Seq.collect (fun (seed, crop) ->
+                    Crop.items crop |> Block.map' (tuple2 seed))
+                  |> Seq.forall model.SellRawItems.Contains)
+                (selectMany (konst true) >> SelectSellRawItems >> dispatch)
+            ofStr "Raw Crop"
+          ]
+          Width = productWidth
+          Sort = Some <| compareByRev (fun crop -> Model.cropBestItemPriceFrom model crop productQuality)
+        }
+        yield! model.Data.Processors |> Block.mapi' (fun i processor ->
+          {
+            Header =
+              div [
+                if not processorUnlocked[i] then Class.disabled
+                children [
+                  checkboxWith
+                    [ onClick (fun e -> e.stopPropagation ()) ]
+                    none
+                    (model.SelectedProducts |> Map.forall (fun (_, item) selected -> selected.Contains processor || not <| model.Data.Products[item].ContainsKey processor))
+                    (selectMany (snd >> model.Data.Products.Find >> Table.containsKey processor) >> curry SelectProducts processor >> dispatch)
+                  Image.Icon.processor processor
+                ]
+              ]
+            Width = productWidth
+            Sort = Some <| sortWithLastByRev None (fun crop -> Model.cropBestProductPriceFrom model crop productQuality processor)
+          } )
         {
           Header =
             div [
-              if not processorUnlocked[i] then Class.disabled
+              if not (Model.forageCrops model |> Seq.exists (ForageCrop.seedsRecipeUnlocked model.Skills)) then Class.disabled
               children [
                 checkboxWith
                   [ onClick (fun e -> e.stopPropagation ()) ]
                   none
-                  (model.SelectedProducts |> Map.forall (fun (_, item) selected -> selected.Contains processor || not <| model.Data.Products[item].ContainsKey processor))
-                  (selectMany (snd >> model.Data.Products.Find >> Table.containsKey processor) >> curry SelectProducts processor >> dispatch)
-                Image.Icon.processor processor
+                  (Model.forageCropIds model |> Seq.forall model.SellForageSeeds.Contains)
+                  (curry SetManySelected (crops |> Seq.filter Crop.isForage |> Seq.map Crop.seed |> set) >> SelectSellForageSeeds >> dispatch)
+                ofStr "Forage Seeds"
               ]
             ]
           Width = productWidth
-          Sort = Some <| sortWithLastByRev None (fun crop -> Model.cropBestProductPriceFrom model crop Quality.Normal processor)
-        } )
-      {
-        Header =
-          div [
-            if not (Model.forageCrops model |> Seq.exists (ForageCrop.seedsRecipeUnlocked model.Skills)) then Class.disabled
-            children [
+          Sort = Some <| sortWithLastBy None (fun crop -> if Crop.isForage crop then Some <| Model.itemPrice model (Model.getSeedItem model <| Crop.seed crop) Quality.Normal else None)
+        }
+        { Header = fragment [
+            if model.CustomSellPrices.Values.IsEmpty then
+              none
+            else
               checkboxWith
                 [ onClick (fun e -> e.stopPropagation ()) ]
                 none
-                (Model.forageCropIds model |> Seq.forall model.SellForageSeeds.Contains)
-                (curry SetManySelected (crops |> Seq.filter Crop.isForage |> Seq.map Crop.seed |> set) >> SelectSellForageSeeds >> dispatch)
-              ofStr "Forage Seeds"
-            ]
+                (Selection.allSelected model.CustomSellPrices)
+                (selectMany model.CustomSellPrices.Values.ContainsKey >> SelectCustom >> SetCustomSellPrice >> dispatch)
+            ofStr "Custom"
           ]
-        Width = productWidth
-        Sort = Some <| sortWithLastBy None (fun crop -> if Crop.isForage crop then Some <| Model.itemPrice model (Model.getSeedItem model <| Crop.seed crop) Quality.Normal else None)
-      }
-      { Header = fragment [
-          if model.CustomSellPrices.Values.IsEmpty then
-            none
-          else
-            checkboxWith
-              [ onClick (fun e -> e.stopPropagation ()) ]
-              none
-              (Selection.allSelected model.CustomSellPrices)
-              (selectMany model.CustomSellPrices.Values.ContainsKey >> SelectCustom >> SetCustomSellPrice >> dispatch)
-          ofStr "Custom"
-        ]
-        Width = 0
-        Sort = Some <| sortWithLastBy None (fun crop -> Model.cropBestCustomPrice model crop Quality.Normal)
-      }
-    ]
-      (fun crop ->
-        let seed = Crop.seed crop
-        keyedFragment (int seed, [
-          match crop with
-          | FarmCrop c ->
-            viewItemRow true seed c.Item
-            match c.ExtraItem with
-            | Some (item, _) -> viewItemRow false seed item
-            | None -> none
-          | ForageCrop c ->
-            tr [
-              td (Image.Icon.crop model crop)
-              yield! Seq.replicate (model.Data.Processors.Length + 1) (td [])
-              td [
-                if not <| ForageCrop.seedsRecipeUnlocked model.Skills c then Class.disabled
-                children [
-                  checkbox (model.SellForageSeeds.Contains seed) (curry SetSelected seed >> SelectSellForageSeeds >> dispatch)
-                  ofNat <| Model.itemPrice model (Model.getSeedItem model <| Crop.seed crop) Quality.Normal
+          Width = 0
+          Sort = Some <| sortWithLastBy None (fun crop -> Model.cropBestCustomPrice model crop productQuality)
+        }
+      ]
+        (fun crop ->
+          let seed = Crop.seed crop
+          keyedFragment (int seed, [
+            match crop with
+            | FarmCrop c ->
+              viewItemRow true seed c.Item
+              match c.ExtraItem with
+              | Some (item, _) -> viewItemRow false seed item
+              | None -> none
+            | ForageCrop c ->
+              tr [
+                td (Image.Icon.crop model crop)
+                yield! Seq.replicate (model.Data.Processors.Length + 1) (td [])
+                td [
+                  if not <| ForageCrop.seedsRecipeUnlocked model.Skills c then Class.disabled
+                  children [
+                    checkbox (model.SellForageSeeds.Contains seed) (curry SetSelected seed >> SelectSellForageSeeds >> dispatch)
+                    ofNat <| Model.itemPrice model (Model.getSeedItem model seed) Quality.Normal
+                  ]
                 ]
+                td []
               ]
-              td []
-            ]
-            yield! c.Items |> Block.map' (viewItemRow false seed)
-        ] ))
-      (SetProductSort >> appDispatch)
-      productSort
-      crops
+              yield! c.Items |> Block.map' (viewItemRow false seed)
+          ] ))
+        (SetProductSort >> appDispatch)
+        productSort
+        crops
+    ]
 
   let seeds model seedSort crops dispatch =
     let appDispatch = dispatch
@@ -1007,7 +1023,7 @@ module Crops =
     div [
       cropFilter app.CropFilters (SetCropFilters >> dispatch)
       table app.Model app.CropSort crops dispatch
-      products app.Model app.ProductSort crops dispatch
+      products app.Model app.ProductSort app.ProductQuality crops dispatch
       seeds app.Model app.SeedSort crops dispatch
     ]
 
