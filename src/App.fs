@@ -48,6 +48,9 @@ module AppMode = let all = unitUnionCases<AppMode>
 type [<RequireQualifiedAccess>] OpenDetails =
   | Fertilizers
   | FertilizerPrices
+  | Crops
+  | Products
+  | SeedSources
   | Mod
   | RankerGrowthCalendar
   | RankerProfitBreakdown
@@ -99,7 +102,7 @@ type App = {
   ProductSort: TableSort
   SeedSort: TableSort
   ProductQuality: Quality
-  // NormalizePrices: bool
+  ShowNormalizedProductPrices: bool
 
   CropFilters: CropFilters
   Ranker: Ranker
@@ -222,6 +225,7 @@ type AppMessage =
   | SetProductSort of SortMessage
   | SetSeedSort of SortMessage
   | SetProductQuality of Quality
+  | SetShowNormalizedProductPrices of bool
 
   | SetCropFilters of CropFiltersMessage
   | SetRanker of RankerMessage
@@ -440,6 +444,7 @@ module Update =
     | SetProductSort (multi, s) -> { app with ProductSort = tableSort multi s app.ProductSort }, []
     | SetSeedSort (multi, s) -> { app with SeedSort = tableSort multi s app.SeedSort }, []
     | SetProductQuality q -> { app with ProductQuality = q }, []
+    | SetShowNormalizedProductPrices b -> { app with ShowNormalizedProductPrices = b }, []
 
     | SetCropFilters msg -> { app with CropFilters = cropFilters msg app.CropFilters }, []
     | SetRanker msg -> { app with Ranker = ranker msg app.Ranker }, []

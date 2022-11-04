@@ -2,7 +2,7 @@
   AppMode: 'Ranker',
   DetailsMode: 'Profit Breakdown',
   SettingsTab: 'Skills',
-  OpenDetails: [ 'Fertilizers', 'RankerGrowthCalendar', 'RankerProfitBreakdown' ],
+  OpenDetails: [ 'Crops', 'Fertilizers', 'RankerGrowthCalendar', 'RankerProfitBreakdown' ],
 
   FertilizerSort: [ [ 4, true ], [ 3, true ] ],
   FertilizerPriceSort: [ [ 0, true ] ],
@@ -10,6 +10,7 @@
   ProductSort: [ [ 0, true ] ],
   SeedSort: [ [ 0, true ] ],
   ProductQuality: 0,
+  ShowNormalizedProductPrices: false,
 
   CropFilters: {
     InSeason: true,

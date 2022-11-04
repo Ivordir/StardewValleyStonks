@@ -136,14 +136,13 @@ img
   cursor: pointer
 
 
-
-
 .checkbox-label
   cursor: pointer
 
   & > input
     // hides the input but keeps tab order
     transform: scale(0)
+    opacity: 0
 
   & > input:focus + img
     outline: 2px solid cyan
@@ -376,7 +375,20 @@ img
 
   &-select
     display: flex
+    flex-direction: column
     align-items: center
+
+    & .rselect
+      width: 40%
+
+    & > div
+      display: flex
+      width: 100%
+      justify-content: center
+      align-items: center
+
+      & > *
+        margin: 0 1em 0 1em
 
 // .select
 //   position: relative

@@ -705,6 +705,7 @@ module Decode =
           ProductSort = field (nameof u.ProductSort) tablesort
           SeedSort = field (nameof u.SeedSort) tablesort
           ProductQuality = field (nameof u.ProductQuality) quality
+          ShowNormalizedProductPrices = field (nameof u.ShowNormalizedProductPrices) Decode.bool
 
           CropFilters = field (nameof u.CropFilters) cropFilters
           Ranker = field (nameof u.Ranker) ranker
