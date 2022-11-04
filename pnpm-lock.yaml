@@ -7,13 +7,13 @@ specifiers:
   parcel-reporter-static-files-copy: ^1.4.0
   preact: ^10.11.2
   process: ^0.11.10
-  react-select: ^5.5.9
+  react-select: ^5.6.0
   recharts: ^2.1.16
   yalps: ^0.3.0
 
 dependencies:
   preact: 10.11.2
-  react-select: 5.5.9
+  react-select: 5.6.0
   recharts: 2.1.16
   yalps: 0.3.0
 
@@ -550,7 +550,7 @@ packages:
       '@parcel/fs-search': 2.7.0
       '@parcel/types': 2.7.0
       '@parcel/utils': 2.7.0
-      '@parcel/watcher': 2.0.6
+      '@parcel/watcher': 2.0.7
       '@parcel/workers': 2.7.0
     dev: true
 
@@ -564,7 +564,7 @@ packages:
       '@parcel/fs-search': 2.7.0
       '@parcel/types': 2.7.0
       '@parcel/utils': 2.7.0
-      '@parcel/watcher': 2.0.6
+      '@parcel/watcher': 2.0.7
       '@parcel/workers': 2.7.0_@parcel+core@2.7.0
     dev: true
 
@@ -1068,7 +1068,7 @@ packages:
     dependencies:
       '@parcel/plugin': 2.7.0
       '@parcel/source-map': 2.1.1
-      sass: 1.55.0
+      sass: 1.56.0
     transitivePeerDependencies:
       - '@parcel/core'
     dev: true
@@ -1116,8 +1116,8 @@ packages:
       chalk: 4.1.2
     dev: true
 
-  /@parcel/watcher/2.0.6:
-    resolution: {integrity: sha512-6CaHXp6BNrFY5375OGQLSeaxfO8csgGWbO1U2nUqufDtUks7ZIG5wAyj/wR1zkOxRrhN0EaZWvlgSKYqo7a9lg==}
+  /@parcel/watcher/2.0.7:
+    resolution: {integrity: sha512-gc3hoS6e+2XdIQ4HHljDB1l0Yx2EWh/sBBtCEFNKGSMlwASWeAQsOY/fPbxOBcZ/pg0jBh4Ga+4xHlZc4faAEQ==}
     engines: {node: '>= 10.0.0'}
     requiresBuild: true
     dependencies:
@@ -1205,11 +1205,11 @@ packages:
   /@types/react-transition-group/4.4.5:
     resolution: {integrity: sha512-juKD/eiSM3/xZYzjuzH6ZwpP+/lejltmiS3QEzV/vmb/Q8+HfDmxu+Baga8UEMGBqV88Nbg4l2hY/K2DkyaLLA==}
     dependencies:
-      '@types/react': 18.0.24
+      '@types/react': 18.0.25
     dev: false
 
-  /@types/react/18.0.24:
-    resolution: {integrity: sha512-wRJWT6ouziGUy+9uX0aW4YOJxAY0bG6/AOk5AW5QSvZqI7dk6VBIbXvcVgIw/W5Jrl24f77df98GEKTJGOLx7Q==}
+  /@types/react/18.0.25:
+    resolution: {integrity: sha512-xD6c0KDT4m7n9uD4ZHi02lzskaiqcBxf4zi+tXZY98a04wvc0hi/TcCPC2FOESZi51Nd7tlUeOJY8RofL799/g==}
     dependencies:
       '@types/prop-types': 15.7.5
       '@types/scheduler': 0.16.2
@@ -1287,7 +1287,7 @@ packages:
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
     dependencies:
-      caniuse-lite: 1.0.30001429
+      caniuse-lite: 1.0.30001430
       electron-to-chromium: 1.4.284
       node-releases: 2.0.6
       update-browserslist-db: 1.0.10_browserslist@4.21.4
@@ -1301,8 +1301,8 @@ packages:
     resolution: {integrity: sha512-P8BjAsXvZS+VIDUI11hHCQEv74YT67YUi5JJFNWIqL235sBmjX4+qx9Muvls5ivyNENctx46xQLQ3aTuE7ssaQ==}
     engines: {node: '>=6'}
 
-  /caniuse-lite/1.0.30001429:
-    resolution: {integrity: sha512-511ThLu1hF+5RRRt0zYCf2U2yRr9GPF6m5y90SBCWsvSoYoW7yAGlv/elyPaNfvGCkp6kj/KFZWU0BMA69Prsg==}
+  /caniuse-lite/1.0.30001430:
+    resolution: {integrity: sha512-IB1BXTZKPDVPM7cnV4iaKaHxckvdr/3xtctB3f7Hmenx3qYBhGtTZ//7EllK66aKXW98Lx0+7Yr0kxBtIt3tzg==}
     dev: true
 
   /chalk/2.4.2:
@@ -2104,8 +2104,8 @@ packages:
       lodash: 4.17.21
     dev: false
 
-  /react-select/5.5.9:
-    resolution: {integrity: sha512-68/sd6KmHS2ISCz9PcDhXidGCjFvc1Q1u8yaxSdo8pT7MkKehID/zMoco304+XtdE79DP0Nq8Fz7ROAb7GJ5Xg==}
+  /react-select/5.6.0:
+    resolution: {integrity: sha512-uUvP/72rA8NGhOL16RVBaeC12Wa4NUE0iXIa6hz0YRno9ZgxTmpuMeKzjR7vHcwmigpVCoe0prP+3NVb6Obq8Q==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
@@ -2223,8 +2223,8 @@ packages:
     resolution: {integrity: sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==}
     dev: true
 
-  /sass/1.55.0:
-    resolution: {integrity: sha512-Pk+PMy7OGLs9WaxZGJMn7S96dvlyVBwwtToX895WmCpAOr5YiJYEUJfiJidMuKb613z2xNWcXCHEuOvjZbqC6A==}
+  /sass/1.56.0:
+    resolution: {integrity: sha512-WFJ9XrpkcnqZcYuLRJh5qiV6ibQOR4AezleeEjTjMsCocYW59dEG19U3fwTTXxzi2Ed3yjPBp727hbbj53pHFw==}
     engines: {node: '>=12.0.0'}
     hasBin: true
     dependencies:
