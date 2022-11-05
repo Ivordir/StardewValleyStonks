@@ -203,7 +203,12 @@ module Decode =
 
   open Helpers
 
-  let private wrap (wrapper: 'a -> 'b) (decoder: 'a Decoder) = Fable.Core.JsInterop.(!!) decoder : 'b Decoder
+  let private wrap (wrapper: 'a -> 'b) (decoder: 'a Decoder) =
+    #if FABLE_COMPILER
+    Fable.Core.JsInterop.(!!) decoder : 'b Decoder
+    #else
+    decoder |> Decode.map wrapper
+    #endif
   let private intMeasure<[<Measure>] 'u> = Fable.Core.JsInterop.(!!) Decode.uint32 : int<'u> Decoder
 
   let index (decoder: 'a Decoder) = Decode.array decoder |> wrap Block.wrap
@@ -213,7 +218,11 @@ module Decode =
   let private customKeyValuePairsWith mapping keyMapping decodeValue =
     Decode.keyValuePairs decodeValue |> Decode.map (Seq.map (fun (k, v) -> keyMapping k, v) >> mapping)
   let private wrapKeys mapping (keyWrap: string -> 'k) (decodeValue: 'v Decoder) =
+    #if FABLE_COMPILER
     (Fable.Core.JsInterop.(!!) (Decode.keyValuePairs decodeValue) : ('k * 'v) list Decoder) |> Decode.map mapping
+    #else
+    Decode.keyValuePairs decodeValue |> Decode.map (List.map (fun (k, v) -> keyWrap k, v) >> mapping)
+    #endif
   let private parseKeysWith (mapping: _ seq -> _) parseKey decodeValue =
     Decode.keyValuePairs decodeValue |> Decode.andThen (fun kvps ->
       let acc = ResizeArray ()
@@ -315,8 +324,7 @@ module Decode =
   let private growthDataFields =
     let u = Unchecked.defaultof<GrowthData>
     fun (get: Decode.IGetters) ->
-      let inline field x = get.Required.Field x
-      let stages = field (nameof u.Stages) (index nonZeroNat |> validate "growth stage with at least one stage" (Block.isEmpty >> not))
+      let stages = get.Required.Field (nameof u.Stages) (index nonZeroNat |> validate "growth stage with at least one stage" (Block.isEmpty >> not))
       let total =
         match Some stages with
         | None -> 0u
@@ -326,9 +334,9 @@ module Decode =
         Stages = stages
         TotalTime = total
         RegrowTime = get.Optional.Field (nameof u.RegrowTime) Decode.uint32
-        Seasons = field (nameof u.Seasons) seasons
+        Seasons = get.Required.Field (nameof u.Seasons) seasons
         Paddy = get.Optional.Field (nameof u.Paddy) Decode.bool |> Option.defaultValue false
-        Seed = field (nameof u.Seed) seedId
+        Seed = get.Required.Field (nameof u.Seed) seedId
       }
 
   let growthData: GrowthData Decoder = Decode.object growthDataFields
@@ -336,7 +344,7 @@ module Decode =
   let cropAmount =
     let u = Unchecked.defaultof<CropAmount>
     Decode.object <| fun get ->
-      let inline field name decoder defVal = get.Optional.Field name decoder |> Option.defaultValue defVal
+      let field name decoder defVal = get.Optional.Field name decoder |> Option.defaultValue defVal
       let single = CropAmount.singleAmount
       let minYield = field (nameof u.MinCropYield) Decode.uint32 single.MinCropYield
       let maxYield = field (nameof u.MaxCropYield) (nonZeroNat |> validate "a max crop yield greater than the min crop yield" (fun x -> x >= minYield)) single.MaxCropYield
@@ -371,7 +379,7 @@ module Decode =
   let cropAmountSettings =
     let u = Unchecked.defaultof<CropAmountSettings>
     Decode.object <| fun get ->
-      let inline field name = get.Required.Field name
+      let field name decode = get.Required.Field name decode
       {
         SpecialCharm = field (nameof u.SpecialCharm) Decode.bool
         GiantChecksPerTile = field (nameof u.GiantChecksPerTile) (floatInRange CropAmount.minGiantCropChecks CropAmount.maxGiantCropChecks)
@@ -382,7 +390,7 @@ module Decode =
   let multipliers =
     let u = Unchecked.defaultof<Multipliers>
     Decode.object <| fun get ->
-      let inline field name = get.Required.Field name
+      let field name decode = get.Required.Field name decode
       {
         ProfitMargin = field (nameof u.ProfitMargin) (floatInRange 0.25 1.0 |> validate "a multiple of 0.25" (fun x -> x % 0.25 = 0.0))
         BearsKnowledge = field (nameof u.BearsKnowledge) Decode.bool
@@ -392,10 +400,9 @@ module Decode =
   let modData =
     let u = Unchecked.defaultof<ModData>
     Decode.object <| fun get ->
-      let inline field name = get.Required.Field name
       {
-        QualityProducts = field (nameof u.QualityProducts) Decode.bool
-        QualityProcessors = field (nameof u.QualityProcessors) (set processor)
+        QualityProducts = get.Required.Field (nameof u.QualityProducts) Decode.bool
+        QualityProcessors = get.Required.Field (nameof u.QualityProcessors) (set processor)
       }
 
   let seedMode = Decode.Auto.generateDecoder ()
@@ -403,7 +410,7 @@ module Decode =
   let rawGameData =
     let u = Unchecked.defaultof<RawGameData>
     Decode.object (fun get ->
-      let inline field name = get.Required.Field name
+      let field name decode = get.Required.Field name decode
       {
         FarmCrops = field (nameof u.FarmCrops) (Decode.array farmCrop)
         ForageCrops = field (nameof u.ForageCrops) (Decode.array forageCrop)
@@ -578,7 +585,7 @@ module Decode =
         |> Array.ofSeq
 
       Decode.object (fun get ->
-        let inline field x = get.Required.Field x
+        let field name decode = get.Required.Field name decode
         {
           Data = data
 
@@ -677,7 +684,7 @@ module Decode =
   let ranker =
     let u = Unchecked.defaultof<Ranker>
     Decode.object <| fun get ->
-      let inline field name = get.Required.Field name
+      let field name decode = get.Required.Field name decode
       {
         RankItem = field (nameof u.RankItem) rankItem
         RankMetric = field (nameof u.RankMetric) rankMetric
@@ -690,7 +697,7 @@ module Decode =
     let u = Unchecked.defaultof<App>
     fun model ->
       Decode.object <| fun get ->
-        let inline field x = get.Required.Field x
+        let field name decode = get.Required.Field name decode
         {
           Model = model
           SavedModels = []

@@ -67,7 +67,6 @@ module Selection =
 
 type Model = {
   Data: GameData // The immutable game data the Model acts as a filter over
-  // SelectedDataSets: Set<GameDataKey>
 
   SelectedCrops: SeedId Set
   SelectedSeedPrices: Map<SeedId, Vendor Set>
@@ -117,8 +116,8 @@ module Model =
     fertilizer |> Option.map (getFertilizer model)
   let inline getCrop model crop = model.Data.Crops[crop]
 
-  let forageCrops model = model.Data.Crops.Values |> Seq.choose (function ForageCrop c -> Some c | FarmCrop _ -> None)
-  let forageCropIds model = forageCrops model |> Seq.map ForageCrop.seed
+  let inline forageCrops model = model.Data.ForageCrops.Values
+  let inline forageCropIds model = model.Data.ForageCrops.Keys
 
   let processorUnlocked model processor =
     model.Data.ProcessorUnlockLevel.TryFind processor |> Option.forall (flip Skills.farmingLevelMet model.Skills)
@@ -129,7 +128,7 @@ module Model =
     + if model.Irrigated && growth.Paddy then 0.25 else 0.0
 
   let growthSpeed model fertilizer growth =
-    Fertilizer.Opt.speed (getFertilizerOpt model fertilizer) + growthMultiplier model growth
+    Fertilizer.Opt.speed fertilizer + growthMultiplier model growth
 
   let reducedGrowthStagesAndTime model fertilizer growth =
     growthSpeed model fertilizer growth |> Growth.stagesAndTime growth
@@ -198,8 +197,8 @@ module Model =
   let fertilizerUsed model crop harvests =
     1.0 + replacementFertilizerAmount model crop harvests
 
-  let fertilizerCost model crop fertilizer harvests =
-    lowestFertilizerCost model fertilizer |> Option.map (float >> (*) (fertilizerUsed model crop harvests))
+  // let fertilizerCost model crop fertilizer harvests =
+  //   lowestFertilizerCost model fertilizer |> Option.map (float >> (*) (fertilizerUsed model crop harvests))
 
 
   let selectedCrops model = model.SelectedCrops |> Seq.map (getCrop model)
@@ -506,7 +505,7 @@ module Model =
     (if noGiantCropProb model = 1.0
     then CropAmount.farmingAmounts
     else CropAmount.farmingGiantAmounts)
-      model.Skills model.CropAmount amount (Skills.farmingQualitiesWith (getFertilizerOpt model fertilizer) model.Skills)
+      model.Skills model.CropAmount amount (Skills.farmingQualitiesWith fertilizer model.Skills)
 
   let foragingAmounts model (crop: ForageCrop) =
     Skills.foragingAmounts model.Skills |> Qualities.map (fun a -> a / float crop.Items.Length)
@@ -774,7 +773,7 @@ module Model =
     let growth = Crop.growth crop
     let growthSpans = growthSpans model crop
     fun fertilizer ->
-      let fertCost = lowestFertilizerCostOpt model fertilizer
+      let fertCost = lowestFertilizerCostOpt model (Fertilizer.Opt.name fertilizer)
       let growthTime = cropGrowthTime model fertilizer crop
       let harvests = consecutiveHarvests' growthTime growthSpans growth
       match netProfit, fertCost with
@@ -921,7 +920,7 @@ module Model =
     let xpPerHarvest = Crop.xpPerHarvest (Skills.botanistActive model.Skills) (getItem model) crop
 
     fun fertilizer ->
-      let fertCost = lowestFertilizerCostOpt model fertilizer
+      let fertCost = lowestFertilizerCostOpt model (Fertilizer.Opt.name fertilizer)
       let growthTime = growthTime model fertilizer growth
       let harvests = consecutiveHarvests' growthTime growthSpans growth
       if harvests.Length > 0 && fertCost.IsSome then
@@ -985,7 +984,7 @@ module Model =
         |> Some
 
     fun fertilizer ->
-      let fertCost = lowestFertilizerCostOpt model fertilizer
+      let fertCost = lowestFertilizerCostOpt model (Fertilizer.Opt.name fertilizer)
       let growthTime = growthTime model fertilizer growth
       let harvests = consecutiveHarvests' growthTime growthSpans growth
       match seedPrice, fertCost with
@@ -1099,7 +1098,7 @@ module Model =
         | None -> Qualities.zero)
     let amounts = cropItemAmounts model crop
 
-    let fertCost = lowestFertilizerCostOpt model fertilizer
+    let fertCost = lowestFertilizerCostOpt model (Fertilizer.Opt.name fertilizer)
     let amounts = amounts fertilizer
     let data =
       growthSpans |> Array.choose (fun span ->

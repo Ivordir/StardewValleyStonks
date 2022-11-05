@@ -27,6 +27,7 @@ module Fertilizer =
   let inline speed fertilizer = fertilizer.Speed
 
   module Opt =
+    let name = Option.map name
     let quality = Option.defaultOrMap 0u quality
     let speed = Option.defaultOrMap 0.0 speed
 
@@ -47,22 +48,25 @@ module Quality =
 
   let all = Block.init count enum<Quality>
 
-type [<Erase>] Qualities = ByQuality of float array
+type [<Erase>] Qualities = private ByQuality of float array
 
 module Qualities =
-  let inline private unwrap (qualities: Qualities) = JsInterop.(!!) qualities : float array
+  #if FABLE_COMPILER
+  let inline internal unwrap (qualities: Qualities) = JsInterop.(!!) qualities : float array
+  #else
+  let inline internal unwrap (ByQuality arr) = arr
+  #endif
 
-  let inline create value = ByQuality <| Array.create Quality.count value
+  let inline create value = Array.create Quality.count value |> ByQuality
   let normalSingleton normal =
     let qualities = Array.zeroCreate Quality.count
     qualities[0] <- normal
     ByQuality qualities
-  let inline init initializer = ByQuality <| Array.init Quality.count (enum<Quality> >> initializer)
-  let inline initi initializer = ByQuality <| Array.init Quality.count initializer
+  let inline init initializer = Array.init Quality.count (enum<Quality> >> initializer) |> ByQuality
+  let inline initi initializer = Array.init Quality.count initializer |> ByQuality
 
   let inline wrap arr = ByQuality arr
-  let inline ofArray arr = ByQuality <| Array.copy arr
-  let inline ofIndex (index: _ Block) = ByQuality <| JsInterop.(!!) index
+  let inline ofArray arr = Array.copy arr |> ByQuality
 
   let zero = create 0.0
   let one = create 1.0
@@ -87,8 +91,6 @@ module Qualities =
       sum <- sum + itemi i a * itemi i b
     sum
 
-  // let inline unwrap (ByQuality amounts) = amounts
-  let inline toIndex qualities = unwrap qualities |> Block.wrap
   let inline toArray qualities = unwrap qualities |> Array.copy
   let inline toSeq qualities = unwrap qualities |> Array.toSeq
 

@@ -28,7 +28,7 @@ module Seasons =
   let inline remove (Season season) (seasons: Seasons) = seasons &&& (~~~season)
 
   let inline ofSeason (Season season) = season
-  let inline ofSeq seasons = seasons |> Seq.fold (flip add) Seasons.None
+  let ofSeq seasons = seasons |> Seq.fold (flip add) Seasons.None
 
   let tryExactlyOne = function
     | Seasons.Spring
@@ -37,16 +37,14 @@ module Seasons =
     | Seasons.Winter as season -> Season season |> Some
     | _ -> None
 
-  let setOrder (a: Seasons) (b: Seasons) =
-    let rec next a b =
-      if a = Seasons.None || b = Seasons.None then
-        compare a b
-      else
-        let c = compare (int b &&& 1) (int a &&& 1)
-        if c = 0
-        then next (a >>> 1) (b >>> 1)
-        else c
-    next a b
+  let rec setOrder (a: Seasons) (b: Seasons) =
+    if a = Seasons.None || b = Seasons.None then
+      compare a b
+    else
+      let c = compare (int b &&& 1) (int a &&& 1)
+      if c = 0
+      then setOrder (a >>> 1) (b >>> 1)
+      else c
 
 module Season =
   open type Seasons
@@ -225,7 +223,7 @@ module CropAmount =
 
   let averageCropYield skills settings amount =
     let yieldIncrease =
-      if (amount.MinCropYield > 1u || amount.MaxCropYield > 1u) && amount.FarmLevelsPerYieldIncrease <> 0u
+      if amount.FarmLevelsPerYieldIncrease <> 0u && (amount.MinCropYield > 1u || amount.MaxCropYield > 1u)
       then skills.Farming.Level / amount.FarmLevelsPerYieldIncrease
       else 0u
     let avgExtraYield = float (amount.MinCropYield + amount.MaxCropYield + yieldIncrease) / 2.0

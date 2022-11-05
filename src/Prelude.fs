@@ -90,7 +90,7 @@ module internal CollectionExtentions =
       if array.Length = 0 then invalidArg (nameof array) "The given array cannot be empty."
       let mutable current = mapping array[0]
       for i = 1 to array.Length - 1 do
-        current <- mapping array[i] |> reduction current
+        current <- reduction current (mapping array[i])
       current
 
   [<RequireQualifiedAccess>]
@@ -102,27 +102,52 @@ module internal CollectionExtentions =
 open Fable.Core
 open Fable.Core.JsInterop
 
-type private Dictionary<'a, 'b> = System.Collections.Generic.Dictionary<'a, 'b>
+type Dictionary<'a, 'b> = System.Collections.Generic.Dictionary<'a, 'b>
 
+/// An immutable wrapper around ESM Map. Keys should be primitive (string, number, etc.).
 type [<Erase>] Table<'a, 'b> = private ReadOnlyDictionary of Dictionary<'a, 'b>
 
 [<RequireQualifiedAccess>]
+
 module Table =
-  // using (!!) generates less cluttered js
-  let inline private unwrap (table: Table<'a, 'b>) = !!table: Dictionary<'a, 'b>
+  #if FABLE_COMPILER
+  let inline internal wrap (map: JS.Map<'a, 'b>) = !!map: Table<'a, 'b>
+  #else
+  let inline internal wrap dict = ReadOnlyDictionary dict
+  #endif
 
-  let inline empty () = Dictionary () |> ReadOnlyDictionary
+  #if FABLE_COMPILER
+  let inline internal unwrap (table: Table<'a, 'b>) = !!table: Dictionary<'a, 'b>
+  #else
+  let inline internal unwrap (ReadOnlyDictionary dict) = dict
+  #endif
 
-  let inline wrap dict = ReadOnlyDictionary dict
-  let ofSeq seq =
-    let dict = Dictionary ()
-    for k, v in seq do
-      dict[k] <- v
-    ReadOnlyDictionary dict
+  let inline empty () =
+    #if FABLE_COMPILER
+    JS.Constructors.Map.Create ()
+    #else
+    Dictionary ()
+    #endif
+    |> wrap
+
+  let inline ofSeq seq =
+    #if FABLE_COMPILER
+    JS.Constructors.Map.Create seq
+    #else
+    Dictionary (seq |> Seq.map System.Collections.Generic.KeyValuePair.Create)
+    #endif
+    |> wrap
+
   let ofKeys value keys = keys |> Seq.map (fun k -> k, value k) |> ofSeq
   let ofValues key values = values |> Seq.map (fun v -> key v, v) |> ofSeq
 
-  let inline toSeq (table: Table<'k, 'v>) = !!(unwrap table): ('k * 'v) seq
+  let inline toSeq (table: Table<'k, 'v>) =
+    #if FABLE_COMPILER
+    !!table: ('k * 'v) seq
+    #else
+    table |> unwrap |> Seq.map (fun (KeyValue kv) -> kv)
+    #endif
+
   let inline toArray table = toSeq table |> Array.ofSeq
   let inline toList table = toSeq table |> List.ofSeq
 
@@ -130,36 +155,49 @@ module Table =
   let inline values table = (unwrap table).Values
   let inline count table = (unwrap table).Count
 
+  #if FABLE_COMPILER
+  let find (key: 'a) (table: Table<'a, 'b>) =
+    let value: 'b = table?get key
+    if isNullOrUndefined value
+    then failwith $"The key {key} is not present in the map."
+    else value
+  #else
   let inline find key table = (unwrap table)[key]
+  #endif
+
+  #if FABLE_COMPILER
+  let inline tryFind (key: 'a) (table: Table<'a, 'b>) = (table?get key): 'b option
+  #else
   let tryFind key table =
-    // .TryGetValue is very cluttered js
-    let dict = unwrap table
-    if dict.ContainsKey key
-    then Some dict[key]
-    else None
+    match (unwrap table).TryGetValue key with
+    | true, value -> Some value
+    | _ -> None
+  #endif
+
   let inline containsKey key table = (unwrap table).ContainsKey key
   let exists predicate table = toSeq table |> Seq.exists (uncurry predicate)
   let forall predicate table = toSeq table |> Seq.forall (uncurry predicate)
-
-  let fold folder state table = toSeq table |> Seq.fold (folder >> uncurry) state
-
-  let iter action table = toSeq table |> Seq.iter (uncurry action)
 
 type Table<'a, 'b> with
   member inline this.Count = Table.count this
   member inline this.Keys = Table.keys this
   member inline this.Values = Table.values this
-  member inline this.Item key = Table.find key this
-  member inline this.Find key = Table.find key this
-  member inline this.TryFind key = Table.tryFind key this
-  member inline this.ContainsKey key = Table.containsKey key this
+  member inline this.Item key = this |> Table.find key
+  member inline this.Find key = this |> Table.find key
+  member inline this.TryFind key = this |> Table.tryFind key
+  member inline this.ContainsKey key = this |> Table.containsKey key
 
 
+/// An immutable wrapper around an array.
 type [<Erase>] 'a Block = private ReadOnlyArray of 'a array
 
 [<RequireQualifiedAccess>]
 module Block =
-  let inline private unwrap (index: 'a Block) = !!index: 'a array
+  #if FABLE_COMPILER
+  let inline internal unwrap (index: 'a Block) = !!index: 'a array
+  #else
+  let inline internal unwrap (ReadOnlyArray arr) = arr
+  #endif
 
   let empty = ReadOnlyArray Array.empty
 
@@ -233,7 +271,7 @@ module Block =
 type 'a Block with
   member inline this.Length = Block.length this
   member inline this.IsEmpty = Block.isEmpty this
-  member inline this.Item i = Block.item i this
+  member inline this.Item i = this |> Block.item i
 
 
 
@@ -242,8 +280,8 @@ type 'a Block with
 module internal Util =
   let inline refEqual a b = System.Object.ReferenceEquals (a, b)
 
-  let inline minBy projection a b = if projection a <= projection b then a else b
-  let inline maxBy projection a b = if projection a >= projection b then a else b
+  let minBy projection a b = if projection a <= projection b then a else b
+  let maxBy projection a b = if projection a >= projection b then a else b
 
   let inline compareBy projection a b = compare (projection a) (projection b)
   let inline compareByRev projection a b = compare (projection b) (projection a)

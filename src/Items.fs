@@ -19,16 +19,18 @@ module Category =
 
 type [<Measure>] ItemNum
 type ItemId = int<ItemNum>
-type Item =
-  { Id: ItemId
-    Name: string
-    SellPrice: nat
-    Category: Category }
+type Item = {
+  Id: ItemId
+  Name: string
+  SellPrice: nat
+  Category: Category
+}
 
-type Multipliers =
-  { ProfitMargin: float // 0.25 | 0.5 | 0.75 | 1.0
-    BearsKnowledge: bool
-    ForagedFruitTillerOverrides: ItemId Set }
+type Multipliers = {
+  ProfitMargin: float // 0.25 | 0.5 | 0.75 | 1.0
+  BearsKnowledge: bool
+  ForagedFruitTillerOverrides: ItemId Set
+}
 
 module Item =
   let [<Literal>] ancientSeeds = 499<ItemNum>
@@ -39,10 +41,11 @@ module Item =
   let inline sellPrice item = item.SellPrice
   let inline category item = item.Category
 
+  let private multiplierValue multipliers item =
+    multipliers.ProfitMargin * if item.Id = blackberry && multipliers.BearsKnowledge then 3.0 else 1.0
+
   let multiplier skills multipliers item =
-    Category.multiplier skills item.Category
-    * multipliers.ProfitMargin
-    * if item.Id = blackberry then 3.0 else 1.0
+    Category.multiplier skills item.Category * multiplierValue multipliers item
 
   let priceCalc multiplier basePrice (quality: Quality) =
     if basePrice = 0u then 0u else
@@ -70,9 +73,7 @@ module Item =
         match item.Category with
         | Fruit when not <| multipliers.ForagedFruitTillerOverrides.Contains item.Id -> 1.0
         | category -> Category.multiplier skills category
-      multiplier
-      * multipliers.ProfitMargin
-      * if item.Id = blackberry then 3.0 else 1.0
+      multiplier * multiplierValue multipliers item
 
     let price skills multipliers item quality = priceCalc (multiplier skills multipliers item) item.SellPrice quality
     let prices skills multipliers item = pricesCalc (multiplier skills multipliers item) item.SellPrice
@@ -82,9 +83,10 @@ module Item =
 
 type [<Erase>] Processor = ProcessorName of string
 
-type ModData =
-  { QualityProducts: bool
-    QualityProcessors: Processor Set }
+type ModData = {
+  QualityProducts: bool
+  QualityProcessors: Processor Set
+}
 
 module Processor =
   let [<Literal>] seedMakerSeedAmount = 2u
@@ -111,10 +113,11 @@ type Product =
   | Wine
   | Juice
   | SeedsFromSeedMaker of seed: ItemId
-  | Processed of
-      {| Item: ItemId
-         Processor: Processor
-         Ratio: (nat * nat) option |}
+  | Processed of {|
+      Item: ItemId
+      Processor: Processor
+      Ratio: (nat * nat) option
+    |}
 
 module Product =
   let item = function

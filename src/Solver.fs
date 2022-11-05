@@ -270,11 +270,11 @@ let solutionRequests model fertilizers crops =
 
       for i = 0 to fertilizers.Length - 1 do
         let fertilizer, fertCost = fertilizers[i]
-        match profit (Option.map Fertilizer.name fertilizer) with
+        match profit fertilizer with
         | Some net when net > 0.0 ->
           let replacementCost = lossProb * float fertCost
           strs[1] <- fertilizerIdOption fertilizer
-          let growthTime = Model.growthTime model (Option.map Fertilizer.name fertilizer) growth
+          let growthTime = Model.growthTime model fertilizer growth
           let profit = Profit, net - replacementCost
 
           let mutable growsInPrevious = false
@@ -379,9 +379,9 @@ let solutionRequests model fertilizers crops =
         let fertilizer, _ = fertilizers[i]
         strs[1] <- fertilizerIdOption fertilizer
 
-        match regrowData (Option.map Fertilizer.name fertilizer) with
+        match regrowData fertilizer with
         | Some data ->
-          let growthTime = Model.growthTime model (Option.map Fertilizer.name fertilizer) crop.Growth
+          let growthTime = Model.growthTime model fertilizer crop.Growth
 
           let rec recur start daysAfterFirstSeason harvestsAfterFirstSeason =
             let totalDays = daysAfterFirstSeason + days[start]

@@ -5,9 +5,7 @@ open StardewValleyStonks
 // breakdown table, calendar view from graph
 // table needs to show roi or xp
 
-
 // best indicator for Products. Prices
-
 
 // refactor tables
 //   sticky
@@ -1605,11 +1603,11 @@ let allPairData metric timeNorm model =
     crops |> Array.collect (fun crop ->
       let profit = metric model timeNorm crop
       fertilizers |> Array.map (fun fert ->
-        (Crop.seed crop, fert |> Option.map Fertilizer.name), fert |> Option.map Fertilizer.name |> profit))
+        (Crop.seed crop, Fertilizer.Opt.name fert), profit fert))
 
   {|
     Crops = crops |> Array.map Crop.seed
-    Fertilizers = fertilizers |> Array.map (Option.map Fertilizer.name)
+    Fertilizers = fertilizers |> Array.map Fertilizer.Opt.name
     Pairs = data
   |}
 
@@ -1704,9 +1702,10 @@ let graphView ranker model dispatch =
 let growthCalender app seed fertilizer =
   let model = app.Model
   let crop = Model.getCrop model seed
+  let fert = Model.getFertilizerOpt model fertilizer
   let growth = Crop.growth crop
   let spans = Model.growthSpans model crop
-  let data = Growth.consecutiveHarvestsData spans (Model.growthSpeed model fertilizer growth) growth
+  let data = Growth.consecutiveHarvestsData spans (Model.growthSpeed model fert growth) growth
 
   let firstStageImages =
     data.Stages
@@ -1799,8 +1798,9 @@ let growthCalender app seed fertilizer =
 
 // item amount -> item price amount -> gold seed
 
-let profitBreakdownTable timeNorm model seed fert =
+let profitBreakdownTable timeNorm model seed fertName =
   let crop = Model.getCrop model seed
+  let fert = Model.getFertilizerOpt model fertName
   let items = Crop.items crop
   let data = Model.cropProfitData model timeNorm crop fert
 
@@ -1842,11 +1842,11 @@ let profitBreakdownTable timeNorm model seed fert =
   let fertilizerBoughtRow =
     match fert with
     | Some fert ->
-      let fertPrice = Model.fertilizerLowestPriceBuyFrom model fert
+      let fertPrice = Model.fertilizerLowestPriceBuyFrom model fert.Name
       fun amount ->
         tr [
           td [ colSpan 4; children [
-            Image.Icon.fertilizer <| Model.getFertilizer model fert
+            Image.Icon.fertilizer fert
             match fertPrice with
             | Some (NonCustom vendor, _) ->
               ofStr " from "
@@ -2288,7 +2288,8 @@ let selectedCropAndFertilizer2 =
       match crop, fert with
       | Some seed, Some fert_2 ->
         let crop = Model.getCrop app.Model seed
-        Model.harvests model crop fert_2
+        let fert = Model.getFertilizerOpt app.Model fert_2
+        Model.harvests model crop fert
       | _ -> 0u
 
     let cropOption seed =
@@ -2466,7 +2467,7 @@ let debug app =
   let data =
     Solver.solutionRequests
       app.Model
-      (Model.selectedFertilizers model |> Seq.map Some |> Seq.append [ if model.AllowNoFertilizer then None ] |> Seq.map (Option.map Fertilizer.name) |> Array.ofSeq)
+      (Model.selectedFertilizers model |> Seq.map Some |> Seq.append [ if model.AllowNoFertilizer then None ] |> Seq.map Fertilizer.Opt.name |> Array.ofSeq)
       (Model.selectedCrops model |> Seq.map Crop.seed |> Array.ofSeq)
   let solution, profit = Solver.solveRanges data
   // best, profit
@@ -2499,16 +2500,19 @@ let generateModeView app dispatch =
     div [
       let x, y = calc ()
       ofFloat y
-      yield! x |> Seq.collect (fun res -> res.variables) |> Seq.map (fun (n, i) ->
-        div
-          [ ofStr $"{n}: {i}" ] )
-      button
-        [ onClick (fun _ ->
-            JS.console.time n
-            for _ = 0 to 10 do
-              calc() |> ignore
-            JS.console.timeEnd n)
-          text "Time" ] ]
+      yield!
+        x
+        |> Seq.collect (fun res -> res.variables)
+        |> Seq.map (fun (n, i) -> div (ofStr $"{n}: {i}"))
+      button [
+        onClick (fun _ ->
+          JS.console.time n
+          for _ = 0 to 10 do
+            calc() |> ignore
+          JS.console.timeEnd n)
+        text "Time"
+      ]
+    ]
 
   // let calc func () =
   //   func
@@ -2553,13 +2557,15 @@ let generateModeView app dispatch =
 
     button [
       onClick (fun _ -> solve "s1" Solver.solutionRequests 100)
-      text "s1 x 100" ]
+      text "s1 x 100"
+    ]
 
     br []
 
     button [
       onClick (fun _ -> solve "s1" Solver.solutionRequests 1)
-      text "s1" ]
+      text "s1"
+    ]
 
     let model = app.Model
     let solution, total =
@@ -2568,19 +2574,29 @@ let generateModeView app dispatch =
         (model.SelectedFertilizers |> Seq.map Some |> Seq.append [ if model.AllowNoFertilizer then None ] |> Array.ofSeq)
         (model.SelectedCrops |> Array.ofSeq)
       |> Solver.solveRanges
+
     details [ children [
       summary ($"Total: {total}")
-      div (solution |> Seq.collect (fun res -> res.variables) |> Seq.map (fun (n, i) ->
-        let varName =
-          n.Split "@"
-          |> Array.map (fun s ->
-            match System.Int32.TryParse s with
-            | true, value -> Model.getCrop model (value * 1<_>) |> Crop.name (Model.getItem model)
-            | _ -> s)
-          |> String.concat " "
+      div [
+        Class.open'
 
-        div (ofStr $"{varName}: {i}"))) ] ]
-    ]
+        children (
+          solution
+          |> Seq.collect (fun res -> res.variables)
+          |> Seq.map (fun (n, i) ->
+            let varName =
+              n.Split "@"
+              |> Array.map (fun s ->
+                match System.Int32.TryParse s with
+                | true, value -> Model.getCrop model (value * 1<_>) |> Crop.name (Model.getItem model)
+                | _ -> s)
+              |> String.concat " "
+
+            div (ofStr $"{varName}: {i}"))
+        )
+      ]
+    ] ]
+  ]
 
 
 let view app dispatch =
