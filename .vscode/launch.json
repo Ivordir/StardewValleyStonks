@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "Debug with Chrome",
-      "type": "pwa-chrome",
+      "type": "chrome",
       "request": "launch",
       "preLaunchTask": "Start",
       "url": "http://localhost:1234",

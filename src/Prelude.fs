@@ -194,18 +194,18 @@ type [<Erase>] 'a Block = private ReadOnlyArray of 'a array
 [<RequireQualifiedAccess>]
 module Block =
   #if FABLE_COMPILER
-  let inline internal unwrap (index: 'a Block) = !!index: 'a array
+  let inline internal unwrap (block: 'a Block) = !!block: 'a array
   #else
   let inline internal unwrap (ReadOnlyArray arr) = arr
   #endif
 
   let empty = ReadOnlyArray Array.empty
 
-  let inline length index = unwrap index |> Array.length
-  let inline isEmpty index = length index = 0
+  let inline length block = unwrap block |> Array.length
+  let inline isEmpty block = length block = 0
 
-  let inline item i index = unwrap index |> Array.item i
-  let inline tryItem i index = unwrap index |> Array.tryItem i
+  let inline item i block = unwrap block |> Array.item i
+  let inline tryItem i block = unwrap block |> Array.tryItem i
 
   let inline wrap array = ReadOnlyArray array
   let inline ofSeq seq = Array.ofSeq seq |> ReadOnlyArray
@@ -216,57 +216,57 @@ module Block =
   let inline zeroCreate count = Array.zeroCreate count |> ReadOnlyArray
   let inline replicate count value = Array.replicate count value |> ReadOnlyArray
 
-  let inline toArray index = unwrap index |> Array.copy
-  let inline toSeq index = unwrap index |> Array.toSeq
-  let inline toList index = unwrap index |> Array.toList
+  let inline toArray block = unwrap block |> Array.copy
+  let inline toSeq block = unwrap block |> Array.toSeq
+  let inline toList block = unwrap block |> Array.toList
 
-  let inline exists predicate index = unwrap index |> Array.exists predicate
-  let inline forall predicate index = unwrap index |> Array.forall predicate
+  let inline exists predicate block = unwrap block |> Array.exists predicate
+  let inline forall predicate block = unwrap block |> Array.forall predicate
 
-  let inline filter predicate index = unwrap index |> Array.filter predicate |> ReadOnlyArray
+  let inline filter predicate block = unwrap block |> Array.filter predicate |> ReadOnlyArray
 
-  let inline map' mapping index = unwrap index |> Array.map mapping
-  let inline map mapping index = map' mapping index |> ReadOnlyArray
-  let inline mapi' mapping index = unwrap index |> Array.mapi mapping
-  let inline mapi mapping index = unwrap index |> Array.mapi mapping |> ReadOnlyArray
+  let inline map' mapping block = unwrap block |> Array.map mapping
+  let inline map mapping block = map' mapping block |> ReadOnlyArray
+  let inline mapi' mapping block = unwrap block |> Array.mapi mapping
+  let inline mapi mapping block = unwrap block |> Array.mapi mapping |> ReadOnlyArray
   let inline map2 mapping a b = Array.map2 mapping (unwrap a) (unwrap b) |> ReadOnlyArray
 
 
-  let inline fold folder state index = unwrap index |> Array.fold folder state
+  let inline fold folder state block = unwrap block |> Array.fold folder state
 
-  let inline mapFold' mapping state index = unwrap index |> Array.mapFold mapping state
+  let inline mapFold' mapping state block = unwrap block |> Array.mapFold mapping state
 
-  let inline reduce reduction index = unwrap index |> Array.reduce reduction
+  let inline reduce reduction block = unwrap block |> Array.reduce reduction
 
-  let inline sum index = unwrap index |> Array.sum
-  let inline sumBy projection index = unwrap index |> Array.sumBy projection
+  let inline sum block = unwrap block |> Array.sum
+  let inline sumBy projection block = unwrap block |> Array.sumBy projection
 
-  let inline max index = unwrap index |> Array.max
-  let inline maxBy projection index = unwrap index |> Array.maxBy projection
-  let inline min index = unwrap index |> Array.min
-  let inline minBy projection index = unwrap index |> Array.minBy projection
+  let inline max block = unwrap block |> Array.max
+  let inline maxBy projection block = unwrap block |> Array.maxBy projection
+  let inline min block = unwrap block |> Array.min
+  let inline minBy projection block = unwrap block |> Array.minBy projection
 
-  let inline mapReduce reduction mapping index = unwrap index |> Array.mapReduce reduction mapping
+  let inline mapReduce reduction mapping block = unwrap block |> Array.mapReduce reduction mapping
 
 
-  let inline find predicate index = unwrap index |> Array.find predicate
-  let inline tryFind predicate index = unwrap index |> Array.tryFind predicate
-  let inline findIndex predicate index = unwrap index |> Array.findIndex predicate
-  let inline tryFindIndex predicate index = unwrap index |> Array.tryFindIndex predicate
-  let inline pick chooser index = unwrap index |> Array.pick chooser
-  let inline tryPick chooser index = unwrap index |> Array.tryPick chooser
+  let inline find predicate block = unwrap block |> Array.find predicate
+  let inline tryFind predicate block = unwrap block |> Array.tryFind predicate
+  let inline findIndex predicate block = unwrap block |> Array.findIndex predicate
+  let inline tryFindIndex predicate block = unwrap block |> Array.tryFindIndex predicate
+  let inline pick chooser block = unwrap block |> Array.pick chooser
+  let inline tryPick chooser block = unwrap block |> Array.tryPick chooser
 
   let inline append a b = Array.append (unwrap a) (unwrap b) |> ReadOnlyArray
   let inline allPairs a b = Array.allPairs (unwrap a) (unwrap b) |> ReadOnlyArray
 
-  let inline iter action index = unwrap index |> Array.iter action
-  let inline iteri action index = unwrap index |> Array.iteri action
+  let inline iter action block = unwrap block |> Array.iter action
+  let inline iteri action block = unwrap block |> Array.iteri action
 
-  let inline sort index = unwrap index |> Array.sort |> ReadOnlyArray
-  let inline sortBy projection index = unwrap index |> Array.sortBy projection |> ReadOnlyArray
-  let inline sortDescending index = unwrap index |> Array.sortDescending |> ReadOnlyArray
-  let inline sortByDescending projection index = unwrap index |> Array.sortByDescending projection |> ReadOnlyArray
-  let inline sortWith comparer index = unwrap index |> Array.sortWith comparer |> ReadOnlyArray
+  let inline sort block = unwrap block |> Array.sort |> ReadOnlyArray
+  let inline sortBy projection block = unwrap block |> Array.sortBy projection |> ReadOnlyArray
+  let inline sortDescending block = unwrap block |> Array.sortDescending |> ReadOnlyArray
+  let inline sortByDescending projection block = unwrap block |> Array.sortByDescending projection |> ReadOnlyArray
+  let inline sortWith comparer block = unwrap block |> Array.sortWith comparer |> ReadOnlyArray
 
 type 'a Block with
   member inline this.Length = Block.length this

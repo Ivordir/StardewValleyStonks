@@ -19,9 +19,9 @@
     "yalps": "^0.3.0"
   },
   "devDependencies": {
-    "@parcel/config-default": "^2.7.0",
-    "@parcel/transformer-sass": "^2.7.0",
-    "parcel": "^2.7.0",
+    "@parcel/config-default": "^2.8.0",
+    "@parcel/transformer-sass": "^2.8.0",
+    "parcel": "^2.8.0",
     "parcel-reporter-static-files-copy": "^1.4.0",
     "process": "^0.11.10"
   },
