@@ -21,10 +21,14 @@ module Fertilizer =
   let [<Literal>] lossProbability = 0.1
   let [<Literal>] minSpeed = 0.0
 
-  let inline name fertilizer = fertilizer.Name
-  let inline nameStr fertilizer = string fertilizer.Name
-  let inline quality fertilizer = fertilizer.Quality
-  let inline speed fertilizer = fertilizer.Speed
+  let name fertilizer = fertilizer.Name
+  #if FABLE_COMPILER
+  let nameStr fertilizer = !!fertilizer.Name: string
+  #else
+  let nameStr (FertName name) = name
+  #endif
+  let quality fertilizer = fertilizer.Quality
+  let speed fertilizer = fertilizer.Speed
 
   module Opt =
     let name = Option.map name
@@ -52,7 +56,7 @@ type [<Erase>] Qualities = private ByQuality of float array
 
 module Qualities =
   #if FABLE_COMPILER
-  let inline internal unwrap (qualities: Qualities) = JsInterop.(!!) qualities : float array
+  let inline internal unwrap (qualities: Qualities) = !!qualities : float array
   #else
   let inline internal unwrap (ByQuality arr) = arr
   #endif
@@ -117,10 +121,10 @@ module Qualities =
   // P(x4) = 1 * (1 - p(x3)) * (1 - p(x2)) * (1 - p(x1))
   //
   // Assumes each quality only appears once in `probabilities`.
-  let ifElseDistribution probabilities =
+  let ifElseDistribution (probabilities: (Quality * float) array) =
     let dist = Array.zeroCreate Quality.count
     let mutable runningProb = 1.0
-    for quality: Quality, rawProb in probabilities do
+    for quality, rawProb in probabilities do
       let prob = runningProb * min 1.0 rawProb
       dist[int quality] <- prob
       runningProb <- runningProb - prob // = runningProb * (1.0 - rawProb)
@@ -144,10 +148,10 @@ type Farming = Skill<{| Tiller: bool; Agriculturist: bool; Artisan: bool |}>
 type Foraging = Skill<{| Gatherer: bool; Botanist: bool |}>
 
 module Skill =
-  let inline level skill = skill.Level
-  let inline buff skill = skill.Buff
-  let inline professions skill = skill.Professions
-  let inline buffedLevel skill = skill.Level + skill.Buff
+  let level skill = skill.Level
+  let buff skill = skill.Buff
+  let professions skill = skill.Professions
+  let buffedLevel skill = skill.Level + skill.Buff
 
 type Skills = {
   Farming: Farming
@@ -164,29 +168,29 @@ module Skills =
   let [<Literal>] gathererUnlockLevel = 5u
   let [<Literal>] botanistUnlockLevel = 10u
 
-  let inline farmingLevelMet level skills = skills.IgnoreSkillLevelRequirements || skills.Farming.Level >= level
+  let farmingLevelMet level skills = skills.IgnoreSkillLevelRequirements || skills.Farming.Level >= level
 
-  let inline tillerLevelMet skills = farmingLevelMet tillerUnlockLevel skills
-  let inline artisanLevelMet skills = farmingLevelMet artisanUnlockLevel skills
-  let inline agriculturistLevelMet skills = farmingLevelMet agriculturistUnlockLevel skills
+  let tillerLevelMet skills = farmingLevelMet tillerUnlockLevel skills
+  let artisanLevelMet skills = farmingLevelMet artisanUnlockLevel skills
+  let agriculturistLevelMet skills = farmingLevelMet agriculturistUnlockLevel skills
 
-  let inline tillerActive skills = skills.Farming.Professions.Tiller && tillerLevelMet skills
-  let inline artisanActive skills = skills.Farming.Professions.Artisan && artisanLevelMet skills
-  let inline agriculturistActive skills = skills.Farming.Professions.Agriculturist && agriculturistLevelMet skills
+  let tillerActive skills = skills.Farming.Professions.Tiller && tillerLevelMet skills
+  let artisanActive skills = skills.Farming.Professions.Artisan && artisanLevelMet skills
+  let agriculturistActive skills = skills.Farming.Professions.Agriculturist && agriculturistLevelMet skills
 
 
-  let inline foragingLevelMet level skills = skills.IgnoreSkillLevelRequirements || skills.Foraging.Level >= level
+  let foragingLevelMet level skills = skills.IgnoreSkillLevelRequirements || skills.Foraging.Level >= level
 
-  let inline gathererLevelMet skills = foragingLevelMet gathererUnlockLevel skills
-  let inline botanistLevelMet skills = foragingLevelMet botanistUnlockLevel skills
+  let gathererLevelMet skills = foragingLevelMet gathererUnlockLevel skills
+  let botanistLevelMet skills = foragingLevelMet botanistUnlockLevel skills
 
-  let inline gathererActive skills = skills.Foraging.Professions.Gatherer && gathererLevelMet skills
-  let inline botanistActive skills = skills.Foraging.Professions.Botanist && botanistLevelMet skills
+  let gathererActive skills = skills.Foraging.Professions.Gatherer && gathererLevelMet skills
+  let botanistActive skills = skills.Foraging.Professions.Botanist && botanistLevelMet skills
 
 
   open type Quality
 
-  let farmingQualitiesCalc fertQuality skills =
+  let private farmingQualitiesCalc fertQuality skills =
     let buffLevel = Skill.buffedLevel skills.Farming
     let gold = 0.01 + 0.2 * (float buffLevel / 10.0 + float fertQuality * float (buffLevel + 2u) / 12.0)
     let probabilities =
@@ -201,8 +205,8 @@ module Skills =
       |]
     Qualities.ifElseDistribution probabilities
 
-  let inline farmingQualitiesWith fert skills = farmingQualitiesCalc (Fertilizer.Opt.quality fert) skills
-  let inline farmingQualitiesFrom fert skills = farmingQualitiesCalc (Fertilizer.quality fert) skills
+  let farmingQualitiesWith fert skills = farmingQualitiesCalc (Fertilizer.Opt.quality fert) skills
+  let farmingQualitiesFrom fert skills = farmingQualitiesCalc fert.Quality skills
   let inline farmingQualities skills = farmingQualitiesWith None skills
 
   let foragingQualities skills =

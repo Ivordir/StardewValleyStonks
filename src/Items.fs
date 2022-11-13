@@ -36,10 +36,10 @@ module Item =
   let [<Literal>] ancientSeeds = 499<ItemNum>
   let [<Literal>] blackberry = 410<ItemNum>
 
-  let inline id item = item.Id
-  let inline name item = item.Name
-  let inline sellPrice item = item.SellPrice
-  let inline category item = item.Category
+  let id item = item.Id
+  let name item = item.Name
+  let sellPrice item = item.SellPrice
+  let category item = item.Category
 
   let private multiplierValue multipliers item =
     multipliers.ProfitMargin * if item.Id = blackberry && multipliers.BearsKnowledge then 3.0 else 1.0
@@ -146,9 +146,9 @@ module Product =
   let private artisanMultiplier skills multipliers =
     Category.multiplier skills Artisan * multipliers.ProfitMargin
 
-  let inline preservesJarPrice basePrice = basePrice * 2u + 50u
-  let inline winePrice basePrice = basePrice * 3u
-  let inline juicePrice basePrice = basePrice |> withMultiplier 2.25
+  let preservesJarPrice basePrice = basePrice * 2u + 50u
+  let winePrice basePrice = basePrice * 3u
+  let juicePrice basePrice = basePrice |> withMultiplier 2.25
 
   let priceCalc modData multiplier basePrice processor quality =
     let quality =

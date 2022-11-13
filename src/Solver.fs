@@ -216,7 +216,7 @@ let solutionRequests model fertilizers crops =
   let nthSeason, days =
     if model.Location = Farm
     then nthSeason, days
-    else Seasons.ofSeq nthSeason |> Season |> Array.singleton, Array.sum days |> Array.singleton
+    else Seasons.ofSeq nthSeason |> Season |> Array.singleton, Array.natSum days |> Array.singleton
   let days = days |> Array.map (fun x -> x - 1u)
   let seasons = Seasons.ofSeq nthSeason
   let seasonNames =

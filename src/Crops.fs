@@ -18,7 +18,7 @@ type [<Erase>] Season = Season of Seasons
 module Seasons =
   let [<Literal>] count = 4
 
-  let inline name (seasons: Seasons) = enumName seasons
+  let name (seasons: Seasons) = enumName seasons
 
   let inline intersect (a: Seasons) (b: Seasons) = a &&& b
   let inline overlap a b = intersect a b <> Seasons.None
@@ -92,7 +92,7 @@ module Season =
       seasons.Add season
       season <- next season
     seasons.Add season
-    seasons.ToArray ()
+    resizeToArray seasons
 
   let distance start finish =
     let mutable distance = 0u
@@ -112,9 +112,9 @@ type DateSpan = {
 }
 
 module DateSpan =
-  let inline startSeason span = span.StartSeason
-  let inline endSeason span = span.EndSeason
-  let inline totalDays span = span.TotalDays
+  let startSeason span = span.StartSeason
+  let endSeason span = span.EndSeason
+  let totalDays span = span.TotalDays
 
 type [<Erase>] Date = Date of season: Season * day: nat
 
@@ -126,8 +126,8 @@ module Date =
   let inline season (Date (season, _)) = season
   let inline day (Date (_, day)) = day
 
-  let seasonsBetween (Date (start, _)) (Date (finish, _)) = Season.seasonsBetween start finish
-  let seasonSpan (Date (start, _)) (Date (finish, _)) = Season.span start finish
+  let inline seasonsBetween (Date (start, _)) (Date (finish, _)) = Season.seasonsBetween start finish
+  let inline seasonSpan (Date (start, _)) (Date (finish, _)) = Season.span start finish
 
   let seasonsAndDays (Date (startSeason, startDay)) (Date (endSeason, endDay)) =
     let seasons = Season.span startSeason endSeason
@@ -143,28 +143,28 @@ module Date =
     let spans = ResizeArray()
     let nthSeason, days = seasonsAndDays startDate endDate
 
-    let mutable start = season startDate
-    let mutable totalDays = 0u
-    for i = 0 to nthSeason.Length - 1 do
-      let season = nthSeason[i]
-      if seasons |> Seasons.contains season then
-        if totalDays = 0u then start <- season
-        totalDays <- totalDays + days[i]
-      elif totalDays > 0u then
-        spans.Add {
-          StartSeason = start
-          EndSeason = nthSeason[i - 1]
-          TotalDays = totalDays
-        }
-        totalDays <- 0u
-    if totalDays > 0u then
+    let mutable i = 0
+    while i < nthSeason.Length && seasons |> Seasons.contains nthSeason[i] |> not do
+      i <- i + 1
+
+    while i < nthSeason.Length do
+      let mutable totalDays = days[i]
+      let mutable j = i + 1
+      while j < nthSeason.Length && seasons |> Seasons.contains nthSeason[j] do
+        totalDays <- totalDays + days[j]
+        j <- j + 1
+
       spans.Add {
-        StartSeason = start
-        EndSeason = season endDate
+        StartSeason = nthSeason[i]
+        EndSeason = nthSeason[j - 1]
         TotalDays = totalDays
       }
 
-    spans.ToArray()
+      while j < nthSeason.Length && seasons |> Seasons.contains nthSeason[j] |> not do
+        j <- j + 1
+      i <- j
+
+    resizeToArray spans
 
   let inline dayValid day = day |> onClosedInterval firstDay lastDay
 
@@ -400,16 +400,16 @@ type FarmCrop = {
 }
 
 module FarmCrop =
-  let inline growth crop = crop.Growth
-  let inline regrowTime crop = crop.RegrowTime
-  let inline seed crop = crop.Growth.Seed
-  let inline seedItem crop = crop.Growth |> Growth.seedItem
-  let inline item crop = crop.Item
-  let inline amount crop = crop.Amount
-  let inline extraItem crop = crop.ExtraItem
+  let growth crop = crop.Growth
+  let regrowTime crop = crop.RegrowTime
+  let seed crop = crop.Growth.Seed
+  let seedItem crop = crop.Growth |> Growth.seedItem
+  let item crop = crop.Item
+  let amount crop = crop.Amount
+  let extraItem crop = crop.ExtraItem
 
-  let inline growsInSeason season crop = crop.Growth |> Growth.growsInSeason season
-  let inline growsInSeasons seasons crop = crop.Growth |> Growth.growsInSeasons seasons
+  let growsInSeason season crop = crop.Growth |> Growth.growsInSeason season
+  let growsInSeasons seasons crop = crop.Growth |> Growth.growsInSeasons seasons
 
   let xpPerHarvest item crop =
     let price = item crop.Item |> Item.sellPrice
@@ -436,16 +436,16 @@ module ForageCrop =
   let [<Literal>] forageSeedsPerCraft = 10u
   let [<Literal>] xpPerItem = 7u
 
-  let inline growth crop = crop.Growth
-  let inline seed crop = crop.Growth.Seed
-  let inline seedItem crop = crop.Growth |> Growth.seedItem
-  let inline items crop = crop.Items
-  let inline seedRecipeUnlockLevel crop = crop.SeedRecipeUnlockLevel
+  let growth crop = crop.Growth
+  let seed crop = crop.Growth.Seed
+  let seedItem crop = crop.Growth |> Growth.seedItem
+  let items crop = crop.Items
+  let seedRecipeUnlockLevel crop = crop.SeedRecipeUnlockLevel
 
-  let inline seedsRecipeUnlocked skills crop = Skills.foragingLevelMet crop.SeedRecipeUnlockLevel skills
+  let seedsRecipeUnlocked skills crop = Skills.foragingLevelMet crop.SeedRecipeUnlockLevel skills
 
-  let inline growsInSeason season = growth >> Growth.growsInSeason season
-  let inline growsInSeasons seasons = growth >> Growth.growsInSeasons seasons
+  let growsInSeason season = growth >> Growth.growsInSeason season
+  let growsInSeasons seasons = growth >> Growth.growsInSeasons seasons
 
   let xpPerHarvest botanist = float xpPerItem * if botanist then 1.2 else 1.0
 

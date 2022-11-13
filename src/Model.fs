@@ -148,18 +148,15 @@ module Model =
   let harvests model crop fertilizer =
     let growth = Crop.growth crop
     let harvests = Growth.consecutiveHarvests (growthSpans model crop) (growthSpeed model fertilizer growth) growth
-    Array.sum harvests
+    Array.natSum harvests
 
-  let noGiantCropProb model =
-    if model.Location = Greenhouse
-    then 1.0
-    else CropAmount.noGiantCropProb model.CropAmount
+  let giantCropsPossible model = model.Location <> Greenhouse
 
-  let inline giantCropProb model = 1.0 - noGiantCropProb model
+  let giantCropProb model = if giantCropsPossible model then CropAmount.giantCropProb model.CropAmount else 0.0
 
   let farmCropFertilizerLossProb model (crop: FarmCrop) =
-    if crop.Amount.Giant
-    then Fertilizer.lossProbability * giantCropProb model
+    if giantCropsPossible model && crop.Amount.Giant
+    then Fertilizer.lossProbability * CropAmount.giantCropProb model.CropAmount
     else 0.0
 
   let lostFertilizerPerHarvest model = function
@@ -322,8 +319,8 @@ module Model =
     if model.SellRawItems.Contains (seed, item)
     then Some <| itemPrices model (getItem model item)
     else None
-    |> Option.merge (Qualities.map2 max) (itemBestProductPrices model seed item)
-    |> Option.merge (Qualities.map2 max) (customSellPrices model seed item)
+    |> Option.reduce (Qualities.map2 max) (itemBestProductPrices model seed item)
+    |> Option.reduce (Qualities.map2 max) (customSellPrices model seed item)
 
   let itemBestProfit model seed item quality =
     if model.SellRawItems.Contains (seed, item)
@@ -336,8 +333,8 @@ module Model =
     if model.SellRawItems.Contains (seed, item)
     then Some <| itemPrices model (getItem model item)
     else None
-    |> Option.merge (Qualities.map2 max) (itemBestProductProfits model seed item)
-    |> Option.merge (Qualities.map2 max) (customSellPrices model seed item)
+    |> Option.reduce (Qualities.map2 max) (itemBestProductProfits model seed item)
+    |> Option.reduce (Qualities.map2 max) (customSellPrices model seed item)
 
   // refactor / correct forage prices
 
@@ -352,7 +349,7 @@ module Model =
       |> Selection.selectedValue seed
       |> Option.map (tuple2 Custom)
 
-    Option.merge (minBy snd) price custom
+    Option.reduce (minBy snd) price custom
 
 
   let fertilizerLowestPriceBuyFrom model fertilizer =
@@ -366,7 +363,7 @@ module Model =
       |> Selection.selectedValue fertilizer
       |> Option.map (tuple2 Custom)
 
-    Option.merge (minBy snd) price custom
+    Option.reduce (minBy snd) price custom
 
   type private Data = {|
     Price: nat
@@ -441,8 +438,8 @@ module Model =
     if model.SellRawItems.Contains (seed, item)
     then Some <| itemForagePrices model (getItem model item)
     else None
-    |> Option.merge (Qualities.map2 max) (itemBestProductPrices model seed item)
-    |> Option.merge (Qualities.map2 max) (customSellPrices model seed item)
+    |> Option.reduce (Qualities.map2 max) (itemBestProductPrices model seed item)
+    |> Option.reduce (Qualities.map2 max) (customSellPrices model seed item)
 
   let itemForageBestProfit model seed item quality =
     if model.SellRawItems.Contains (seed, item)
@@ -455,8 +452,8 @@ module Model =
     if model.SellRawItems.Contains (seed, item)
     then Some <| itemForagePrices model (getItem model item)
     else None
-    |> Option.merge (Qualities.map2 max) (itemBestProductProfits model seed item)
-    |> Option.merge (Qualities.map2 max) (customSellPrices model seed item)
+    |> Option.reduce (Qualities.map2 max) (itemBestProductProfits model seed item)
+    |> Option.reduce (Qualities.map2 max) (customSellPrices model seed item)
 
   let private cropBestItemCalc comparisonValue crop =
     Crop.items crop |> Block.mapReduce max comparisonValue
@@ -496,16 +493,15 @@ module Model =
 
 
   let farmingAmounts model amount farmingQualities =
-    (if noGiantCropProb model = 1.0
-    then CropAmount.farmingAmounts
-    else CropAmount.farmingGiantAmounts)
-      model.Skills model.CropAmount amount farmingQualities
+    if giantCropsPossible model
+    then CropAmount.farmingGiantAmounts model.Skills model.CropAmount amount farmingQualities
+    else CropAmount.farmingAmounts model.Skills model.CropAmount amount farmingQualities
 
   let farmingAmounts' model amount fertilizer =
-    (if noGiantCropProb model = 1.0
-    then CropAmount.farmingAmounts
-    else CropAmount.farmingGiantAmounts)
-      model.Skills model.CropAmount amount (Skills.farmingQualitiesWith fertilizer model.Skills)
+    let qualities = Skills.farmingQualitiesWith fertilizer model.Skills
+    if giantCropsPossible model
+    then CropAmount.farmingGiantAmounts model.Skills model.CropAmount amount qualities
+    else CropAmount.farmingAmounts model.Skills model.CropAmount amount qualities
 
   let foragingAmounts model (crop: ForageCrop) =
     Skills.foragingAmounts model.Skills |> Qualities.map (fun a -> a / float crop.Items.Length)
@@ -514,6 +510,8 @@ module Model =
   let private seedItemPrice model seed = itemPrice model (getSeedItem model seed) Normal
 
   let private forageSeedsProfit model seed = float (ForageCrop.forageSeedsPerCraft * seedItemPrice model seed)
+
+  let private forageRawCropProfit profits i = profits |> Block.sumBy (Qualities.itemi i)
 
   // Needs tests, e.g. compared to using brute force or lp methods
   let private forageCropProfitPerHarvestIgnoreSeedsCalc model crop profits (amounts: Qualities) =
@@ -528,16 +526,13 @@ module Model =
       let mutable profit = 0.0
       let mutable i = 0
 
-      let inline rawCropProfit i =
-        profits |> Block.sumBy (Qualities.itemi i)
-
-      while i < Quality.count && rawCropProfit i <= forageSeedsProfit do
+      while i < Quality.count && forageRawCropProfit profits i <= forageSeedsProfit do
         profit <- profit + forageSeedsProfit * amounts[i]
         i <- i + 1
 
       while i < Quality.count do
-        assert (rawCropProfit i > forageSeedsProfit)
-        profit <- profit + (rawCropProfit i) * amounts[i]
+        assert (forageRawCropProfit profits i > forageSeedsProfit)
+        profit <- profit + (forageRawCropProfit profits i) * amounts[i]
         i <- i + 1
 
       profit
@@ -567,55 +562,49 @@ module Model =
     // Since this solution also covers and solves all other cases for net profit as well,
     // it is reused for simplicity and reducing code size.
 
-    let inline (@) a b = a + "@" + b
+    let inline (@) a b = a + ("@" + b)
 
     let validQualities = Quality.all |> Block.filter (fun q -> amounts[q] > 0.0)
     let forageSeedAmounts = crop.Items |> Block.map (fun item -> string item @ "Forage Seeds")
 
-    let constraints = [|
+    let constraints = Array.concat [|
       // one seed is created and stockpiled
-      "Seeds" === 1.0
+      [| "Seeds" === 1.0 |]
 
-      // all items of each quality are used
-      yield!
-        Block.allPairs crop.Items validQualities
-        |> Block.map' (fun (item, quality) -> string item @ string quality === amounts[quality])
+      // all items of each quality are used -- is this needed?
+      Block.allPairs crop.Items validQualities
+      |> Block.map' (fun (item, quality) -> string item @ string quality === amounts[quality])
 
       // all items set aside to create forage seeds are all used
-      yield! forageSeedAmounts |> Block.map' (fun amount -> amount === 0.0)
+      forageSeedAmounts |> Block.map' (fun amount -> amount === 0.0)
     |]
 
-    let variables = [|
-      yield!
-        seedPrice
-        |> Option.map (fun price -> BoughtSeeds, [| "Profit", -float price; "Seeds", 1.0 |])
-        |> Option.toArray
+    let variables = ResizeArray ()
 
-      for i = 0 to crop.Items.Length - 1 do
-        let item = crop.Items[i]
-        let profits = profits[i]
-        let seedAmount = seedAmount model crop.Growth.Seed (i = 0) item
+    match seedPrice with
+    | Some price -> variables.Add (BoughtSeeds, [| "Profit", -float price; "Seeds", 1.0 |])
+    | None -> ()
 
-        for q = 0 to validQualities.Length - 1 do
-          let quality = validQualities[q]
-          let oneItem = string item @ string quality, 1.0
-          let itemQuality = item, quality
+    for item, profits, forageSeedAmount in Seq.zip3 (Block.toSeq crop.Items) (Block.toSeq profits) (Block.toSeq forageSeedAmounts) do
+      let seedAmount = seedAmount model crop.Growth.Seed (item = crop.Items[0]) item
 
-          SoldItem itemQuality, [| "Profit", profits[quality]; oneItem |]
-          MadeForageSeeds itemQuality, [| forageSeedAmounts[i], -1.0; oneItem |]
-          yield!
-            seedAmount
-            |> Option.map (fun amount -> MadeSeeds itemQuality, [| "Seeds", amount; oneItem |])
-            |> Option.toArray
+      for quality in Block.unwrap validQualities do
+        let oneItem = string item @ string quality, 1.0
+        let itemQuality = item, quality
 
-      let oneOfEachItem = forageSeedAmounts |> Block.map' (fun amount -> amount, 1.0)
+        variables.Add (SoldItem itemQuality, [| "Profit", profits[quality]; oneItem |])
+        variables.Add (MadeForageSeeds itemQuality, [| forageSeedAmount, -1.0; oneItem |])
+        match seedAmount with
+        | Some amount -> variables.Add (MadeSeeds itemQuality, [| "Seeds", amount; oneItem |])
+        | None -> ()
 
-      if model.SellForageSeeds.Contains crop.Growth.Seed then
-        SoldForageSeeds, [| "Profit", forageSeedsProfit model crop.Growth.Seed; yield! oneOfEachItem |]
+    let oneOfEachItem = forageSeedAmounts |> Block.map' (fun amount -> amount, 1.0)
 
-      if model.UseForageSeeds.Contains crop.Growth.Seed then
-        UsedForageSeeds, [| "Seeds", float ForageCrop.forageSeedsPerCraft; yield! oneOfEachItem |]
-    |]
+    if model.SellForageSeeds.Contains crop.Growth.Seed then
+      variables.Add (SoldForageSeeds, [| "Profit", forageSeedsProfit model crop.Growth.Seed; yield! oneOfEachItem |])
+
+    if model.UseForageSeeds.Contains crop.Growth.Seed then
+      variables.Add (UsedForageSeeds, [| "Seeds", float ForageCrop.forageSeedsPerCraft; yield! oneOfEachItem |])
 
     Solver.solve <| Model.create Maximize "Profit" constraints variables
 
@@ -640,8 +629,8 @@ module Model =
 
   let timeNormalizationDivisor dateSpans growthTime harvests growth = function
     | TotalPeriod -> 1.0
-    | PerDay -> harvests |> Array.sumBy (fun harvests -> Growth.daysUsedWith growthTime harvests growth) |> float
-    | PerSeason -> float (dateSpans |> Array.sumBy DateSpan.totalDays) / float Date.daysInSeason
+    | PerDay -> harvests |> Array.natSumBy (fun harvests -> Growth.daysUsedWith growthTime harvests growth) |> float
+    | PerSeason -> float (dateSpans |> Array.natSumBy DateSpan.totalDays) / float Date.daysInSeason
 
   let seedCostsandLimits model (seedPrice: nat option) (seed: SeedId) (items: ItemId Block) (profits: Qualities Block) (amounts: Qualities Block) =
     let costsAndLimits = ResizeArray ()
@@ -662,7 +651,7 @@ module Model =
       | None -> ()
 
     costsAndLimits.Sort (compareBy fst)
-    costsAndLimits.ToArray ()
+    resizeToArray costsAndLimits
 
 
   let private seedCostCalc seedPrice (costsAndLimits: _ array) (harvests: nat) =
@@ -798,10 +787,10 @@ module Model =
           let profits = FarmCrop.items crop |> cropItemProfits model crop.Growth.Seed
           let amounts = farmCropItemAmounts model crop
           fun fertilizer harvests ->
-            Some ((amounts fertilizer |> farmCropProfitPerHarvestCalc profits) * (float <| Array.sum harvests))
+            Some ((amounts fertilizer |> farmCropProfitPerHarvestCalc profits) * (float <| Array.natSum harvests))
         | ForageCrop crop ->
           let profitPerHarvest = forageCropProfitPerHarvestIgnoreSeeds model crop
-          fun _ harvests -> Some (profitPerHarvest * float (Array.sum harvests)))
+          fun _ harvests -> Some (profitPerHarvest * float (Array.natSum harvests)))
         |> Some)
 
   let cropProfitCalcNoForageSeedsStockpileSeeds =
@@ -835,7 +824,7 @@ module Model =
               match seedCost amounts 1u with
               | Some cost ->
                 let profit = farmCropProfitPerHarvestCalc profits amounts
-                Some ((profit - cost) * float (Array.sum harvests))
+                Some ((profit - cost) * float (Array.natSum harvests))
               | None -> None)
           |> Some
         | ForageCrop crop ->
@@ -852,7 +841,7 @@ module Model =
               let profit = profits |> Block.sumBy (Qualities.dot amounts)
               seedCost model seedPrice seed crop.Items profits (Block.create crop.Items.Length amounts) 1u
               |> Option.map (fun cost -> profit - cost)
-          Some (fun _ harvests -> net |> Option.map ((*) (float <| Array.sum harvests))))
+          Some (fun _ harvests -> net |> Option.map ((*) (float <| Array.natSum harvests))))
 
   // refactor, there will always be a seed cost
   let cropProfitCalcNoForageSeedsBuyFirstSeed = cropProfitCalcNoForageSeeds (fun model crop ->
@@ -885,7 +874,7 @@ module Model =
             match seedCost amounts 1u with
             | Some cost ->
               let profit = farmCropProfitPerHarvestCalc profits amounts
-              Some ((profit - cost) * float (Array.sum harvests) + cost - float seedPrice)
+              Some ((profit - cost) * float (Array.natSum harvests) + cost - float seedPrice)
             | None -> None
       | ForageCrop crop ->
         let amounts = foragingAmounts model crop
@@ -903,7 +892,7 @@ module Model =
         fun _ harvests ->
           match netAndcost with
           | Some (net, cost) ->
-            Some (net * float (Array.sum harvests) + cost - float seedPrice)
+            Some (net * float (Array.natSum harvests) + cost - float seedPrice)
           | None -> None)
       |> Some)
 
@@ -924,7 +913,7 @@ module Model =
       let growthTime = growthTime model fertilizer growth
       let harvests = consecutiveHarvests' growthTime growthSpans growth
       if harvests.Length > 0 && fertCost.IsSome then
-        let xp = float (harvests |> Array.sum) * xpPerHarvest
+        let xp = float (Array.natSum harvests) * xpPerHarvest
         let divisor = timeNormalizationDivisor growthSpans growthTime harvests growth timeNorm
         Ok (xp / divisor)
       else
@@ -965,7 +954,7 @@ module Model =
               let amounts = amounts fertilizer
               let cost = seedCost amounts 1u |> Option.get
               let profit = farmCropProfitPerHarvestCalc profits amounts
-              (profit - cost) * float (Array.sum harvests) + cost
+              (profit - cost) * float (Array.natSum harvests) + cost
         | ForageCrop crop ->
           let amounts = foragingAmounts model crop
           let profits = crop.Items |> cropItemProfits model seed
@@ -980,7 +969,7 @@ module Model =
               let cost = seedCost model (Some seedPrice) seed crop.Items profits (Block.create crop.Items.Length amounts) 1u |> Option.get
               profit - cost, cost
           fun _ harvests ->
-            net * float (Array.sum harvests) + cost)
+            net * float (Array.natSum harvests) + cost)
         |> Some
 
     fun fertilizer ->
@@ -1041,7 +1030,7 @@ module Model =
     let useSeedMaker = Processor.seedMaker |> processorUnlocked model && model.UseSeedMaker.Contains seed
     if useSeedMaker then addCostAndLimit 0 (Processor.seedMakerAmount items[0])
 
-    let data = data.ToArray ()
+    let data = resizeToArray data
     data |> Array.sortInPlaceWith (compareBy (fun data -> data.Cost))
 
     let mutable seedsLeft = 1.0

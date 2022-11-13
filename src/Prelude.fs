@@ -2,12 +2,33 @@ namespace StardewValleyStonks
 
 type nat = uint
 
+
+[<AutoOpen>]
+module internal Prelude =
+  let inline (!!) x = Fable.Core.JsInterop.(!!)x
+
+  let inline resizeToArray (r: 'a ResizeArray) =
+    #if FABLE_COMPILER
+    !!r : 'a array
+    #else
+    r.ToArray()
+    #endif
+
+  let inline refEqual a b = System.Object.ReferenceEquals (a, b)
+
+  let minBy projection a b = if projection a <= projection b then a else b
+  let maxBy projection a b = if projection a >= projection b then a else b
+
+  let compareBy projection a b = compare (projection a) (projection b)
+  let compareByRev projection a b = compare (projection b) (projection a)
+
+  let inline nat x = uint x
+
+
 [<AutoOpen>]
 module internal Combinators =
   let inline flip f x y = f y x
-
   let inline konst x _ = x
-
   let inline tuple2 a b = a, b
   let inline tuple3 a b c = a, b, c
   let inline curry f a b = f (a, b)
@@ -15,19 +36,19 @@ module internal Combinators =
 
 
 module internal Option =
-  let inline defaultOrMap defaultValue mapping = function
+  let defaultOrMap defaultValue mapping = function
     | Some value -> mapping value
     | None -> defaultValue
 
-  let merge mapping a b =
+  let reduce reduction a b =
     match a, b with
-    | Some a, Some b -> Some (mapping a b)
+    | Some a, Some b -> Some (reduction a b)
     | Some a, None -> Some a
     | None, Some b -> Some b
     | None, None -> None
 
-  let inline min a b = merge min a b
-  let inline max a b = merge max a b
+  let inline min a b = reduce min a b
+  let inline max a b = reduce max a b
 
   let ofResult = function
     | Ok x -> Some x
@@ -86,6 +107,31 @@ module internal CollectionExtentions =
 
   [<RequireQualifiedAccess>]
   module Array =
+    // This gives faster and cleaner JS compared to `Array.sum` or `array?reduce(fun x y -> x + y)`
+    let sum (array: _ array) =
+      let mutable sum = 0.0
+      for x in array do
+        sum <- sum + x
+      sum
+
+    let sumBy projection (array: _ array) =
+      let mutable sum = 0.0
+      for x in array do
+        sum <- sum + projection x
+      sum
+
+    let natSum (array: _ array) =
+      let mutable sum = 0u
+      for x in array do
+        sum <- sum + x
+      sum
+
+    let natSumBy projection (array: _ array) =
+      let mutable sum = 0u
+      for x in array do
+        sum <- sum + projection x
+      sum
+
     let mapReduce reduction mapping (array: _ array) =
       if array.Length = 0 then invalidArg (nameof array) "The given array cannot be empty."
       let mutable current = mapping array[0]
@@ -100,7 +146,6 @@ module internal CollectionExtentions =
 
 
 open Fable.Core
-open Fable.Core.JsInterop
 
 type Dictionary<'a, 'b> = System.Collections.Generic.Dictionary<'a, 'b>
 
@@ -156,6 +201,7 @@ module Table =
   let inline count table = (unwrap table).Count
 
   #if FABLE_COMPILER
+  open Fable.Core.JsInterop
   let find (key: 'a) (table: Table<'a, 'b>) =
     let value: 'b = table?get key
     if isNullOrUndefined value
@@ -231,15 +277,14 @@ module Block =
   let inline mapi mapping block = unwrap block |> Array.mapi mapping |> ReadOnlyArray
   let inline map2 mapping a b = Array.map2 mapping (unwrap a) (unwrap b) |> ReadOnlyArray
 
-
   let inline fold folder state block = unwrap block |> Array.fold folder state
-
-  let inline mapFold' mapping state block = unwrap block |> Array.mapFold mapping state
 
   let inline reduce reduction block = unwrap block |> Array.reduce reduction
 
   let inline sum block = unwrap block |> Array.sum
   let inline sumBy projection block = unwrap block |> Array.sumBy projection
+  let inline natSum block = unwrap block |> Array.natSum
+  let inline natSumBy projection block = unwrap block |> Array.natSumBy projection
 
   let inline max block = unwrap block |> Array.max
   let inline maxBy projection block = unwrap block |> Array.maxBy projection
@@ -278,16 +323,6 @@ type 'a Block with
 
 [<AutoOpen>]
 module internal Util =
-  let inline refEqual a b = System.Object.ReferenceEquals (a, b)
-
-  let minBy projection a b = if projection a <= projection b then a else b
-  let maxBy projection a b = if projection a >= projection b then a else b
-
-  let inline compareBy projection a b = compare (projection a) (projection b)
-  let inline compareByRev projection a b = compare (projection b) (projection a)
-
-  let inline nat x = uint x
-
   let inline withMultiplier multiplier (value: nat) =
     multiplier * float value |> nat
 

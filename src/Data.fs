@@ -328,7 +328,7 @@ module Decode =
       let total =
         match Some stages with
         | None -> 0u
-        | Some ind -> Block.sum ind
+        | Some ind -> Block.natSum ind
 
       {
         Stages = stages
@@ -536,7 +536,7 @@ module Decode =
 
   let private selectFrom allKeys decodeKey = select decodeKey |> Decode.map (selectWith allKeys)
 
-  let private columnSelectSeq selectMissing columnKey selectionKey data =
+  let private columnSelectSeq columnKey selectionKey data =
     table columnKey (select selectionKey) |> Decode.map (fun columnSelections ->
       data |> Seq.map (fun (key, columns) ->
         key,
@@ -544,7 +544,7 @@ module Decode =
         |> Table.keys
         |> Seq.filter (fun column ->
           match columnSelections.TryFind column with
-          | None -> selectMissing
+          | None -> true
           | Some select ->
             match select with
             | SelectAllKeys b -> b
@@ -553,8 +553,8 @@ module Decode =
         |> Set.ofSeq)
       |> Map.ofSeq)
 
-  let inline private columnSelect selectMissing columnKey selectionKey table =
-    table |> Table.toSeq |> columnSelectSeq selectMissing columnKey selectionKey
+  let inline private columnSelect columnKey selectionKey table =
+    table |> Table.toSeq |> columnSelectSeq columnKey selectionKey
 
   let selection key values =
     let u = Unchecked.defaultof<Selection<_,_>>
@@ -590,18 +590,18 @@ module Decode =
           Data = data
 
           SelectedCrops = field (nameof u.SelectedCrops) (selectFrom data.Crops.Keys seedId)
-          SelectedSeedPrices = field (nameof u.SelectedSeedPrices) (columnSelect true VendorName seedId data.SeedPrices)
+          SelectedSeedPrices = field (nameof u.SelectedSeedPrices) (columnSelect VendorName seedId data.SeedPrices)
 
           SelectedFertilizers = field (nameof u.SelectedFertilizers) (selectFrom data.Fertilizers.Keys fertilizerName)
           AllowNoFertilizer = field (nameof u.AllowNoFertilizer) Decode.bool
-          SelectedFertilizerPrices = field (nameof u.SelectedFertilizerPrices) (columnSelect true VendorName fertilizerName data.FertilizerPrices)
+          SelectedFertilizerPrices = field (nameof u.SelectedFertilizerPrices) (columnSelect VendorName fertilizerName data.FertilizerPrices)
 
           SellRawItems = field (nameof u.SellRawItems) (selectFrom seedItemPairs (Decode.tuple2 seedId itemId))
           SelectedProducts =
             field
               (nameof u.SelectedProducts)
               (seedItemPairs |> Seq.map (fun (seed, item) -> (seed, item), data.Products[item])
-                |> columnSelectSeq true ProcessorName (Decode.tuple2 seedId itemId))
+                |> columnSelectSeq ProcessorName (Decode.tuple2 seedId itemId))
           SellForageSeeds = field (nameof u.SellForageSeeds) (selectFrom forageCrops seedId)
 
           UseRawSeeds =

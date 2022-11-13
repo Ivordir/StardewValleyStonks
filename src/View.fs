@@ -495,11 +495,6 @@ type Column<'item> = {
   Sort: ('item -> 'item -> int) option
 }
 
-module Column =
-  let inline header column = column.Header
-  let inline sort column = column.Sort
-  let inline width column = column.Width
-
 let sortTableWith attrs columns displayItem setSort (SortByColumns sortCols) items =
   let columns = Array.ofSeq columns
   let sortData = Array.create columns.Length None
@@ -2550,8 +2545,9 @@ let generateModeView app dispatch =
     //   text "Other" ]
 
     // button [
-    //   onClick (fun _ -> debug ())
-    //   text "debug" ]
+    //   onClick (fun _ -> debug app)
+    //   text "debug"
+    // ]
 
     br []
 
