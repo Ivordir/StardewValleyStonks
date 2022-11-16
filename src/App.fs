@@ -185,7 +185,7 @@ type ModelMessage =
   | SetEndDate of Date
   | SetLocation of Location
 
-  | SetSeedMode of SeedMode
+  | SetSeedStrategy of SeedStrategy
   | SetPayForFertilizer of bool
   | SetReplaceLostFertilizer of bool
 
@@ -401,7 +401,7 @@ module Update =
     | SetEndDate date -> { model with EndDate = date }
     | SetLocation location -> { model with Location = location }
 
-    | SetSeedMode value -> { model with SeedMode = value }
+    | SetSeedStrategy value -> { model with SeedStrategy = value }
     | SetPayForFertilizer value -> { model with PayForFertilizer = value }
     | SetReplaceLostFertilizer value -> { model with ReplaceLostFertilizer = value }
 

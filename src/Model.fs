@@ -16,12 +16,12 @@ type TimeNormalization =
 module TimeNormalization = let all = unitUnionCases<TimeNormalization>
 
 
-type SeedMode =
+type SeedStrategy =
   | [<CompiledName ("Buy First Seed")>] BuyFirstSeed
   | [<CompiledName ("Stockpile Seeds")>] StockpileSeeds
   | [<CompiledName ("Ignore Seeds")>] IgnoreSeeds
 
-module SeedMode = let all = unitUnionCases<SeedMode>
+module SeedStrategy = let all = unitUnionCases<SeedStrategy>
 
 // Assume for now that SeedMaker is the only processor which converts items into seeds.
 type GameData = {
@@ -98,14 +98,14 @@ type Model = {
   EndDate: Date
   Location: Location
 
-  SeedMode: SeedMode
+  SeedStrategy: SeedStrategy
   PayForFertilizer: bool
   ReplaceLostFertilizer: bool
 }
 
-type CustomChoice<'a> =
+type CustomChoice<'a, 'b> =
   | NonCustom of 'a
-  | Custom
+  | Custom of 'b
 
 module Model =
   let inline getItem model item = model.Data.Items[item]
@@ -255,7 +255,15 @@ module Model =
   let productPrices model item product = Product.prices (getItem model) model.Skills model.Multipliers model.ModData item product
 
   let productProfit model item quality product = Product.profit (getItem model) model.Skills model.Multipliers model.ModData item quality product
-  let productProfits model item product  = Product.profits (getItem model) model.Skills model.Multipliers model.ModData item product
+  let productProfits model item product = Product.profits (getItem model) model.Skills model.Multipliers model.ModData item product
+
+  let productOutputQuality model product quality = product |> Product.outputQuality model.ModData quality
+
+  let outputQuality model product quality =
+    match product with
+    | NonCustom None -> quality
+    | NonCustom (Some product) -> productOutputQuality model product quality
+    | Custom (_, preservesQuality) -> if preservesQuality then quality else Normal
 
   let selectedProductsCalc mapping model seed item =
     selectedProducts model seed item |> Seq.choose (fun product ->
@@ -276,6 +284,21 @@ module Model =
           maxI <- i
           maxProfit <- profit
       selected[maxI])
+    |> Some
+
+  let bestSelectedProductsAndProfit model seed item =
+    let selected = selectedProducts model seed item |> Seq.filter (productUnlocked model) |> Array.ofSeq
+    if selected.Length = 0 then None else
+    let profits = selected |> Array.map (productProfits model (getItem model item))
+    Array.init Quality.count (fun quality ->
+      let mutable maxI = 0
+      let mutable maxProfit = -1.0
+      for i = 0 to profits.Length - 1 do
+        let profit = profits[i].[quality]
+        if profit > maxProfit then
+          maxI <- i
+          maxProfit <- profit
+      selected[maxI], maxProfit)
     |> Some
 
   let private itemBestProductCalc comparisonValue model seed item quality =
@@ -341,13 +364,13 @@ module Model =
   let seedLowestPriceBuyFrom model seed =
     let price =
       selectedVendorSeedPriceValues model seed
-      |> Seq.tryMin
+      |> Seq.tryMinBy snd
       |> Option.map (fun (v, p) -> NonCustom v, p)
 
     let custom =
       model.CustomSeedPrices
       |> Selection.selectedValue seed
-      |> Option.map (tuple2 Custom)
+      |> Option.map (tuple2 (Custom ()))
 
     Option.reduce (minBy snd) price custom
 
@@ -361,70 +384,57 @@ module Model =
     let custom =
       model.CustomFertilizerPrices
       |> Selection.selectedValue fertilizer
-      |> Option.map (tuple2 Custom)
+      |> Option.map (tuple2 (Custom ()))
 
     Option.reduce (minBy snd) price custom
-
-  type private Data = {|
-    Price: nat
-    Amount: float
-    Quality: Quality
-  |}
 
   let itemBestProfitsSellAs model seed item =
     let rawPrices =
       if model.SellRawItems.Contains (seed, item) then
         let prices = itemPrices model (getItem model item)
         Quality.all
-        |> Block.map' (fun quality -> NonCustom None, {| Price = nat prices[quality]; Amount = 1.0; Quality = quality |})
+        |> Block.map' (fun quality -> NonCustom None, prices[quality])
         |> Some
+        // Some (NonCustom None, itemPrices model (getItem model item))
       else
         None
 
     let customPrices =
       model.CustomSellPrices
       |> Selection.selectedValue (seed, item)
-      |> Option.map (fun (price, preservesQuality) ->
+      |> Option.map (fun ((price, preservesQuality) as custom) ->
         if preservesQuality then
           Quality.all |> Block.map' (fun quality ->
-            Custom,
-            {|
-              Price = price |> withMultiplier Qualities.multipliers[quality]
-              Amount = 1.0
-              Quality = quality
-            |})
+            Custom custom, price |> withMultiplier Qualities.multipliers[quality] |> float)
         else
-          let data = {|
-            Price = price
-            Amount = 1.0
-            Quality = Normal
-          |}
-          Array.create Quality.count (Custom, data))
+          Array.create Quality.count (Custom custom, float price))
 
     let bestProducts =
-      bestSelectedProducts model seed item |> Option.map (fun products ->
-        let item = getItem model item
-        Quality.all |> Block.map' (fun quality ->
-          let product = products[int quality]
-          NonCustom <| Some product,
-          {|
-            Price = productPrice model item quality product
-            Amount = Product.amountPerItem product
-            Quality = if Product.processor product |> Processor.preservesQuality model.ModData then quality else Normal
-          |}))
+      bestSelectedProductsAndProfit model seed item
+      |> Option.map (Array.map (fun (product, profit) -> NonCustom <| Some product, profit))
+      // bestSelectedProducts model seed item |> Option.map (fun products ->
+      //   let item = getItem model item
+      //   Quality.all |> Block.map' (fun quality ->
+      //     let product = products[int quality]
+      //     NonCustom <| Some product,
+      //     {|
+      //       Price = productPrice model item quality product
+      //       Amount = Product.amountPerItem product
+      //       Quality = if Product.processor product |> Processor.preservesQuality model.ModData then quality else Normal
+      //     |}))
 
     let sellAs = Array.choose id [|
-        rawPrices
-        customPrices
-        bestProducts
-      |]
+      rawPrices
+      customPrices
+      bestProducts
+    |]
 
     if sellAs.Length = 0 then None else
     Quality.all
     |> Block.map' (fun quality ->
       sellAs
       |> Array.map (Array.item (int quality))
-      |> Array.maxBy (fun (_, data) -> float data.Price * data.Amount))
+      |> Array.maxBy snd)
     |> Some
 
   let itemForageBestPrice model seed item quality =
@@ -897,7 +907,7 @@ module Model =
       |> Some)
 
   let cropProfit model timeNorm crop =
-    match model.SeedMode with
+    match model.SeedStrategy with
     | IgnoreSeeds -> cropProfitCalcNoForageSeedsIgnoreSeeds model timeNorm crop
     | StockpileSeeds -> cropProfitCalcNoForageSeedsStockpileSeeds model timeNorm crop
     | BuyFirstSeed -> cropProfitCalcNoForageSeedsBuyFirstSeed model timeNorm crop
@@ -990,6 +1000,24 @@ module Model =
         ||| (if netProfit.IsNone then NPR.NoSeeds else NPR.None))
         |> Error
 
+  type DateSpanHarvestData = {
+    DateSpan: DateSpan
+    Harvests: nat
+    SeedsBought: float
+    FertilizerBought: float
+    SoldAmounts: Qualities Block
+    IntoSeedAmounts: (ItemId * Qualities) Block
+    NetProfit: float option
+  }
+
+  type HarvestsData = {
+    TotalNetProfit: float option
+    SeedPrice: nat option
+    FertilizerPrice: nat option
+    SellAs: (CustomChoice<Product option, nat * bool> * float) array option Block
+    ConsecutiveHarvests: DateSpanHarvestData Block
+  }
+
   let private seedData
     model
     seedPrice
@@ -1052,9 +1080,8 @@ module Model =
     let usage = amountsUsed |> Seq.map (fun (item, usage) -> items[item], Qualities.wrap usage) |> Block.ofSeq
 
     {|
-      FullAmounts = amounts
-      SoldAmounts = sold
-      SeedAmounts = usage
+      Sold = sold
+      IntoSeeds = usage
       SeedsBought = seedsLeft
     |}
 
@@ -1063,6 +1090,7 @@ module Model =
     // | Some price ->
     //   Some (totalCost + float price * seedsLeft)
     // | None -> None
+
 
   // needs to react based on seedMode
   let cropProfitData model timeNormalization crop fertilizer =
@@ -1081,9 +1109,7 @@ module Model =
     let profits =
       sellAs |> Block.map (function
         | Some sellAs ->
-          Qualities.initi (fun i ->
-            let _, data = sellAs[i]
-            float data.Price * data.Amount)
+          Qualities.initi (fun i -> snd sellAs[i])
         | None -> Qualities.zero)
     let amounts = cropItemAmounts model crop
 
@@ -1094,25 +1120,30 @@ module Model =
         let harvests = Growth.harvestsWith growthTime span.TotalDays growth
         if harvests = 0u then None else
         let seedData = seedData model seedPrice seed items profits amounts (if regrowTime.IsSome then harvests else 1u)
-        Some {|
-          seedData with
-            StartSeason = span.StartSeason
-            EndSeason = span.EndSeason
-            Harvests = harvests
-            FertilizerBought = fertilizerUsed model crop harvests
-        |} )
+        let fertilizerBought = fertilizerUsed model crop harvests
+        let fertCost = fertCost |> Option.map (float >> (*) fertilizerBought)
+        let seedCost =
+          if seedData.SeedsBought = 0.0
+          then Some 0.0
+          else seedPrice |> Option.map (float >> (*) (seedData.SeedsBought * if regrowTime.IsSome then 1.0 else float harvests))
+        let net =
+          Option.map2 (fun fertCost seedCost -> float harvests * farmCropProfitPerHarvestCalc profits amounts - fertCost - seedCost)
+            fertCost
+            seedCost
+        Some {
+          DateSpan = span
+          Harvests = harvests
+          SoldAmounts = seedData.Sold
+          IntoSeedAmounts = seedData.IntoSeeds
+          FertilizerBought = fertilizerBought
+          SeedsBought = seedData.SeedsBought
+          NetProfit = net
+        } )
 
     let netProfit =
-      if data.Length = 0 then None else
-      data |> Array.mapReduce (Option.map2 (+)) (fun data ->
-        let fertCost = fertCost |> Option.map (float >> (*) data.FertilizerBought)
-        let seedCost =
-          if data.SeedsBought = 0.0
-          then Some 0.0
-          else seedPrice |> Option.map (float >> (*) (data.SeedsBought * if regrowTime.IsSome then 1.0 else float data.Harvests))
-        Option.map2 (fun fertCost seedCost -> float data.Harvests * farmCropProfitPerHarvestCalc profits amounts - fertCost - seedCost)
-          fertCost
-          seedCost)
+      if data.Length = 0
+      then None
+      else data |> Array.mapReduce (Option.map2 (+)) (fun data -> data.NetProfit)
 
     {|
       SellAs = sellAs
@@ -1120,17 +1151,3 @@ module Model =
       TimeNormalization = timeNormalizationDivisor growthSpans harvestData.GrowthTime harvestData.Harvests growth timeNormalization
       ConsecutiveHarvests = data
     |}
-
-  // Items: ItemId array
-  // SeedPrice: nat option
-  // FertilizerPrice: nat option
-  // NetProfit: float option
-  // TimeNorm: float
-  // SpanData:
-  //   SoldAmounts: Qualities array (per harvest)
-  //   SeedAmounts: int * Qualities (per harvest)
-  //   SoldForageSeeds: float (per harvest)
-  //   UsedForageSeeds: float (;er harvest)
-  //   Harvests: nat
-  //   SeedsBought: float (total)
-  //   FertilizerBought: flaot (total)

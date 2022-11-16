@@ -203,8 +203,6 @@ Variables:
   ]
 *)
 
-open Fable.Core.JsInterop
-
 type SubRangeSolutionRequest =
   { Start: int
     Stop: int
@@ -476,6 +474,7 @@ let solutionRequests model fertilizers crops =
   unbox<SubRangeSolutionRequest array> requests
 
 
+open Fable.Core.JsInterop
 
 let solveRanges (requests: SubRangeSolutionRequest array) =
   if requests.Length = 0 then

@@ -44,7 +44,7 @@
   EndDate: [ 'Fall', 28 ],
   Location: 'Farm',
 
-  SeedMode: "Buy First Seed",
+  SeedStrategy: "Buy First Seed",
   PayForFertilizer: true,
   ReplaceLostFertilizer: true,
 

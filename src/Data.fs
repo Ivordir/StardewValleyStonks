@@ -205,11 +205,11 @@ module Decode =
 
   let private wrap (wrapper: 'a -> 'b) (decoder: 'a Decoder) =
     #if FABLE_COMPILER
-    Fable.Core.JsInterop.(!!) decoder : 'b Decoder
+    !!decoder : 'b Decoder
     #else
     decoder |> Decode.map wrapper
     #endif
-  let private intMeasure<[<Measure>] 'u> = Fable.Core.JsInterop.(!!) Decode.uint32 : int<'u> Decoder
+  let private intMeasure<[<Measure>] 'u> = !!Decode.uint32 : int<'u> Decoder
 
   let index (decoder: 'a Decoder) = Decode.array decoder |> wrap Block.wrap
 
@@ -219,7 +219,7 @@ module Decode =
     Decode.keyValuePairs decodeValue |> Decode.map (Seq.map (fun (k, v) -> keyMapping k, v) >> mapping)
   let private wrapKeys mapping (keyWrap: string -> 'k) (decodeValue: 'v Decoder) =
     #if FABLE_COMPILER
-    (Fable.Core.JsInterop.(!!) (Decode.keyValuePairs decodeValue) : ('k * 'v) list Decoder) |> Decode.map mapping
+    (!!Decode.keyValuePairs decodeValue : ('k * 'v) list Decoder) |> Decode.map mapping
     #else
     Decode.keyValuePairs decodeValue |> Decode.map (List.map (fun (k, v) -> keyWrap k, v) >> mapping)
     #endif
@@ -405,7 +405,7 @@ module Decode =
         QualityProcessors = get.Required.Field (nameof u.QualityProcessors) (set processor)
       }
 
-  let seedMode = Decode.Auto.generateDecoder ()
+  let seedStrategy = Decode.Auto.generateDecoder ()
 
   let rawGameData =
     let u = Unchecked.defaultof<RawGameData>
@@ -654,7 +654,7 @@ module Decode =
           EndDate = field (nameof u.EndDate) date
           Location = field (nameof u.Location) location
 
-          SeedMode = field (nameof u.SeedMode) seedMode
+          SeedStrategy = field (nameof u.SeedStrategy) seedStrategy
           PayForFertilizer = field (nameof u.PayForFertilizer) Decode.bool
           ReplaceLostFertilizer = field (nameof u.ReplaceLostFertilizer) Decode.bool
         })

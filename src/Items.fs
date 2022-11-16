@@ -102,6 +102,11 @@ module Processor =
     && modData.QualityProducts
     && modData.QualityProcessors.Contains processor
 
+  let outputQuality modData quality processor =
+    if preservesQuality modData processor
+    then quality
+    else Quality.Normal
+
   let seedMakerAmount seed =
     seedMakerSeedProb * float seedMakerSeedAmount
     + if seed = Item.ancientSeeds then seedMakerAncientSeedProb else 0.0
@@ -139,6 +144,8 @@ module Product =
     | SeedsFromSeedMaker _ -> Processor.seedMaker
     | Processed p -> p.Processor
 
+  let outputQuality modData quality product = processor product |> Processor.outputQuality modData quality
+
   let ratioAmount (i: nat, o: nat) = float o / float i
 
   let ratioValid (i: nat, o: nat) = nonZero i && nonZero o
@@ -151,11 +158,7 @@ module Product =
   let juicePrice basePrice = basePrice |> withMultiplier 2.25
 
   let priceCalc modData multiplier basePrice processor quality =
-    let quality =
-      if processor |> Processor.preservesQuality modData
-      then quality
-      else Quality.Normal
-    Item.priceCalc multiplier basePrice quality
+    Item.priceCalc multiplier basePrice (processor |> Processor.outputQuality modData quality)
 
   let price getItem skills multipliers modData item quality product =
     match product with

@@ -237,6 +237,7 @@ let floatFixedRound = sprintf "%.2f"
 let floatRound (x: float) = System.Math.Round (x, 2) |> string
 let goldFixedRound = sprintf "%.2fg"
 
+
 let opacityCheckbox children' checked' dispatch =
   label [
     classes [
@@ -474,7 +475,7 @@ let viewPrice price =
     | Some (NonCustom vendor, price) ->
       ofNat price
       Image.vendor vendor
-    | Some (Custom, price) -> ofNat price
+    | Some (Custom (), price) -> ofNat price
     | None -> ofStr "???"
     // if prices.Length = 0 then ofStr "???" else
     // let lowest = prices |> Array.mapReduce min snd
@@ -819,8 +820,7 @@ module Crops =
       summary [ text "Seeds" ]
 
       checkboxText "Joja Membership" model.JojaMembership (SetJojaMembership >> dispatch)
-
-      selectUnitUnionText "Seeds:" SeedMode.all model.SeedMode (SetSeedMode >> dispatch)
+      selectUnitUnionText "Seed Strategy:" SeedStrategy.all model.SeedStrategy (SetSeedStrategy >> dispatch)
 
       let keyColWdith = 0.4
       let width = 100.0 * ((1.0 - keyColWdith) / float model.Data.SeedVendors.Length)
@@ -1768,10 +1768,10 @@ let growthCalender app seed fertilizer =
 
 // Previous Stockpiled Seed                                               1 seed
 // or
-// Initial Bought Seed                                         -> -gold   1 seed
+// Initial Bought Seed from vendor                             -> -gold   1 seed
 
 // Each span:
-//                          fertilizer (price)                 -> -gold
+//                          fertilizer (price) from vendor     -> -gold
 // item quality x amount -> product * quality (price) x amount -> gold
 //                          item * quality (price) x amount    -> gold
 // item quality x amount -> custom * quality (price) x amount  -> gold
@@ -1783,15 +1783,15 @@ let growthCalender app seed fertilizer =
 //        itemA x amount ->
 //        itemB x amount -> Forage Seeds                       ->       +x seed
 //        itemC x amount ->
-//                 replacement fertilizer (price) x amount     -> -gold
-//                           bought seeds (price) x amount     -> -gold +x seed
+//         replacement fertilizer (price) from vendor x amount -> -gold
+//                   bought seeds (price) from vendor x amount -> -gold +x seed
 // Seeds Used                                                           -x seed
-//                                                            Net: gold, 1 seed
+//                               (if spans.Length > 1) Season Net: gold, 1 seed
 
-//                                (if spans.Length > 1) Total Net: gold, 1 seed
+//                                                      Total Net: gold, 1 seed
 
 
-// item amount -> item price amount -> gold seed
+// (item q) amount -> (item q) price amount : gold seed
 
 let profitBreakdownTable timeNorm model seed fertName =
   let crop = Model.getCrop model seed
@@ -1809,7 +1809,7 @@ let profitBreakdownTable timeNorm model seed fertName =
           | Some (NonCustom vendor, _) ->
             ofStr " from "
             Image.Icon.vendor vendor
-          | Some (Custom, _) ->
+          | Some (Custom (), _) ->
             ofStr " (Custom)"
           | None -> ofStr " from ???"
         ] ]
@@ -1846,7 +1846,7 @@ let profitBreakdownTable timeNorm model seed fertName =
             | Some (NonCustom vendor, _) ->
               ofStr " from "
               Image.Icon.vendor vendor
-            | Some (Custom, _) ->
+            | Some (Custom (), _) ->
               ofStr " (Custom)"
             | None -> ofStr " from ???"
           ] ]
@@ -1870,7 +1870,7 @@ let profitBreakdownTable timeNorm model seed fertName =
 
   table [ Class.breakdownTable; children [
     tbody [
-      match model.SeedMode with
+      match model.SeedStrategy with
       | BuyFirstSeed -> seedsBoughtRow 1.0
       | StockpileSeeds ->
         tr [
@@ -1890,10 +1890,10 @@ let profitBreakdownTable timeNorm model seed fertName =
       tbody [
         tr [
           td [ colSpan 8; children [
-            Image.Icon.season harvestData.StartSeason
-            if harvestData.StartSeason <> harvestData.EndSeason then
+            Image.Icon.season harvestData.DateSpan.StartSeason
+            if harvestData.DateSpan.StartSeason <> harvestData.DateSpan.EndSeason then
               Image.rightArrow
-              Image.Icon.season harvestData.EndSeason
+              Image.Icon.season harvestData.DateSpan.EndSeason
             ofStr $" ({harvestData.Harvests} harvests)"
           ] ]
         ]
@@ -1911,9 +1911,9 @@ let profitBreakdownTable timeNorm model seed fertName =
             if amount = 0.0 then none else
             match sellAs with
             | Some sellAsData ->
-              let sellAs, data = sellAsData[int quality]
+              let product, profit = sellAsData[int quality]
               tr [
-                if sellAs = NonCustom None then
+                if product = NonCustom None then
                   td []
                   td []
                   td []
@@ -1922,35 +1922,49 @@ let profitBreakdownTable timeNorm model seed fertName =
                     Image.Icon.itemQuality' model item quality
                   ]
                   td [
-                    Html.span [
-                      ofStr " x "
-                      ofStr <| floatFixedRound amount
-                    ]
+                    ofStr " x "
+                    ofStr <| floatFixedRound amount
                   ]
-                  td [ div [ className "temp"; children Image.rightArrow ] ]
+                  td [ Image.rightArrow ]
+
+                match product with
+                | NonCustom None ->
+                  td [
+                    Image.Icon.itemQuality' model item quality
+                  ]
+                  td [
+                    ofStr <| gold (nat profit)
+                  ]
+                  td [
+                    ofStr " x "
+                    ofStr <| floatFixedRound amount
+                  ]
+                | NonCustom (Some product) ->
+                  let amountPerItem = Product.amountPerItem product
+                  td [
+                    Image.Icon.productQuality model item product (Model.productOutputQuality model product quality)
+                  ]
+                  td [
+                    ofStr <| gold (nat (profit / amountPerItem))
+                  ]
+                  td [
+                    ofStr " x "
+                    ofStr <| floatFixedRound (amount * amountPerItem)
+                  ]
+                | Custom (price, preservesQuality) ->
+                  td [
+                    ofStr "Custom"
+                  ]
+                  td [
+                    ofStr <| gold price
+                  ]
+                  td [
+                    ofStr " x "
+                    ofStr <| floatFixedRound amount
+                  ]
 
                 td [
-                  match sellAs with
-                  | NonCustom None -> Image.Icon.itemQuality' model item quality
-                  | NonCustom (Some product) ->
-                    Image.Icon.productQuality model item product data.Quality
-                  | Custom -> Html.span [ ofStr "Custom" ]
-                ]
-                td [
-                  Html.span [
-                    ofStr <| gold data.Price
-                  ]
-                ]
-                td [
-                  Html.span [
-                    ofStr " x "
-                    ofStr <| floatFixedRound (amount * data.Amount)
-                  ]
-                ]
-                td [
-                  Html.span [
-                    ofStr <| goldFixedRound (float data.Price * data.Amount * amount)
-                  ]
+                  ofStr <| goldFixedRound (profit * amount)
                 ]
                 td []
               ]
@@ -1960,19 +1974,16 @@ let profitBreakdownTable timeNorm model seed fertName =
                     Image.Icon.itemQuality' model item quality
                   ]
                   td [
-                    Html.span [
-                      ofStr " x "
-                      ofStr <| floatFixedRound amount
-                    ]
+                    ofStr " x "
+                    ofStr <| floatFixedRound amount
                   ]
-                  // td [ Image.rightArrow ]
-                  td [ className "temp"; children Image.rightArrow ]
-                  td [ colSpan 3; children [ ofStr "???" |> Html.span ] ]
+                  td [ Image.rightArrow ]
+                  td [ colSpan 3; text "???" ]
                   td []
                   td []
                 ]
 
-        yield! harvestData.SeedAmounts |> Block.map' (fun (item, amounts) ->
+        yield! harvestData.IntoSeedAmounts |> Block.map' (fun (item, amounts) ->
           if int item = int seed then
             fragment [
               for i = Quality.highest downto 0 do
@@ -1990,16 +2001,12 @@ let profitBreakdownTable timeNorm model seed fertName =
                   ]
                 ]
                 td [
-                  Html.span [
-                    ofStr " x "
-                    ofStr <| floatFixedRound amount
-                  ]
+                  ofStr " x "
+                  ofStr <| floatFixedRound amount
                 ]
                 td []
                 td [
-                  Html.span [
-                    ofStr <| floatFixedRound amount
-                  ]
+                  ofStr <| floatFixedRound amount
                 ]
               ]
             ]
@@ -2014,13 +2021,10 @@ let profitBreakdownTable timeNorm model seed fertName =
                   Image.Icon.itemQuality' model item quality
                 ]
                 td [
-                  Html.span [
-                    ofStr " x "
-                    ofStr <| floatFixedRound amount
-                  ]
+                  ofStr " x "
+                  ofStr <| floatFixedRound amount
                 ]
-                // td [ Image.rightArrow ]
-                td [ className "temp"; children Image.rightArrow ]
+                td [ Image.rightArrow ]
                 td [
                   colSpan 2;
                   children [
@@ -2029,16 +2033,12 @@ let profitBreakdownTable timeNorm model seed fertName =
                   ]
                 ]
                 td [
-                  Html.span [
-                    ofStr " x "
-                    ofStr <| floatFixedRound (amount * Processor.seedMakerAmount (seed * 1<_>))
-                  ]
+                  ofStr " x "
+                  ofStr <| floatFixedRound (amount * Processor.seedMakerAmount (seed * 1<_>))
                 ]
                 td []
                 td [
-                  Html.span [
-                    ofStr <| floatFixedRound (amount * Processor.seedMakerAmount (seed * 1<_>))
-                  ]
+                  ofStr <| floatFixedRound (amount * Processor.seedMakerAmount (seed * 1<_>))
                 ]
               ]
             ]
@@ -2048,7 +2048,7 @@ let profitBreakdownTable timeNorm model seed fertName =
 
         if harvestData.SeedsBought > 0.0 then
           let amount = harvestData.SeedsBought * (if Crop.regrowTime crop = None then float harvestData.Harvests else 1.0)
-          let amount = amount - if model.SeedMode = BuyFirstSeed then 1.0 else 0.0
+          let amount = amount - if model.SeedStrategy = BuyFirstSeed then 1.0 else 0.0
           if amount > 0.0 then
             seedsBoughtRow amount
 
@@ -2056,47 +2056,58 @@ let profitBreakdownTable timeNorm model seed fertName =
           let amount = harvestData.FertilizerBought - 1.0
           fertilizerBoughtRow amount
 
+        if data.ConsecutiveHarvests.Length > 1 then
+          tr [
+            yield! Seq.replicate 6 (td [])
+            td [
+              ofStr "TODO"
+              // match harvestData with
+              // | Some profit -> goldFixedRound profit |> ofStr
+              // | None -> none
+            ]
+            td []
+          ]
+      ] )
+
+    tbody [
+      match data.NetProfit with
+      | Some profit when timeNorm <> TotalPeriod ->
         tr [
           yield! Seq.replicate 6 (td [])
           td [
-            match data.NetProfit with
-            | Some profit -> goldFixedRound profit |> ofStr
-            | None -> none
+            goldFixedRound profit |> ofStr
           ]
           td []
         ]
-
-        match data.NetProfit with
-        | Some profit when timeNorm <> TotalPeriod ->
-          tr [
-            yield! Seq.replicate 6 (td [])
-            td [
-              ofStr "/ "
-              match timeNorm with
-              | PerDay ->
-                data.TimeNormalization |> ofFloat
-                ofStr " days"
-              | PerSeason ->
-                let value = floatRound data.TimeNormalization
-                ofStr value
-                ofStr (if value = "1" then " season" else " seasons")
-              | TotalPeriod -> ofInt 1
-            ]
-            td []
+        tr [
+          yield! Seq.replicate 6 (td [])
+          td [
+            ofStr "/ "
+            match timeNorm with
+            | PerDay ->
+              data.TimeNormalization |> ofFloat
+              ofStr " days"
+            | PerSeason ->
+              let value = floatRound data.TimeNormalization
+              ofStr value
+              ofStr (if value = "1" then " season" else " seasons")
+            | TotalPeriod -> ofInt 1
           ]
-          tr [
-            yield! Seq.replicate 6 (td [])
-            td [
-              floatFixedRound (profit / data.TimeNormalization) |> ofStr
-              match timeNorm with
-              | TotalPeriod -> none
-              | PerDay -> ofStr "g/day"
-              | PerSeason -> ofStr "g/season"
-            ]
-            td []
+          td []
+        ]
+        tr [
+          yield! Seq.replicate 6 (td [])
+          td [
+            floatFixedRound (profit / data.TimeNormalization) |> ofStr
+            match timeNorm with
+            | TotalPeriod -> none
+            | PerDay -> ofStr "g/day"
+            | PerSeason -> ofStr "g/season"
           ]
-        | _ -> none
-      ] )
+          td []
+        ]
+      | _ -> none
+    ]
   ] ]
 
 
@@ -2252,30 +2263,37 @@ let selectedCropAndFertilizer2 =
 
     let data = allPairData (fst state.current) (snd state.current) model
 
+    let bestPair = data.Pairs |> Array.maxBy (snd >> Option.ofResult) |> fst
+
     let bestCrop, bestFert =
       if data.Pairs.Length = 0 then None, None else
       let bestCrop, bestFert = data.Pairs |> Array.maxBy (snd >> Option.ofResult) |> fst
-      match seed, fert' with
-      | Some seed, None ->
-        let filtered = data.Pairs |> Array.filter (fst >> fst >> (=) seed)
-        Some bestCrop,
-        (if filtered.Length = 0 then None else
+
+      let bestCrop =
+        match fert' with
+        | Some fert' ->
+          let filtered = data.Pairs |> Array.filter (fst >> snd >> (=) fert')
+          if filtered.Length = 0 then None else
+          filtered
+          |> Array.maxBy (snd >> Option.ofResult)
+          |> fst
+          |> fst
+          |> Some
+        | None -> Some bestCrop
+
+      let bestFert =
+        match seed with
+        | Some seed ->
+          let filtered = data.Pairs |> Array.filter (fst >> fst >> (=) seed)
+          if filtered.Length = 0 then None else
           filtered
           |> Array.maxBy (snd >> Option.ofResult)
           |> fst
           |> snd
-          |> Some)
-      | None, Some fert_ ->
-        let filtered = data.Pairs |> Array.filter (fst >> snd >> (=) fert_)
-        (if filtered.Length = 0 then None else
-          filtered
-          |> Array.maxBy (snd >> Option.ofResult)
-          |> fst
-          |> fst
-          |> Some),
-        Some bestFert
-      | _ -> Some bestCrop, Some bestFert
+          |> Some
+        | None -> Some bestFert
 
+      bestCrop, bestFert
 
     let crop = seed |> Option.orElse bestCrop
     let fert = fert' |> Option.orElse bestFert

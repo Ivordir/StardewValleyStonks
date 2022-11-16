@@ -25,7 +25,9 @@ module Fertilizer =
   #if FABLE_COMPILER
   let nameStr fertilizer = !!fertilizer.Name: string
   #else
-  let nameStr (FertName name) = name
+  let nameStr fertilizer =
+    let (FertName name) = fertilizer.Name
+    name
   #endif
   let quality fertilizer = fertilizer.Quality
   let speed fertilizer = fertilizer.Speed
