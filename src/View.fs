@@ -1700,6 +1700,9 @@ let growthCalender app seed fertilizer =
   let fert = Model.getFertilizerOpt model fertilizer
   let growth = Crop.growth crop
   let spans = Model.growthSpans model crop
+
+  if spans.Length = 0 then ofStr "Crop not in season!" else
+
   let data = Growth.consecutiveHarvestsData spans (Model.growthSpeed model fert growth) growth
 
   let firstStageImages =
@@ -1798,6 +1801,8 @@ let profitBreakdownTable timeNorm model seed fertName =
   let fert = Model.getFertilizerOpt model fertName
   let items = Crop.items crop
   let data = Model.cropProfitData model timeNorm crop fert
+
+  if data.ConsecutiveHarvests.Length = 0 then ofStr "No harvests possible!" else
 
   let seedsBoughtRow =
     let seedPrice = Model.seedLowestPriceBuyFrom model seed
@@ -2060,10 +2065,9 @@ let profitBreakdownTable timeNorm model seed fertName =
           tr [
             yield! Seq.replicate 6 (td [])
             td [
-              ofStr "TODO"
-              // match harvestData with
-              // | Some profit -> goldFixedRound profit |> ofStr
-              // | None -> none
+              harvestData.NetProfit
+              |> Option.defaultOrMap "???" goldFixedRound
+              |> ofStr
             ]
             td []
           ]
@@ -2111,140 +2115,6 @@ let profitBreakdownTable timeNorm model seed fertName =
   ] ]
 
 
-// Start Season
-// End Season
-// Harvests
-// FertilizerBought (- 1.0 gives replacement fertilizer)
-// SoldAmounts: Block<Qualities>
-// ForageSeedsSold
-// SeedAmounts: Block<ItemId * Qualities>
-// ForageSeedsUsed
-// SeedsBought: float
-// NetProfit: float option
-
-// SellAs
-// TimeNormalization
-// NetProfit?
-
-
-
-
-
-// let selectedCropAndFertilizer app seed fert dispatch =
-//   let appDispatch = dispatch
-//   let dispatch = SetRanker >> dispatch
-//   let model = app.Model
-//   let ranker = app.Ranker
-
-//   let data = allPairData ranker.RankMetric ranker.TimeNormalization model
-
-//   let bestCrop, bestFert =
-//     (match seed, fert with
-//     | Some seed, None ->
-//       data.Pairs |> Array.filter (fst >> fst >> (=) seed)
-//     | None, Some fert ->
-//       data.Pairs |> Array.filter (fst >> snd >> (=) fert)
-//     | _ -> data.Pairs)
-//     |> Array.maxBy (snd >> Option.ofResult)
-//     |> fst
-
-//   let effectiveSeed = seed |> Option.defaultValue bestCrop
-//   let effectiveFert = fert |> Option.defaultValue bestFert
-
-//   let crop = Model.getCrop app.Model effectiveSeed
-//   // let fertilizer = fert |> Option.map (Model.getFertilizer model)
-//   let harvests = Model.harvests model crop effectiveFert
-
-//   let cropOptions =
-//     let bestCrop = Model.getCrop model bestCrop
-//     let bestName = Crop.name (Model.getItem model) bestCrop
-//     data.Crops
-//     |> Array.map (fun seed ->
-//       let crop = (Model.getCrop model seed)
-//       let name = Crop.name (Model.getItem model) crop
-//       {| name = name
-//          label = Html.span [ Image.crop crop; ofStr name ]
-//          value = Some seed |})
-//     |> Array.append [|
-//       {| name = $"Best Crop { bestName }"
-//          label = Html.span [ ofStr "Best Crop ("; Image.crop bestCrop ; ofStr $"{bestName})" ]
-//          value = None |} |]
-
-//   let fertilizerOptions =
-//     let bestFertilizer = Model.getFertilizerOpt model bestFert
-//     let bestName = bestFertilizer |> Option.defaultOrMap "No Fertilizer" Fertilizer.nameStr
-//     data.Fertilizers
-//     |> Array.map (fun name ->
-//       {| name = name |> Option.defaultOrMap "No Fertilizer" string
-//          label =
-//           Html.span [
-//             match name with
-//             | Some name ->
-//               Image.fertilizer' name
-//               ofStr <| string name
-//             | None -> ofStr "No Fertilizer" ]
-//          value = Some name |})
-//     |> Array.append [|
-//       {| name = $"Best Fertilizer { bestName }"
-//          label =
-//           Html.span [
-//             ofStr "Best Fertilizer ("
-//             match bestFertilizer with
-//             | Some fert -> Image.fertilizer fert
-//             | None -> none
-//             ofStr $"{bestName})" ]
-//          value = None |} |]
-
-//   div [
-//     button [ onClick (fun _ -> SetSelectedCropAndFertilizer None |> dispatch); text "Back" ]
-
-//     div [
-//       reactSelect {|
-//         options = cropOptions
-//         value = cropOptions |> Array.find (fun opt -> opt.value = seed)
-//         isSearchable = true
-//         filterOption = fun opt input -> insensitiveLevenshteinMatch 0.4 opt?data?name input
-//         onChange = fun opt -> SetSelectedCropAndFertilizer (Some (opt?value, fert)) |> dispatch
-//       |}
-
-//       ofStr " with "
-
-//       reactSelect {|
-//         options = fertilizerOptions
-//         value = fertilizerOptions |> Array.find (fun opt -> opt.value = fert)
-//         isSearchable = true
-//         filterOption = fun opt input -> insensitiveLevenshteinMatch 0.4 opt?data?name input
-//         onChange = fun opt -> SetSelectedCropAndFertilizer (Some (seed, opt?value)) |> dispatch
-//       |}
-
-//       if harvests = 1u
-//       then ofStr $" ({harvests} harvest)"
-//       else ofStr $" ({harvests} harvests)"
-
-//       rankBy "showing" ranker dispatch
-//     ]
-
-//     if harvests = 0u then
-//       div [
-//         if Model.cropInSeason model crop
-//         then ofStr "No Harversts Possible!"
-//         else ofStr "Crop Not In Season!"
-//       ]
-//     else
-//       animatedDetails [
-//         isOpen (app.OpenDetails.Contains OpenDetails.RankerGrowthCalendar)
-//         onToggle (curry SetDetailsOpen OpenDetails.RankerGrowthCalendar >> appDispatch)
-//         children [
-//           summary [ ofStr "Growth Calendar" ]
-//           growthCalender app effectiveSeed effectiveFert ] ]
-//       animatedDetails [
-//         isOpen (app.OpenDetails.Contains OpenDetails.RankerProfitBreakdown)
-//         onToggle (curry SetDetailsOpen OpenDetails.RankerProfitBreakdown >> appDispatch)
-//         children [
-//           summary [ ofStr "Profit Breakdown" ]
-//           profitBreakdownTable ranker.TimeNormalization model effectiveSeed effectiveFert ] ]
-//   ]
-
 // what to show if current crop and/or fertilizer is not selected?
 let selectedCropAndFertilizer2 =
   let createFilter: obj -> obj = import "createFilter" "react-select"
@@ -2262,8 +2132,6 @@ let selectedCropAndFertilizer2 =
     let state = Fable.React.HookBindings.Hooks.useState (ranker.RankMetric, ranker.TimeNormalization)
 
     let data = allPairData (fst state.current) (snd state.current) model
-
-    let bestPair = data.Pairs |> Array.maxBy (snd >> Option.ofResult) |> fst
 
     let bestCrop, bestFert =
       if data.Pairs.Length = 0 then None, None else
@@ -2295,16 +2163,6 @@ let selectedCropAndFertilizer2 =
 
       bestCrop, bestFert
 
-    let crop = seed |> Option.orElse bestCrop
-    let fert = fert' |> Option.orElse bestFert
-    let harvests =
-      match crop, fert with
-      | Some seed, Some fert_2 ->
-        let crop = Model.getCrop app.Model seed
-        let fert = Model.getFertilizerOpt app.Model fert_2
-        Model.harvests model crop fert
-      | _ -> 0u
-
     let cropOption seed =
       let crop = (Model.getCrop model seed)
       let name = Crop.name (Model.getItem model) crop
@@ -2316,10 +2174,10 @@ let selectedCropAndFertilizer2 =
 
     let bestCropOption =
       let bestCrop = bestCrop |> Option.map (Model.getCrop model)
-      let bestName = bestCrop |> Option.defaultOrMap "???" (Crop.name (Model.getItem model) )
+      let bestName = bestCrop |> Option.defaultOrMap "???" (Crop.name (Model.getItem model))
       {|
         name = $"Best Crop { bestName }"
-        label = Html.span [ ofStr "Best Crop ("; bestCrop |> Option.defaultOrMap (ofStr "???") Image.crop; ofStr $"{bestName})" ]
+        label = Html.span [ ofStr "Best Crop ("; bestCrop |> Option.defaultOrMap none Image.crop; ofStr $"{bestName})" ]
         value = None
       |}
 
@@ -2361,7 +2219,10 @@ let selectedCropAndFertilizer2 =
       |> Array.append [| bestFertilizerOption |]
 
     div [ Class.auditGraph; children [
-      button [ onClick (fun _ -> SetSelectedCropAndFertilizer None |> dispatch); text "Back" ]
+      button [
+        onClick (fun _ -> SetSelectedCropAndFertilizer None |> dispatch)
+        text "Back"
+      ]
 
       div [ Class.auditGraphSelect; children [
         div [
@@ -2393,9 +2254,6 @@ let selectedCropAndFertilizer2 =
           |}
         ]
 
-        // if harvests = 1u
-        // then ofStr $" ({harvests} harvest)"
-        // else ofStr $" ({harvests} harvests)"
         div [
           label [
             ofStr "Show "
@@ -2413,23 +2271,21 @@ let selectedCropAndFertilizer2 =
         ]
       ] ]
 
-      if harvests = 0u then
-        div [
-          if crop |> Option.exists (Model.getCrop model >> Model.cropInSeason model)
-          then ofStr "No Harversts Possible!"
-          else ofStr "Crop Not In Season!"
-        ]
-      else
+      match seed |> Option.orElse bestCrop, fert' |> Option.orElse bestFert with
+      | Some crop, Some fert ->
         animatedDetails
           (app.OpenDetails.Contains OpenDetails.RankerProfitBreakdown)
           (ofStr "Profit Breakdown")
-          [ Option.map2 (profitBreakdownTable (snd state.current) model) crop fert |> ofOption ]
+          [ profitBreakdownTable (snd state.current) model crop fert ]
           (curry SetDetailsOpen OpenDetails.RankerProfitBreakdown >> appDispatch)
         animatedDetails
           (app.OpenDetails.Contains OpenDetails.RankerGrowthCalendar)
           (ofStr "Growth Calendar")
-          [ Option.map2 (growthCalender app) crop fert |> ofOption ]
+          [ growthCalender app crop fert ]
           (curry SetDetailsOpen OpenDetails.RankerGrowthCalendar >> appDispatch)
+      | Some _, None -> ofStr "Please select a fertilizer."
+      | None, Some _ -> ofStr "Please select a crop."
+      | None, None -> ofStr "Please select a crop and fertilizer."
     ] ] )
 
 let compareModeView app dispatch =
