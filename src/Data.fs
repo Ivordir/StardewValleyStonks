@@ -18,8 +18,6 @@ let [<Literal>] private KeySelectionSelectField = "Select"
 let [<Literal>] private KeySelectionEntriesField = "Entries"
 
 module Encode =
-  let index encoder (index: _ Block) = index |> Block.toSeq |> Seq.map encoder |> Encode.seq
-
   let seq' encoder (seq: _ seq) = seq |> Seq.map encoder |> Encode.seq
 
   let set encoder (sel: _ Set) = sel |> Seq.map encoder |> Encode.seq
@@ -67,8 +65,8 @@ module Encode =
   // Fable can't parse flag enums, transform into a sequence instead.
   let seasons (seasons: Seasons) =
     Season.all
-    |> Block.filter (flip Seasons.contains seasons)
-    |> index season
+    |> Seq.filter (flip Seasons.contains seasons)
+    |> seq' season
 
   let date (Date (season, day)) = Encode.tuple2 Encode.string Encode.uint32 (Season.name season, day)
 
@@ -95,7 +93,7 @@ module Encode =
 
   let private growthDataFields (data: GrowthData) = [
     nameof data.Seasons, seasons data.Seasons
-    nameof data.Stages, index Encode.uint32 data.Stages
+    nameof data.Stages, seq' Encode.uint32 data.Stages
     if data.Paddy then nameof data.Paddy, Encode.bool true
     nameof data.Seed, seedId data.Seed
   ]
@@ -134,7 +132,7 @@ module Encode =
   let forageCrop (crop: ForageCrop) =
     Encode.object [
       yield! growthDataFields crop.Growth
-      nameof crop.Items, index itemId crop.Items
+      nameof crop.Items, seq' itemId crop.Items
       nameof crop.SeedRecipeUnlockLevel, Encode.uint32 crop.SeedRecipeUnlockLevel
     ]
 
@@ -210,8 +208,6 @@ module Decode =
     decoder |> Decode.map wrapper
     #endif
   let private intMeasure<[<Measure>] 'u> = !!Decode.uint32 : int<'u> Decoder
-
-  let index (decoder: 'a Decoder) = Decode.array decoder |> wrap Block.wrap
 
   let set decoder = Decode.array decoder |> Decode.map Set.ofArray
 
@@ -324,11 +320,11 @@ module Decode =
   let private growthDataFields =
     let u = Unchecked.defaultof<GrowthData>
     fun (get: Decode.IGetters) ->
-      let stages = get.Required.Field (nameof u.Stages) (index nonZeroNat |> validate "growth stage with at least one stage" (Block.isEmpty >> not))
+      let stages = get.Required.Field (nameof u.Stages) (Decode.array nonZeroNat |> validate "growth stage with at least one stage" (Array.isEmpty >> not))
       let total =
         match Some stages with
         | None -> 0u
-        | Some ind -> Block.natSum ind
+        | Some ind -> Array.natSum ind
 
       {
         Stages = stages
@@ -371,7 +367,7 @@ module Decode =
     let u = Unchecked.defaultof<ForageCrop>
     Decode.object <| fun get -> {
       Growth = growthDataFields get
-      Items = get.Required.Field (nameof u.Items) (index itemId |> validate "at least one item" (Block.isEmpty >> not))
+      Items = get.Required.Field (nameof u.Items) (Decode.array itemId |> validate "at least one item" (Array.isEmpty >> not))
       SeedRecipeUnlockLevel = get.Required.Field (nameof u.SeedRecipeUnlockLevel) Decode.uint32
     }
     |> validate "a forage crop with no regrow time (not yet supported)" (ForageCrop.growth >> Growth.regrowTime >> Option.isNone)
@@ -430,7 +426,7 @@ module Decode =
 
       let missing =
         crops
-        |> Seq.collect (Crop.items >> Block.toSeq)
+        |> Seq.collect Crop.items
         |> Seq.append (crops |> Seq.map Crop.seedItem)
         |> Seq.append (data.Products.Values |> Seq.concat |> Seq.choose Product.item)
         |> Seq.filter (data.Items.ContainsKey >> not)
@@ -447,7 +443,7 @@ module Decode =
     |> Seq.countBy id
     |> Seq.sortByDescending snd
     |> Seq.map fst
-    |> Block.ofSeq
+    |> Array.ofSeq
 
   let gameDataFromRaw rawData =
     let crops =
@@ -512,7 +508,7 @@ module Decode =
         |> Seq.collect Table.keys
         |> Seq.distinct
         |> Seq.sortWith (sortWithLastBy None rawData.ProcessorUnlockLevel.TryFind)
-        |> Block.ofSeq
+        |> Array.ofSeq
       ProcessorUnlockLevel = rawData.ProcessorUnlockLevel
     }
 
@@ -572,7 +568,7 @@ module Decode =
         data.Crops
         |> Table.toSeq
         |> Seq.collect (fun (seed, crop) ->
-          Crop.items crop |> Block.map' (fun item -> (seed, item)))
+          Crop.items crop |> Array.map (fun item -> (seed, item)))
         |> Array.ofSeq
 
       let forageCrops =

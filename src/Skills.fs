@@ -52,7 +52,7 @@ module Quality =
 
   let name (quality: Quality) = enumName quality
 
-  let all = Block.init count enum<Quality>
+  let all = Array.init count enum<Quality>
 
 type [<Erase>] Qualities = private ByQuality of float array
 

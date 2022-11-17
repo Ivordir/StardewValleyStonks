@@ -219,8 +219,8 @@ let solutionRequests model fertilizers crops =
   let seasons = Seasons.ofSeq nthSeason
   let seasonNames =
     if model.Location = Farm
-    then nthSeason |> Array.map Season.name |> Block.wrap
-    else Block.singleton "InSeason"
+    then nthSeason |> Array.map Season.name
+    else [| "InSeason" |]
 
   let fertilizers =
     fertilizers |> Seq.choose (fun fertilizerName ->
@@ -228,15 +228,15 @@ let solutionRequests model fertilizers crops =
       match Model.lowestFertilizerCostOpt model fertilizerName with
       | Some cost -> Some (fertilizer, cost)
       | None -> None)
-    |> Block.ofSeq
+    |> Array.ofSeq
 
-  let byFertAndSeason () = Block.init fertilizers.Length (fun _ -> Block.init nthSeason.Length (fun _ -> ResizeArray ()))
+  let byFertAndSeason () = Array.init fertilizers.Length (fun _ -> Array.init nthSeason.Length (fun _ -> ResizeArray ()))
 
   let cropVars = byFertAndSeason ()
   let crossVars = byFertAndSeason ()
   let unreplacedFertilizerVars = byFertAndSeason ()
-  let noFertilizerVars = Block.init nthSeason.Length (fun _ -> ResizeArray ())
-  let regrowFirstSeasonVars = Block.init nthSeason.Length (fun j ->
+  let noFertilizerVars = Array.init nthSeason.Length (fun _ -> ResizeArray ())
+  let regrowFirstSeasonVars = Array.init nthSeason.Length (fun j ->
     "RegrowDays" @ seasonNames[j],
     [| seasonNames[j], 1.0
        RegrowDays, -1.0 |])
@@ -363,8 +363,8 @@ let solutionRequests model fertilizers crops =
         else (fun crop -> crop |> FarmCrop.growsInSeason nthSeason[stop] && crop |> FarmCrop.growsInSeason nthSeason[stop + 1] |> not)
       regrowCrops |> Array.filter predicate
 
-    let fixedRegrowVars = Block.init fertilizers.Length (fun _ -> Block.init (stop + 1) (fun _ -> ResizeArray ()))
-    let regrowVars = Block.init fertilizers.Length (fun _ -> Block.init (stop + 1) (fun _ -> ResizeArray ()))
+    let fixedRegrowVars = Array.init fertilizers.Length (fun _ -> Array.init (stop + 1) (fun _ -> ResizeArray ()))
+    let regrowVars = Array.init fertilizers.Length (fun _ -> Array.init (stop + 1) (fun _ -> ResizeArray ()))
     let strs = Array.create 4 "" // [| cropName; fertName; startSeasonName; endSeasonName |]
     strs[3] <- seasonNames[stop]
 

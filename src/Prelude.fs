@@ -47,6 +47,7 @@ module internal Option =
     | None, Some b -> Some b
     | None, None -> None
 
+  let inline sum a b = reduce (+) a b
   let inline min a b = reduce min a b
   let inline max a b = reduce max a b
 
@@ -234,93 +235,6 @@ type Table<'a, 'b> with
   member inline this.ContainsKey key = this |> Table.containsKey key
 
 
-/// An immutable wrapper around an array.
-type [<Erase>] 'a Block = private ReadOnlyArray of 'a array
-
-[<RequireQualifiedAccess>]
-module Block =
-  #if FABLE_COMPILER
-  let inline internal unwrap (block: 'a Block) = !!block: 'a array
-  #else
-  let inline internal unwrap (ReadOnlyArray arr) = arr
-  #endif
-
-  let empty = ReadOnlyArray Array.empty
-
-  let inline length block = unwrap block |> Array.length
-  let inline isEmpty block = length block = 0
-
-  let inline item i block = unwrap block |> Array.item i
-  let inline tryItem i block = unwrap block |> Array.tryItem i
-
-  let inline wrap array = ReadOnlyArray array
-  let inline ofSeq seq = Array.ofSeq seq |> ReadOnlyArray
-  let inline ofList list = Array.ofList list |> ReadOnlyArray
-  let inline singleton item = Array.singleton item |> ReadOnlyArray
-  let inline init count initializer = Array.init count initializer |> ReadOnlyArray
-  let inline create count value = Array.create count value |> ReadOnlyArray
-  let inline zeroCreate count = Array.zeroCreate count |> ReadOnlyArray
-  let inline replicate count value = Array.replicate count value |> ReadOnlyArray
-
-  let inline toArray block = unwrap block |> Array.copy
-  let inline toSeq block = unwrap block |> Array.toSeq
-  let inline toList block = unwrap block |> Array.toList
-
-  let inline exists predicate block = unwrap block |> Array.exists predicate
-  let inline forall predicate block = unwrap block |> Array.forall predicate
-
-  let inline filter predicate block = unwrap block |> Array.filter predicate |> ReadOnlyArray
-
-  let inline map' mapping block = unwrap block |> Array.map mapping
-  let inline map mapping block = map' mapping block |> ReadOnlyArray
-  let inline mapi' mapping block = unwrap block |> Array.mapi mapping
-  let inline mapi mapping block = unwrap block |> Array.mapi mapping |> ReadOnlyArray
-  let inline map2 mapping a b = Array.map2 mapping (unwrap a) (unwrap b) |> ReadOnlyArray
-
-  let inline fold folder state block = unwrap block |> Array.fold folder state
-
-  let inline reduce reduction block = unwrap block |> Array.reduce reduction
-
-  let inline sum block = unwrap block |> Array.sum
-  let inline sumBy projection block = unwrap block |> Array.sumBy projection
-  let inline natSum block = unwrap block |> Array.natSum
-  let inline natSumBy projection block = unwrap block |> Array.natSumBy projection
-
-  let inline max block = unwrap block |> Array.max
-  let inline maxBy projection block = unwrap block |> Array.maxBy projection
-  let inline min block = unwrap block |> Array.min
-  let inline minBy projection block = unwrap block |> Array.minBy projection
-
-  let inline mapReduce reduction mapping block = unwrap block |> Array.mapReduce reduction mapping
-
-
-  let inline find predicate block = unwrap block |> Array.find predicate
-  let inline tryFind predicate block = unwrap block |> Array.tryFind predicate
-  let inline findIndex predicate block = unwrap block |> Array.findIndex predicate
-  let inline tryFindIndex predicate block = unwrap block |> Array.tryFindIndex predicate
-  let inline pick chooser block = unwrap block |> Array.pick chooser
-  let inline tryPick chooser block = unwrap block |> Array.tryPick chooser
-
-  let inline append a b = Array.append (unwrap a) (unwrap b) |> ReadOnlyArray
-  let inline allPairs a b = Array.allPairs (unwrap a) (unwrap b) |> ReadOnlyArray
-
-  let inline iter action block = unwrap block |> Array.iter action
-  let inline iteri action block = unwrap block |> Array.iteri action
-
-  let inline sort block = unwrap block |> Array.sort |> ReadOnlyArray
-  let inline sortBy projection block = unwrap block |> Array.sortBy projection |> ReadOnlyArray
-  let inline sortDescending block = unwrap block |> Array.sortDescending |> ReadOnlyArray
-  let inline sortByDescending projection block = unwrap block |> Array.sortByDescending projection |> ReadOnlyArray
-  let inline sortWith comparer block = unwrap block |> Array.sortWith comparer |> ReadOnlyArray
-
-type 'a Block with
-  member inline this.Length = Block.length this
-  member inline this.IsEmpty = Block.isEmpty this
-  member inline this.Item i = this |> Block.item i
-
-
-
-
 [<AutoOpen>]
 module internal Util =
   let inline withMultiplier multiplier (value: nat) =
@@ -339,7 +253,6 @@ module internal Util =
     typeof<'a>
     |> Reflection.FSharpType.GetUnionCases
     |> Array.map (fun x -> Reflection.FSharpValue.MakeUnion (x, Array.empty) |> unbox<'a>)
-    |> Block.wrap
 
   let sortWithLast last x y =
     match x = last, y = last with
@@ -377,12 +290,3 @@ module internal Util =
       //   | x -> Some x)
       // |> Option.defaultValue 0)
     // sorted
-
-  // let private levenshtein: JsFunc = import "distance" "fastest-levenshtein"
-
-  // let fuzzyMatch tolerance (str: string) (search: string) =
-  //   let str = str.ToLower()
-  //   let search = search.Trim().ToLower()
-  //   let distance: int = unbox <| levenshtein.Invoke(str, search)
-  //   // let lengthDiff = abs (str.Length - search.Length)
-  //   distance <= int (float search.Length * tolerance)

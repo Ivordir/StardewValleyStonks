@@ -102,7 +102,7 @@ module Season =
       season <- next season
     distance
 
-  let all = Block.init Seasons.count (fun i -> ofInt (1 <<< i))
+  let all = Array.init Seasons.count (fun i -> ofInt (1 <<< i))
 
 
 type DateSpan = {
@@ -288,7 +288,7 @@ type [<Measure>] SeedNum
 type SeedId = int<SeedNum>
 type GrowthData = {
   Seasons: Seasons
-  Stages: nat Block
+  Stages: nat array
   TotalTime: nat
   RegrowTime: nat option
   Paddy: bool
@@ -335,7 +335,7 @@ module Growth =
   //  |> ceil |> int        |> ceil |> int
   //  = 7                   = 7 (wouldn't be equal if floor was used instead of ceil)
   let stagesAndTime growth speedBonus =
-    let stages = Block.toArray growth.Stages
+    let stages = Array.copy growth.Stages
     let mutable daysToReduce = (JS.Math.fround speedBonus) * (float growth.TotalTime) |> ceil |> nat
     let mutable daysReduced = 0u
     let mutable traverses = 0u
@@ -417,8 +417,8 @@ module FarmCrop =
 
   let items crop =
     match crop.ExtraItem with
-    | Some (item, _) -> Block.wrap [| crop.Item; item |]
-    | None -> Block.singleton crop.Item
+    | Some (item, _) -> [| crop.Item; item |]
+    | None -> [| crop.Item |]
 
   let inline name item crop = crop.Item |> item |> Item.name
 
@@ -428,7 +428,7 @@ module FarmCrop =
 
 type ForageCrop = {
   Growth: GrowthData
-  Items: ItemId Block
+  Items: ItemId array
   SeedRecipeUnlockLevel: nat
 }
 
@@ -505,4 +505,4 @@ module Crop =
 
   let makesOwnSeeds crop =
     let seed = seed crop
-    items crop |> Block.exists (fun item -> int item = int seed)
+    items crop |> Array.exists (fun item -> int item = int seed)

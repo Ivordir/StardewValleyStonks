@@ -279,8 +279,8 @@ let inline reactSelect (props: obj) = Fable.React.Helpers.ofImport "default" "re
 let selectUnitUnionWith viewOption allCases (current: 'a) dispatch =
   select [
     valueOrDefault (Reflection.getCaseTag current)
-    onChange ((int: string -> _) >> flip Block.item allCases >> dispatch)
-    children (allCases |> Block.map' viewOption)
+    onChange ((int: string -> _) >> flip Array.item allCases >> dispatch)
+    children (allCases |> Array.map viewOption)
   ]
 
 let selectUnitUnion allCases current dispatch =
@@ -311,7 +311,7 @@ let viewTab toString msg tab currentTab dispatch =
   ]
 
 let viewTabsWith toString props msg tabs currentTab dispatch =
-  ul [ Class.tabs; yield! props; children (tabs |> Block.map' (fun tab ->
+  ul [ Class.tabs; yield! props; children (tabs |> Array.map (fun tab ->
     lazyView2 (viewTab toString msg tab) currentTab dispatch))
   ]
 
@@ -379,7 +379,7 @@ module Skills =
 
   let cropQualities (qualities: Qualities) =
     div [ Class.cropQualities; children [
-      div [ Class.cropQualitiesBars; children (Quality.all |> Block.map' (fun quality ->
+      div [ Class.cropQualitiesBars; children (Quality.all |> Array.map (fun quality ->
         div [
           quality |> qualityClass "bar"
           // using flex-grow instead of style.width prevents divs from overflowing into next line due to animations
@@ -387,7 +387,7 @@ module Skills =
         ] ))
       ]
 
-      div [ Class.cropQualitiesProbs; children (Quality.all |> Block.map' (fun quality ->
+      div [ Class.cropQualitiesProbs; children (Quality.all |> Array.map (fun quality ->
         let prob = qualities[quality]
         div [
           quality |> qualityClass "text"
@@ -616,7 +616,7 @@ module Crops =
               td (viewPrice price)
               td (Model.cropGrowthTime model None crop |> ofNat)
               td (Crop.regrowTime crop |> Option.defaultOrMap none ofNat)
-              td (Season.all |> Block.map' (fun season ->
+              td (Season.all |> Array.map (fun season ->
                 Html.span [ Class.seasonSlot; children [
                   if Crop.growsInSeason season crop then
                     Image.season season
@@ -637,12 +637,12 @@ module Crops =
       crops
       |> Seq.collect (fun crop ->
         let seed = Crop.seed crop
-        Crop.items crop |> Block.map' (fun item -> seed, item))
+        Crop.items crop |> Array.map (fun item -> seed, item))
       |> set
 
     let selectMany filter = keys |> Seq.filter filter |> set |> curry SetManySelected
 
-    let processorUnlocked = model.Data.Processors |> Block.map' (Model.processorUnlocked model)
+    let processorUnlocked = model.Data.Processors |> Array.map (Model.processorUnlocked model)
 
     let viewItemRow mainCrop seed item =
       let products = model.Data.Products[item]
@@ -657,7 +657,7 @@ module Crops =
           checkbox (model.SellRawItems.Contains (seed, item)) (curry SetSelected (seed, item) >> SelectSellRawItems >> dispatch)
           ofNat <| Model.itemPrice model (Model.getItem model item) productQuality
         ]
-        yield! model.Data.Processors |> Block.mapi' (fun i processor ->
+        yield! model.Data.Processors |> Array.mapi (fun i processor ->
           match products.TryFind processor with
           | Some product ->
             td [
@@ -700,7 +700,7 @@ module Crops =
         select [
           valueOrDefault (Quality.name productQuality)
           onChange ((Quality.Parse: string -> _) >> SetProductQuality >> appDispatch)
-          children (Quality.all |> Block.map' (fun quality ->
+          children (Quality.all |> Array.map (fun quality ->
             option [
               text <| Quality.name quality
               valueOrDefault (Quality.name quality)
@@ -725,7 +725,7 @@ module Crops =
                 (model.Data.Crops
                   |> Table.toSeq
                   |> Seq.collect (fun (seed, crop) ->
-                    Crop.items crop |> Block.map' (tuple2 seed))
+                    Crop.items crop |> Array.map (tuple2 seed))
                   |> Seq.forall model.SellRawItems.Contains)
                 (selectMany (konst true) >> SelectSellRawItems >> dispatch)
             ofStr "Raw Crop"
@@ -733,7 +733,7 @@ module Crops =
           Width = productWidth
           Sort = Some <| compareByRev (fun crop -> Model.cropBestItemPriceFrom model crop productQuality)
         }
-        yield! model.Data.Processors |> Block.mapi' (fun i processor ->
+        yield! model.Data.Processors |> Array.mapi (fun i processor ->
           {
             Header =
               div [
@@ -803,7 +803,7 @@ module Crops =
                 ]
                 td []
               ]
-              yield! c.Items |> Block.map' (viewItemRow false seed)
+              yield! c.Items |> Array.map (viewItemRow false seed)
           ] ))
         (SetProductSort >> appDispatch)
         productSort
@@ -830,7 +830,7 @@ module Crops =
           Width = 100.0 * keyColWdith
           Sort = Some <| compareBy (Crop.name <| Model.getItem model)
         }
-        yield! model.Data.SeedVendors |> Block.map' (fun vendor ->
+        yield! model.Data.SeedVendors |> Array.map (fun vendor ->
           {
             Header = fragment [
               checkboxWith
@@ -906,7 +906,7 @@ module Crops =
           let seed = Crop.seed crop
           tr [ key (string seed); children [
             td (Image.Icon.crop model crop)
-            yield! model.Data.SeedVendors |> Block.map' (fun vendor ->
+            yield! model.Data.SeedVendors |> Array.map (fun vendor ->
               td [
                 match model.Data.SeedPrices[seed].TryFind vendor with
                 | Some price ->
@@ -995,7 +995,7 @@ module Crops =
         checkboxText "In Season" filters.InSeason (SetInSeason >> dispatch)
         Html.span [
           if filters.InSeason then Class.disabled
-          children (Season.all |> Block.map' (fun season ->
+          children (Season.all |> Array.map (fun season ->
           checkboxWith []
             (fragment [
               Image.season season
@@ -1120,7 +1120,7 @@ module Fertilizers =
             Width = 100.0 * keyColWdith
             Sort = Some <| compareBy Fertilizer.name
           }
-          yield! model.Data.FertilizerVendors |> Block.map' (fun vendor ->
+          yield! model.Data.FertilizerVendors |> Array.map (fun vendor ->
             {
               Header = fragment [
                 checkboxWith
@@ -1153,7 +1153,7 @@ module Fertilizers =
             let name = fert.Name
             tr [ key (string name); children [
               td (Image.Icon.fertilizer fert)
-              yield! model.Data.FertilizerVendors |> Block.map' (fun vendor ->
+              yield! model.Data.FertilizerVendors |> Array.map (fun vendor ->
                 td [
                   match model.Data.FertilizerPrices[name].TryFind vendor with
                   | Some price ->
@@ -1191,7 +1191,7 @@ module Misc =
       select [
         valueOrDefault (Season.name season)
         onChange ((Seasons.Parse: string -> _) >> Season.ofSeasons >> flip (curry Date) day >> dispatch)
-        children (Season.all |> Block.map' (fun season ->
+        children (Season.all |> Array.map (fun season ->
           option [
             text <| Season.name season
             valueOrDefault (Season.name season)
@@ -1286,7 +1286,7 @@ module Misc =
         checkboxText "Quality Products" modData.QualityProducts (SetQualityProducts >> dispatch)
         ul [
           if not modData.QualityProducts then Class.disabled
-          children (processors |> Block.filter ((<>) Processor.seedMaker) |> Block.map' (fun processor ->
+          children (processors |> Array.filter ((<>) Processor.seedMaker) |> Array.map (fun processor ->
             li [
               checkboxWith []
                 (Image.Icon.processor processor)
@@ -1988,7 +1988,7 @@ let profitBreakdownTable timeNorm model seed fertName =
                   td []
                 ]
 
-        yield! harvestData.IntoSeedAmounts |> Block.map' (fun (item, amounts) ->
+        yield! harvestData.IntoSeedAmounts |> Array.map (fun (item, amounts) ->
           if int item = int seed then
             fragment [
               for i = Quality.highest downto 0 do
@@ -2048,7 +2048,7 @@ let profitBreakdownTable timeNorm model seed fertName =
               ]
             ]
           else
-            // failwith "what?"
+            assert false
             none)
 
         if harvestData.SeedsBought > 0.0 then
@@ -2074,7 +2074,7 @@ let profitBreakdownTable timeNorm model seed fertName =
       ] )
 
     tbody [
-      match data.NetProfit with
+      match data.TotalNetProfit with
       | Some profit when timeNorm <> TotalPeriod ->
         tr [
           yield! Seq.replicate 6 (td [])
