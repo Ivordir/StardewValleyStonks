@@ -370,7 +370,8 @@ module Decode =
       Items = get.Required.Field (nameof u.Items) (Decode.array itemId |> validate "at least one item" (Array.isEmpty >> not))
       SeedRecipeUnlockLevel = get.Required.Field (nameof u.SeedRecipeUnlockLevel) Decode.uint32
     }
-    |> validate "a forage crop with no regrow time (not yet supported)" (ForageCrop.growth >> Growth.regrowTime >> Option.isNone)
+    |> validate "a forage crop that grows in one season" (ForageCrop.growth >> Growth.seasons >> Seasons.tryExactlyOne >> Option.isSome)
+    |> validate "a forage crop with no regrow time" (ForageCrop.growth >> Growth.regrowTime >> Option.isNone)
 
   let cropAmountSettings =
     let u = Unchecked.defaultof<CropAmountSettings>

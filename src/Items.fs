@@ -107,9 +107,11 @@ module Processor =
     then quality
     else Quality.Normal
 
-  let seedMakerAmount seed =
-    seedMakerSeedProb * float seedMakerSeedAmount
-    + if seed = Item.ancientSeeds then seedMakerAncientSeedProb else 0.0
+  let seedMakerAmount = seedMakerSeedProb * float seedMakerSeedAmount
+
+  let seedMakerAmountWith seed =
+    seedMakerAmount + if seed = Item.ancientSeeds then seedMakerAncientSeedProb else 0.0
+
 
 
 type Product =
@@ -191,7 +193,7 @@ module Product =
   let amountPerItem product =
     match product with
     | SeedsFromSeedMaker seedId ->
-      Processor.seedMakerAmount seedId
+      Processor.seedMakerAmountWith seedId
     | Processed p ->
       match p.Ratio with
       | Some ratio -> ratioAmount ratio
