@@ -386,23 +386,6 @@ module Growth =
 
   let consecutiveHarvests dateSpans speedBonus growth = consecutiveHarvestsWith (time growth speedBonus) dateSpans growth
 
-  let consecutiveHarvestsData dateSpans speedBonus growth =
-    let stages, time = stagesAndTime growth speedBonus
-    let dateSpans, harvests =
-      dateSpans
-      |> Array.choose (fun span ->
-        let harvests = harvestsWith time span.TotalDays growth
-        if harvests > 0u
-        then Some (span, harvests)
-        else None)
-      |> Array.unzip
-    {|
-      Stages = stages
-      GrowthTime = time
-      Spans = dateSpans
-      Harvests = harvests
-    |}
-
 type FarmCrop = {
   Growth: GrowthData
   Item: ItemId

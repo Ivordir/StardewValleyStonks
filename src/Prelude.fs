@@ -47,7 +47,6 @@ module internal Option =
     | None, Some b -> Some b
     | None, None -> None
 
-  let inline sum a b = reduce (+) a b
   let inline min a b = reduce min a b
   let inline max a b = reduce max a b
 
@@ -109,7 +108,7 @@ module internal CollectionExtentions =
   [<RequireQualifiedAccess>]
   module Array =
     // This gives faster and cleaner JS compared to `Array.sum` or `array?reduce(fun x y -> x + y)`
-    let sum (array: _ array) =
+    let sum (array: float array) =
       let mutable sum = 0.0
       for x in array do
         sum <- sum + x
@@ -121,7 +120,7 @@ module internal CollectionExtentions =
         sum <- sum + projection x
       sum
 
-    let natSum (array: _ array) =
+    let natSum (array: nat array) =
       let mutable sum = 0u
       for x in array do
         sum <- sum + x
@@ -136,8 +135,8 @@ module internal CollectionExtentions =
     let mapReduce reduction mapping (array: _ array) =
       if array.Length = 0 then invalidArg (nameof array) "The given array cannot be empty."
       let mutable current = mapping array[0]
-      for i = 1 to array.Length - 1 do
-        current <- reduction current (mapping array[i])
+      for x in array do
+        current <- reduction current (mapping x)
       current
 
   [<RequireQualifiedAccess>]

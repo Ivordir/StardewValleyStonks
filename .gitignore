@@ -2,6 +2,7 @@ Extractor/
 
 node_modules/
 .parcel-cache
+parcel-bundle-reports
 dist
 
 fable
