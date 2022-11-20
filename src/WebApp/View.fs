@@ -2504,12 +2504,6 @@ let view app dispatch =
   ]
 
 
-let viewWhole app dispatch =
-  match app with
-  | Ok app -> view app dispatch
-  | Error e -> div (ofStr e)
-
-
 
 open Elmish
 #if FABLE_COMPILER
@@ -2519,29 +2513,46 @@ open Thoth.Json.Net
 #endif
 open StardewValleyStonks.WebApp.Json
 
-let init () =
-  let data = Browser.WebStorage.localStorage.getItem "app"
-  let app =
-    if isNullOrUndefined data then
-      loadDefaultApp ()
-    else
-      match loadDefaultModel () with
-      | Ok model -> Decode.fromString (Decode.app model) data
-      | Error e -> Error e
-  app, []
+let data = Browser.WebStorage.localStorage.getItem "app"
+let app =
+  if isNullOrUndefined data then
+    loadDefaultApp ()
+  else
+    match loadDefaultModel () with
+    | Ok model -> Decode.fromString (Decode.app model) data
+    | Error e -> Error e
 
-let saveToLocalStorage = debouncer 100 (fun app ->
-  let data = Encode.toString 0 <| Encode.app app
-  Browser.WebStorage.localStorage.setItem ("app", data)
-)
+match app with
+| Error e ->
+  let view =
+    div [
+      ofStr "Whoops, something went wrong."
+      ofStr e
+    ]
 
-Program.mkProgram init (fun msg app ->
-  match app with
-  | Ok app ->
+  Program.mkSimple ignore (fun _ _ -> ()) (fun _ _ -> view)
+  |> Program.withReactSynchronous "app"
+  |> Program.run
+
+| Ok app ->
+  let saveToLocalStorage = debouncer 100 (fun app ->
+    let data = Encode.toString 0 <| Encode.app app
+    Browser.WebStorage.localStorage.setItem ("app", data)
+  )
+
+  let update msg app =
     let app, cmd = Update.app msg app
     saveToLocalStorage app
-    Ok app, cmd
-  | Error e -> Error e, [])
-  viewWhole
-|> Program.withReactBatched "app"
-|> Program.run
+    app, cmd
+
+  let view app dispatch =
+    try view app dispatch
+    with e ->
+      div [
+        ofStr "Whoops, something went wrong."
+        ofStr (sprintf "%A" e)
+      ]
+
+  Program.mkProgram (fun () -> app, []) update view
+  |> Program.withReactBatched "app"
+  |> Program.run
