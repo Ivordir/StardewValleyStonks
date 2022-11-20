@@ -24,6 +24,7 @@
     RankItem: 'Crops',
     RankMetric: 'Gold',
     TimeNormalization: 'Per Season',
-    BrushSpan: [ 0, 24 ]
+    BrushSpan: [ 0, 24 ],
+    SelectedCropAndFertilizer: null
   }
 }

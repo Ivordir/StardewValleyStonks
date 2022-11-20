@@ -53,9 +53,11 @@
 //   [ CrossDays @ Season.name end, -1.0
 //     Season.name end, 1.0 ]
 
-module StardewValleyStonks.Solver
+module StardewValleyStonks.WebApp.Solver
+
 open YALPS
 open YALPS.Operators
+open StardewValleyStonks
 
 module ValueNames =
   let [<Literal>] Profit = "Profit"

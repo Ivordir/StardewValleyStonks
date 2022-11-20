@@ -1,6 +1,9 @@
-namespace StardewValleyStonks
+namespace StardewValleyStonks.WebApp
 
-type TableSort = SortByColumns of (int * bool) list
+open StardewValleyStonks
+open Fable.Core
+
+type [<Erase>] TableSort = SortByColumns of (int * bool) list
 
 type SettingsTab =
   | Skills
@@ -76,10 +79,6 @@ module CropFilters =
   }
 
 
-// type ShowAmounts =
-//   | [<CompiledName ("Total Amounts")>] TotalAmounts
-//   | [<CompiledName ("Amounts Per Harvest")>] AmountsPerHarvest
-
 type Ranker = {
   RankItem: RankItem
   RankMetric: RankMetric
@@ -89,6 +88,8 @@ type Ranker = {
 }
 
 type App = {
+  DefaultModel: Model
+
   Model: Model
   SavedModels: (string * Model) list
 
@@ -212,8 +213,8 @@ type AppMessage =
   | LoadSavedModel of int
   | SaveCurrentModel of string
   | RenameSavedModel of int * string
-  | EditSavedModel of int * Model
   | DeleteSavedModel of int
+  | ResetModel
 
   | SetAppMode of AppMode
   | SetSettingsTab of SettingsTab
@@ -430,9 +431,9 @@ module Update =
     | SetModel msg -> { app with Model = app.Model |> model msg }, []
     | LoadSavedModel i -> { app with Model = snd app.SavedModels[i] }, []
     | SaveCurrentModel name -> { app with SavedModels = (name, app.Model) :: app.SavedModels }, []
-    | EditSavedModel (i, model) -> { app with SavedModels = app.SavedModels |> List.updateAt i (app.SavedModels |> List.item i |> fst, model) }, []
     | RenameSavedModel (i, name) -> { app with SavedModels = app.SavedModels |> List.updateAt i (name, app.SavedModels |> List.item i |> snd) }, []
     | DeleteSavedModel i -> { app with SavedModels = app.SavedModels |> List.removeAt i }, []
+    | ResetModel -> { app with Model = app.DefaultModel }, []
 
     | SetAppMode mode -> { app with AppMode = mode }, []
     | SetSettingsTab tab -> { app with SettingsTab = tab }, []

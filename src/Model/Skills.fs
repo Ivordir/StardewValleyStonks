@@ -10,7 +10,9 @@ module Vendor =
   let oasis = VendorName "Oasis"
   let travelingCart = VendorName "Traveling Cart"
 
+
 type [<Erase>] FertilizerName = FertName of string
+
 type Fertilizer = {
   Name: FertilizerName
   Quality: nat
@@ -54,13 +56,14 @@ module Quality =
 
   let all = Array.init count enum<Quality>
 
-type [<Erase>] Qualities = private ByQuality of float array
+
+type [<Erase>] Qualities = ByQuality of float array
 
 module Qualities =
   #if FABLE_COMPILER
-  let inline internal unwrap (qualities: Qualities) = !!qualities : float array
+  let inline unwrap (qualities: Qualities) = !!qualities : float array
   #else
-  let inline internal unwrap (ByQuality arr) = arr
+  let inline unwrap (ByQuality arr) = arr
   #endif
 
   let inline create value = Array.create Quality.count value |> ByQuality
@@ -138,8 +141,6 @@ type Qualities with
   member inline this.Item index = Qualities.itemi index this
 
 
-
-
 type Skill<'professions> = {
   Level: nat
   Buff: nat
@@ -147,6 +148,7 @@ type Skill<'professions> = {
 }
 
 type Farming = Skill<{| Tiller: bool; Agriculturist: bool; Artisan: bool |}>
+
 type Foraging = Skill<{| Gatherer: bool; Botanist: bool |}>
 
 module Skill =
@@ -154,6 +156,7 @@ module Skill =
   let buff skill = skill.Buff
   let professions skill = skill.Professions
   let buffedLevel skill = skill.Level + skill.Buff
+
 
 type Skills = {
   Farming: Farming

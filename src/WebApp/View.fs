@@ -1,6 +1,7 @@
-module StardewValleyStonks.View
+module StardewValleyStonks.WebApp.View
 
 open StardewValleyStonks
+open StardewValleyStonks.WebApp
 
 // assumptions: forage crops only grow in one season
 
@@ -335,14 +336,14 @@ let viewTabs msg = viewTabsWith (box >> Reflection.getCaseName) [] msg
 //     src (Image.uiRoot "Error")
 //   ]
 
-let debouncerWith (f : _ -> unit) timeout =
+let debouncer timeout (f : _ -> unit) =
   let mutable last = None
   fun value ->
     last |> Option.iter Browser.Dom.window.clearInterval
     let delayed _ = f value
     last <- Some <| Browser.Dom.window.setTimeout (delayed, timeout)
 
-let debouncer timeout =
+let debounce timeout =
   let mutable last = None
   fun (action: unit -> unit) ->
     last |> Option.iter Browser.Dom.window.clearInterval
@@ -1226,7 +1227,7 @@ module Misc =
       div [
         ofStr "Apply Tiller to Foraged Fruit:"
         checkboxWith [] (Image.Icon.item' model Item.blackberry) (multipliers.ForagedFruitTillerOverrides.Contains Item.blackberry) (curry SetForagedFruitTillerOverrides Item.blackberry >> dispatch)
-        let grape = 398<ItemNum>
+        let grape = 398u<ItemNum>
         checkboxWith [] (Image.Icon.item' model grape) (multipliers.ForagedFruitTillerOverrides.Contains grape) (curry SetForagedFruitTillerOverrides grape >> dispatch)
       ]
     ]
@@ -1322,6 +1323,20 @@ module Misc =
       mods modsOpen model.Data.Processors model.ModData appDispatch
     ] ]
 
+module LoadSave =
+  let tab app dispatch =
+    div [
+      // | LoadSavedModel i -> { app with Model = snd app.SavedModels[i] }, []
+      // | SaveCurrentModel name -> { app with SavedModels = (name, app.Model) :: app.SavedModels }, []
+      // | RenameSavedModel (i, name) -> { app with SavedModels = app.SavedModels |> List.updateAt i (name, app.SavedModels |> List.item i |> snd) }, []
+      // | DeleteSavedModel i -> { app with SavedModels = app.SavedModels |> List.removeAt i }, []
+
+      button [
+        onClick (fun _ -> dispatch ResetModel)
+        text "Reset Settings to Default"
+      ]
+    ]
+
 let settings app dispatch =
   section [ prop.id "settings"; children [
     viewTabsCss [ Class.tabs ] SetSettingsTab SettingsTab.all app.SettingsTab dispatch
@@ -1330,68 +1345,8 @@ let settings app dispatch =
     | Crops -> Crops.tab app dispatch
     | Fertilizers -> Fertilizers.tab app dispatch
     | Misc -> Misc.tab (app.OpenDetails.Contains OpenDetails.Mod) app.Model dispatch
-    | LoadSettings -> none
+    | LoadSettings -> LoadSave.tab app dispatch
   ] ]
-
-
-// module Re = Fable.Recharts
-// let graphView (model: Model) (crops, fertilizers) dispatch =
-//   // div []
-//   //   [ checkboxText "Show Unprofitable Combinations" ToggleShowUnprofitable model.ShowUnprofitable dispatch
-//   //     selectFertilizerOption (Model.activeFertilizers model) [ str "Select a Fertilizer" ] SetCompareFertilizer model.CompareFertilizer dispatch
-//   //     selectStringOptionWith "Any" (Model.activeCrops model) [ str "Select a Crop" ] SetCompareCrop model.CompareCrop dispatch ]
-
-//   //what if there are no valid/profitable pairs -> display?
-//   let combos =
-//     let crops = Seq.map model.Entities.Crops.Find crops |> Seq.filter (Crop.growsInSeasons (Date.seasonsBetween model.StartDate model.EndDate)) |> Array.ofSeq
-//     Array.sortInPlaceBy (Crop.name model.Entities.Items.Find) crops
-//     Array.sortInPlaceWith (sortWithLastBy Seasons.None Crop.seasons) crops
-//     fertilizers
-//     |> Seq.map (Option.map model.Entities.Fertilizers.Find)
-//     |> Array.ofSeq
-//     |> Array.allPairs crops
-
-
-//   let pairs =
-//     combos |> Array.mapi (fun i (crop, fert) ->
-//       let profit = Model.totalNetProfit model crop fert (Model.consecutiveDays model <| Crop.seasons crop)
-//       i, profit)
-//   pairs |> Array.sortInPlaceWith (fun a b -> -compare (snd a) (snd b))
-
-//   Re.responsiveContainer []
-//     [ Re.barChart
-//         [ Re.Props.Chart.Data pairs ]
-//         [ Re.yaxis [] []
-//           // Re.tooltip
-//           //   [ Re.Props.Tooltip.Content (chartTooltip comboDict.TryFind) ]
-//           //   []
-//           Re.bar
-//             [ Re.Props.Cartesian.DataKey snd
-//               Re.Props.Cartesian.BarSize 40.0
-//               Re.Props.Cell.Fill "blue"
-//               // Re.Props.Cartesian.OnClick (fun _ i _ ->
-//               //   let combo, _ = combos.[i]
-//               //   Some combo |> SetSelectedPair |> dispatch)
-//               ]
-//             []
-//           Re.brush
-//             [ Re.Props.Cartesian.StartIndex (float graphBrushStart)
-//               Re.Props.Cartesian.EndIndex (min (pairs.Length - 1) graphBrushEnd |> float)
-//              ] //Re.Props.Cartesian.OnChange !!indexChange ]
-//             []
-//           Re.xaxis
-//             [ Re.Props.Cartesian.DataKey fst
-//               Re.Props.Cartesian.Tick (pairImage combos)
-//               Re.Props.Cartesian.Interval 0
-//               Re.Props.Cartesian.Height 50.0 ]
-//             [] ] ]
-
-
-
-
-
-
-
 
 
 open Feliz.Recharts
@@ -1946,7 +1901,7 @@ let profitBreakdownTable roi timeNorm model seed fertName =
             if data.SeedsBought > 0.0 then
               tr [
                 td [ colSpan 4; children [
-                  Image.Icon.item' model (seed * 1<_>)
+                  Image.Icon.item' model (seed * 1u<_>)
                   match data.SeedPrice with
                   | Some (NonCustom vendor, _) ->
                     ofStr " from "
@@ -2016,16 +1971,16 @@ let profitBreakdownTable roi timeNorm model seed fertName =
                   ]
                   td [ Image.rightArrow ]
                   td [
-                    Image.Icon.productQuality model item (SeedsFromSeedMaker (seed * 1<_>)) Quality.Normal
+                    Image.Icon.productQuality model item (SeedsFromSeedMaker (seed * 1u<_>)) Quality.Normal
                   ]
                   td []
                   td [
                     ofStr " x "
-                    ofStr <| floatFixedRound (amount * Processor.seedMakerAmountWith (seed * 1<_>))
+                    ofStr <| floatFixedRound (amount * Processor.seedMakerAmountWith seed)
                   ]
                   td []
                   td [
-                    ofStr <| floatFixedRound (amount * Processor.seedMakerAmountWith (seed * 1<_>))
+                    ofStr <| floatFixedRound (amount * Processor.seedMakerAmountWith seed)
                   ]
                 ]
               ]
@@ -2046,7 +2001,7 @@ let profitBreakdownTable roi timeNorm model seed fertName =
                 ]
                 td [ Image.rightArrow ]
                 if i = 0 then
-                  td [ rowSpan items.Length; children [ Image.Icon.item' model (seed * 1<_>) ] ]
+                  td [ rowSpan items.Length; children [ Image.Icon.item' model (seed * 1u<_>) ] ]
                   td [ rowSpan items.Length; children [
                     ofStr <| gold (Model.seedItemPrice model seed)
                   ] ]
@@ -2520,8 +2475,8 @@ let generateModeView app dispatch =
             let varName =
               n.Split "@"
               |> Array.map (fun s ->
-                match System.Int32.TryParse s with
-                | true, value -> Model.getCrop model (value * 1<_>) |> Crop.name (Model.getItem model)
+                match System.UInt32.TryParse s with
+                | true, value -> Model.getCrop model (value * 1u<_>) |> Crop.name (Model.getItem model)
                 | _ -> s)
               |> String.concat " "
 
@@ -2557,13 +2512,34 @@ let viewWhole app dispatch =
 
 
 open Elmish
+#if FABLE_COMPILER
+open Thoth.Json
+#else
+open Thoth.Json.Net
+#endif
+open StardewValleyStonks.WebApp.Json
 
-let init () = Json.loadDefaultApp (), []
+let init () =
+  let data = Browser.WebStorage.localStorage.getItem "app"
+  let app =
+    if isNullOrUndefined data then
+      loadDefaultApp ()
+    else
+      match loadDefaultModel () with
+      | Ok model -> Decode.fromString (Decode.app model) data
+      | Error e -> Error e
+  app, []
+
+let saveToLocalStorage = debouncer 100 (fun app ->
+  let data = Encode.toString 0 <| Encode.app app
+  Browser.WebStorage.localStorage.setItem ("app", data)
+)
 
 Program.mkProgram init (fun msg app ->
   match app with
   | Ok app ->
     let app, cmd = Update.app msg app
+    saveToLocalStorage app
     Ok app, cmd
   | Error e -> Error e, [])
   viewWhole

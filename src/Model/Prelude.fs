@@ -2,9 +2,13 @@ namespace StardewValleyStonks
 
 type nat = uint
 
-
 [<AutoOpen>]
-module internal Prelude =
+module Prelude =
+  let inline nat x = uint x
+
+  let inline withMultiplier multiplier (value: nat) =
+    multiplier * float value |> nat
+
   let inline (!!) x = Fable.Core.JsInterop.(!!)x
 
   let inline resizeToArray (r: 'a ResizeArray) =
@@ -14,19 +18,11 @@ module internal Prelude =
     r.ToArray()
     #endif
 
-  let inline refEqual a b = System.Object.ReferenceEquals (a, b)
-
-  let minBy projection a b = if projection a <= projection b then a else b
-  let maxBy projection a b = if projection a >= projection b then a else b
-
-  let compareBy projection a b = compare (projection a) (projection b)
-  let compareByRev projection a b = compare (projection b) (projection a)
-
-  let inline nat x = uint x
+  let inline internal enumName (e: 'a) = System.Enum.GetName (typeof<'a>, e)
 
 
 [<AutoOpen>]
-module internal Combinators =
+module Combinators =
   let inline flip f x y = f y x
   let inline konst x _ = x
   let inline tuple2 a b = a, b
@@ -35,7 +31,8 @@ module internal Combinators =
   let inline uncurry f (a, b) = f a b
 
 
-module internal Option =
+[<RequireQualifiedAccess>]
+module Option =
   let defaultOrMap defaultValue mapping = function
     | Some value -> mapping value
     | None -> defaultValue
@@ -55,9 +52,8 @@ module internal Option =
     | Error _ -> None
 
 
-
 [<AutoOpen>]
-module internal CollectionExtentions =
+module CollectionExtentions =
   [<RequireQualifiedAccess>]
   module Seq =
     let inline sortDirectionBy ascending projection seq =
@@ -107,6 +103,7 @@ module internal CollectionExtentions =
 
   [<RequireQualifiedAccess>]
   module Array =
+    #if FABLE_COMPILER
     // This gives faster and cleaner JS compared to `Array.sum` or `array?reduce(fun x y -> x + y)`
     let sum (array: float array) =
       let mutable sum = 0.0
@@ -119,6 +116,7 @@ module internal CollectionExtentions =
       for x in array do
         sum <- sum + projection x
       sum
+    #endif
 
     let natSum (array: nat array) =
       let mutable sum = 0u
@@ -150,21 +148,20 @@ open Fable.Core
 type Dictionary<'a, 'b> = System.Collections.Generic.Dictionary<'a, 'b>
 
 /// An immutable wrapper around ESM Map. Keys should be primitive (string, number, etc.).
-type [<Erase>] Table<'a, 'b> = private ReadOnlyDictionary of Dictionary<'a, 'b>
+type [<Erase>] Table<'a, 'b> = ReadOnlyDictionary of Dictionary<'a, 'b>
 
 [<RequireQualifiedAccess>]
-
 module Table =
   #if FABLE_COMPILER
-  let inline internal wrap (map: JS.Map<'a, 'b>) = !!map: Table<'a, 'b>
+  let inline wrap (map: JS.Map<'a, 'b>) = !!map: Table<'a, 'b>
   #else
-  let inline internal wrap dict = ReadOnlyDictionary dict
+  let inline wrap dict = ReadOnlyDictionary dict
   #endif
 
   #if FABLE_COMPILER
-  let inline internal unwrap (table: Table<'a, 'b>) = !!table: Dictionary<'a, 'b>
+  let inline unwrap (table: Table<'a, 'b>) = !!table: Dictionary<'a, 'b>
   #else
-  let inline internal unwrap (ReadOnlyDictionary dict) = dict
+  let inline unwrap (ReadOnlyDictionary dict) = dict
   #endif
 
   let inline empty () =
@@ -232,60 +229,3 @@ type Table<'a, 'b> with
   member inline this.Find key = this |> Table.find key
   member inline this.TryFind key = this |> Table.tryFind key
   member inline this.ContainsKey key = this |> Table.containsKey key
-
-
-[<AutoOpen>]
-module internal Util =
-  let inline withMultiplier multiplier (value: nat) =
-    multiplier * float value |> nat
-
-  let inline onClosedInterval lowerbound upperbound value =
-    lowerbound <= value && value <= upperbound
-
-  let inline nonZero x = x > LanguagePrimitives.GenericZero
-
-  let inline nonNegative x = x >= LanguagePrimitives.GenericZero
-
-  let inline enumName (e: 'a) = System.Enum.GetName (typeof<'a>, e)
-
-  let inline unitUnionCases<'a> =
-    typeof<'a>
-    |> Reflection.FSharpType.GetUnionCases
-    |> Array.map (fun x -> Reflection.FSharpValue.MakeUnion (x, Array.empty) |> unbox<'a>)
-
-  let sortWithLast last x y =
-    match x = last, y = last with
-    | true, true -> 0
-    | true, false -> 1
-    | false, true -> -1
-    | false, false -> compare x y
-
-  let sortWithLastBy last projection x y = sortWithLast last (projection x) (projection y)
-
-  let sortWithLastRev last x y =
-    match x = last, y = last with
-    | true, true -> 0
-    | true, false -> 1
-    | false, true -> -1
-    | false, false -> compare y x
-
-  let sortWithLastByRev last projection x y = sortWithLastRev last (projection x) (projection y)
-
-  let sortByMany comparers seq =
-    let comparers = Array.ofSeq comparers
-    seq
-    |> Seq.sortWith (fun x y ->
-      let mutable comparison = 0
-      let mutable i = 0
-      while comparison = 0 && i < comparers.Length do
-        comparison <- comparers[i] x y
-        i <- i + 1
-      comparison)
-    |> Array.ofSeq
-      // comparers
-      // |> Array.tryPick (fun comparer ->
-      //   match comparer x y with
-      //   | 0 -> None
-      //   | x -> Some x)
-      // |> Option.defaultValue 0)
-    // sorted

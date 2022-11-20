@@ -5,7 +5,6 @@ framework net6.0
 
 nuget FSharp.Core
 nuget Fable.Core
-nuget Fable.Fetch
 nuget Fable.React ~> 8
 nuget Fable.Elmish.React
 nuget Fable.Elmish.Browser
@@ -15,3 +14,4 @@ nuget Feliz.Recharts
 nuget Fable.YALPS
 
 nuget Thoth.Json.Net
+nuget MonoGame.Framework.DesktopGL

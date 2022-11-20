@@ -1,4 +1,59 @@
-namespace StardewValleyStonks
+namespace StardewValleyStonks.WebApp
+
+open StardewValleyStonks
+
+[<AutoOpen>]
+module internal Util =
+  let inline refEqual a b = System.Object.ReferenceEquals (a, b)
+
+  let minBy projection a b = if projection a <= projection b then a else b
+  let maxBy projection a b = if projection a >= projection b then a else b
+
+  let compareBy projection a b = compare (projection a) (projection b)
+  let compareByRev projection a b = compare (projection b) (projection a)
+
+  let inline unitUnionCases<'a> =
+    typeof<'a>
+    |> Reflection.FSharpType.GetUnionCases
+    |> Array.map (fun x -> Reflection.FSharpValue.MakeUnion (x, Array.empty) |> unbox<'a>)
+
+  let sortWithLast last x y =
+    match x = last, y = last with
+    | true, true -> 0
+    | true, false -> 1
+    | false, true -> -1
+    | false, false -> compare x y
+
+  let sortWithLastBy last projection x y = sortWithLast last (projection x) (projection y)
+
+  let sortWithLastRev last x y =
+    match x = last, y = last with
+    | true, true -> 0
+    | true, false -> 1
+    | false, true -> -1
+    | false, false -> compare y x
+
+  let sortWithLastByRev last projection x y = sortWithLastRev last (projection x) (projection y)
+
+  let sortByMany comparers seq =
+    let comparers = Array.ofSeq comparers
+    seq
+    |> Seq.sortWith (fun x y ->
+      let mutable comparison = 0
+      let mutable i = 0
+      while comparison = 0 && i < comparers.Length do
+        comparison <- comparers[i] x y
+        i <- i + 1
+      comparison)
+    |> Array.ofSeq
+    // comparers
+    // |> Array.tryPick (fun comparer ->
+    //   match comparer x y with
+    //   | 0 -> None
+    //   | x -> Some x)
+    // |> Option.defaultValue 0)
+  // sorted
+
 
 type Location =
   | Farm
@@ -23,6 +78,7 @@ type SeedStrategy =
 
 module SeedStrategy = let all = unitUnionCases<SeedStrategy>
 
+
 // Assume for now that SeedMaker is the only processor which converts items into seeds.
 type GameData = {
   Fertilizers: Table<FertilizerName, Fertilizer>
@@ -44,6 +100,7 @@ module GameData =
     match data.Products[Crop.mainItem crop].TryFind Processor.seedMaker with
     | Some (SeedsFromSeedMaker item) when item = Crop.seedItem crop -> true
     | _ -> false
+
 
 type Selection<'a, 'b when 'a: comparison> = {
   Values: Map<'a, 'b>
@@ -109,7 +166,7 @@ type CustomChoice<'a, 'b> =
 
 module Model =
   let inline getItem model item = model.Data.Items[item]
-  let inline getSeedItem model (seed: SeedId) = getItem model (seed * 1<_>)
+  let inline getSeedItem model (seed: SeedId) = getItem model (seed * 1u<_>)
   let inline getProduct model item processor = model.Data.Products[item].[processor]
   let inline getFertilizer model fertilizer = model.Data.Fertilizers[fertilizer]
   let getFertilizerOpt model fertilizer =
@@ -527,7 +584,7 @@ module Model =
       && Processor.seedMaker |> processorUnlocked model
       && model.UseSeedMaker.Contains seed
     then
-      Some <| Processor.seedMakerAmountWith (seed * 1<_>)
+      Some <| Processor.seedMakerAmountWith seed
     else
       None
 
@@ -707,7 +764,7 @@ module Model =
           costsAndLimits.Add (cost, amount)
 
     if Processor.seedMaker |> processorUnlocked model && model.UseSeedMaker.Contains seed then
-      addCostAndLimit profits[0] amounts[0] (Processor.seedMakerAmountWith (seed * 1<_>))
+      addCostAndLimit profits[0] amounts[0] (Processor.seedMakerAmountWith seed)
 
     if model.UseRawSeeds.Contains seed then
       match items |> Array.tryFindIndex (fun item -> int item = int seed) with
@@ -1102,7 +1159,7 @@ module Model =
     | None -> ()
 
     let useSeedMaker = Processor.seedMaker |> processorUnlocked model && model.UseSeedMaker.Contains seed
-    if useSeedMaker then addCostAndLimit 0 (Processor.seedMakerAmountWith items[0])
+    if useSeedMaker then addCostAndLimit 0 (Processor.seedMakerAmountWith (items[0] * 1u<_>))
 
     let data = resizeToArray data
     data |> Array.sortInPlaceWith (compareBy (fun data -> data.Cost))

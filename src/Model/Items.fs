@@ -17,8 +17,15 @@ module Category =
     | Artisan when Skills.artisanActive skills -> 1.4
     | _ -> 1.0
 
+
+type [<Measure>] SeedNum
+
+type SeedId = uint<SeedNum>
+
 type [<Measure>] ItemNum
-type ItemId = int<ItemNum>
+
+type ItemId = uint<ItemNum>
+
 type Item = {
   Id: ItemId
   Name: string
@@ -33,8 +40,8 @@ type Multipliers = {
 }
 
 module Item =
-  let [<Literal>] ancientSeeds = 499<ItemNum>
-  let [<Literal>] blackberry = 410<ItemNum>
+  let [<Literal>] ancientSeeds = 499u<ItemNum>
+  let [<Literal>] blackberry = 410u<ItemNum>
 
   let id item = item.Id
   let name item = item.Name
@@ -79,8 +86,6 @@ module Item =
     let prices skills multipliers item = pricesCalc (multiplier skills multipliers item) item.SellPrice
 
 
-
-
 type [<Erase>] Processor = ProcessorName of string
 
 type ModData = {
@@ -109,8 +114,9 @@ module Processor =
 
   let seedMakerAmount = seedMakerSeedProb * float seedMakerSeedAmount
 
-  let seedMakerAmountWith seed =
-    seedMakerAmount + if seed = Item.ancientSeeds then seedMakerAncientSeedProb else 0.0
+  let seedMakerAmountWith (seed: SeedId) =
+    seedMakerAmount + if nat seed = nat Item.ancientSeeds then seedMakerAncientSeedProb else 0.0
+
 
 
 
@@ -149,8 +155,6 @@ module Product =
   let outputQuality modData quality product = processor product |> Processor.outputQuality modData quality
 
   let ratioAmount (i: nat, o: nat) = float o / float i
-
-  let ratioValid (i: nat, o: nat) = nonZero i && nonZero o
 
   let private artisanMultiplier skills multipliers =
     Category.multiplier skills Artisan * multipliers.ProfitMargin
@@ -193,7 +197,7 @@ module Product =
   let amountPerItem product =
     match product with
     | SeedsFromSeedMaker seedId ->
-      Processor.seedMakerAmountWith seedId
+      Processor.seedMakerAmountWith (seedId * 1u<_>)
     | Processed p ->
       match p.Ratio with
       | Some ratio -> ratioAmount ratio

@@ -11,7 +11,6 @@ type [<System.Flags>] Seasons =
   | Winter = 0b1000
   | All    = 0b1111
 
-
 // Single season only
 type [<Erase>] Season = Season of Seasons
 
@@ -116,6 +115,7 @@ module DateSpan =
   let endSeason span = span.EndSeason
   let totalDays span = span.TotalDays
 
+
 type [<Erase>] Date = Date of season: Season * day: nat
 
 module Date =
@@ -166,14 +166,9 @@ module Date =
 
     resizeToArray spans
 
-  let inline dayValid day = day |> onClosedInterval firstDay lastDay
-
 type Date with
   member inline this.Season = Date.season this
   member inline this.Day = Date.day this
-
-
-
 
 
 
@@ -196,6 +191,7 @@ type CropAmountSettings = {
 }
 
 module CropAmount =
+  let [<Literal>] minYield = 1u
   let [<Literal>] minExtraCropChance = 0.0
   let [<Literal>] maxExtraCropChance = 1.0
   let [<Literal>] minGiantCropChecks = 0.0
@@ -279,13 +275,7 @@ module SeedPrice =
     | FixedPrice (v, _)
     | ScalingPrice (v, _) -> v
 
-  let createFixed vendor price = FixedPrice (vendor, price)
-  let createScalingFrom vendor seedPrice = ScalingPrice (vendor, Some seedPrice)
-  let createScaling vendor = ScalingPrice (vendor, None)
 
-
-type [<Measure>] SeedNum
-type SeedId = int<SeedNum>
 type GrowthData = {
   Seasons: Seasons
   Stages: nat array
@@ -304,7 +294,7 @@ module Growth =
   let inline regrowTime growth = growth.RegrowTime
   let inline paddy growth = growth.Paddy
   let inline seed growth = growth.Seed
-  let inline seedItem growth = growth.Seed * 1<_> : ItemId
+  let inline seedItem growth = growth.Seed * 1u<_> : ItemId
 
   // Stardew Valley passes speed around as a float32.
   // Compared to a float64, this has less precision,
@@ -386,6 +376,7 @@ module Growth =
 
   let consecutiveHarvests dateSpans speedBonus growth = consecutiveHarvestsWith (time growth speedBonus) dateSpans growth
 
+
 type FarmCrop = {
   Growth: GrowthData
   Item: ItemId
@@ -415,9 +406,6 @@ module FarmCrop =
     | None -> [| crop.Item |]
 
   let inline name item crop = crop.Item |> item |> Item.name
-
-  let extraItemAmountValid: float -> _ = nonZero
-  let regrowTimeValid: nat -> _ = nonZero
 
 
 type ForageCrop = {
