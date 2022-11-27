@@ -11,7 +11,7 @@ module Vendor =
   let travelingCart = VendorName "Traveling Cart"
 
 
-type [<Erase>] FertilizerName = FertName of string
+type FertilizerName = string
 
 type Fertilizer = {
   Name: FertilizerName
@@ -24,13 +24,6 @@ module Fertilizer =
   let [<Literal>] minSpeed = 0.0
 
   let name fertilizer = fertilizer.Name
-  #if FABLE_COMPILER
-  let nameStr fertilizer = !!fertilizer.Name: string
-  #else
-  let nameStr fertilizer =
-    let (FertName name) = fertilizer.Name
-    name
-  #endif
   let quality fertilizer = fertilizer.Quality
   let speed fertilizer = fertilizer.Speed
 
@@ -172,6 +165,21 @@ module Skills =
 
   let [<Literal>] gathererUnlockLevel = 5u
   let [<Literal>] botanistUnlockLevel = 10u
+
+  let zero = {
+    Farming = {
+      Level = 0u
+      Buff = 0u
+      Professions = {| Tiller = false; Artisan = false; Agriculturist = false |}
+    }
+    Foraging = {
+      Level = 0u
+      Buff = 0u
+      Professions = {| Gatherer = false; Botanist = false |}
+    }
+    IgnoreProfessionConflicts = false
+    IgnoreSkillLevelRequirements = false
+  }
 
   let farmingLevelMet level skills = skills.IgnoreSkillLevelRequirements || skills.Farming.Level >= level
 

@@ -8,6 +8,12 @@ open Thoth.Json
 open Thoth.Json.Net
 #endif
 
+type ExtractedData = {
+  Items: Item array
+  FarmCrops: FarmCrop array
+  ForageCrops: ForageCrop array
+}
+
 let [<Literal>] private SeedPriceVendorField = "Vendor"
 let [<Literal>] private SeedPricePriceField = "Price"
 let [<Literal>] private SeedPriceTypeField = "Type"
@@ -17,23 +23,26 @@ let [<Literal>] private ScalingSeedPrice = "Scaling"
 module Encode =
   let mapSeq encoder (seq: _ seq) = seq |> Seq.map encoder |> Encode.seq
 
+  let keyValues keyString encodeValue seq =
+    seq
+    |> Seq.map (fun (k, v) -> keyString k, encodeValue v)
+    #if !FABLE_COMPILER
+    |> List.ofSeq
+    #endif
+    |> Encode.object
+
+  let mapObj keyString encodeValue map =
+    map |> Map.toSeq |> keyValues keyString encodeValue
+
+  let table keyString encodeValue table =
+    table |> Table.toSeq |> keyValues keyString encodeValue
+
   let vendor (VendorName vendor) = Encode.string vendor
 
-  let fertilizerName (FertName name) = Encode.string name
+  let processor (ProcessorName processor) = Encode.string processor
 
-  let fertilizer = Encode.Auto.generateEncoder<Fertilizer> ()
-
-  let quality = Encode.Auto.generateEncoder<Quality> ()
-
-  let farming = Encode.Auto.generateEncoder<Farming> ()
-
-  let foraging = Encode.Auto.generateEncoder<Foraging> ()
-
-  let skills = Encode.Auto.generateEncoder<Skills> ()
-
-  let itemId (item: ItemId) = uint item |> Encode.uint32
-
-  let processor (ProcessorName name) = Encode.string name
+  let seedId (seed: SeedId) = Encode.uint32 (nat seed)
+  let itemId (item: ItemId) = Encode.uint32 (nat item)
 
   let product = function
     | Jam -> Encode.string (nameof Jam)
@@ -50,36 +59,25 @@ module Encode =
           nameof p.Ratio, Encode.tuple2 Encode.uint32 Encode.uint32 (Option.get p.Ratio)
       ]
 
-  let category = Encode.Auto.generateEncoder<Category> ()
+  let season (season: Season) = Season.name season |> Encode.string
 
-  let multipliers (multipliers: Multipliers) =
-    Encode.object [
-      nameof multipliers.ProfitMargin, Encode.float multipliers.ProfitMargin
-      nameof multipliers.BearsKnowledge, Encode.bool multipliers.BearsKnowledge
-      nameof multipliers.ForagedFruitTillerOverrides, multipliers.ForagedFruitTillerOverrides |> mapSeq itemId
-    ]
-
-  let modData (modData: ModData) =
-    Encode.object [
-      nameof modData.QualityProducts, Encode.bool modData.QualityProducts
-      nameof modData.QualityProcessors, modData.QualityProcessors |> mapSeq processor
-    ]
-
-  let item = Encode.Auto.generateEncoder<Item> ()
-
-  let season (s: Season) = Season.name s |> Encode.string
-
-  // Fable can't parse flag enums, transform into a sequence instead.
-  let seasons (seasons: Seasons) =
+  let seasons seasons =
     Season.all
-    |> Seq.filter (flip Seasons.contains seasons)
+    |> Array.filter (fun season -> seasons |> Seasons.contains season)
     |> mapSeq season
 
-  let date (Date (season, day)) = Encode.tuple2 Encode.string Encode.uint32 (Season.name season, day)
+  let date (date: Date) = Encode.object [
+    nameof date.Season, season date.Season
+    nameof date.Day, Encode.uint32 date.Day
+  ]
 
-  let seedId (seed: SeedId) = uint seed |> Encode.uint32
-
-  let seedItemIdPair (seed: SeedId, item: ItemId) = $"{seed},{item}"
+  let fertilizer (fertilizer: Fertilizer) = Encode.object [
+    nameof fertilizer.Name, Encode.string fertilizer.Name
+    if fertilizer.Quality <> 0u then
+      nameof fertilizer.Quality, Encode.uint32 fertilizer.Quality
+    if fertilizer.Speed <> 0.0 then
+      nameof fertilizer.Speed, Encode.float fertilizer.Speed
+  ]
 
   let seedPrice = function
     | FixedPrice (v, p) ->
@@ -100,15 +98,6 @@ module Encode =
         SeedPriceTypeField, Encode.string ScalingSeedPrice
       ]
 
-  let private growthDataFields (data: GrowthData) = [
-    nameof data.Seasons, seasons data.Seasons
-    nameof data.Stages, data.Stages |> mapSeq Encode.uint32
-    if data.Paddy then nameof data.Paddy, Encode.bool true
-    nameof data.Seed, seedId data.Seed
-  ]
-
-  let growthData = growthDataFields >> Encode.object
-
   let cropAmount (amount: CropAmount) =
     let single = CropAmount.singleAmount
     Encode.object [
@@ -128,84 +117,45 @@ module Encode =
         nameof amount.FarmingQualities, Encode.bool amount.FarmingQualities
     ]
 
-  let cropAmountSettings = Encode.Auto.generateEncoder<CropAmountSettings> ()
+  let farmCrop crop = Encode.object [
+    nameof crop.Seasons, seasons crop.Seasons
+    nameof crop.Seed, seedId crop.Seed
+    nameof crop.Stages, crop.Stages |> mapSeq Encode.uint32
+    if crop.Paddy then
+      nameof crop.Paddy, Encode.bool crop.Paddy
+    if crop.Amount <> CropAmount.singleAmount then
+      nameof crop.Amount, cropAmount crop.Amount
+    if crop.ExtraItem.IsSome then
+      nameof crop.ExtraItem, Encode.tuple2 itemId Encode.float (Option.get crop.ExtraItem)
+    if crop.RegrowTime.IsSome then
+      nameof crop.RegrowTime, Encode.uint32 (Option.get crop.RegrowTime)
+    nameof crop.Item, itemId crop.Item
+  ]
 
-  let farmCrop (crop: FarmCrop) =
-    Encode.object [
-      yield! growthDataFields crop.Growth
-      nameof crop.Item, itemId crop.Item
-      if crop.Amount <> CropAmount.singleAmount then
-        nameof crop.Amount, cropAmount crop.Amount
-      if crop.ExtraItem <> None then
-        nameof crop.ExtraItem, Encode.tuple2 itemId Encode.float (Option.get crop.ExtraItem)
-    ]
+  let forageCrop crop = Encode.object [
+    nameof crop.Season, season crop.Season
+    nameof crop.Seed, seedId crop.Seed
+    nameof crop.Stages, crop.Stages |> mapSeq Encode.uint32
+    nameof crop.Items, crop.Items |> mapSeq itemId
+    nameof crop.SeedRecipeUnlockLevel, Encode.uint32 crop.SeedRecipeUnlockLevel
+  ]
 
-  let forageCrop (crop: ForageCrop) =
-    Encode.object [
-      yield! growthDataFields crop.Growth
-      nameof crop.Items, mapSeq itemId crop.Items
-      nameof crop.SeedRecipeUnlockLevel, Encode.uint32 crop.SeedRecipeUnlockLevel
-    ]
+  let extractedData data = Encode.object [
+    nameof data.Items, data.Items |> mapSeq (Encode.Auto.generateEncoder ())
+    nameof data.FarmCrops, data.FarmCrops |> mapSeq farmCrop
+    nameof data.ForageCrops, data.ForageCrops |> mapSeq forageCrop
+  ]
 
 
 module Decode =
-  module Helpers =
-    let validate desc predicate decoder : _ Decoder = fun path value ->
-      match decoder path value with
-      | Ok y ->
-        if predicate y
-        then Ok y
-        else Error (path, BadPrimitive (desc, value))
-      | Error e -> Error e
+  let inline private tryParseInt<[<Measure>] ^u> (str: string): uint<'u> option =
+    match System.UInt32.TryParse str with
+    | true, value -> Some (value * 1u<_>)
+    | _ -> None
 
-    let checkOk validator decoder : _ Decoder = fun path value ->
-      match decoder path value with
-      | Ok y ->
-        match validator y with
-        | Ok y -> Ok y
-        | Error e -> Error (path, BadPrimitive (e, value))
-      | Error e -> Error e
+  let parseItemId = tryParseInt<ItemNum>
 
-    let greater desc lowerBound =
-      validate $"%s{desc} greater than {lowerBound}" (fun x -> x > lowerBound)
-
-    let greaterOrEqual desc lowerBound =
-      validate $"%s{desc} greater than or equal to {lowerBound}" (fun x -> x >= lowerBound)
-
-    let less desc upperBound =
-      validate $"%s{desc} less than {upperBound}" (fun x -> x < upperBound)
-
-    let lessOrEqual desc upperBound =
-      validate $"%s{desc} less than or equal to {upperBound}" (fun x -> x <= upperBound)
-
-    let inRange desc min max =
-      validate $"%s{desc} in the range [{min}, {max}]" (fun x -> min <= x && x <= max)
-
-    let natLessOrEqual upperBound = lessOrEqual "an integer" upperBound Decode.uint32
-
-    let natGreaterOrEqual lowerBound = greaterOrEqual "an integer" lowerBound Decode.uint32
-
-    let nonZeroNat = greater "an integer" 0u Decode.uint32
-
-    let natInRange min max = inRange "a natural number" min max Decode.uint32
-
-    let nonNegativeFloat = greaterOrEqual "a float" 0.0 Decode.float
-
-    let nonZeroFloat = greater "a float" 0.0 Decode.float
-
-    let floatInRange min max = inRange "a float" min max Decode.float
-
-    let inline private tryParseInt<[<Measure>] ^u> (str: string): uint<'u> option =
-      match System.UInt32.TryParse str with
-      | true, value -> Some (value * 1u<_>)
-      | _ -> None
-
-    let parseItemId = tryParseInt<ItemNum>
-
-    let parseSeedId = tryParseInt<SeedNum>
-
-
-  open Helpers
+  let parseSeedId = tryParseInt<SeedNum>
 
   let private wrap (wrapper: 'a -> 'b) (decoder: 'a Decoder) =
     #if FABLE_COMPILER
@@ -247,29 +197,21 @@ module Decode =
 
   let table keyWrap decodeValue = wrapKeys Table.ofSeq keyWrap decodeValue
   let tableParse parseKey decodeValue = parseKeysWith Table.ofSeq parseKey decodeValue
-  let tableOfValues getKey decodeValue = Decode.array decodeValue |> Decode.map (Table.ofValues getKey)
 
-  let mapTree keyWrap decodeValue = wrapKeys Map.ofSeq keyWrap decodeValue
-  let mapTreeParse parseKey decodeValue = parseKeysWith Map.ofSeq parseKey decodeValue
-  let mapOfValues getKey decodeValue = Decode.array decodeValue |> Decode.map (Map.ofValues getKey)
-
-  let fertilizerName = Decode.string |> wrap FertName
+  let mapObj keyWrap decodeValue = wrapKeys Map.ofSeq keyWrap decodeValue
+  let mapObjParse parseKey decodeValue = parseKeysWith Map.ofSeq parseKey decodeValue
 
   let fertilizer: Fertilizer Decoder =
     let u = Unchecked.defaultof<Fertilizer>
     Decode.object (fun get -> {
-      Name = get.Required.Field (nameof u.Name) fertilizerName
+      Name = get.Required.Field (nameof u.Name) Decode.string
       Quality = get.Optional.Field (nameof u.Quality) Decode.uint32 |> Option.defaultValue 0u
-      Speed = get.Optional.Field (nameof u.Speed) nonNegativeFloat |> Option.defaultValue 0.0
+      Speed = get.Optional.Field (nameof u.Speed) Decode.float |> Option.defaultValue 0.0
     } )
 
-  let quality: Quality Decoder = Decode.Enum.int |> validate "a defined quality" (fun q -> System.Enum.IsDefined (typeof<Quality>, q))
+  let vendor: Vendor Decoder = Decode.string |> wrap VendorName
 
-  let skills = Decode.Auto.generateDecoder<Skills> ()
-
-  let vendor = Decode.Auto.generateDecoder<Vendor> ()
-
-  let processor = Decode.Auto.generateDecoder<Processor> ()
+  let processor: Processor Decoder = Decode.string |> wrap ProcessorName
 
   let itemId = natMeasure<ItemNum>
   let seedId = natMeasure<SeedNum>
@@ -290,32 +232,28 @@ module Decode =
       Decode.object (fun get -> Processed {|
         Item = get.Required.Field (nameof processed.Item) itemId
         Processor = get.Required.Field (nameof processed.Processor) processor
-        Ratio = get.Optional.Field (nameof processed.Ratio) (Decode.tuple2 nonZeroNat nonZeroNat)
+        Ratio = get.Optional.Field (nameof processed.Ratio) (Decode.tuple2 Decode.uint32 Decode.uint32)
       |} )
     ]
 
-  let item = Decode.Auto.generateDecoder<Item> ()
-
   let season =
     Decode.string |> Decode.andThen (fun str ->
-      match System.Enum.TryParse str with
-      | true, season ->
-        match season with
-        | Seasons.Spring
-        | Seasons.Summer
-        | Seasons.Fall
-        | Seasons.Winter -> Season.ofSeasons season |> Decode.succeed
-        | _ -> Decode.fail $"Undefined season: {season}"
+      match Season.TryParse str with
+      | true, season -> Season.ofSeasons season |> Decode.succeed
       | _ -> Decode.fail $"Failed to parse season: {str}")
 
-  // Fable can't parse flag enums, parse Season Block instead.
-  let seasons = Decode.array season |> Decode.map Seasons.ofSeq
+  let seasons: Seasons Decoder = Decode.array season |> Decode.map Seasons.ofSeq
 
-  let date: Date Decoder = Decode.tuple2 season (natInRange Date.firstDay Date.lastDay) |> wrap Date
+  let date: Date Decoder =
+    let u = Unchecked.defaultof<Date>
+    Decode.object (fun get -> {
+      Season = get.Required.Field (nameof u.Season) season
+      Day = get.Required.Field (nameof u.Day) Decode.uint32
+    } )
 
   let seedPrice: SeedPrice Decoder =
-    Decode.map3 tuple3
-      (Decode.field SeedPriceVendorField vendor)
+    Decode.map3 (fun a b c -> a, b, c)
+      (Decode.field SeedPriceVendorField (Decode.Auto.generateDecoder ()))
       (Decode.optional SeedPricePriceField Decode.uint32)
       (Decode.field SeedPriceTypeField Decode.string)
     |> Decode.andThen (fun (vendor, price, kind) -> fun path value ->
@@ -326,38 +264,16 @@ module Decode =
       | ScalingSeedPrice, None -> Ok (ScalingPrice (vendor, None))
       | _ -> Error (path, BadPrimitive ($"a valid price type ('{FixedSeedPrice}' or '{ScalingSeedPrice}')", value)))
 
-  let private growthDataFields =
-    let u = Unchecked.defaultof<GrowthData>
-    fun (get: Decode.IGetters) ->
-      let stages = get.Required.Field (nameof u.Stages) (Decode.array nonZeroNat |> validate "growth stage with at least one stage" (Array.isEmpty >> not))
-      let total =
-        match Some stages with
-        | None -> 0u
-        | Some ind -> Array.natSum ind
-
-      {
-        Stages = stages
-        TotalTime = total
-        RegrowTime = get.Optional.Field (nameof u.RegrowTime) Decode.uint32
-        Seasons = get.Required.Field (nameof u.Seasons) seasons
-        Paddy = get.Optional.Field (nameof u.Paddy) Decode.bool |> Option.defaultValue false
-        Seed = get.Required.Field (nameof u.Seed) seedId
-      }
-
-  let growthData: GrowthData Decoder = Decode.object growthDataFields
-
   let cropAmount =
     let u = Unchecked.defaultof<CropAmount>
     Decode.object (fun get ->
       let field name decoder defVal = get.Optional.Field name decoder |> Option.defaultValue defVal
       let single = CropAmount.singleAmount
-      let minYield = field (nameof u.MinCropYield) Decode.uint32 CropAmount.minYield
-      let maxYield = field (nameof u.MaxCropYield) (Decode.uint32 |> validate "a max crop yield greater than the min crop yield" (fun x -> x >= minYield)) single.MaxCropYield
       {
-        MinCropYield = minYield
-        MaxCropYield = maxYield
+        MinCropYield = field (nameof u.MinCropYield) Decode.uint32 single.MinCropYield
+        MaxCropYield = field (nameof u.MaxCropYield) Decode.uint32 single.MaxCropYield
         FarmLevelsPerYieldIncrease = field (nameof u.FarmLevelsPerYieldIncrease) Decode.uint32 single.FarmLevelsPerYieldIncrease
-        ExtraCropChance = field (nameof u.ExtraCropChance) (floatInRange CropAmount.minExtraCropChance CropAmount.maxExtraCropChance) single.ExtraCropChance
+        ExtraCropChance = field (nameof u.ExtraCropChance) Decode.float single.ExtraCropChance
         CanDouble = field (nameof u.CanDouble) Decode.bool single.CanDouble
         Giant = field (nameof u.Giant) Decode.bool single.Giant
         FarmingQualities = field (nameof u.FarmingQualities) Decode.bool single.FarmingQualities
@@ -367,48 +283,36 @@ module Decode =
   let farmCrop: FarmCrop Decoder =
     let u = Unchecked.defaultof<FarmCrop>
     Decode.object (fun get -> {
-      Growth = growthDataFields get
+      Seasons = get.Required.Field (nameof u.Seasons) seasons
+      Seed = get.Required.Field (nameof u.Seed) seedId
+      Stages = get.Required.Field (nameof u.Stages) (Decode.array Decode.uint32)
+      RegrowTime = get.Optional.Field (nameof u.RegrowTime) Decode.uint32
+      Paddy = get.Optional.Field (nameof u.Paddy) Decode.bool |> Option.defaultValue false
       Item = get.Required.Field (nameof u.Item) itemId
       Amount = get.Optional.Field (nameof u.Amount) cropAmount |> Option.defaultValue CropAmount.singleAmount
-      ExtraItem = get.Optional.Field (nameof u.ExtraItem) (Decode.tuple2 itemId nonZeroFloat)
+      ExtraItem = get.Optional.Field (nameof u.ExtraItem) (Decode.tuple2 itemId Decode.float)
     } )
 
   let forageCrop: ForageCrop Decoder =
     let u = Unchecked.defaultof<ForageCrop>
-    Decode.object (fun get -> {
-      Growth = growthDataFields get
-      Items = get.Required.Field (nameof u.Items) (Decode.array itemId |> validate "at least one item" (Array.isEmpty >> not))
-      SeedRecipeUnlockLevel = get.Required.Field (nameof u.SeedRecipeUnlockLevel) Decode.uint32
-    } )
-    |> validate "a forage crop that grows in one season" (ForageCrop.growth >> Growth.seasons >> Seasons.tryExactlyOne >> Option.isSome)
-    |> validate "a forage crop with no regrow time" (ForageCrop.growth >> Growth.regrowTime >> Option.isNone)
-
-  let cropAmountSettings: CropAmountSettings Decoder =
-    let u = Unchecked.defaultof<CropAmountSettings>
     Decode.object (fun get ->
-      let field name decode = get.Required.Field name decode
+      let field name decoder = get.Required.Field name decoder
       {
-        SpecialCharm = field (nameof u.SpecialCharm) Decode.bool
-        GiantChecksPerTile = field (nameof u.GiantChecksPerTile) (floatInRange CropAmount.minGiantCropChecks CropAmount.maxGiantCropChecks)
-        ShavingToolLevel = get.Optional.Field (nameof u.ShavingToolLevel) (natLessOrEqual CropAmount.maxShavingToolLevel)
-        LuckBuff = field (nameof u.LuckBuff) Decode.uint32
+        Season = field (nameof u.Season) season
+        Stages = field (nameof u.Stages) (Decode.array Decode.uint32)
+        Seed = field (nameof u.Seed) seedId
+        Items = field (nameof u.Items) (Decode.array itemId)
+        SeedRecipeUnlockLevel = field (nameof u.SeedRecipeUnlockLevel) Decode.uint32
       }
     )
 
-  let multipliers: Multipliers Decoder =
-    let u = Unchecked.defaultof<Multipliers>
+  let extractedData: ExtractedData Decoder =
+    let u = Unchecked.defaultof<ExtractedData>
     Decode.object (fun get ->
       let field name decode = get.Required.Field name decode
       {
-        ProfitMargin = field (nameof u.ProfitMargin) (floatInRange 0.25 1.0 |> validate "a multiple of 0.25" (fun x -> x % 0.25 = 0.0))
-        BearsKnowledge = field (nameof u.BearsKnowledge) Decode.bool
-        ForagedFruitTillerOverrides = field (nameof u.ForagedFruitTillerOverrides) (set itemId)
+        Items = field (nameof u.Items) (Decode.Auto.generateDecoder ())
+        FarmCrops = field (nameof u.FarmCrops) (Decode.array farmCrop)
+        ForageCrops = field (nameof u.ForageCrops) (Decode.array forageCrop)
       }
     )
-
-  let modData: ModData Decoder =
-    let u = Unchecked.defaultof<ModData>
-    Decode.object (fun get -> {
-      QualityProducts = get.Required.Field (nameof u.QualityProducts) Decode.bool
-      QualityProcessors = get.Required.Field (nameof u.QualityProcessors) (set processor)
-    } )

@@ -10,7 +10,7 @@
   "scripts": {
     "postinstall": "dotnet tool restore",
     "start": "dotnet fable watch src/WebApp -s -o fable & parcel",
-    "build": "dotnet fable src/WebApp-s -o fable --run parcel build --public-url \"./\"",
+    "build": "dotnet fable src/WebApp -s -o fable --run parcel build --public-url \"./\"",
     "bundle-report": "parcel build --public-url \"./\" --reporter @parcel/reporter-bundle-analyzer"
   },
   "dependencies": {
@@ -21,8 +21,8 @@
   },
   "devDependencies": {
     "@parcel/config-default": "^2.8.0",
-    "@parcel/transformer-sass": "^2.8.0",
     "@parcel/reporter-bundle-analyzer": "^2.8.0",
+    "@parcel/transformer-sass": "^2.8.0",
     "parcel": "^2.8.0",
     "parcel-reporter-static-files-copy": "^1.4.0",
     "process": "^0.11.10"

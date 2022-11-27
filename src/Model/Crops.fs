@@ -11,29 +11,31 @@ type [<System.Flags>] Seasons =
   | Winter = 0b1000
   | All    = 0b1111
 
-// Single season only
-type [<Erase>] Season = Season of Seasons
+type Season =
+  | Spring = 0
+  | Summer = 1
+  | Fall = 2
+  | Winter = 3
 
 module Seasons =
   let [<Literal>] count = 4
 
-  let name (seasons: Seasons) = enumName seasons
+  let inline ofSeason (season: Season) = enum<Seasons> (1 <<< int season)
 
   let inline intersect (a: Seasons) (b: Seasons) = a &&& b
   let inline overlap a b = intersect a b <> Seasons.None
-  let inline contains (Season season) (seasons: Seasons) = overlap season seasons
+  let inline contains season seasons = overlap (ofSeason season) seasons
 
-  let inline add (Season season) (seasons: Seasons) = seasons ||| season
-  let inline remove (Season season) (seasons: Seasons) = seasons &&& (~~~season)
+  let inline add season (seasons: Seasons) = seasons ||| ofSeason season
+  let inline remove season (seasons: Seasons) = seasons &&& (~~~(ofSeason season))
 
-  let inline ofSeason (Season season) = season
   let ofSeq seasons = seasons |> Seq.fold (flip add) Seasons.None
 
   let tryExactlyOne = function
-    | Seasons.Spring
-    | Seasons.Summer
-    | Seasons.Fall
-    | Seasons.Winter as season -> Season season |> Some
+    | Seasons.Spring -> Some Season.Spring
+    | Seasons.Summer -> Some Season.Summer
+    | Seasons.Fall -> Some Season.Fall
+    | Seasons.Winter -> Some Season.Winter
     | _ -> None
 
   let rec setOrder (a: Seasons) (b: Seasons) =
@@ -46,30 +48,17 @@ module Seasons =
       else c
 
 module Season =
-  open type Seasons
+  let name (season: Season) = enumName season
 
-  let Spring = Season Spring
-  let Summer = Season Summer
-  let Fall = Season Fall
-  let Winter = Season Winter
-
-  let name (Season season) =
-    match season with
-    | Seasons.Spring -> nameof Spring
-    | Seasons.Summer -> nameof Summer
-    | Seasons.Fall -> nameof Fall
-    | Seasons.Winter -> nameof Winter
-    | _ -> invalidArg (nameof season) $"The given season: '{season}' was not a single season."
-
-  let inline private ofInt (i: int) = i |> enum |> Season
+  let inline private ofInt (i: int) = i |> enum<Season>
 
   let next = function
-    | Season Seasons.Winter -> Spring
-    | Season season -> ofInt (int season <<< 1)
+    | Season.Winter -> Season.Spring
+    | season -> ofInt (int season + 1)
 
   let previous = function
-    | Season Seasons.Spring -> Winter
-    | Season season -> ofInt (int season >>> 1)
+    | Season.Spring -> Season.Winter
+    | season -> ofInt (int season - 1)
 
   let ofSeasons season =
     match Seasons.tryExactlyOne season with
@@ -84,24 +73,23 @@ module Season =
       season <- next season
     seasons |> Seasons.add season
 
+  let distance (start: Season) (finish: Season) =
+    let dist = int finish - int start
+    if dist < 0
+    then Seasons.count + dist
+    else dist
+    |> nat
+
   let span start finish =
-    let seasons = ResizeArray ()
+    let dist = int (distance start finish)
+    let seasons = Array.create (dist + 1) finish
     let mutable season = start
-    while season <> finish do
-      seasons.Add season
+    for i = 0 to dist - 1 do
+      seasons[i] <- season
       season <- next season
-    seasons.Add season
-    resizeToArray seasons
+    seasons
 
-  let distance start finish =
-    let mutable distance = 0u
-    let mutable season = start
-    while season <> finish do
-      distance <- distance + 1u
-      season <- next season
-    distance
-
-  let all = Array.init Seasons.count (fun i -> ofInt (1 <<< i))
+  let all = Array.init Seasons.count enum<Season>
 
 
 type DateSpan = {
@@ -116,28 +104,28 @@ module DateSpan =
   let totalDays span = span.TotalDays
 
 
-type [<Erase>] Date = Date of season: Season * day: nat
+type Date = {
+  Season: Season
+  Day: nat
+}
 
 module Date =
   let [<Literal>] firstDay = 1u
   let [<Literal>] lastDay = 28u
   let [<Literal>] daysInSeason = 28u
 
-  let inline season (Date (season, _)) = season
-  let inline day (Date (_, day)) = day
+  let inline seasonsBetween start finish = Season.seasonsBetween start.Season finish.Season
+  let inline seasonSpan start finish = Season.span start.Season finish.Season
 
-  let inline seasonsBetween (Date (start, _)) (Date (finish, _)) = Season.seasonsBetween start finish
-  let inline seasonSpan (Date (start, _)) (Date (finish, _)) = Season.span start finish
-
-  let seasonsAndDays (Date (startSeason, startDay)) (Date (endSeason, endDay)) =
-    let seasons = Season.span startSeason endSeason
+  let seasonsAndDays start finish =
+    let seasons = Season.span start.Season finish.Season
     let days = Array.create seasons.Length daysInSeason
-    days[0] <- daysInSeason - startDay + firstDay
-    days[days.Length - 1] <- days[days.Length - 1] - (daysInSeason - endDay)
+    days[0] <- daysInSeason - start.Day + firstDay
+    days[days.Length - 1] <- days[days.Length - 1] - (daysInSeason - finish.Day)
     seasons, days
 
-  let totalDays (Date (startSeason, startDay)) (Date (endSeason, endDay)) =
-    (Season.distance startSeason endSeason) * daysInSeason - startDay + endDay + 1u
+  let totalDays start finish =
+    (Season.distance start.Season finish.Season) * daysInSeason - start.Day + finish.Day + 1u
 
   let spans startDate endDate seasons =
     let spans = ResizeArray()
@@ -166,10 +154,21 @@ module Date =
 
     resizeToArray spans
 
-type Date with
-  member inline this.Season = Date.season this
-  member inline this.Day = Date.day this
 
+type CropAmountSettings = {
+  SpecialCharm: bool
+  LuckBuff: nat
+  GiantChecksPerTile: float
+  ShavingToolLevel: nat option
+}
+
+module CropAmountSettings =
+  let common = {
+    SpecialCharm = false
+    LuckBuff = 0u
+    GiantChecksPerTile = 8.0
+    ShavingToolLevel = None
+  }
 
 
 
@@ -181,13 +180,6 @@ type CropAmount = {
   Giant: bool
   FarmLevelsPerYieldIncrease: nat
   FarmingQualities: bool
-}
-
-type CropAmountSettings = {
-  SpecialCharm: bool
-  LuckBuff: nat
-  GiantChecksPerTile: float
-  ShavingToolLevel: nat option
 }
 
 module CropAmount =
@@ -275,27 +267,7 @@ module SeedPrice =
     | FixedPrice (v, _)
     | ScalingPrice (v, _) -> v
 
-
-type GrowthData = {
-  Seasons: Seasons
-  Stages: nat array
-  TotalTime: nat
-  RegrowTime: nat option
-  Paddy: bool
-  Seed: SeedId
-}
-
 module Growth =
-  let inline seasons growth = growth.Seasons
-  let inline growsInSeason season growth = growth.Seasons |> Seasons.contains season
-  let inline growsInSeasons seasons growth = growth.Seasons |> Seasons.overlap seasons
-  let inline stages growth = growth.Stages
-  let inline totalTime growth = growth.TotalTime
-  let inline regrowTime growth = growth.RegrowTime
-  let inline paddy growth = growth.Paddy
-  let inline seed growth = growth.Seed
-  let inline seedItem growth = growth.Seed * 1u<_> : ItemId
-
   // Stardew Valley passes speed around as a float32.
   // Compared to a float64, this has less precision,
   // leading to small differences in the representation of numbers.
@@ -324,9 +296,10 @@ module Growth =
   //  = 6.99999988079071    = 7.0
   //  |> ceil |> int        |> ceil |> int
   //  = 7                   = 7 (wouldn't be equal if floor was used instead of ceil)
-  let stagesAndTime growth speedBonus =
-    let stages = Array.copy growth.Stages
-    let mutable daysToReduce = (JS.Math.fround speedBonus) * (float growth.TotalTime) |> ceil |> nat
+  let stagesAndTime speedBonus stages =
+    let total = Array.sum' stages
+    let stages = Array.copy stages
+    let mutable daysToReduce = (JS.Math.fround speedBonus) * (float total) |> ceil |> nat
     let mutable daysReduced = 0u
     let mutable traverses = 0u
 
@@ -349,52 +322,47 @@ module Growth =
         stage <- stage + 1
       traverses <- traverses + 1u
 
-    stages, growth.TotalTime - daysReduced
+    stages, total - daysReduced
 
   let inline time crop speed = stagesAndTime crop speed |> snd
 
-  let harvestsWith growthTime days growth =
+  let harvestsWith regrowTime growthTime days =
     let days = days - 1u
-    match growth.RegrowTime with
+    match regrowTime with
     | Some time ->
       if growthTime > days
       then 0u
       else 1u + (days - growthTime) / time
     | None -> days / growthTime
 
-  let daysUsedWith growthTime harvests growth =
-    match growth.RegrowTime with
+  let daysUsedWith regrowTime growthTime harvests =
+    match regrowTime with
     | Some time -> growthTime + (harvests - 1u) * time + 1u
     | None -> harvests * growthTime + 1u
 
-  let consecutiveHarvestsWith growthTime dateSpans growth =
-    dateSpans |> Array.choose (fun span ->
-      let harvests = harvestsWith growthTime span.TotalDays growth
-      if harvests = 0u
-      then None
-      else Some harvests)
-
-  let consecutiveHarvests dateSpans speedBonus growth = consecutiveHarvestsWith (time growth speedBonus) dateSpans growth
-
 
 type FarmCrop = {
-  Growth: GrowthData
+  Seasons: Seasons
+  Stages: nat array
+  RegrowTime: nat option
+  Paddy: bool
+  Seed: SeedId
   Item: ItemId
   Amount: CropAmount
   ExtraItem: (ItemId * float) option
 }
 
 module FarmCrop =
-  let growth crop = crop.Growth
   let regrowTime crop = crop.RegrowTime
-  let seed crop = crop.Growth.Seed
-  let seedItem crop = crop.Growth |> Growth.seedItem
+  let seed crop = crop.Seed
+  let seedItem crop: ItemId = seed crop * 1u<_>
   let item crop = crop.Item
   let amount crop = crop.Amount
   let extraItem crop = crop.ExtraItem
 
-  let growsInSeason season crop = crop.Growth |> Growth.growsInSeason season
-  let growsInSeasons seasons crop = crop.Growth |> Growth.growsInSeasons seasons
+  let seasons crop = crop.Seasons
+  let growsInSeason season crop = crop.Seasons |> Seasons.contains season
+  let growsInSeasons seasons crop = crop.Seasons |> Seasons.overlap seasons
 
   let xpPerHarvest item crop =
     let price = item crop.Item |> Item.sellPrice
@@ -409,7 +377,9 @@ module FarmCrop =
 
 
 type ForageCrop = {
-  Growth: GrowthData
+  Season: Season
+  Stages: nat array
+  Seed: SeedId
   Items: ItemId array
   SeedRecipeUnlockLevel: nat
 }
@@ -418,20 +388,20 @@ module ForageCrop =
   let [<Literal>] forageSeedsPerCraft = 10u
   let [<Literal>] xpPerItem = 7u
 
-  let growth crop = crop.Growth
-  let seed crop = crop.Growth.Seed
-  let seedItem crop = crop.Growth |> Growth.seedItem
+  let seed crop = crop.Seed
+  let seedItem crop: ItemId = seed crop * 1u<_>
   let items crop = crop.Items
   let seedRecipeUnlockLevel crop = crop.SeedRecipeUnlockLevel
 
   let seedsRecipeUnlocked skills crop = Skills.foragingLevelMet crop.SeedRecipeUnlockLevel skills
 
-  let growsInSeason season = growth >> Growth.growsInSeason season
-  let growsInSeasons seasons = growth >> Growth.growsInSeasons seasons
+  let seasons crop = Seasons.ofSeason crop.Season
+  let growsInSeason season crop = crop.Season = season
+  let growsInSeasons seasons crop = seasons |> Seasons.contains crop.Season
 
   let xpPerHarvest botanist = float xpPerItem * if botanist then 1.2 else 1.0
 
-  let name crop = (Seasons.name crop.Growth.Seasons) + " Forage"
+  let name crop = (Season.name crop.Season) + " Forage"
 
 
 type Crop =
@@ -439,32 +409,56 @@ type Crop =
   | ForageCrop of ForageCrop
 
 module Crop =
-  let growth = function
-    | FarmCrop a -> a.Growth
-    | ForageCrop o -> o.Growth
-
   let name item = function
     | FarmCrop a -> FarmCrop.name item a
-    | ForageCrop o ->  ForageCrop.name o
+    | ForageCrop o -> ForageCrop.name o
 
-  let seasons = growth >> Growth.seasons
-  let growsInSeason season = growth >> Growth.growsInSeason season
-  let growsInSeasons seasons = growth >> Growth.growsInSeasons seasons
+  let seasons = function
+    | FarmCrop c -> FarmCrop.seasons c
+    | ForageCrop c -> ForageCrop.seasons c
 
-  let stages = growth >> Growth.stages
-  let totalDays = growth >> Growth.totalTime
-  let paddy = growth >> Growth.paddy
+  let growsInSeason season = function
+    | FarmCrop c -> FarmCrop.growsInSeason season c
+    | ForageCrop c -> ForageCrop.growsInSeason season c
+
+  let growsInSeasons seasons = function
+    | FarmCrop c -> FarmCrop.growsInSeasons seasons c
+    | ForageCrop c -> ForageCrop.growsInSeasons seasons c
+
+  let stages = function
+    | FarmCrop c -> c.Stages
+    | ForageCrop c -> c.Stages
+
+  let totalDays crop = stages crop |> Array.sum'
+
+  let paddy = function
+    | FarmCrop c -> c.Paddy
+    | ForageCrop c -> false
+
   let mainItem = function
     | FarmCrop c -> c.Item
     | ForageCrop f -> f.Items[0]
+
   let items = function
     | FarmCrop c -> FarmCrop.items c
     | ForageCrop c -> ForageCrop.items c
-  let seed = growth >> Growth.seed
-  let seedItem = growth >> Growth.seedItem
 
-  let growthTime = growth >> Growth.time
-  let regrowTime = growth >> Growth.regrowTime
+  let seed = function
+    | FarmCrop c -> FarmCrop.seed c
+    | ForageCrop c -> ForageCrop.seed c
+
+  let seedItem = function
+    | FarmCrop c -> FarmCrop.seedItem c
+    | ForageCrop c -> ForageCrop.seedItem c
+
+  let growthTime speed crop = Growth.time speed (stages crop)
+
+  let stagesAndTime speed crop = Growth.stagesAndTime speed (stages crop)
+
+  let regrowTime = function
+    | FarmCrop c -> c.RegrowTime
+    | ForageCrop _ -> None
+
   let regrows = regrowTime >> Option.isSome
 
   let xpPerHarvest botanist item = function
@@ -488,3 +482,46 @@ module Crop =
   let makesOwnSeeds crop =
     let seed = seed crop
     items crop |> Array.exists (fun item -> int item = int seed)
+
+
+// Assume for now that SeedMaker is the only processor which converts items into seeds.
+type GameData = {
+  Fertilizers: Table<FertilizerName, Fertilizer>
+  FertilizerPrices: Table<FertilizerName, Table<Vendor, nat>>
+  FertilizerVendors: Vendor array
+  Crops: Table<SeedId, Crop>
+  FarmCrops: Table<SeedId, FarmCrop>
+  ForageCrops: Table<SeedId, ForageCrop>
+  SeedPrices: Table<SeedId, Table<Vendor, SeedPrice>>
+  SeedVendors: Vendor array
+  Items: Table<ItemId, Item>
+  Products: Table<ItemId, Table<Processor, Product>>
+  Processors: Processor array
+  ProcessorUnlockLevel: Table<Processor, nat>
+}
+
+module GameData =
+  let seedItemPairs data =
+    data.Crops
+    |> Table.toSeq
+    |> Seq.collect (fun (seed, crop) ->
+      Crop.items crop |> Array.map (tuple2 seed))
+    |> Array.ofSeq
+
+  let cropCanGetOwnSeedsFromSeedMaker crop data =
+    match data.Products[Crop.mainItem crop].TryFind Processor.seedMaker with
+    | Some (SeedsFromSeedMaker item) when item = Crop.seedItem crop -> true
+    | _ -> false
+
+  let missingItemIds data =
+    let crops =
+      data.FarmCrops.Values
+      |> Seq.map FarmCrop
+      |> Seq.append (data.ForageCrops.Values |> Seq.map ForageCrop)
+      |> Array.ofSeq
+
+    crops
+    |> Seq.collect Crop.items
+    |> Seq.append (crops |> Seq.map Crop.seedItem)
+    |> Seq.append (data.Products.Values |> Seq.collect Table.values |> Seq.choose Product.item)
+    |> Seq.filter (data.Items.ContainsKey >> not)

@@ -26,7 +26,6 @@ module Combinators =
   let inline flip f x y = f y x
   let inline konst x _ = x
   let inline tuple2 a b = a, b
-  let inline tuple3 a b c = a, b, c
   let inline curry f a b = f (a, b)
   let inline uncurry f (a, b) = f a b
 
@@ -50,6 +49,13 @@ module Option =
   let ofResult = function
     | Ok x -> Some x
     | Error _ -> None
+
+
+[<RequireQualifiedAccess>]
+module Result =
+  let get = function
+    | Ok x -> x
+    | Error _ -> invalidArg "result" "The result value was Error."
 
 
 [<AutoOpen>]
@@ -103,6 +109,8 @@ module CollectionExtentions =
 
   [<RequireQualifiedAccess>]
   module Array =
+    let inline sum' array = Array.sum array
+
     #if FABLE_COMPILER
     // This gives faster and cleaner JS compared to `Array.sum` or `array?reduce(fun x y -> x + y)`
     let sum (array: float array) =
@@ -117,18 +125,6 @@ module CollectionExtentions =
         sum <- sum + projection x
       sum
     #endif
-
-    let natSum (array: nat array) =
-      let mutable sum = 0u
-      for x in array do
-        sum <- sum + x
-      sum
-
-    let natSumBy projection (array: _ array) =
-      let mutable sum = 0u
-      for x in array do
-        sum <- sum + projection x
-      sum
 
     let mapReduce reduction mapping (array: _ array) =
       if array.Length = 0 then invalidArg (nameof array) "The given array cannot be empty."
@@ -147,7 +143,9 @@ open Fable.Core
 
 type Dictionary<'a, 'b> = System.Collections.Generic.Dictionary<'a, 'b>
 
-/// An immutable wrapper around ESM Map. Keys should be primitive (string, number, etc.).
+/// An immutable wrapper around ESM Map.
+/// Keys should be primitive (string, number, etc.),
+/// and values should not be Option / null.
 type [<Erase>] Table<'a, 'b> = ReadOnlyDictionary of Dictionary<'a, 'b>
 
 [<RequireQualifiedAccess>]

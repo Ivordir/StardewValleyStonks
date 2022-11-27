@@ -99,7 +99,7 @@ open ValueNames
 //     ()
 
 let inline private (@) str1 str2 = str1 + "@" + str2
-let private fertilizerIdOption = Option.defaultOrMap "" Fertilizer.nameStr
+let private fertilizerIdOption = Option.defaultOrMap "" Fertilizer.name
 
 let endingCrop = "EndingCrop", 1.0
 
@@ -211,23 +211,23 @@ type SubRangeSolutionRequest =
     Model: Model<string, string>
     ExtraProfit: float }
 
-let solutionRequests model fertilizers crops =
-  let nthSeason, days = Date.seasonsAndDays model.StartDate model.EndDate
-  let nthSeason, days =
-    if model.Location = Farm
-    then nthSeason, days
-    else Seasons.ofSeq nthSeason |> Season |> Array.singleton, Array.natSum days |> Array.singleton
+let solutionRequests data settings (fertilizers: FertilizerName option array) (crops: SeedId array) =
+  let nthSeason, days = Date.seasonsAndDays settings.StartDate settings.EndDate
+  // let nthSeason, days =
+  //   if model.Location = Farm
+  //   then nthSeason, days
+  //   else Seasons.ofSeq nthSeason |> Season |> Array.singleton, Array.natSum days |> Array.singleton
   let days = days |> Array.map (fun x -> x - 1u)
   let seasons = Seasons.ofSeq nthSeason
   let seasonNames =
-    if model.Location = Farm
+    if settings.Location = Farm
     then nthSeason |> Array.map Season.name
     else [| "InSeason" |]
 
   let fertilizers =
     fertilizers |> Seq.choose (fun fertilizerName ->
-      let fertilizer = Model.getFertilizerOpt model fertilizerName
-      match Model.lowestFertilizerCostOpt model fertilizerName with
+      let fertilizer = fertilizerName |> Option.map data.Fertilizers.Find
+      match Query.lowestFertilizerCostOpt data settings fertilizerName with
       | Some cost -> Some (fertilizer, cost)
       | None -> None)
     |> Array.ofSeq
@@ -246,27 +246,27 @@ let solutionRequests model fertilizers crops =
   let strs = Array.create 3 "" // [| cropName; fertName; seasonName |]
 
   let lossProb =
-    if model.PayForFertilizer && model.ReplaceLostFertilizer then
-      let giantProb = Model.giantCropProb model
+    if settings.PayForFertilizer && settings.ReplaceLostFertilizer then
+      let giantProb = Query.giantCropProb settings
       function
       | FarmCrop crop -> if crop.Amount.Giant then Fertilizer.lossProbability * giantProb else 0.0
       | ForageCrop _ -> Fertilizer.lossProbability
     else
       konst 0.0
 
-  let netProfit = Model.nonRegrowData model
+  let netProfit = Query.nonRegrowData data settings
 
-  let crops, regrowCrops = crops |> Array.map (Model.getCrop model) |> Array.partition (Crop.regrowTime >> Option.isNone)
+  let crops, regrowCrops = crops |> Array.map data.Crops.Find |> Array.partition (Crop.regrowTime >> Option.isNone)
   let regrowCrops = regrowCrops |> Array.map (function | FarmCrop crop -> crop | ForageCrop _ -> failwith "unreachable")
 
   for crop in crops do
-    let growth = Crop.growth crop
-    let seasons = seasons &&& growth.Seasons
+    let seed = Crop.seed crop
+    let seasons = seasons &&& Crop.seasons crop
 
     if seasons <> Seasons.None then
-      strs[0] <- string growth.Seed
+      strs[0] <- string seed
       let lossProb = lossProb crop
-      let profit = netProfit growth.Seed
+      let profit = netProfit crop
 
       for i = 0 to fertilizers.Length - 1 do
         let fertilizer, fertCost = fertilizers[i]
@@ -274,7 +274,7 @@ let solutionRequests model fertilizers crops =
         | Some net when net > 0.0 ->
           let replacementCost = lossProb * float fertCost
           strs[1] <- fertilizerIdOption fertilizer
-          let growthTime = Model.growthTime model fertilizer growth
+          let growthTime = Query.growthTime settings fertilizer crop
           let profit = Profit, net - replacementCost
 
           let mutable growsInPrevious = false
@@ -371,9 +371,9 @@ let solutionRequests model fertilizers crops =
     strs[3] <- seasonNames[stop]
 
     for crop in crops do
-      let regrowData = Model.regrowSeedData model crop.Growth.Seed
-      let regrowTime = Option.get crop.Growth.RegrowTime
-      strs[0] <- string crop.Growth.Seed
+      let regrowData = Query.regrowSeedData data settings (FarmCrop crop)
+      let regrowTime = Option.get crop.RegrowTime
+      strs[0] <- string crop.Seed
 
       for i = 0 to fertilizers.Length - 1 do
         let fertilizer, _ = fertilizers[i]
@@ -381,7 +381,7 @@ let solutionRequests model fertilizers crops =
 
         match regrowData fertilizer with
         | Some data ->
-          let growthTime = Model.growthTime model fertilizer crop.Growth
+          let growthTime = Query.growthTime settings fertilizer (FarmCrop crop)
 
           let rec recur start daysAfterFirstSeason harvestsAfterFirstSeason =
             let totalDays = daysAfterFirstSeason + days[start]
@@ -477,6 +477,8 @@ let solutionRequests model fertilizers crops =
 
 
 open Fable.Core.JsInterop
+
+// https://pages.cs.wisc.edu/~shuchi/courses/787-F09/scribe-notes/lec3.pdf
 
 let solveRanges (requests: SubRangeSolutionRequest array) =
   if requests.Length = 0 then

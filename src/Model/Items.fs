@@ -26,6 +26,21 @@ type [<Measure>] ItemNum
 
 type ItemId = uint<ItemNum>
 
+
+type Multipliers = {
+  ProfitMargin: float // 0.25 | 0.5 | 0.75 | 1.0
+  BearsKnowledge: bool
+  TillerForForagedFruit: bool
+}
+
+module Multipliers =
+  let common = {
+    ProfitMargin = 1.0
+    BearsKnowledge = false
+    TillerForForagedFruit = false
+  }
+
+
 type Item = {
   Id: ItemId
   Name: string
@@ -33,15 +48,10 @@ type Item = {
   Category: Category
 }
 
-type Multipliers = {
-  ProfitMargin: float // 0.25 | 0.5 | 0.75 | 1.0
-  BearsKnowledge: bool
-  ForagedFruitTillerOverrides: ItemId Set
-}
-
 module Item =
   let [<Literal>] ancientSeeds = 499u<ItemNum>
   let [<Literal>] blackberry = 410u<ItemNum>
+  let [<Literal>] grape = 398u<ItemNum>
 
   let id item = item.Id
   let name item = item.Name
@@ -49,7 +59,7 @@ module Item =
   let category item = item.Category
 
   let private multiplierValue multipliers item =
-    multipliers.ProfitMargin * if item.Id = blackberry && multipliers.BearsKnowledge then 3.0 else 1.0
+    multipliers.ProfitMargin * if multipliers.BearsKnowledge && item.Id = blackberry then 3.0 else 1.0
 
   let multiplier skills multipliers item =
     Category.multiplier skills item.Category * multiplierValue multipliers item
@@ -75,11 +85,15 @@ module Item =
   let prices skills multipliers item = pricesCalc (multiplier skills multipliers item) item.SellPrice
 
   module Forage =
+    let fruitTillerPossible = [| blackberry; grape |]
+
+    let fruitTillerActive multipliers item = multipliers.TillerForForagedFruit && fruitTillerPossible |> Array.contains item.Id
+
     let multipler skills multipliers item =
       let multiplier =
-        match item.Category with
-        | Fruit when not <| multipliers.ForagedFruitTillerOverrides.Contains item.Id -> 1.0
-        | category -> Category.multiplier skills category
+        if item.Category <> Fruit || fruitTillerActive multipliers item
+        then Category.multiplier skills item.Category
+        else 1.0
       multiplier * multiplierValue multipliers item
 
     let price skills multipliers item quality = priceCalc (multiplier skills multipliers item) item.SellPrice quality
@@ -118,6 +132,11 @@ module Processor =
     seedMakerAmount + if nat seed = nat Item.ancientSeeds then seedMakerAncientSeedProb else 0.0
 
 
+module ModData =
+  let common = {
+    QualityProducts = false
+    QualityProcessors = Set.ofArray [| Processor.preservesJar; Processor.keg; ProcessorName "Oil Maker" |]
+  }
 
 
 type Product =
@@ -168,15 +187,45 @@ module Product =
 
   let price getItem skills multipliers modData item quality product =
     match product with
-    | Jam | Pickles -> priceCalc modData (artisanMultiplier skills multipliers) (preservesJarPrice item.SellPrice) Processor.preservesJar quality
-    | Wine -> priceCalc modData (artisanMultiplier skills multipliers) (winePrice item.SellPrice) Processor.keg quality
-    | Juice -> priceCalc modData (artisanMultiplier skills multipliers) (juicePrice item.SellPrice) Processor.keg quality
+    | Jam | Pickles ->
+      let item = getItem item
+      priceCalc
+        modData
+        (artisanMultiplier skills multipliers)
+        (preservesJarPrice item.SellPrice)
+        Processor.preservesJar
+        quality
+    | Wine ->
+      let item = getItem item
+      priceCalc
+        modData
+        (artisanMultiplier skills multipliers)
+        (winePrice item.SellPrice)
+        Processor.keg quality
+    | Juice ->
+      let item = getItem item
+      priceCalc
+        modData
+        (artisanMultiplier skills multipliers)
+        (juicePrice item.SellPrice)
+        Processor.keg
+        quality
     | SeedsFromSeedMaker seedId ->
       let item = getItem seedId
-      priceCalc modData (Item.multiplier skills multipliers item) item.SellPrice Processor.seedMaker quality
+      priceCalc
+        modData
+        (Item.multiplier skills multipliers item)
+        item.SellPrice
+        Processor.seedMaker
+        quality
     | Processed p ->
       let item = getItem p.Item
-      priceCalc modData (Item.multiplier skills multipliers item) item.SellPrice p.Processor quality
+      priceCalc
+        modData
+        (Item.multiplier skills multipliers item)
+        item.SellPrice
+        p.Processor
+        quality
 
   let pricesCalc modData multiplier basePrice processor =
     if processor |> Processor.preservesQuality modData
@@ -184,15 +233,41 @@ module Product =
     else Item.priceCalc multiplier basePrice Quality.Normal |> float |> Qualities.create
 
   let prices getItem skills multipliers modData item = function
-    | Jam | Pickles -> pricesCalc modData (artisanMultiplier skills multipliers) (preservesJarPrice item.SellPrice) Processor.preservesJar
-    | Wine -> pricesCalc modData (artisanMultiplier skills multipliers) (winePrice item.SellPrice) Processor.keg
-    | Juice -> pricesCalc modData (artisanMultiplier skills multipliers) (juicePrice item.SellPrice) Processor.keg
+    | Jam | Pickles ->
+      let item = getItem item
+      pricesCalc
+        modData
+        (artisanMultiplier skills multipliers)
+        (preservesJarPrice item.SellPrice)
+        Processor.preservesJar
+    | Wine ->
+      let item = getItem item
+      pricesCalc
+        modData
+        (artisanMultiplier skills multipliers)
+        (winePrice item.SellPrice)
+        Processor.keg
+    | Juice ->
+      let item = getItem item
+      pricesCalc
+        modData
+        (artisanMultiplier skills multipliers)
+        (juicePrice item.SellPrice)
+        Processor.keg
     | SeedsFromSeedMaker seedId ->
       let item = getItem seedId
-      pricesCalc modData (Item.multiplier skills multipliers item) item.SellPrice Processor.seedMaker
+      pricesCalc
+        modData
+        (Item.multiplier skills multipliers item)
+        item.SellPrice
+        Processor.seedMaker
     | Processed p ->
       let item = getItem p.Item
-      pricesCalc modData (Item.multiplier skills multipliers item) item.SellPrice p.Processor
+      pricesCalc
+        modData
+        (Item.multiplier skills multipliers item)
+        item.SellPrice
+        p.Processor
 
   let amountPerItem product =
     match product with
