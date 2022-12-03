@@ -46,6 +46,16 @@ module Option =
   let inline min a b = reduce min a b
   let inline max a b = reduce max a b
 
+  /// Compares two options, treating `None` as the max value instead of the min value.
+  let noneMaxCompare a b =
+    match a, b with
+    | None, None -> 0
+    | None, Some _ -> 1
+    | Some _, None -> -1
+    | Some a, Some b -> compare a b
+
+  let noneMaxCompareBy projection a b = noneMaxCompare (projection a) (projection b)
+
   let ofResult = function
     | Ok x -> Some x
     | Error _ -> None
@@ -56,6 +66,7 @@ module Result =
   let get = function
     | Ok x -> x
     | Error _ -> invalidArg "result" "The result value was Error."
+
 
 
 [<AutoOpen>]

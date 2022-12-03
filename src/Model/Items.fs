@@ -1,20 +1,18 @@
 namespace StardewValleyStonks
 
-open Fable.Core
-
 type Category =
   | Fruit
   | Vegetable
   | Flower
-  | Artisan
+  | ArtisanGood
   | Forage
   | Seeds
   | Other
 
 module Category =
   let multiplier skills = function
-    | Fruit | Vegetable | Flower when Skills.tillerActive skills -> 1.1
-    | Artisan when Skills.artisanActive skills -> 1.4
+    | Fruit | Vegetable | Flower when skills |> Skills.professionActive Tiller -> Multiplier.tiller
+    | ArtisanGood when skills |> Skills.professionActive Artisan -> Multiplier.artisan
     | _ -> 1.0
 
 
@@ -59,7 +57,7 @@ module Item =
   let category item = item.Category
 
   let private multiplierValue multipliers item =
-    multipliers.ProfitMargin * if multipliers.BearsKnowledge && item.Id = blackberry then 3.0 else 1.0
+    multipliers.ProfitMargin * if multipliers.BearsKnowledge && item.Id = blackberry then Multiplier.bearsKnowledge else 1.0
 
   let multiplier skills multipliers item =
     Category.multiplier skills item.Category * multiplierValue multipliers item
@@ -100,7 +98,7 @@ module Item =
     let prices skills multipliers item = pricesCalc (multiplier skills multipliers item) item.SellPrice
 
 
-type [<Erase>] Processor = ProcessorName of string
+type [<Fable.Core.Erase>] Processor = ProcessorName of string
 
 type ModData = {
   QualityProducts: bool
@@ -176,7 +174,7 @@ module Product =
   let ratioAmount (i: nat, o: nat) = float o / float i
 
   let private artisanMultiplier skills multipliers =
-    Category.multiplier skills Artisan * multipliers.ProfitMargin
+    Category.multiplier skills ArtisanGood * multipliers.ProfitMargin
 
   let preservesJarPrice basePrice = basePrice * 2u + 50u
   let winePrice basePrice = basePrice * 3u

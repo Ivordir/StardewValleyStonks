@@ -10,10 +10,16 @@ open Thoth.Json
 open Thoth.Json.Net
 #endif
 
-let [<Literal>] dataVersion = 1u
+// Major = new schema -> ???
+// Minor = new crops, fertilizers, or items on crops -> adapt settings
+// Patch = compatible data -> no action needed
+let private dataVersion = Version.parse "0.1.0" |> Option.get
+
+let [<Literal>] private localStorageKey = "app"
+let [<Literal>] private localStorageBackupKey = "backup"
 
 let private extractedData: JsonValue = importAll "../../public/data/Extracted.json"
-let private rawData: JsonValue = importAll "../../public/data/Data.json5"
+let private supplementalData: JsonValue = importAll "../../public/data/Supplemental.json5"
 let private appData: JsonValue = importAll "../../public/data/App.json5"
 
 let private load json decoder =
@@ -21,15 +27,6 @@ let private load json decoder =
   |> Decode.fromValue "$" decoder
   |> Result.get
 
-
-type RawGameData = {
-  Fertilizers: Fertilizer array
-  Products: Table<ItemId, Product array>
-  ProcessorUnlockLevel: Table<Processor, nat>
-  FertilizerPrices: Table<FertilizerName, Table<Vendor, nat>>
-  SeedPrices: Table<SeedId, SeedPrice array>
-  GenerateSeedPrices: (Vendor * SeedId array) list
-}
 
 type SelectKeys<'key when 'key: comparison> =
   | SelectAllKeys of bool
@@ -43,8 +40,7 @@ module SelectKeys =
     | SelectKeys (false, keys) -> Set.ofSeq allKeys - keys
 
   let columnWise data columnSelections =
-    let d = data
-    d
+    data
     |> Table.toSeq
     |> Seq.map (fun (key, row) ->
       key,
@@ -109,124 +105,21 @@ type ShorthandSettings = {
   ReplaceLostFertilizer: bool option
 }
 
-
-let private decodeRawGameData =
-  let u = Unchecked.defaultof<RawGameData>
-  Decode.object (fun get ->
-    let field name decode = get.Required.Field name decode
-    {
-      Fertilizers = field (nameof u.Fertilizers) (Decode.array Decode.fertilizer)
-      Products = field (nameof u.Products) (Decode.tableParse Decode.parseItemId (Decode.array Decode.product))
-      ProcessorUnlockLevel = field (nameof u.ProcessorUnlockLevel) (Decode.table ProcessorName Decode.uint32)
-      FertilizerPrices = field (nameof u.FertilizerPrices) (Decode.table id (Decode.table VendorName Decode.uint32))
-      SeedPrices = field (nameof u.SeedPrices) (Decode.tableParse Decode.parseSeedId (Decode.array Decode.seedPrice))
-      GenerateSeedPrices = field (nameof u.GenerateSeedPrices) (Decode.wrapKeys id VendorName (Decode.array Decode.seedId))
-    }
-  )
-
-let private sortKeysByHighestCount table =
-  table
-  |> Table.values
-  |> Seq.collect Table.keys
-  |> Seq.countBy id
-  |> Seq.sortByDescending snd
-  |> Seq.map fst
-  |> Array.ofSeq
-
-let gameDataFrom (extractedData: ExtractedData) rawData =
-  let items = extractedData.Items |> Table.ofValues Item.id
-
-  let crops =
-    extractedData.FarmCrops
-    |> Array.map FarmCrop
-    |> Array.append (extractedData.ForageCrops |> Array.map ForageCrop)
-
-  let seedPrices =
-    rawData.GenerateSeedPrices
-    |> Seq.collect (fun (vendor, seeds) ->
-      seeds |> Array.map (fun seed -> seed, ScalingPrice (vendor, None)))
-    |> Seq.groupBy fst
-    |> Seq.map (fun (seed, prices) -> seed, prices |> Seq.map snd)
-    |> Table.ofSeq
-
-  let seedPrices =
-    crops
-    |> Seq.map Crop.seed
-    |> Table.ofKeys (fun seed ->
-      rawData.SeedPrices.TryFind seed
-      |> Option.defaultValue Array.empty
-      |> Seq.append (seedPrices.TryFind seed |> Option.defaultValue Seq.empty)
-      |> Table.ofValues SeedPrice.vendor)
-
-  let products =
-    let seedMakerItems =
-      crops
-      |> Seq.choose (fun crop ->
-        if Crop.canGetOwnSeedsFromSeedMaker items.Find crop
-        then Some (Crop.mainItem crop, SeedsFromSeedMaker (Crop.seedItem crop))
-        else None)
-      |> Table.ofSeq
-
-    items.Keys |> Table.ofKeys (fun item ->
-      let generate =
-        match items[item].Category with
-        | Vegetable -> [| Pickles; Juice |]
-        | Fruit -> [| Jam; Wine |]
-        | _ -> [| |]
-
-      rawData.Products.TryFind item
-      |> Option.defaultValue Array.empty
-      |> Array.append (seedMakerItems.TryFind item |> Option.toArray)
-      |> Array.append generate
-      |> Table.ofValues Product.processor)
-
-  {
-    Fertilizers = rawData.Fertilizers |> Table.ofValues Fertilizer.name
-    FertilizerPrices =
-      rawData.Fertilizers
-      |> Seq.map Fertilizer.name
-      |> Table.ofKeys (rawData.FertilizerPrices.TryFind >> Option.defaultWith Table.empty)
-    FertilizerVendors = sortKeysByHighestCount rawData.FertilizerPrices
-
-    Crops = crops |> Table.ofValues Crop.seed
-    FarmCrops = extractedData.FarmCrops |> Table.ofValues FarmCrop.seed
-    ForageCrops = extractedData.ForageCrops |> Table.ofValues ForageCrop.seed
-    SeedPrices = seedPrices
-    SeedVendors = sortKeysByHighestCount seedPrices
-
-    Items = items
-    Products = products
-    Processors =
-      products.Values
-      |> Seq.collect Table.keys
-      |> Seq.distinct
-      |> Seq.sortWith (sortWithLastBy None rawData.ProcessorUnlockLevel.TryFind)
-      |> Array.ofSeq
-    ProcessorUnlockLevel = rawData.ProcessorUnlockLevel
-  }
-
-let gameData =
-  let extractedData = load extractedData Decode.extractedData
-  let rawData = load rawData decodeRawGameData
-  gameDataFrom extractedData rawData
+let private gameData =
+  GameData.fromExtractedAndSupplementalData
+    (load extractedData Decode.extractedData)
+    (load supplementalData Decode.supplementalData)
 
 #if DEBUG
 do
   let missingItems = GameData.missingItemIds gameData |> Seq.map string |> Array.ofSeq
   if missingItems.Length > 0 then
     failwith ("The following items ids were referenced, but no items with the ids were provided: " + String.concat ", " missingItems)
-#endif
-
 // validate:
 // fertilizers
 // products
 // crops
-
-
-
-
-
-
+#endif
 
 
 
@@ -292,11 +185,6 @@ module private Shorthand =
           ReplaceLostFertilizer = field (nameof u.ReplaceLostFertilizer) Decode.bool
         }
       )
-
-  // validate:
-  // skills
-  // multipliers
-  // date
 
 
   let private selectKeys allKeys selectKeys =
@@ -375,7 +263,6 @@ module private Shorthand =
 
 let private settings =
   Extra.empty
-  |> Extra.withCustom (fun (_: GameData) -> Encode.nil) (Decode.succeed Unchecked.defaultof<_>)
   |> Extra.withCustom Encode.date Decode.date
   |> Extra.withCustom
     (Encode.mapObj string (Encode.mapSeq Encode.vendor): Map<SeedId, Vendor Set> -> _)
@@ -414,16 +301,24 @@ let private encodeNestedOption =
       (Encode.option Encode.seedId)
       (function
         | None -> Encode.nil
-        | Some fert -> Encode.object [ "Some", Encode.option Encode.string fert ]))
+        | Some None -> Encode.string ""
+        | Some (Some fert) -> Encode.string fert))
 
-let private decodeNestedOption = Decode.succeed Unchecked.defaultof<_>
+let private decodeNestedOption =
+  Decode.option
+    (Decode.tuple2
+      (Decode.option Decode.seedId)
+      (Decode.oneOf [
+        Decode.nil None
+        Decode.string |> Decode.map (function | "" -> Some None | fert -> Some (Some fert))
+      ] ))
 
 let private app =
   settings
   |> Extra.withCustom encodeCropFilters decodeCropFilters
   |> Extra.withCustom encodeSettings decodeSettings
   |> Extra.withCustom encodeNestedOption decodeNestedOption
-  |> Extra.withCustom (fun (_: GameData) -> Encode.uint32 dataVersion) (Decode.succeed gameData)
+  |> Extra.withCustom (fun (_: GameData) -> Encode.string dataVersion.String) (Decode.succeed gameData)
 
 let private encodeApp = Encode.Auto.generateEncoder<App>(extra=app)
 let private decodeApp = Decode.Auto.generateDecoder<App>(extra=app)
@@ -449,18 +344,172 @@ module Decode =
 
   let app: App Decoder =
     let u = Unchecked.defaultof<App>
-    Decode.map2
-      (fun version app ->
-        if version = dataVersion then app else {
-          app with
-            Settings = app.Settings |> Settings.adapt gameData
-            SavedSettings =
-              app.SavedSettings |> List.map (fun (name, settings) ->
-                name, settings |> Settings.adapt gameData)
-        }
-      )
-      (Decode.field (nameof u.Data) Decode.uint32)
+    Decode.map2 tuple2
+      (Decode.field
+        (nameof u.Data)
+        (Decode.string |> Decode.andThen (fun str ->
+          match Version.parse str with
+          | Some ver -> Decode.succeed ver
+          | None -> Decode.fail "invalid data version")))
       decodeApp
+    |> Decode.andThen (fun (version, app) ->
+        if dataVersion.Major <> version.Major then
+          Decode.fail "Unsupported version" //TODO
+        elif dataVersion.Minor <> version.Minor then
+          Decode.succeed {
+            app with
+              Settings = app.Settings |> Settings.adapt gameData
+              SavedSettings =
+                app.SavedSettings |> List.map (fun (name, settings) ->
+                  name, settings |> Settings.adapt gameData)
+          }
+        else
+          Decode.succeed app)
+
 
 
 let defaultApp = lazy (Decode.appWithShortHandSettings |> load appData)
+
+#if DEBUG
+// validate for all settings:
+// skills
+// multipliers
+// date
+// cropamount
+#endif
+
+
+
+let saveAppToLocalStorage app =
+  Fable.Core.JS.console.time "encode"
+  let data = Encode.toString 0 <| Encode.app app
+  Fable.Core.JS.console.timeEnd "encode"
+  Browser.WebStorage.localStorage.setItem (localStorageKey, data)
+
+
+let loadAppFromLocalStorage () =
+  let data = Browser.WebStorage.localStorage.getItem localStorageKey
+  if isNullOrUndefined data then
+    defaultApp.Value
+  else
+    match Decode.fromString Decode.app data with
+    | Ok app -> app
+    | Error e ->
+      printfn $"Failed to load app from local storage: {e}"
+      printfn "Backing up app data..."
+      Browser.WebStorage.localStorage.setItem (localStorageBackupKey, data)
+      defaultApp.Value
+
+
+
+// Rather than depending on an xml parsing library, we use the browser's built-in native xml parsing.
+// Stardew valley saves games are simple enough and/or we extract so little data from them
+// such that the following manual code is workable...
+module private XML =
+  open Fable.Core
+
+  let [<Emit "XPathResult.STRING_TYPE">] stringType: obj = jsNative
+  let [<Emit "XPathResult.UNORDERED_NODE_ITERATOR_TYPE">] nodeIter: obj = jsNative
+  let [<Emit "XPathResult.UNORDERED_NODE_ITERATOR_TYPE">] firstNode: obj = jsNative
+
+  let private getString (doc: Browser.Types.XMLDocument) (node: obj) path : string =
+    doc?evaluate(path, node, null, stringType, null)?stringValue
+
+  let stringValue doc node path =
+    let value = getString doc node path
+    if value = "" then None else Some value
+
+  let private parseWith parser doc node path =
+    match parser (getString doc node path) with
+    | true, value -> Some value
+    | _ -> None
+
+  let boolValue = parseWith System.Boolean.TryParse
+  let natValue = parseWith System.UInt32.TryParse
+  let floatValue = parseWith System.Double.TryParse
+
+  let private array typePath parser (doc: Browser.Types.XMLDocument) (node: obj) path =
+    let arr = ResizeArray ()
+    let iter = doc?evaluate(path + "/" + typePath, node, null, nodeIter, null)
+
+    let mutable finished = false
+    while not finished do
+      let elm: Browser.Types.Element option = iter?iterateNext()
+      match elm with
+      | Some e ->
+        match parser e.textContent with
+        | Some value -> arr.Add value
+        | None -> ()
+      | None ->
+        finished <- true
+
+    resizeToArray arr
+
+  let natArray = array "int" (fun str ->
+    match System.UInt32.TryParse str with
+    | true, value -> Some value
+    | _ -> None)
+
+  let stringArray = array "string" (function | "" -> None | str -> Some str)
+
+  let [<Emit "new DOMParser()">] private domParser (): obj = jsNative
+  let private xmlParser = domParser ()
+
+  let parse (xml: string): Browser.Types.XMLDocument = xmlParser?parseFromString(xml, "text/xml")
+
+open XML
+
+let loadSettingsFromSaveGame (xml: string) =
+  try
+    let doc = parse xml
+
+    match doc?evaluate("Farmer", doc, null, firstNode, null) with
+    | None -> failwith "Invalid save game: no Farmer was found"
+    | Some (farmer: obj) ->
+
+    let professions = natArray doc farmer "professions"
+    let eventsSeen = natArray doc farmer "eventsSeen"
+    let mailReceived = stringArray doc farmer "mailReceived"
+
+    let missing = ResizeArray ()
+    let tryGet name parser path defaultValue =
+      match parser doc farmer path with
+      | Some value -> value
+      | None ->
+        missing.Add name
+        defaultValue
+
+    let specialCharm = tryGet "Special Charm" boolValue "hasSpecialCharm" false
+    let farmingLevel = tryGet "Farming Level" natValue "farmingLevel" 0u |> min Skill.maxLevel
+    let foragingLevel = tryGet "Foraging Level" natValue "foragingLevel" 0u |> min Skill.maxLevel
+    let day = tryGet "Day" natValue "dayOfMonthForSaveGame" Date.firstDay |> max Date.firstDay |> min Date.lastDay
+    let season = tryGet "Season" natValue "seasonForSaveGame" (uint Season.Spring) |> int |> enum
+    let profitMargin = tryGet "Difficulty Modifier" floatValue "difficultyModifier" 1.0
+    let farmerName = tryGet "Farmer Name" stringValue "name" "Imported Save"
+    let settings = {
+      defaultApp.Value.Settings with
+        Skills = {
+          Skills.zero with
+            Farming = { Skill.zero with Level = farmingLevel }
+            Foraging = { Skill.zero with Level = foragingLevel }
+            Professions = Set.ofList [
+              if professions |> Array.contains 1u then Tiller
+              if professions |> Array.contains 4u then Artisan
+              if professions |> Array.contains 5u then Agriculturist
+              if professions |> Array.contains 13u then Gatherer
+              if professions |> Array.contains 16u then Botanist
+            ]
+        }
+        Multipliers = {
+          Multipliers.common with
+            ProfitMargin = profitMargin
+            BearsKnowledge = eventsSeen |> Array.contains 2120303u
+        }
+        CropAmount = { CropAmountSettings.common with SpecialCharm = specialCharm }
+        StartDate = { Season = season; Day = day }
+        JojaMembership = mailReceived |> Array.contains "JojaMember"
+    }
+
+    Ok ((farmerName, settings), resizeToArray missing)
+
+  with e -> Error e

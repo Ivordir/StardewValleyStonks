@@ -10,8 +10,8 @@ let cropInSeasonFrom settings seasons crop =
 let cropInSeason settings = cropInSeasonFrom settings (seasons settings)
 
 let growthMultiplier settings crop =
-  (if Skills.agriculturistActive settings.Skills then 0.1 else 0.0)
-  + if settings.Irrigated && Crop.paddy crop then 0.25 else 0.0
+  (if settings.Skills |> Skills.professionActive Agriculturist then Multiplier.agriculturist else 0.0)
+  + if settings.Irrigated && Crop.paddy crop then Multiplier.irrigated else 0.0
 
 let growthSpeed settings fertilizer growth =
   Fertilizer.Opt.speed fertilizer + growthMultiplier settings growth
@@ -72,12 +72,7 @@ let replacementFertilizerAmount settings crop (harvests: nat) =
 let fertilizerUsed model crop harvests =
   1.0 + replacementFertilizerAmount model crop harvests
 
-let farmingAmounts settings amount farmingQualities =
-  if giantCropsPossible settings
-  then CropAmount.farmingGiantAmounts settings.Skills settings.CropAmount amount farmingQualities
-  else CropAmount.farmingAmounts settings.Skills settings.CropAmount amount farmingQualities
-
-let farmingAmounts' settings amount fertilizer =
+let farmingAmounts settings amount fertilizer =
   let qualities = Skills.farmingQualitiesWith fertilizer settings.Skills
   if giantCropsPossible settings
   then CropAmount.farmingGiantAmounts settings.Skills settings.CropAmount amount qualities
@@ -89,7 +84,7 @@ let foragingAmounts settings (crop: ForageCrop) =
 let farmCropItemAmounts settings (crop: FarmCrop) =
   let extraItemAmount = crop.ExtraItem |> Option.map (snd >> Qualities.normalSingleton)
   fun fertilizer ->
-    let amounts = farmingAmounts' settings crop.Amount fertilizer
+    let amounts = farmingAmounts settings crop.Amount fertilizer
     match extraItemAmount with
     | Some extra -> [| amounts; extra |]
     | None -> [| amounts |]
@@ -133,7 +128,7 @@ let lowestFertilizerCostOpt data settings = Option.defaultOrMap (Some 0u) (lowes
 
 let selectedCrops data settings = settings.SelectedCrops |> Seq.map data.Crops.Find
 
-let seedPrice data settings (seed: SeedId) = function
+let seedPrice data settings seed = function
   | FixedPrice (_, price) -> price
   | ScalingPrice (vendor, price) ->
     let price =
@@ -804,6 +799,9 @@ let cropProfit data settings timeNorm crop =
   | BuyFirstSeed -> cropProfitCalcBuyFirstSeed data settings timeNorm crop
   >> Result.map (fun (profit, timeNorm) -> profit / timeNorm)
 
+let xpPerHarvest data settings crop =
+  Crop.xpPerHarvest data.Items.Find (giantCropProb settings) settings.Skills crop
+
 let cropXP data settings timeNorm crop fertilizer =
   let seed = Crop.seed crop
   let hasFertPrice = lowestFertilizerCostOpt data settings (Fertilizer.Opt.name fertilizer) |> Option.isSome
@@ -821,7 +819,7 @@ let cropXP data settings timeNorm crop fertilizer =
 
   match bestGrowthSpan settings crop fertilizer with
   | Some span when hasFertPrice && enoughSeeds ->
-    let xpPerHarvest = Crop.xpPerHarvest (Skills.botanistActive settings.Skills) data.Items.Find crop
+    let xpPerHarvest = xpPerHarvest data settings crop
     let xp = float span.Harvests * xpPerHarvest
     let divisor = timeNormalizationDivisor span crop timeNorm
     Ok (xp / divisor)
@@ -849,7 +847,8 @@ let cropXpData data settings timeNorm crop fertilizer =
   match bestGrowthSpan settings crop fertilizer with
   | Some span when hasFertPrice && enoughSeeds ->
     Ok {|
-      xpPerHarvest = Crop.xpPerHarvest (Skills.botanistActive settings.Skills) data.Items.Find crop
+      xpPerItem = Crop.xpPerItem data.Items.Find crop
+      xpPerHarvest = xpPerHarvest data settings crop
       TimeNormalization = timeNormalizationDivisor span crop timeNorm
       Harvests = span.Harvests
     |}

@@ -21,24 +21,6 @@ module internal Util =
     |> Reflection.FSharpType.GetUnionCases
     |> Array.map (fun x -> Reflection.FSharpValue.MakeUnion (x, Array.empty) |> unbox<'a>)
 
-  let sortWithLast last x y =
-    match x = last, y = last with
-    | true, true -> 0
-    | true, false -> 1
-    | false, true -> -1
-    | false, false -> compare x y
-
-  let sortWithLastBy last projection x y = sortWithLast last (projection x) (projection y)
-
-  let sortWithLastRev last x y =
-    match x = last, y = last with
-    | true, true -> 0
-    | true, false -> 1
-    | false, true -> -1
-    | false, false -> compare y x
-
-  let sortWithLastByRev last projection x y = sortWithLastRev last (projection x) (projection y)
-
   let sortByMany comparers seq =
     let comparers = Array.ofSeq comparers
     seq
@@ -267,3 +249,27 @@ type App = {
   CropFilters: CropFilters
   Ranker: Ranker
 }
+
+type Version = {
+  String: string
+  Major: nat
+  Minor: nat
+  Patch: nat
+}
+
+module Version =
+  let private (|Nat|_|) (str: string) =
+    match System.UInt32.TryParse str with
+    | true, value -> Some (Nat value)
+    | _ -> None
+
+  let parse (str: string) =
+    match str.Split '.' with
+    | [| Nat major; Nat minor; Nat patch |] ->
+      Some {
+        String = str
+        Major = major
+        Minor = minor
+        Patch = patch
+      }
+    | _ -> None

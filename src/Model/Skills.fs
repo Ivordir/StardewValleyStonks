@@ -34,6 +34,15 @@ module Fertilizer =
 
 
 
+module Multiplier =
+  let [<Literal>] bearsKnowledge = 3.0
+  let [<Literal>] tiller = 1.1
+  let [<Literal>] artisan = 1.4
+  let [<Literal>] agriculturist = 0.1
+  let [<Literal>] gatherer = 1.2
+  let [<Literal>] irrigated = 0.25
+
+
 
 type Quality =
   | Normal = 0
@@ -68,19 +77,15 @@ module Qualities =
   let inline initi initializer = Array.init Quality.count initializer |> ByQuality
 
   let inline wrap arr = ByQuality arr
-  let inline ofArray arr = Array.copy arr |> ByQuality
 
   let zero = create 0.0
-  let one = create 1.0
   let multipliers = ByQuality [| 1.0; 1.25; 1.5; 2.0 |]
 
   let inline item (quality: Quality) qualities = unwrap qualities |> Array.item (int quality)
   let inline itemi index qualities = unwrap qualities |> Array.item index
 
-  let inline updateAt index value qualities =
-    unwrap qualities |> Array.updateAt index value |> ByQuality
-  let inline updateQuality (quality: Quality) value amounts =
-    updateAt (int quality) value amounts
+  let updateQuality (quality: Quality) value qualities =
+    unwrap qualities |> Array.updateAt (int quality) value |> ByQuality
 
   let inline map mapping qualities = unwrap qualities |> Array.map mapping |> ByQuality
   let inline map2 mapping a b = Array.map2 mapping (unwrap a) (unwrap b) |> ByQuality
@@ -94,7 +99,6 @@ module Qualities =
     sum
 
   let inline toArray qualities = unwrap qualities |> Array.copy
-  let inline toSeq qualities = unwrap qualities |> Array.toSeq
 
   // Models the probabilities that result from a chain of if-else statements.
   // E.g. given that p(x) is the raw probability of the check on x succeeding:
@@ -134,72 +138,59 @@ type Qualities with
   member inline this.Item index = Qualities.itemi index this
 
 
-type Skill<'professions> = {
+type Skill = {
   Level: nat
   Buff: nat
-  Professions: 'professions
 }
 
-type Farming = Skill<{| Tiller: bool; Agriculturist: bool; Artisan: bool |}>
-
-type Foraging = Skill<{| Gatherer: bool; Botanist: bool |}>
-
 module Skill =
+  let [<Literal>] maxLevel = 10u
+
+  let zero = {
+    Level = 0u
+    Buff = 0u
+  }
+
   let level skill = skill.Level
   let buff skill = skill.Buff
-  let professions skill = skill.Professions
   let buffedLevel skill = skill.Level + skill.Buff
 
 
+type Profession =
+  | Tiller
+  | Artisan
+  | Agriculturist
+  | Gatherer
+  | Botanist
+
+
 type Skills = {
-  Farming: Farming
-  Foraging: Foraging
+  Farming: Skill
+  Foraging: Skill
+  Professions: Profession Set
   IgnoreSkillLevelRequirements: bool
   IgnoreProfessionConflicts: bool
 }
 
 module Skills =
-  let [<Literal>] tillerUnlockLevel = 5u
-  let [<Literal>] artisanUnlockLevel = 10u
-  let [<Literal>] agriculturistUnlockLevel = 10u
-
-  let [<Literal>] gathererUnlockLevel = 5u
-  let [<Literal>] botanistUnlockLevel = 10u
-
   let zero = {
-    Farming = {
-      Level = 0u
-      Buff = 0u
-      Professions = {| Tiller = false; Artisan = false; Agriculturist = false |}
-    }
-    Foraging = {
-      Level = 0u
-      Buff = 0u
-      Professions = {| Gatherer = false; Botanist = false |}
-    }
+    Farming = Skill.zero
+    Foraging = Skill.zero
+    Professions = Set.empty
     IgnoreProfessionConflicts = false
     IgnoreSkillLevelRequirements = false
   }
 
-  let farmingLevelMet level skills = skills.IgnoreSkillLevelRequirements || skills.Farming.Level >= level
+  let professionUnlocked profession skills =
+    match profession with
+    | _ when skills.IgnoreSkillLevelRequirements -> true
+    | Tiller -> skills.Farming.Level >= 5u
+    | Artisan | Agriculturist -> skills.Farming.Level >= 10u
+    | Gatherer -> skills.Foraging.Level >= 5u
+    | Botanist -> skills.Foraging.Level >= 10u
 
-  let tillerLevelMet skills = farmingLevelMet tillerUnlockLevel skills
-  let artisanLevelMet skills = farmingLevelMet artisanUnlockLevel skills
-  let agriculturistLevelMet skills = farmingLevelMet agriculturistUnlockLevel skills
-
-  let tillerActive skills = skills.Farming.Professions.Tiller && tillerLevelMet skills
-  let artisanActive skills = skills.Farming.Professions.Artisan && artisanLevelMet skills
-  let agriculturistActive skills = skills.Farming.Professions.Agriculturist && agriculturistLevelMet skills
-
-
-  let foragingLevelMet level skills = skills.IgnoreSkillLevelRequirements || skills.Foraging.Level >= level
-
-  let gathererLevelMet skills = foragingLevelMet gathererUnlockLevel skills
-  let botanistLevelMet skills = foragingLevelMet botanistUnlockLevel skills
-
-  let gathererActive skills = skills.Foraging.Professions.Gatherer && gathererLevelMet skills
-  let botanistActive skills = skills.Foraging.Professions.Botanist && botanistLevelMet skills
-
+  let professionActive profession skills =
+    skills.Professions.Contains profession && professionUnlocked profession skills
 
   open type Quality
 
@@ -223,7 +214,7 @@ module Skills =
   let inline farmingQualities skills = farmingQualitiesWith None skills
 
   let foragingQualities skills =
-    if botanistActive skills then
+    if skills |> professionActive Botanist then
       Qualities.wrap [| 0.0; 0.0; 0.0; 1.0 |]
     else
       let buffLevel = Skill.buffedLevel skills.Foraging |> float
@@ -235,6 +226,6 @@ module Skills =
 
   let foragingAmounts skills =
     let qualities = foragingQualities skills
-    if gathererActive skills
-    then qualities |> Qualities.map ((*) 1.2)
+    if skills |> professionActive Gatherer
+    then qualities |> Qualities.map ((*) Multiplier.gatherer)
     else qualities

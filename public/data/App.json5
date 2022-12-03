@@ -69,20 +69,12 @@
         Farming: {
           Level: 10,
           Buff: 0,
-          Professions: {
-            Tiller: true,
-            Artisan: true,
-            Agriculturist: false
-          }
         },
         Foraging: {
           Level: 10,
           Buff: 0,
-          Professions: {
-            Gatherer: true,
-            Botanist: true
-          }
         },
+        Professions: [ 'Tiller', 'Artisan', 'Gatherer', 'Botanist' ],
         IgnoreProfessionConflicts: false,
         IgnoreSkillLevelRequirements: false
       },

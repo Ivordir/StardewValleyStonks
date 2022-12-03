@@ -27,7 +27,7 @@ module Seasons =
   let inline contains season seasons = overlap (ofSeason season) seasons
 
   let inline add season (seasons: Seasons) = seasons ||| ofSeason season
-  let inline remove season (seasons: Seasons) = seasons &&& (~~~(ofSeason season))
+  let inline remove season (seasons: Seasons) = seasons &&& ~~~(ofSeason season)
 
   let ofSeq seasons = seasons |> Seq.fold (flip add) Seasons.None
 
@@ -364,9 +364,12 @@ module FarmCrop =
   let growsInSeason season crop = crop.Seasons |> Seasons.contains season
   let growsInSeasons seasons crop = crop.Seasons |> Seasons.overlap seasons
 
-  let xpPerHarvest item crop =
+  let xpPerItem item crop =
     let price = item crop.Item |> Item.sellPrice
     (16.0 * log(0.018 * float price + 1.0)) |> round |> nat
+
+  let xpPerHarvest item giantCropProb crop =
+    (if crop.Amount.Giant then 1.0 - giantCropProb else 1.0) * float (xpPerItem item crop)
 
   let items crop =
     match crop.ExtraItem with
@@ -393,13 +396,13 @@ module ForageCrop =
   let items crop = crop.Items
   let seedRecipeUnlockLevel crop = crop.SeedRecipeUnlockLevel
 
-  let seedsRecipeUnlocked skills crop = Skills.foragingLevelMet crop.SeedRecipeUnlockLevel skills
+  let seedsRecipeUnlocked skills crop = skills.Foraging.Level >= crop.SeedRecipeUnlockLevel
 
   let seasons crop = Seasons.ofSeason crop.Season
   let growsInSeason season crop = crop.Season = season
   let growsInSeasons seasons crop = seasons |> Seasons.contains crop.Season
 
-  let xpPerHarvest botanist = float xpPerItem * if botanist then 1.2 else 1.0
+  let xpPerHarvest skills = float xpPerItem * if skills |> Skills.professionActive Gatherer then Multiplier.gatherer else 1.0
 
   let name crop = (Season.name crop.Season) + " Forage"
 
@@ -461,9 +464,13 @@ module Crop =
 
   let regrows = regrowTime >> Option.isSome
 
-  let xpPerHarvest botanist item = function
-    | FarmCrop c -> FarmCrop.xpPerHarvest item c |> float
-    | ForageCrop _ -> ForageCrop.xpPerHarvest botanist
+  let xpPerItem item = function
+    | FarmCrop c -> FarmCrop.xpPerItem item c
+    | ForageCrop _ -> ForageCrop.xpPerItem
+
+  let xpPerHarvest item giantCropProb skills = function
+    | FarmCrop c -> FarmCrop.xpPerHarvest item giantCropProb c
+    | ForageCrop _ -> ForageCrop.xpPerHarvest skills
 
   let isFarm = function
     | FarmCrop _ -> true
@@ -482,46 +489,3 @@ module Crop =
   let makesOwnSeeds crop =
     let seed = seed crop
     items crop |> Array.exists (fun item -> int item = int seed)
-
-
-// Assume for now that SeedMaker is the only processor which converts items into seeds.
-type GameData = {
-  Fertilizers: Table<FertilizerName, Fertilizer>
-  FertilizerPrices: Table<FertilizerName, Table<Vendor, nat>>
-  FertilizerVendors: Vendor array
-  Crops: Table<SeedId, Crop>
-  FarmCrops: Table<SeedId, FarmCrop>
-  ForageCrops: Table<SeedId, ForageCrop>
-  SeedPrices: Table<SeedId, Table<Vendor, SeedPrice>>
-  SeedVendors: Vendor array
-  Items: Table<ItemId, Item>
-  Products: Table<ItemId, Table<Processor, Product>>
-  Processors: Processor array
-  ProcessorUnlockLevel: Table<Processor, nat>
-}
-
-module GameData =
-  let seedItemPairs data =
-    data.Crops
-    |> Table.toSeq
-    |> Seq.collect (fun (seed, crop) ->
-      Crop.items crop |> Array.map (tuple2 seed))
-    |> Array.ofSeq
-
-  let cropCanGetOwnSeedsFromSeedMaker crop data =
-    match data.Products[Crop.mainItem crop].TryFind Processor.seedMaker with
-    | Some (SeedsFromSeedMaker item) when item = Crop.seedItem crop -> true
-    | _ -> false
-
-  let missingItemIds data =
-    let crops =
-      data.FarmCrops.Values
-      |> Seq.map FarmCrop
-      |> Seq.append (data.ForageCrops.Values |> Seq.map ForageCrop)
-      |> Array.ofSeq
-
-    crops
-    |> Seq.collect Crop.items
-    |> Seq.append (crops |> Seq.map Crop.seedItem)
-    |> Seq.append (data.Products.Values |> Seq.collect Table.values |> Seq.choose Product.item)
-    |> Seq.filter (data.Items.ContainsKey >> not)

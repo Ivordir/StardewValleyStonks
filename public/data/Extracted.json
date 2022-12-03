@@ -22,13 +22,13 @@
       "Id": 303,
       "Name": "Pale Ale",
       "SellPrice": 300,
-      "Category": "Artisan"
+      "Category": "ArtisanGood"
     },
     {
       "Id": 346,
       "Name": "Beer",
       "SellPrice": 200,
-      "Category": "Artisan"
+      "Category": "ArtisanGood"
     },
     {
       "Id": 347,
@@ -977,12 +977,7 @@
       "Item": 433
     },
     {
-      "Seasons": [
-        "Spring",
-        "Summer",
-        "Fall",
-        "Winter"
-      ],
+      "Seasons": [],
       "Seed": 802,
       "Stages": [
         2,

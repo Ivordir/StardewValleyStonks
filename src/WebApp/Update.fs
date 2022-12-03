@@ -10,17 +10,6 @@ type SkillMessage =
   | SetLevel of nat
   | SetBuff of nat
 
-type FarmingMessage =
-  | SetFarmingSkill of SkillMessage
-  | SetTiller of bool
-  | SetArtisan of bool
-  | SetAgriculturist of bool
-
-type ForagingMessage =
-  | SetForagingSkill of SkillMessage
-  | SetGatherer of bool
-  | SetBotanist of bool
-
 type CustomMessage<'key, 'price when 'key: comparison> =
   | AddCustom of 'key
   | SetCustom of 'key * 'price
@@ -28,8 +17,9 @@ type CustomMessage<'key, 'price when 'key: comparison> =
   | SelectCustom of 'key SelectionMessage
 
 type SkillsMessage =
-  | SetFarming of FarmingMessage
-  | SetForaging of ForagingMessage
+  | SetFarming of SkillMessage
+  | SetForaging of SkillMessage
+  | SetProfession of Profession * bool
   | SetIgnoreSkillLevelRequirements of bool
   | SetIgnoreProfessionConflicts of bool
 
@@ -159,71 +149,23 @@ let skill msg skill =
   | SetLevel l -> { skill with Level = l }
   | SetBuff b -> { skill with Buff = b }
 
-let farming ignoreConflicts msg (farming: Farming) =
-  match msg with
-  | SetFarmingSkill msg -> farming |> skill msg
-  | SetTiller tiller ->
-    if tiller || ignoreConflicts then
-      { farming with Professions = {| farming.Professions with Tiller = tiller |} }
-    else
-      { farming with
-          Professions = {|
-            Tiller = false
-            Artisan = false
-            Agriculturist = false
-          |}
-      }
-  | SetArtisan artisan ->
-    if not artisan || ignoreConflicts then
-      { farming with Professions = {| farming.Professions with Artisan = artisan |} }
-    else
-      { farming with
-          Professions = {|
-            Tiller = true
-            Artisan = true
-            Agriculturist = false
-          |}
-      }
-  | SetAgriculturist agri ->
-    if not agri || ignoreConflicts then
-      { farming with Professions = {| farming.Professions with Agriculturist = agri |} }
-    else
-      { farming with
-          Professions = {|
-            Tiller = true
-            Artisan = false
-            Agriculturist = true
-          |}
-      }
-
-let foraging ignoreConflicts msg (foraging: Foraging) =
-  match msg with
-  | SetForagingSkill msg -> foraging |> skill msg
-  | SetGatherer gatherer ->
-    if gatherer || ignoreConflicts then
-      { foraging with Professions = {| foraging.Professions with Gatherer = gatherer |} }
-    else
-      { foraging with
-          Professions = {|
-            Gatherer = false
-            Botanist = false
-          |}
-      }
-  | SetBotanist botanist ->
-    if not botanist || ignoreConflicts then
-      { foraging with Professions = {| foraging.Professions with Botanist = botanist |} }
-    else
-      { foraging with
-          Professions = {|
-            Gatherer = true
-            Botanist = true
-          |}
-      }
-
 let skills msg skills =
   match msg with
-  | SetFarming msg -> { skills with Farming = farming skills.IgnoreProfessionConflicts msg skills.Farming }
-  | SetForaging msg -> { skills with Foraging = foraging skills.IgnoreProfessionConflicts msg skills.Foraging }
+  | SetFarming msg -> { skills with Farming = skills.Farming |> skill msg }
+  | SetForaging msg -> { skills with Foraging = skills.Foraging |> skill msg }
+  | SetProfession (profession, selected) ->
+    let professions =
+      match profession, selected with
+      | _ when skills.IgnoreProfessionConflicts -> skills.Professions
+      | Tiller, false -> skills.Professions |> Set.remove Artisan |> Set.remove Agriculturist
+      | Artisan, true -> skills.Professions |> Set.add Tiller |> Set.remove Agriculturist
+      | Agriculturist, true -> skills.Professions |> Set.add Tiller |> Set.remove Artisan
+      | Gatherer, false -> skills.Professions |> Set.remove Botanist
+      | Botanist, true -> skills.Professions |> Set.add Gatherer
+      | _ -> skills.Professions
+
+    { skills with Professions = professions |> setSelected selected profession }
+
   | SetIgnoreSkillLevelRequirements value -> { skills with IgnoreSkillLevelRequirements = value }
   | SetIgnoreProfessionConflicts value -> { skills with IgnoreProfessionConflicts = value }
 
@@ -317,7 +259,7 @@ let ranker msg ranker =
 let app msg app =
   match msg with
   | SetSettings msg -> { app with Settings = app.Settings |> settings app.Data msg }, []
-  | LoadSettings model -> { app with Settings = model }, []
+  | LoadSettings settings -> { app with Settings = settings }, []
   | SaveSettings name -> { app with SavedSettings = (name, app.Settings) :: app.SavedSettings }, []
   | RenameSettings (i, name) -> { app with SavedSettings = app.SavedSettings |> List.updateAt i (name, app.SavedSettings |> List.item i |> snd) }, []
   | DeleteSettings i -> { app with SavedSettings = app.SavedSettings |> List.removeAt i }, []

@@ -8,8 +8,6 @@ open StardewValleyStonks.WebApp.Update
 
 // fix flower crop stage img
 
-// account for greenhouse, ginger island
-
 // best indicator for Products. Prices
 
 // refactor tables
@@ -30,15 +28,14 @@ open StardewValleyStonks.WebApp.Update
 
 
 // // Solver view
-// audit view
-
+// // solver solve for max xp
 
 // refactor Graph indicator icons:
 
 // error handling
 
-// // Load/Save functionality
-// // save game import
+// Load/Save functionality
+// save game import
 
 // website indicator for app version, game version
 
@@ -163,6 +160,7 @@ module Image =
   let fertilizer' (fert: string) = fert |> fertilizerRoot |> at //(FertName fertilizer) = fertilizer |> fertilizerRoot |> at
   let fertilizer = Fertilizer.name >> fertilizer'
   let skill = skillRoot >> at
+  let profession (profession: Profession) = string profession |> skill
   let vendor (VendorName vendor) = vendor |> vendorRoot |> at
   let processor = function
     | ProcessorName "Mill" -> "Mill" |> processorRoot |> withClass Class.iconProcessorLarge
@@ -197,6 +195,7 @@ module Image =
     let private nameIsPartofPath path name = at (path name) name
 
     let skill = nameIsPartofPath skillRoot
+    let profession (profession: Profession) = string profession |> skill
     let fertilizer = Fertilizer.name >> nameIsPartofPath fertilizerRoot
     let item (item: Item) = at (itemPath item.Id) item.Name
     let item' (data: GameData) = data.Items.Find >> item
@@ -364,19 +363,20 @@ let animatedDetails open' (summary': ReactElement) (children': _ seq) dispatch =
   ]
 
 module Skills =
-  let profession profession selected unlocked dispatch =
+  let profession skills profession dispatch =
+    let selected = skills.Professions.Contains profession
     label [
       classes [
         if selected then "active"
-        if not unlocked then "disabled"
+        if not (skills |> Skills.professionUnlocked profession) then "disabled"
       ]
       children [
         input [
           type'.checkbox
           isChecked selected
-          onCheckedChange dispatch
+          onCheckedChange (curry SetProfession profession >> dispatch)
         ]
-        Image.Icon.skill profession
+        Image.Icon.profession profession
       ]
     ]
 
@@ -410,7 +410,7 @@ module Skills =
       // let onChange = onChange (fun e -> debounce e.Value)
       let props = [
         min' 0u
-        max' 10u
+        max' Skill.maxLevel
         valueOrDefault skill.Level
         onChange (SetLevel >> dispatch)
         //(debouncerWith dispatch 150) ]
@@ -436,14 +436,14 @@ module Skills =
   let farming skills dispatch =
     let farming = skills.Farming
     div [
-      skill "Farming" farming (SetFarmingSkill >> dispatch)
+      skill "Farming" farming (SetFarming >> dispatch)
       div [ Class.professions; children [
         div [
-          profession "Tiller" farming.Professions.Tiller (Skills.tillerLevelMet skills) (SetTiller >> dispatch)
+          profession skills Tiller dispatch
         ]
         div [
-          profession "Artisan" farming.Professions.Artisan (Skills.agriculturistLevelMet skills) (SetArtisan >> dispatch)
-          profession "Agriculturist" farming.Professions.Agriculturist (Skills.agriculturistLevelMet skills) (SetAgriculturist >> dispatch)
+          profession skills Artisan dispatch
+          profession skills Agriculturist dispatch
         ]
       ] ]
       cropQualities (Skills.farmingQualities skills)
@@ -452,18 +452,18 @@ module Skills =
   let foraging skills dispatch =
     let foraging = skills.Foraging
     div [
-      skill "Foraging" foraging (SetForagingSkill >> dispatch)
+      skill "Foraging" foraging (SetForaging >> dispatch)
       div [ Class.professions; children [
-        div [ profession "Gatherer" foraging.Professions.Gatherer (Skills.gathererLevelMet skills) (SetGatherer >> dispatch) ]
-        div [ profession "Botanist" foraging.Professions.Botanist (Skills.botanistLevelMet skills) (SetBotanist >> dispatch) ]
+        div [ profession skills Gatherer dispatch ]
+        div [ profession skills Botanist dispatch ]
       ] ]
       cropQualities (Skills.foragingQualities skills)
     ]
 
   let tab skills dispatch =
     div [ Class.skills; children [
-      farming skills (SetFarming >> dispatch)
-      foraging skills (SetForaging >> dispatch)
+      farming skills dispatch
+      foraging skills dispatch
       div [
         checkboxText "Ignore Skill Level Unlocks" skills.IgnoreSkillLevelRequirements (SetIgnoreSkillLevelRequirements >> dispatch)
         checkboxText "Ignore Profession Conflicts" skills.IgnoreProfessionConflicts (SetIgnoreProfessionConflicts >> dispatch)
@@ -581,7 +581,7 @@ module Crops =
         {
           Header = ofStr "Lowest Seed Price"
           Width = 25
-          Sort = Some (sortWithLastBy None (Crop.seed >> Query.lowestSeedPrice data settings))
+          Sort = Some (Option.noneMaxCompareBy (Crop.seed >> Query.lowestSeedPrice data settings))
         }
         {
           Header = ofStr "Growth Time"
@@ -591,7 +591,7 @@ module Crops =
         {
           Header = ofStr "Regrow Time"
           Width = 10
-          Sort = Some (sortWithLastBy None Crop.regrowTime)
+          Sort = Some (Option.noneMaxCompareBy Crop.regrowTime)
         }
         {
           Header = ofStr "Seasons"
@@ -756,7 +756,7 @@ module Crops =
                 ]
               ]
             Width = productWidth
-            Sort = Some <| sortWithLastByRev None (fun crop -> Query.cropBestProductPriceFrom data settings crop productQuality processor)
+            Sort = Some <| compareByRev (fun crop -> Query.cropBestProductPriceFrom data settings crop productQuality processor)
           } )
         {
           Header =
@@ -772,7 +772,7 @@ module Crops =
               ]
             ]
           Width = productWidth
-          Sort = Some <| sortWithLastBy None (fun crop -> if Crop.isForage crop then Some <| Query.itemPrice settings data.Items[item' <| Crop.seed crop] Quality.Normal else None)
+          Sort = Some <| compareByRev (fun crop -> if Crop.isForage crop then Some <| Query.itemPrice settings data.Items[item' <| Crop.seed crop] Quality.Normal else None)
         }
         { Header = fragment [
             if settings.CustomSellPrices.Values.IsEmpty then
@@ -786,7 +786,7 @@ module Crops =
             ofStr "Custom"
           ]
           Width = 0
-          Sort = Some <| sortWithLastBy None (fun crop -> Query.cropBestCustomPrice settings crop productQuality)
+          Sort = Some <| compareByRev (fun crop -> Query.cropBestCustomPrice settings crop productQuality)
         }
       ]
         (fun crop ->
@@ -829,7 +829,7 @@ module Crops =
       selectUnitUnionText "Seed Strategy:" SeedStrategy.all settings.SeedStrategy (SetSeedStrategy >> dispatch)
 
       let keyColWdith = 0.4
-      let width = 100.0 * ((1.0 - keyColWdith) / float data.SeedVendors.Length)
+      let width = 100.0 * ((1.0 - keyColWdith) / float data.SeedVendors.Length) // div by 0?
       sortTableWith [ className "prices" ] [
         {
           Header = ofStr "Crop"
@@ -847,7 +847,7 @@ module Crops =
               Image.Icon.vendor vendor
             ]
             Width = width
-            Sort = Some <| sortWithLastBy None (Crop.seed >> Query.seedPriceValueFrom data settings vendor)
+            Sort = Some <| Option.noneMaxCompareBy (Crop.seed >> Query.seedPriceValueFrom data settings vendor)
           } )
         {
           Header =
@@ -905,7 +905,7 @@ module Crops =
             ofStr "Custom"
           ]
           Width = 0
-          Sort = Some <| sortWithLastBy None (Crop.seed >> settings.CustomSeedPrices.Values.TryFind)
+          Sort = Some <| Option.noneMaxCompareBy (Crop.seed >> settings.CustomSeedPrices.Values.TryFind)
         }
       ]
         (fun crop ->
@@ -1072,7 +1072,7 @@ module Fertilizers =
           {
             Header = ofStr "Lowest Price"
             Width = 20
-            Sort = Some <| sortWithLastBy None (Fertilizer.name >> Query.lowestFertilizerPrice data settings)
+            Sort = Some <| Option.noneMaxCompareBy (Fertilizer.name >> Query.lowestFertilizerPrice data settings)
           }
           {
             Header = ofStr "Speed Bonus"
@@ -1120,7 +1120,7 @@ module Fertilizers =
         checkboxText "Replace Lost Fertilizer" settings.ReplaceLostFertilizer (SetReplaceLostFertilizer >> dispatch)
 
         let keyColWdith = 0.40
-        let width = 100.0 * (1.0 - keyColWdith) / float data.FertilizerVendors.Length
+        let width = 100.0 * (1.0 - keyColWdith) / float data.FertilizerVendors.Length // div by 0?
         sortTableWith [ className "prices" ] [
           {
             Header = ofStr "Fertilizer"
@@ -1138,7 +1138,7 @@ module Fertilizers =
                 Image.Icon.vendor vendor
               ]
               Width = width
-              Sort = Some <| sortWithLastBy None (Fertilizer.name >> data.FertilizerPrices.Find >> Table.tryFind vendor)
+              Sort = Some <| Option.noneMaxCompareBy (Fertilizer.name >> data.FertilizerPrices.Find >> Table.tryFind vendor)
             } )
           {
             Header = fragment [
@@ -1153,7 +1153,7 @@ module Fertilizers =
               ofStr "Custom"
             ]
             Width = 0
-            Sort = Some <| sortWithLastBy None (Fertilizer.name >> settings.CustomFertilizerPrices.Values.TryFind)
+            Sort = Some <| Option.noneMaxCompareBy (Fertilizer.name >> settings.CustomFertilizerPrices.Values.TryFind)
           }
         ]
           (fun fert ->
@@ -2529,27 +2529,14 @@ open Thoth.Json
 #else
 open Thoth.Json.Net
 #endif
-open StardewValleyStonks.WebApp.Data
 
-let app =
-  let data = Browser.WebStorage.localStorage.getItem "app"
-  if isNullOrUndefined data then
-    defaultApp.Value
-  else
-    match Decode.fromString Decode.app data with
-    | Ok app -> app
-    | Error e ->
-      printfn $"Failed to load app from local storage: {e}"
-      defaultApp.Value
+let app = Data.loadAppFromLocalStorage ()
 
-let saveToLocalStorage = debouncer 100 (fun app ->
-  let data = Encode.toString 0 <| Encode.app app
-  Browser.WebStorage.localStorage.setItem ("app", data)
-)
+let saveToLocalStorage = debouncer 100 Data.saveAppToLocalStorage
 
 let update msg app =
   let app, cmd = Update.app msg app
-  // saveToLocalStorage app
+  saveToLocalStorage app
   app, cmd
 
 let view app dispatch =

@@ -6,10 +6,10 @@
   <ItemGroup>
     <ProjectReference Include="../Model/StardewValleyStonks.fsproj" />
     <Compile Include="Types.fs" />
-    <Compile Include="Data.fs" />
     <Compile Include="Query.fs" />
     <Compile Include="Solver.fs" />
     <Compile Include="Update.fs" />
+    <Compile Include="Data.fs" />
     <Compile Include="View.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />

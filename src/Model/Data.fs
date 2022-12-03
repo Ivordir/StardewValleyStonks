@@ -8,12 +8,6 @@ open Thoth.Json
 open Thoth.Json.Net
 #endif
 
-type ExtractedData = {
-  Items: Item array
-  FarmCrops: FarmCrop array
-  ForageCrops: ForageCrop array
-}
-
 let [<Literal>] private SeedPriceVendorField = "Vendor"
 let [<Literal>] private SeedPricePriceField = "Price"
 let [<Literal>] private SeedPriceTypeField = "Type"
@@ -140,7 +134,7 @@ module Encode =
     nameof crop.SeedRecipeUnlockLevel, Encode.uint32 crop.SeedRecipeUnlockLevel
   ]
 
-  let extractedData data = Encode.object [
+  let extractedData (data: ExtractedData) = Encode.object [
     nameof data.Items, data.Items |> mapSeq (Encode.Auto.generateEncoder ())
     nameof data.FarmCrops, data.FarmCrops |> mapSeq farmCrop
     nameof data.ForageCrops, data.ForageCrops |> mapSeq forageCrop
@@ -239,7 +233,7 @@ module Decode =
   let season =
     Decode.string |> Decode.andThen (fun str ->
       match Season.TryParse str with
-      | true, season -> Season.ofSeasons season |> Decode.succeed
+      | true, season -> Decode.succeed season
       | _ -> Decode.fail $"Failed to parse season: {str}")
 
   let seasons: Seasons Decoder = Decode.array season |> Decode.map Seasons.ofSeq
@@ -314,5 +308,19 @@ module Decode =
         Items = field (nameof u.Items) (Decode.Auto.generateDecoder ())
         FarmCrops = field (nameof u.FarmCrops) (Decode.array farmCrop)
         ForageCrops = field (nameof u.ForageCrops) (Decode.array forageCrop)
+      }
+    )
+
+  let supplementalData: SupplementalData Decoder =
+    let u = Unchecked.defaultof<SupplementalData>
+    Decode.object (fun get ->
+      let field name decode = get.Required.Field name decode
+      {
+        Fertilizers = field (nameof u.Fertilizers) (Decode.array fertilizer)
+        Products = field (nameof u.Products) (tableParse parseItemId (Decode.array product))
+        ProcessorUnlockLevel = field (nameof u.ProcessorUnlockLevel) (table ProcessorName Decode.uint32)
+        FertilizerPrices = field (nameof u.FertilizerPrices) (table id (table VendorName Decode.uint32))
+        SeedPrices = field (nameof u.SeedPrices) (tableParse parseSeedId (Decode.array seedPrice))
+        GenerateSeedPrices = field (nameof u.GenerateSeedPrices) (wrapKeys id VendorName (Decode.array seedId))
       }
     )
