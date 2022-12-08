@@ -347,44 +347,18 @@ module Decode =
 
   let savedSettings = Decode.list (Decode.tuple2 Decode.string settings)
 
-  // let appWithShortHandSettings =
-  //   let extra =
-  //     app |> Extra.withCustom
-  //       Encode.settings
-  //       (Shorthand.Decode.shorthandSettings |> Decode.map Shorthand.toSettings)
-
-  //   Decode.Auto.generateDecoder<App>(extra=extra)
-
-  // let app: App Decoder =
-  //   let u = Unchecked.defaultof<App>
-  //   Decode.map2 tuple2
-  //     (Decode.field
-  //       (nameof u.Data)
-  //       (Decode.string |> Decode.andThen (fun str ->
-  //         match Version.parse str with
-  //         | Some ver -> Decode.succeed ver
-  //         | None -> Decode.fail "invalid data version")))
-  //     decodeApp
-  //   |> Decode.andThen (fun (version, app) ->
-  //       if dataVersion.Major <> version.Major then
-  //         Decode.fail "Unsupported version" //TODO
-  //       elif dataVersion.Minor <> version.Minor then
-  //         Decode.succeed {
-  //           app with
-  //             Settings = { app.Settings with Selected = app.Settings.Selected |> Selections.adapt gameData }
-  //             SavedSettings =
-  //               app.SavedSettings |> List.map (fun (name, settings) ->
-  //                 name, { settings with Selected = settings.Selected |> Selections.adapt gameData })
-  //         }
-  //       else
-  //         Decode.succeed app)
-
 
 
 let defaultSavedSettings = lazy (load settingsData (Decode.keyValuePairs (Shorthand.Decode.shorthandSettings |> Decode.map Shorthand.toSettings)))
 
 #if DEBUG
 // validate: at least one saved settings in default
+
+// validate for all settings:
+// skills
+// multipliers
+// date
+// cropamount
 #endif
 
 let defaultApp = lazy ({
@@ -395,14 +369,6 @@ let defaultApp = lazy ({
   }
   SavedSettings = defaultSavedSettings.Value
 })
-
-#if DEBUG
-// validate for all settings:
-// skills
-// multipliers
-// date
-// cropamount
-#endif
 
 module LocalStorage =
   let [<Literal>] VersionKey = "Version"
@@ -415,33 +381,18 @@ module LocalStorage =
   // update version on load, in case other tabs are open
   let updateVersion () = setItem VersionKey App.version.String
 
-  let saveState state =
+  let private trySave name key encoder value =
     try
-      console.time "encode"
-
-      state
-      |> Encode.state
+      value
+      |> encoder
       |> Encode.toString 0
-      |> setItem StateKey
-
-      console.timeEnd "encode"
+      |> setItem key
     with e ->
       // setItem can throw if localstorage is full
-      console.error $"Failed to save app state: {e}"
+      console.error $"Failed to save {name}: {e}"
 
-  let saveSettings settings =
-    try
-      console.time "encode"
-
-      settings
-      |> Encode.savedSettings
-      |> Encode.toString 0
-      |> setItem SavedSettingsKey
-
-      console.timeEnd "encode"
-    with e ->
-      // setItem can throw if localstorage is full
-      console.error $"Failed to save settings: {e}"
+  let saveState state = trySave "app state" StateKey Encode.state state
+  let saveSettings settings = trySave "settings" SavedSettingsKey Encode.savedSettings settings
 
   let private tryLoad name key decoder =
     match getItem key with
@@ -468,7 +419,7 @@ module LocalStorage =
     | Some ver ->
       match Version.tryParse ver with
       | None ->
-        console.error "Missing or invalid version. Ignoring existing data in local storage..."
+        console.error "Invalid version. Ignoring existing data in local storage..."
         defaultApp.Value
       | Some ver ->
         if ver.Major <> App.version.Major then
@@ -490,31 +441,40 @@ module LocalStorage =
             SavedSettings = savedSettings
           }
 
+  let inline private reload () = Browser.Dom.window.location.reload ()
+
   let subscribe dispatch =
     Browser.Dom.window.onstorage <- fun e ->
       match e.key with
+      | key when isNullOrUndefined key ->
+        // local storage was cleared (hard reset triggered)
+        reload ()
+
+      | VersionKey when isNullOrUndefined e.newValue ->
+        // user manually deleted version key?
+        reload ()
+
       | VersionKey ->
-        if isNullOrUndefined e.newValue then
-          // complete app reset triggered
-          Browser.Dom.window.location.reload ()
-        else
-          let ver = Version.parse e.newValue // assume parsing does not fail
-          if ver.Major <> App.version.Major || ver.Minor <> App.version.Minor then
-            // a new version was pushed between two tab opens (this is probably rare).
-            // just force reload this out-of-date tab
-            Browser.Dom.window.location.reload ()
+        let ver = Version.parse e.newValue // assume parsing does not fail
+        if ver.Major <> App.version.Major || ver.Minor <> App.version.Minor then
+          // a new version was pushed between two tab opens (this is probably rare).
+          // just force reload this out-of-date tab
+          reload ()
+
+      | SavedSettingsKey when isNullOrUndefined e.newValue ->
+        // user manually deleted key?
+        dispatch (Update.SyncSavedSettings [])
+
       | SavedSettingsKey ->
-        if isNullOrUndefined e.newValue then
-          // complete app reset triggered, or user manually deleted key?
-          dispatch (Update.SyncSavedSettings [])
-        else
-          // load new savedSettings
-          match e.newValue |> Decode.fromString Decode.savedSettings with
-          | Ok saved -> dispatch (Update.SyncSavedSettings saved)
-          | Error e ->
-            // failed to decode saved settings, saved settings may now race instead of syncing.
-            console.error $"Failed to load saved settings from local storage: {e}"
+        // load new savedSettings
+        match e.newValue |> Decode.fromString Decode.savedSettings with
+        | Ok saved -> dispatch (Update.SyncSavedSettings saved)
+        | Error e ->
+          // failed to decode saved settings, saved settings may now race instead of syncing.
+          console.error $"Failed to load saved settings from local storage: {e}"
+
       | StateKey -> ()
+
       | key -> console.warn $"Unknown key from storage event: {key}"
 
   let inline clear () = Browser.WebStorage.localStorage.clear ()
@@ -628,9 +588,3 @@ let loadSaveGame (xml: string) =
     }
 
     (farmerName, settings), resizeToArray missing)
-
-
-// let localStorageSub dispatch =
-//   printf "sub"
-//   Browser.Dom.window.addEventListener ("storage", fun (e: Browser.Types.StorageEvent) ->
-//     )

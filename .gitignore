@@ -1,18 +1,23 @@
-Extractor/
+# Parcel folders
+.parcel-cache/
+parcel-bundle-reports/
 
+# NPM modules
 node_modules/
-.parcel-cache
-parcel-bundle-reports
-dist
 
-fable
+# Final, minified output from parcel
+dist/
+
+# Transpiled JS output
+fable/
+*.fs.js
+
+# Temporary files
+temp
 
 # Paket dependency manager
 .paket/paket.exe
 paket-files/
-
-# Ionide (cross platform F# VS Code tools) working folder
-.ionide/
 
 # VS Code files for those working on multiple tools
 .vscode/*

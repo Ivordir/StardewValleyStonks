@@ -109,7 +109,7 @@ let customSellPrices selected seed item =
   |> Selection.selectedValue (seed, item)
   |> Option.map (fun (price, preserveQuality) ->
     if preserveQuality
-    then Qualities.multipliers |> Qualities.map (flip withMultiplier price >> float)
+    then Qualities.multipliers |> Qualities.map (fun mult -> price |> withMultiplier mult |> float)
     else price |> float |> Qualities.create)
 
 let selectedProductsCalc mapping data settings seed item =
@@ -122,11 +122,11 @@ let bestSelectedProducts data settings seed item =
   let selected = selectedProducts data settings seed item |> Seq.filter (Game.productUnlocked data settings.Game.Skills) |> Array.ofSeq
   if selected.Length = 0 then None else
   let profits = selected |> Array.map (Game.productProfits data settings.Game item)
-  Array.init Quality.count (fun quality ->
+  Qualities.init (fun quality ->
     let mutable maxI = 0
     let mutable maxProfit = -1.0
     for i = 0 to profits.Length - 1 do
-      let profit = profits[i].[enum quality]
+      let profit = profits[i].[quality]
       if profit > maxProfit then
         maxI <- i
         maxProfit <- profit

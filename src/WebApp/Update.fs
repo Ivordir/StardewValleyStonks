@@ -79,7 +79,6 @@ type SettingsMessage =
   | SetSelections of SelectionsMessage
   | SetProfit of ProfitMessage
 
-
 type SortMessage = bool * (int * bool)
 
 type CropFiltersMessage =
@@ -178,8 +177,6 @@ let modData msg modData =
   | SetQualityProducts value -> { modData with QualityProducts = value }
   | SetQualityProcessors (processor, selected) -> { modData with QualityProcessors = modData.QualityProcessors |> setSelected selected processor }
 
-
-
 let gameVariables msg vars =
   match msg with
   | SetSkills msg -> { vars with Skills = skills msg vars.Skills }
@@ -262,8 +259,6 @@ let settings data msg (settings: Settings) =
   | SetGameVariables msg -> { settings with Game = settings.Game |> gameVariables msg }
   | SetSelections msg -> { settings with Selected = settings.Selected |> selections data msg }
   | SetProfit msg -> { settings with Profit = settings.Profit |> profit msg }
-
-
 
 let cropFilters msg filters =
   match msg with

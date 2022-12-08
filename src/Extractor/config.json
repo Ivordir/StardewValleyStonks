@@ -1,0 +1,61 @@
+{
+  "SkipCrops": [ 890 ],
+
+  "IncludeItems": [ 245, 246, 247, 303, 346, 347, 395, 423 ],
+
+  "ItemOverrides": {
+    "493": { "SellPrice": 60 }
+  },
+
+  "FarmCropOverrides": {
+    "273": { "Paddy": true },
+
+    "431": {
+      "Amount": { "CanDouble": false },
+      "ExtraItem": [ 431, 1 ]
+    },
+
+    "474": { "Amount": { "Giant": true } },
+
+    "479": { "Amount": { "Giant": true } },
+
+    "483": { "ExtraItem": [ 178, 0.4 ] },
+
+    "490": { "Amount": { "Giant": true } },
+
+    "802": { "Seasons": [] },
+
+    "831": { "Paddy": true },
+
+    "885": {
+      "Amount": { "FarmingDistribution": false },
+      "ExtraItem": [ 770, 0.1 ]
+    }
+  },
+
+  "ForageCropData": {
+    "Spring": {
+      "SeedRecipeUnlockLevel": 1,
+      "Items": [ 16, 18, 20, 22 ]
+    },
+
+    "Summer": {
+      "SeedRecipeUnlockLevel": 4,
+      "Items": [ 396, 398, 402 ]
+    },
+
+    "Fall": {
+      "SeedRecipeUnlockLevel": 6,
+      "Items": [ 404, 406, 408, 410 ]
+    },
+
+    "Winter": {
+      "SeedRecipeUnlockLevel": 7,
+      "Items": [ 412, 414, 416, 418 ]
+    }
+  },
+
+  "DataOutputPath": "../../public/data/Extracted.json",
+  "CropImageOutputPath": "../../public/static/img/Crops",
+  "ItemImageOutputPath": "../../public/static/img/Items"
+}

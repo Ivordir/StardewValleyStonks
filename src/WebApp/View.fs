@@ -8,6 +8,8 @@ open StardewValleyStonks.WebApp.Update
 
 // fix flower crop stage img
 
+// use react select everywhere?
+
 // best indicator for Products. Prices
 
 // refactor tables
@@ -34,10 +36,7 @@ open StardewValleyStonks.WebApp.Update
 
 // error handling
 
-// Load/Save functionality
-// save game import
-
-// website indicator for app version, game version
+// Load/Save cleanup
 
 open Fable.Core
 open Fable.Core.JsInterop
@@ -1357,6 +1356,46 @@ module LoadSave =
   let private reactModal _ = imported ()
 
   [<ReactComponent>]
+  let saveCurrentSettings (props: {| dispatch: _ |}) =
+    let name, setName = useState None
+
+    fragment [
+      button [
+        onClick (fun _ -> setName (Some "Untitled Settings"))
+        text "Save Current Settings"
+      ]
+
+      match name with
+      | None -> none
+      | Some name ->
+        reactModal {|
+          onClose = (fun () -> setName None; true)
+          isOpen = true
+          header = ofStr "Save Current Settings As"
+          children = [|
+            input [
+              type'.text
+              value name
+              onChange (Some >> setName)
+            ]
+          |]
+          footer = [|
+            button [
+              onClick (fun _ ->
+                if name <> "" then
+                  props.dispatch (SaveSettings name)
+                  setName None)
+              text "Ok"
+            ]
+            button [
+              onClick (fun _ -> setName None)
+              text "Cancel"
+            ]
+          |]
+        |}
+    ]
+
+  [<ReactComponent>]
   let importSave (props: {| dispatch: _ |}) =
     let save, setSave = useState None
 
@@ -1424,6 +1463,8 @@ module LoadSave =
           ]
         )
       ]
+
+      saveCurrentSettings {| dispatch = saveDispatch |}
 
       importSave {| dispatch = saveDispatch |}
 
@@ -2357,7 +2398,6 @@ let selectedCropAndFertilizer2 =
       let name = Crop.name data.Items.Find crop
       {|
         name = name
-        // label = Html.span [ Image.crop crop; ofStr name ]
         value = Choice1Of2 crop
       |}
 
@@ -2366,7 +2406,6 @@ let selectedCropAndFertilizer2 =
       let bestName = bestCrop |> Option.defaultOrMap "???" (Crop.name data.Items.Find)
       {|
         name = bestName
-        // label = Html.span [ ofStr "Best Crop ("; bestCrop |> Option.defaultOrMap none Image.crop; ofStr $"{bestName})" ]
         value = Choice2Of2 bestCrop
       |}
 
@@ -2380,25 +2419,11 @@ let selectedCropAndFertilizer2 =
       let bestName = bestFertilizer |> Option.defaultOrMap "???" (Option.defaultOrMap "No Fertilizer" Fertilizer.name)
       {|
         name = bestName
-        // label = Html.span [
-        //   ofStr "Best Fertilizer ("
-        //   match bestFertilizer with
-        //   | Some (Some fert) -> Image.fertilizer fert
-        //   | _ -> none
-        //   ofStr $"{bestName})"
-        // ]
         value = Choice2Of2 bestFertilizer
       |}
 
     let fertilizerOption fert = {|
       name = fert |> Option.defaultOrMap "No Fertilizer" Fertilizer.name
-      // label = Html.span [
-      //   match name with
-      //   | Some name ->
-      //     Image.fertilizer' name
-      //     ofStr <| string name
-      //   | None -> ofStr "No Fertilizer"
-      // ]
       value = Choice1Of2 fert
     |}
 
@@ -2421,7 +2446,6 @@ let selectedCropAndFertilizer2 =
             value =
               seed |> Option.defaultOrMap bestCropOption (fun seed ->
                 cropOptions
-                // |> Array.tryFind (fun opt -> opt.value |> Option.contains seed)
                 |> Array.tryFind (fun opt ->
                   match opt.value with
                   | Choice1Of2 crop when Crop.seed crop = seed -> true
@@ -2453,10 +2477,9 @@ let selectedCropAndFertilizer2 =
           ReactSelect {|
             className = "rselect"
             options = fertilizerOptions
-            value = //fertilizerOptions |> Array.find (fun opt -> opt.value = fert')
+            value =
               fert' |> Option.defaultOrMap bestFertilizerOption (fun fert ->
                 fertilizerOptions
-                // |> Array.tryFind (fun opt -> opt?value |> Option.contains fert)
                 |> Array.tryFind (fun opt ->
                   match opt.value with
                   | Choice1Of2 f when (Option.map Fertilizer.name f) = fert -> true
@@ -2619,7 +2642,7 @@ let solver app dispatch =
       |> Solver.solveRanges
 
     details [ children [
-      summary ($"Total: {total}")
+      summary $"Total: {total}"
       div [
         Class.open'
 
