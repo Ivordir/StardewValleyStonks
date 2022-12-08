@@ -22,19 +22,18 @@ module ItemOverride =
 type CropAmountOverride = {
   CanDouble: bool option
   FarmingDistribution: bool option
-  Giant: bool option
 }
 
 module CropAmountOverride =
   let none = {
     CanDouble = None
     FarmingDistribution = None
-    Giant = None
   }
 
 type FarmCropOverride = {
   Seasons: Seasons option
   Paddy: bool option
+  Giant: bool option
   Amount: CropAmountOverride option
   ExtraItem: (ItemId * float) option
 }
@@ -43,6 +42,7 @@ module FarmCropOverride =
   let none = {
     Seasons = None
     Paddy = None
+    Giant = None
     Amount = None
     ExtraItem = None
   }
@@ -67,12 +67,16 @@ type Config = {
 module Decode =
   let farmCropOverride =
     let u = Unchecked.defaultof<FarmCropOverride>
-    Decode.object (fun get -> {
-      Seasons = get.Optional.Field (nameof u.Seasons) Decode.seasons
-      Paddy = get.Optional.Field (nameof u.Paddy) Decode.bool
-      Amount = get.Optional.Field (nameof u.Amount) (Decode.Auto.generateDecoder ())
-      ExtraItem = get.Optional.Field (nameof u.ExtraItem) (Decode.tuple2 Decode.itemId Decode.float)
-    } )
+    Decode.object (fun get ->
+      let inline field name decoder = get.Optional.Field name decoder
+      {
+        Seasons = field (nameof u.Seasons) Decode.seasons
+        Paddy = field (nameof u.Paddy) Decode.bool
+        Giant = field (nameof u.Giant) Decode.bool
+        Amount = field (nameof u.Amount) (Decode.Auto.generateDecoder ())
+        ExtraItem = field (nameof u.ExtraItem) (Decode.tuple2 Decode.itemId Decode.float)
+      }
+    )
 
   let config =
     let u = Unchecked.defaultof<Config>
@@ -252,7 +256,6 @@ let parseCrop parseItem seedId (data: string) =
             let amount = CropAmount.singleAmount
             { amount with
                 CanDouble = o.CanDouble |> Option.defaultValue amount.CanDouble
-                Giant = o.Giant |> Option.defaultValue amount.Giant
                 FarmingQualities = o.FarmingDistribution |> Option.defaultValue amount.FarmingQualities
             }
 
@@ -272,7 +275,6 @@ let parseCrop parseItem seedId (data: string) =
             ExtraCropChance = extraChance
             CanDouble = o.CanDouble |> Option.defaultValue scythe
             FarmingQualities = o.FarmingDistribution |> Option.defaultValue true
-            Giant = o.Giant |> Option.defaultValue false
           }
 
         | _ -> failwith $"Unexpected crop amount format for crop {seedId}: '{cropAmount}'"
@@ -282,6 +284,7 @@ let parseCrop parseItem seedId (data: string) =
         Stages = growthStages
         RegrowTime = regrowTime
         Paddy = overrides.Paddy |> Option.defaultValue false
+        Giant = overrides.Giant |> Option.defaultValue false
         Seed = seedId
         Amount = cropAmount
         Item = itemId

@@ -249,7 +249,7 @@ let solutionRequests data settings (fertilizers: FertilizerName option array) (c
     if settings.Profit.PayForFertilizer && settings.Profit.ReplaceLostFertilizer then
       let giantProb = Game.giantCropProb settings.Game
       function
-      | FarmCrop crop -> if crop.Amount.Giant then Fertilizer.lossProbability * giantProb else 0.0
+      | FarmCrop crop -> if crop.Giant then Fertilizer.lossProbability * giantProb else 0.0
       | ForageCrop _ -> Fertilizer.lossProbability
     else
       konst 0.0

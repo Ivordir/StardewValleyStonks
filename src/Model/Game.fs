@@ -190,7 +190,7 @@ module Game =
     else 0.0
 
   let farmCropFertilizerLossProb vars (crop: FarmCrop) =
-    if giantCropsPossible vars.Location && crop.Amount.Giant
+    if crop.Giant && giantCropsPossible vars.Location
     then Fertilizer.lossProbability * CropAmount.giantCropProb vars.CropAmount
     else 0.0
 
@@ -205,7 +205,7 @@ module Game =
 
   let farmCropHarvestAmounts vars fertilizer (crop: FarmCrop) =
     let qualities = Skills.farmCropQualitiesWith fertilizer vars.Skills
-    if giantCropsPossible vars.Location
+    if crop.Giant && giantCropsPossible vars.Location
     then CropAmount.farmingGiantAmounts vars.Skills vars.CropAmount crop.Amount qualities
     else CropAmount.farmingAmounts vars.Skills vars.CropAmount crop.Amount qualities
 

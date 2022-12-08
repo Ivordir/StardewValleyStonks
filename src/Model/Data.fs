@@ -103,8 +103,6 @@ module Encode =
         nameof amount.ExtraCropChance, Encode.float amount.ExtraCropChance
       if amount.CanDouble <> single.CanDouble then
         nameof amount.CanDouble, Encode.bool amount.CanDouble
-      if amount.Giant <> single.Giant then
-        nameof amount.Giant, Encode.bool amount.Giant
       if amount.FarmLevelsPerYieldIncrease <> single.FarmLevelsPerYieldIncrease then
         nameof amount.FarmLevelsPerYieldIncrease, Encode.uint32 amount.FarmLevelsPerYieldIncrease
       if amount.FarmingQualities <> single.FarmingQualities then
@@ -117,6 +115,8 @@ module Encode =
     nameof crop.Stages, crop.Stages |> mapSeq Encode.uint32
     if crop.Paddy then
       nameof crop.Paddy, Encode.bool crop.Paddy
+    if crop.Giant then
+      nameof crop.Giant, Encode.bool crop.Giant
     if crop.Amount <> CropAmount.singleAmount then
       nameof crop.Amount, cropAmount crop.Amount
     if crop.ExtraItem.IsSome then
@@ -269,7 +269,6 @@ module Decode =
         FarmLevelsPerYieldIncrease = field (nameof u.FarmLevelsPerYieldIncrease) Decode.uint32 single.FarmLevelsPerYieldIncrease
         ExtraCropChance = field (nameof u.ExtraCropChance) Decode.float single.ExtraCropChance
         CanDouble = field (nameof u.CanDouble) Decode.bool single.CanDouble
-        Giant = field (nameof u.Giant) Decode.bool single.Giant
         FarmingQualities = field (nameof u.FarmingQualities) Decode.bool single.FarmingQualities
       }
     )
@@ -282,6 +281,7 @@ module Decode =
       Stages = get.Required.Field (nameof u.Stages) (Decode.array Decode.uint32)
       RegrowTime = get.Optional.Field (nameof u.RegrowTime) Decode.uint32
       Paddy = get.Optional.Field (nameof u.Paddy) Decode.bool |> Option.defaultValue false
+      Giant = get.Optional.Field (nameof u.Giant) Decode.bool |> Option.defaultValue false
       Item = get.Required.Field (nameof u.Item) itemId
       Amount = get.Optional.Field (nameof u.Amount) cropAmount |> Option.defaultValue CropAmount.singleAmount
       ExtraItem = get.Optional.Field (nameof u.ExtraItem) (Decode.tuple2 itemId Decode.float)

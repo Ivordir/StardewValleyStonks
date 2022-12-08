@@ -177,7 +177,6 @@ type CropAmount = {
   MaxCropYield: nat
   ExtraCropChance: float
   CanDouble: bool
-  Giant: bool
   FarmLevelsPerYieldIncrease: nat
   FarmingQualities: bool
 }
@@ -197,7 +196,6 @@ module CropAmount =
     MaxCropYield = 1u
     ExtraCropChance = 0.0
     CanDouble = true
-    Giant = false
     FarmLevelsPerYieldIncrease = 0u
     FarmingQualities = true
   }
@@ -245,17 +243,11 @@ module CropAmount =
 
   let inline giantCropProb settings = 1.0 - noGiantCropProb settings
 
-  let applyGiantAmount settings farmingAmounts =
+  let farmingGiantAmounts skills settings amount farmingQualities =
     let noGiantProb = noGiantCropProb settings
     let expectedGiant = (1.0 - noGiantProb) * giantCropYield settings
-    let giantAmounts = farmingAmounts |> Qualities.mult noGiantProb
+    let giantAmounts = farmingAmounts skills settings amount farmingQualities |> Qualities.mult noGiantProb
     giantAmounts |> Qualities.updateQuality Normal (expectedGiant + giantAmounts[Normal])
-
-  let farmingGiantAmounts skills settings amount farmingQualities =
-    let a = farmingAmounts skills settings amount farmingQualities
-    if amount.Giant
-    then applyGiantAmount settings a
-    else a
 
 
 type SeedPrice =
@@ -346,6 +338,7 @@ type FarmCrop = {
   Stages: nat array
   RegrowTime: nat option
   Paddy: bool
+  Giant: bool
   Seed: SeedId
   Item: ItemId
   Amount: CropAmount
@@ -369,7 +362,7 @@ module FarmCrop =
     (16.0 * log(0.018 * float price + 1.0)) |> round |> nat
 
   let xpPerHarvest item giantCropProb crop =
-    (if crop.Amount.Giant then 1.0 - giantCropProb else 1.0) * float (xpPerItem item crop)
+    (if crop.Giant then 1.0 - giantCropProb else 1.0) * float (xpPerItem item crop)
 
   let items crop =
     match crop.ExtraItem with
@@ -436,7 +429,11 @@ module Crop =
 
   let paddy = function
     | FarmCrop c -> c.Paddy
-    | ForageCrop c -> false
+    | ForageCrop _ -> false
+
+  let giant = function
+    | FarmCrop c -> c.Giant
+    | _ -> false
 
   let mainItem = function
     | FarmCrop c -> c.Item

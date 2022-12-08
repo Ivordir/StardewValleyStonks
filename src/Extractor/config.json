@@ -15,13 +15,13 @@
       "ExtraItem": [ 431, 1 ]
     },
 
-    "474": { "Amount": { "Giant": true } },
+    "474": { "Giant": true },
 
-    "479": { "Amount": { "Giant": true } },
+    "479": { "Giant": true },
 
     "483": { "ExtraItem": [ 178, 0.4 ] },
 
-    "490": { "Amount": { "Giant": true } },
+    "490": { "Giant": true },
 
     "802": { "Seasons": [] },
 

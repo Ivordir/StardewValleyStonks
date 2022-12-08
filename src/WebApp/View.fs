@@ -983,7 +983,7 @@ module Crops =
     let filters = [
       if filters.InSeason then Game.cropIsInSeason settings.Game else Crop.growsInSeasons filters.Seasons
       yield! filters.Regrows |> optionFilter (Crop.regrowTime >> Option.isSome)
-      yield! filters.Giant |> optionFilter (function FarmCrop c -> c.Amount.Giant | ForageCrop _ -> false)
+      yield! filters.Giant |> optionFilter Crop.giant
       yield! filters.Forage |> optionFilter Crop.isForage
     ]
     data.Crops.Values
