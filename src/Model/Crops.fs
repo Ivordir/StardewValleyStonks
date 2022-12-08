@@ -248,7 +248,7 @@ module CropAmount =
   let applyGiantAmount settings farmingAmounts =
     let noGiantProb = noGiantCropProb settings
     let expectedGiant = (1.0 - noGiantProb) * giantCropYield settings
-    let giantAmounts = farmingAmounts |> Qualities.map ((*) noGiantProb)
+    let giantAmounts = farmingAmounts |> Qualities.mult noGiantProb
     giantAmounts |> Qualities.updateQuality Normal (expectedGiant + giantAmounts[Normal])
 
   let farmingGiantAmounts skills settings amount farmingQualities =

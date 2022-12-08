@@ -442,7 +442,13 @@ img
   display: none
 
 footer
-  background: black
+  background: white
+  display: flex
+  justify-content: center
+
+  & > span:not(:first-child)::before
+    margin: 0.5em
+    content: "|"
 
 
 

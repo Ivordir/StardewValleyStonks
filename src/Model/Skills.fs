@@ -58,39 +58,42 @@ module Quality =
 
   let all = Array.init count enum<Quality>
 
-
-type [<Erase>] Qualities = ByQuality of float array
+type [<Erase>] 'a Qualities = ByQuality of 'a array
 
 module Qualities =
   #if FABLE_COMPILER
-  let inline unwrap (qualities: Qualities) = !!qualities : float array
+  let inline unwrap (qualities: 'a Qualities) = !!qualities : 'a array
   #else
   let inline unwrap (ByQuality arr) = arr
   #endif
 
   let inline create value = Array.create Quality.count value |> ByQuality
-  let normalSingleton normal =
-    let qualities = Array.zeroCreate Quality.count
-    qualities[0] <- normal
-    ByQuality qualities
+
   let inline init initializer = Array.init Quality.count (enum<Quality> >> initializer) |> ByQuality
-  let inline initi initializer = Array.init Quality.count initializer |> ByQuality
 
   let inline wrap arr = ByQuality arr
 
   let zero = create 0.0
   let multipliers = ByQuality [| 1.0; 1.25; 1.5; 2.0 |]
 
-  let inline item (quality: Quality) qualities = unwrap qualities |> Array.item (int quality)
-  let inline itemi index qualities = unwrap qualities |> Array.item index
+  let inline item (quality: Quality) qualities = (unwrap qualities)[int quality]
+  let inline private itemi index qualities = (unwrap qualities)[index]
 
-  let updateQuality (quality: Quality) value qualities =
+  let inline updateQuality (quality: Quality) value qualities =
     unwrap qualities |> Array.updateAt (int quality) value |> ByQuality
 
   let inline map mapping qualities = unwrap qualities |> Array.map mapping |> ByQuality
   let inline map2 mapping a b = Array.map2 mapping (unwrap a) (unwrap b) |> ByQuality
 
+  let inline toArray qualities = unwrap qualities |> Array.copy
+
   let inline sum qualities = unwrap qualities |> Array.sum
+
+  let mult (scalar: float) qualities =
+    let arr = toArray qualities
+    for i = 0 to Quality.highest do
+      arr[i] <- scalar * arr[i]
+    wrap arr
 
   let dot a b =
     let mutable sum = 0.0
@@ -98,7 +101,6 @@ module Qualities =
       sum <- sum + itemi i a * itemi i b
     sum
 
-  let inline toArray qualities = unwrap qualities |> Array.copy
 
   // Models the probabilities that result from a chain of if-else statements.
   // E.g. given that p(x) is the raw probability of the check on x succeeding:
@@ -133,9 +135,8 @@ module Qualities =
     assert (abs (Array.sum dist - 1.0) < 1e-10)
     wrap dist
 
-type Qualities with
+type 'a Qualities with
   member inline this.Item quality = Qualities.item quality this
-  member inline this.Item index = Qualities.itemi index this
 
 
 type Skill = {
@@ -151,8 +152,6 @@ module Skill =
     Buff = 0u
   }
 
-  let level skill = skill.Level
-  let buff skill = skill.Buff
   let buffedLevel skill = skill.Level + skill.Buff
 
 
@@ -194,7 +193,7 @@ module Skills =
 
   open type Quality
 
-  let private farmingQualitiesCalc fertQuality skills =
+  let private farmCropQualitiesCalc fertQuality skills =
     let buffLevel = Skill.buffedLevel skills.Farming
     let gold = 0.01 + 0.2 * (float buffLevel / 10.0 + float fertQuality * float (buffLevel + 2u) / 12.0)
     let probabilities =
@@ -209,11 +208,11 @@ module Skills =
       |]
     Qualities.ifElseDistribution probabilities
 
-  let farmingQualitiesWith fert skills = farmingQualitiesCalc (Fertilizer.Opt.quality fert) skills
-  let farmingQualitiesFrom fert skills = farmingQualitiesCalc fert.Quality skills
-  let inline farmingQualities skills = farmingQualitiesWith None skills
+  let farmCropQualitiesWith fert skills = farmCropQualitiesCalc (Fertilizer.Opt.quality fert) skills
 
-  let foragingQualities skills =
+  let inline farmCropQualities skills = farmCropQualitiesWith None skills
+
+  let forageCropQualities skills =
     if skills |> professionActive Botanist then
       Qualities.wrap [| 0.0; 0.0; 0.0; 1.0 |]
     else
@@ -224,8 +223,8 @@ module Skills =
         Normal, 1.0
       |]
 
-  let foragingAmounts skills =
-    let qualities = foragingQualities skills
+  let forageCropHarvestAmounts skills =
+    let qualities = forageCropQualities skills
     if skills |> professionActive Gatherer
-    then qualities |> Qualities.map ((*) Multiplier.gatherer)
+    then qualities |> Qualities.mult Multiplier.gatherer
     else qualities

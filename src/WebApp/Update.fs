@@ -2,19 +2,9 @@ module StardewValleyStonks.WebApp.Update
 
 open StardewValleyStonks
 
-type SelectionMessage<'a when 'a: comparison> =
-  | SetSelected of 'a * bool
-  | SetManySelected of 'a Set * bool
-
 type SkillMessage =
   | SetLevel of nat
   | SetBuff of nat
-
-type CustomMessage<'key, 'price when 'key: comparison> =
-  | AddCustom of 'key
-  | SetCustom of 'key * 'price
-  | RemoveCustom of 'key
-  | SelectCustom of 'key SelectionMessage
 
 type SkillsMessage =
   | SetFarming of SkillMessage
@@ -38,20 +28,34 @@ type ModDataMessage =
   | SetQualityProducts of bool
   | SetQualityProcessors of Processor * bool
 
-type SettingsMessage =
-  | SelectCrops of SeedId SelectionMessage
-  | SelectSeedPrices of Vendor * SeedId SelectionMessage
-
-  | SelectFertilizers of FertilizerName SelectionMessage
-  | SetAllowNoFertilizer of bool
-  | SelectFertilizerPrices of Vendor * FertilizerName SelectionMessage
-
+type GameVariablesMessage =
   | SetSkills of SkillsMessage
   | SetMultipliers of MultipliersMessage
   | SetCropAmount of CropAmountMessage
   | SetModData of ModDataMessage
   | SetIrrigated of bool
   | SetJojaMembership of bool
+  | SetStartDate of Date
+  | SetEndDate of Date
+  | SetLocation of Location
+
+type SelectionMessage<'a when 'a: comparison> =
+  | SetSelected of 'a * bool
+  | SetManySelected of 'a Set * bool
+
+type CustomMessage<'key, 'price when 'key: comparison> =
+  | AddCustom of 'key
+  | SetCustom of 'key * 'price
+  | RemoveCustom of 'key
+  | SelectCustom of 'key SelectionMessage
+
+type SelectionsMessage =
+  | SelectCrops of SeedId SelectionMessage
+  | SelectSeedPrices of Vendor * SeedId SelectionMessage
+
+  | SelectFertilizers of FertilizerName SelectionMessage
+  | SetAllowNoFertilizer of bool
+  | SelectFertilizerPrices of Vendor * FertilizerName SelectionMessage
 
   | SelectSellRawItems of (SeedId * ItemId) SelectionMessage
   | SelectProducts of Processor * (SeedId * ItemId) SelectionMessage
@@ -65,13 +69,15 @@ type SettingsMessage =
   | SetCustomSeedPrice of CustomMessage<SeedId, nat>
   | SetCustomSellPrice of CustomMessage<SeedId * ItemId, nat * bool>
 
-  | SetStartDate of Date
-  | SetEndDate of Date
-  | SetLocation of Location
-
+type ProfitMessage =
   | SetSeedStrategy of SeedStrategy
   | SetPayForFertilizer of bool
   | SetReplaceLostFertilizer of bool
+
+type SettingsMessage =
+  | SetGameVariables of GameVariablesMessage
+  | SetSelections of SelectionsMessage
+  | SetProfit of ProfitMessage
 
 
 type SortMessage = bool * (int * bool)
@@ -91,13 +97,7 @@ type RankerMessage =
   | SetBrushSpan of nat * nat
   | SetSelectedCropAndFertilizer of (SeedId option * FertilizerName option option) option
 
-type AppMessage =
-  | SetSettings of SettingsMessage
-  | LoadSettings of Settings
-  | SaveSettings of string
-  | RenameSettings of int * string
-  | DeleteSettings of int
-
+type UIMessage =
   | SetAppMode of AppMode
   | SetSettingsTab of SettingsTab
   | SetDetailsOpen of OpenDetails * bool
@@ -113,36 +113,27 @@ type AppMessage =
   | SetCropFilters of CropFiltersMessage
   | SetRanker of RankerMessage
 
+type SavedSettingsMessage =
+  | LoadSaveGame of string * GameVariables
+  | SaveSettings of string
+  | RenameSettings of int * string
+  | DeleteSettings of int
+
+type StateMessage =
+  | SetSettings of SettingsMessage
+  | SetUI of UIMessage
+  | LoadSettings of Settings
+
+type AppMessage =
+  | SetState of StateMessage
+  | SetSavedSettings of SavedSettingsMessage
+  | SyncSavedSettings of (string * Settings) list
+  | HardReset
+
 let inline private setSelected makeSelected set =
   if makeSelected
   then Set.add set
   else Set.remove set
-
-let tableSort multi ((col, asc) as s) sort =
-  match sort |> List.tryFindIndexBack (fst >> (=) col), multi with
-  | Some i, true -> sort |> List.updateAt i (col, not asc)
-  | Some _, false -> [ col, not asc ]
-  | None, true -> s :: sort
-  | None, false -> [ s ]
-
-let select msg set =
-  match msg with
-  | SetSelected (id', selected) -> set |> setSelected selected id'
-  | SetManySelected (keys, selected) ->
-    if selected
-    then set + keys
-    else set - keys
-
-let mapSelectWith containsKey key msg map =
-  match msg with
-  | SetSelected (id', selected) -> map |> Map.change id' (Option.map <| setSelected selected key)
-  | SetManySelected (keys, selected) ->
-    map |> Map.map (fun id' selection ->
-      if keys.Contains id' && containsKey id' key
-      then selection |> setSelected selected key
-      else selection)
-
-let mapSelect (data: Table<_,_>) key msg map = mapSelectWith (data.Find >> flip Table.containsKey) key msg map
 
 let skill msg skill =
   match msg with
@@ -187,7 +178,40 @@ let modData msg modData =
   | SetQualityProducts value -> { modData with QualityProducts = value }
   | SetQualityProcessors (processor, selected) -> { modData with QualityProcessors = modData.QualityProcessors |> setSelected selected processor }
 
-let selection defaultValue msg selection =
+
+
+let gameVariables msg vars =
+  match msg with
+  | SetSkills msg -> { vars with Skills = skills msg vars.Skills }
+  | SetMultipliers msg -> { vars with Multipliers = multipliers msg vars.Multipliers }
+  | SetCropAmount msg -> { vars with CropAmount = cropAmount msg vars.CropAmount }
+  | SetModData msg -> { vars with ModData = modData msg vars.ModData }
+  | SetIrrigated value -> { vars with Irrigated = value }
+  | SetJojaMembership value -> { vars with JojaMembership = value }
+  | SetStartDate date -> { vars with StartDate = date }
+  | SetEndDate date -> { vars with EndDate = date }
+  | SetLocation location -> { vars with Location = location }
+
+let select msg set =
+  match msg with
+  | SetSelected (id', selected) -> set |> setSelected selected id'
+  | SetManySelected (keys, selected) ->
+    if selected
+    then set + keys
+    else set - keys
+
+let mapSelectWith containsKey key msg map =
+  match msg with
+  | SetSelected (id', selected) -> map |> Map.change id' (Option.map <| setSelected selected key)
+  | SetManySelected (keys, selected) ->
+    map |> Map.map (fun id' selection ->
+      if keys.Contains id' && containsKey id' key
+      then selection |> setSelected selected key
+      else selection)
+
+let mapSelect (data: Table<_,_>) key msg map = mapSelectWith (data.Find >> flip Table.containsKey) key msg map
+
+let custom defaultValue msg selection =
   match msg with
   | AddCustom key ->
     { selection with Values = selection.Values |> Map.add key defaultValue }
@@ -199,44 +223,46 @@ let selection defaultValue msg selection =
   | SetCustom (key, value) -> { selection with Values = selection.Values |> Map.add key value }
   | SelectCustom msg -> { selection with Selected = selection.Selected |> select msg }
 
+let selections data msg (selection: Selections) =
+  match msg with
+  | SelectCrops msg -> { selection with Crops = selection.Crops |> select msg }
+  | SelectSeedPrices (vendor, msg) -> { selection with SeedPrices = selection.SeedPrices |> mapSelect data.SeedPrices vendor msg }
+
+  | SetAllowNoFertilizer value -> { selection with NoFertilizer = value }
+  | SelectFertilizers msg -> { selection with Fertilizers = selection.Fertilizers |> select msg }
+  | SelectFertilizerPrices (vendor, msg) -> { selection with FertilizerPrices = selection.FertilizerPrices |> mapSelect data.FertilizerPrices vendor msg }
+
+  | SelectSellRawItems msg -> { selection with SellRaw = selection.SellRaw |> select msg }
+  | SelectProducts (processor, msg) -> { selection with Products = selection.Products |> mapSelectWith (fun (_, item) processor -> data.Products[item].ContainsKey processor) processor msg }
+  | SelectSellForageSeeds msg -> { selection with SellForageSeeds = selection.SellForageSeeds |> select msg }
+
+  | SelectUseRawSeeds msg -> { selection with UseHarvestedSeeds = selection.UseHarvestedSeeds |> select msg }
+  | SelectUseSeedMaker msg -> { selection with UseSeedMaker = selection.UseSeedMaker |> select msg }
+  | SelectUseForageSeeds msg -> { selection with UseForageSeeds = selection.UseForageSeeds |> select msg }
+
+  | SetCustomFertilizerPrice msg -> { selection with CustomFertilizerPrices = selection.CustomFertilizerPrices |> custom 0u msg }
+  | SetCustomSeedPrice msg -> { selection with CustomSeedPrices = selection.CustomSeedPrices |> custom 0u msg }
+  | SetCustomSellPrice msg -> { selection with CustomSellPrices = selection.CustomSellPrices |> custom (0u, false) msg }
+
+let profit msg profit =
+  match msg with
+  | SetSeedStrategy value -> { profit with SeedStrategy = value }
+  | SetPayForFertilizer value -> { profit with PayForFertilizer = value }
+  | SetReplaceLostFertilizer value -> { profit with ReplaceLostFertilizer = value }
+
+let tableSort multi ((col, asc) as s) sort =
+  match sort |> List.tryFindIndexBack (fst >> (=) col), multi with
+  | Some i, true -> sort |> List.updateAt i (col, not asc)
+  | Some _, false -> [ col, not asc ]
+  | None, true -> s :: sort
+  | None, false -> [ s ]
+
 let settings data msg (settings: Settings) =
   match msg with
-  | SelectCrops msg -> { settings with SelectedCrops = settings.SelectedCrops |> select msg }
-  | SelectFertilizers msg -> { settings with SelectedFertilizers = settings.SelectedFertilizers |> select msg }
-  | SetAllowNoFertilizer value -> { settings with AllowNoFertilizer = value }
+  | SetGameVariables msg -> { settings with Game = settings.Game |> gameVariables msg }
+  | SetSelections msg -> { settings with Selected = settings.Selected |> selections data msg }
+  | SetProfit msg -> { settings with Profit = settings.Profit |> profit msg }
 
-  | SetSkills msg -> { settings with Skills = skills msg settings.Skills }
-  | SetMultipliers msg -> { settings with Multipliers = multipliers msg settings.Multipliers }
-  | SetCropAmount msg -> { settings with CropAmount = cropAmount msg settings.CropAmount }
-
-  | SelectFertilizerPrices (vendor, msg) -> { settings with SelectedFertilizerPrices = settings.SelectedFertilizerPrices |> mapSelect data.FertilizerPrices vendor msg }
-  | SelectSeedPrices (vendor, msg) -> { settings with SelectedSeedPrices = settings.SelectedSeedPrices |> mapSelect data.SeedPrices vendor msg }
-  | SelectProducts (processor, msg) -> { settings with SelectedProducts = settings.SelectedProducts |> mapSelectWith (fun (_, item) processor -> data.Products[item].ContainsKey processor) processor msg }
-
-  | SelectSellRawItems msg -> { settings with SellRawItems = settings.SellRawItems |> select msg }
-
-  | SelectUseRawSeeds msg -> { settings with UseRawSeeds = settings.UseRawSeeds |> select msg }
-  | SelectUseSeedMaker msg -> { settings with UseSeedMaker = settings.UseSeedMaker |> select msg }
-
-  | SetCustomFertilizerPrice msg -> { settings with CustomFertilizerPrices = settings.CustomFertilizerPrices |> selection 0u msg }
-  | SetCustomSeedPrice msg -> { settings with CustomSeedPrices = settings.CustomSeedPrices |> selection 0u msg }
-  | SetCustomSellPrice msg -> { settings with CustomSellPrices = settings.CustomSellPrices |> selection (0u, false) msg }
-
-  | SelectSellForageSeeds msg -> { settings with SellForageSeeds = settings.SellForageSeeds |> select msg }
-  | SelectUseForageSeeds msg -> { settings with UseForageSeeds = settings.UseForageSeeds |> select msg }
-
-  | SetIrrigated value -> { settings with Irrigated = value }
-  | SetJojaMembership value -> { settings with JojaMembership = value }
-
-  | SetStartDate date -> { settings with StartDate = date }
-  | SetEndDate date -> { settings with EndDate = date }
-  | SetLocation location -> { settings with Location = location }
-
-  | SetSeedStrategy value -> { settings with SeedStrategy = value }
-  | SetPayForFertilizer value -> { settings with PayForFertilizer = value }
-  | SetReplaceLostFertilizer value -> { settings with ReplaceLostFertilizer = value }
-
-  | SetModData msg -> { settings with ModData = modData msg settings.ModData }
 
 
 let cropFilters msg filters =
@@ -256,25 +282,32 @@ let ranker msg ranker =
   | SetBrushSpan (start, finish) -> { ranker with BrushSpan = start, finish }
   | SetSelectedCropAndFertilizer pair -> { ranker with SelectedCropAndFertilizer = pair }
 
-let app msg app =
+let savedSettings msg settings saved =
   match msg with
-  | SetSettings msg -> { app with Settings = app.Settings |> settings app.Data msg }, []
-  | LoadSettings settings -> { app with Settings = settings }, []
-  | SaveSettings name -> { app with SavedSettings = (name, app.Settings) :: app.SavedSettings }, []
-  | RenameSettings (i, name) -> { app with SavedSettings = app.SavedSettings |> List.updateAt i (name, app.SavedSettings |> List.item i |> snd) }, []
-  | DeleteSettings i -> { app with SavedSettings = app.SavedSettings |> List.removeAt i }, []
+  | LoadSaveGame (name, vars) -> (name, { settings with Game = vars }) :: saved
+  | SaveSettings name -> (name, settings) :: saved
+  | RenameSettings (i, name) -> saved |> List.updateAt i (name, saved |> List.item i |> snd)
+  | DeleteSettings i -> saved |> List.removeAt i
 
-  | SetAppMode mode -> { app with Mode = mode }, []
-  | SetSettingsTab tab -> { app with SettingsTab = tab }, []
-  | SetDetailsOpen (details, selected) -> { app with OpenDetails = app.OpenDetails |> setSelected selected details }, []
+let ui msg ui =
+  match msg with
+  | SetAppMode mode -> { ui with Mode = mode }
+  | SetSettingsTab tab -> { ui with SettingsTab = tab }
+  | SetDetailsOpen (details, selected) -> { ui with OpenDetails = ui.OpenDetails |> setSelected selected details }
 
-  | SetFertilizerSort (multi, s) -> { app with FertilizerSort = tableSort multi s app.FertilizerSort }, []
-  | SetFertilizerPriceSort (multi, s) -> { app with FertilizerPriceSort = tableSort multi s app.FertilizerPriceSort }, []
-  | SetCropSort (multi, s) -> { app with CropSort = tableSort multi s app.CropSort }, []
-  | SetProductSort (multi, s) -> { app with ProductSort = tableSort multi s app.ProductSort }, []
-  | SetSeedSort (multi, s) -> { app with SeedSort = tableSort multi s app.SeedSort }, []
-  | SetProductQuality q -> { app with ProductQuality = q }, []
-  | SetShowNormalizedProductPrices b -> { app with ShowNormalizedProductPrices = b }, []
+  | SetFertilizerSort (multi, s) -> { ui with FertilizerSort = tableSort multi s ui.FertilizerSort }
+  | SetFertilizerPriceSort (multi, s) -> { ui with FertilizerPriceSort = tableSort multi s ui.FertilizerPriceSort }
+  | SetCropSort (multi, s) -> { ui with CropSort = tableSort multi s ui.CropSort }
+  | SetProductSort (multi, s) -> { ui with ProductSort = tableSort multi s ui.ProductSort }
+  | SetSeedSort (multi, s) -> { ui with SeedSort = tableSort multi s ui.SeedSort }
+  | SetProductQuality q -> { ui with ProductQuality = q }
+  | SetShowNormalizedProductPrices b -> { ui with ShowNormalizedProductPrices = b }
 
-  | SetCropFilters msg -> { app with CropFilters = cropFilters msg app.CropFilters }, []
-  | SetRanker msg -> { app with Ranker = ranker msg app.Ranker }, []
+  | SetCropFilters msg -> { ui with CropFilters = cropFilters msg ui.CropFilters }
+  | SetRanker msg -> { ui with Ranker = ranker msg ui.Ranker }
+
+let state msg data state =
+  match msg with
+  | SetSettings msg -> { state with Settings = state.Settings |> settings data msg }
+  | SetUI msg -> { state with UI = state.UI |> ui msg }
+  | LoadSettings settings -> { state with Settings = settings }

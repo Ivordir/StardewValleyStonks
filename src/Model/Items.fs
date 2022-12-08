@@ -62,7 +62,7 @@ module Item =
   let multiplier skills multipliers item =
     Category.multiplier skills item.Category * multiplierValue multipliers item
 
-  let priceCalc multiplier basePrice (quality: Quality) =
+  let internal priceCalc multiplier basePrice (quality: Quality) =
     if basePrice = 0u then 0u else
     basePrice
     |> withMultiplier Qualities.multipliers[quality]
@@ -71,7 +71,7 @@ module Item =
 
   let price skills multipliers item quality = priceCalc (multiplier skills multipliers item) item.SellPrice quality
 
-  let pricesCalc multiplier basePrice =
+  let internal pricesCalc multiplier basePrice =
     if basePrice = 0u then Qualities.zero else
     Qualities.multipliers |> Qualities.map (fun quality ->
       basePrice
@@ -180,7 +180,7 @@ module Product =
   let winePrice basePrice = basePrice * 3u
   let juicePrice basePrice = basePrice |> withMultiplier 2.25
 
-  let priceCalc modData multiplier basePrice processor quality =
+  let private priceCalc modData multiplier basePrice processor quality =
     Item.priceCalc multiplier basePrice (processor |> Processor.outputQuality modData quality)
 
   let price getItem skills multipliers modData item quality product =
@@ -285,4 +285,4 @@ module Product =
     let amount = amountPerItem product
     if amount = 1.0
     then prices
-    else prices |> Qualities.map ((*) amount)
+    else prices |> Qualities.mult amount

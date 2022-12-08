@@ -167,7 +167,7 @@ module Decode =
 
   let set decoder = Decode.array decoder |> Decode.map Set.ofArray
 
-  let wrapKeys mapping (keyWrap: string -> 'k) (decodeValue: 'v Decoder) =
+  let private wrapKeys mapping (keyWrap: string -> 'k) (decodeValue: 'v Decoder) =
     #if FABLE_COMPILER
     (!!Decode.keyValuePairs decodeValue: ('k * 'v) list Decoder) |> Decode.map mapping
     #else
@@ -230,7 +230,7 @@ module Decode =
       |} )
     ]
 
-  let season =
+  let season: Season Decoder =
     Decode.string |> Decode.andThen (fun str ->
       match Season.TryParse str with
       | true, season -> Decode.succeed season
@@ -258,7 +258,7 @@ module Decode =
       | ScalingSeedPrice, None -> Ok (ScalingPrice (vendor, None))
       | _ -> Error (path, BadPrimitive ($"a valid price type ('{FixedSeedPrice}' or '{ScalingSeedPrice}')", value)))
 
-  let cropAmount =
+  let cropAmount: CropAmount Decoder =
     let u = Unchecked.defaultof<CropAmount>
     Decode.object (fun get ->
       let field name decoder defVal = get.Optional.Field name decoder |> Option.defaultValue defVal

@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "preact": "^10.11.2",
+    "react-pure-modal": "^2.2.0",
     "react-select": "^5.6.0",
     "recharts": "^2.1.16",
     "yalps": "^0.3.0"

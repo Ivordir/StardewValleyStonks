@@ -2,42 +2,18 @@ module StardewValleyStonks.WebApp.Query
 
 open StardewValleyStonks
 
-let seasons settings = Date.seasonsBetween settings.StartDate settings.EndDate
-
-let cropInSeasonFrom settings seasons crop =
-  settings.Location <> Farm || crop |> Crop.growsInSeasons seasons
-
-let cropInSeason settings = cropInSeasonFrom settings (seasons settings)
-
-let growthMultiplier settings crop =
-  (if settings.Skills |> Skills.professionActive Agriculturist then Multiplier.agriculturist else 0.0)
-  + if settings.Irrigated && Crop.paddy crop then Multiplier.irrigated else 0.0
-
-let growthSpeed settings fertilizer growth =
-  Fertilizer.Opt.speed fertilizer + growthMultiplier settings growth
-
-let growthTimeAndStages settings fertilizer crop =
-  Crop.stagesAndTime (growthSpeed settings fertilizer crop) crop
-
-let growthTime settings fertilizer crop = growthTimeAndStages settings fertilizer crop |> snd
-
-// let growthSpans app crop =
-//   if app.Settings.Location = Farm
-//   then Crop.seasons crop
-//   else Seasons.All
-//   |> Date.spans app.Settings.StartDate app.Settings.EndDate
-
-
-let bestGrowthSpan settings crop fert =
+/// Returnes the DateSpan for this crop that has the most harvests,
+/// and, in the case of a tie, the date span with the least days.
+let bestGrowthSpan vars fert crop =
   let spans =
-    if settings.Location = Farm
+    if vars.Location = Farm
     then Crop.seasons crop
     else Seasons.All
-    |> Date.spans settings.StartDate settings.EndDate
+    |> Date.spans vars.StartDate vars.EndDate
 
   if spans.Length = 0 then None else
 
-  let stages, time = growthTimeAndStages settings fert crop
+  let stages, time = Game.growthTimeAndStages vars fert crop
   let span, harvests =
     spans
     |> Array.map (fun span -> span, Growth.harvestsWith (Crop.regrowTime crop) time span.TotalDays)
@@ -51,125 +27,66 @@ let bestGrowthSpan settings crop fert =
     Harvests = harvests
   }
 
-let giantCropsPossible settings = settings.Location <> Greenhouse
-
-let giantCropProb settings = if giantCropsPossible settings then CropAmount.giantCropProb settings.CropAmount else 0.0
-
-let farmCropFertilizerLossProb settings (crop: FarmCrop) =
-  if giantCropsPossible settings && crop.Amount.Giant
-  then Fertilizer.lossProbability * CropAmount.giantCropProb settings.CropAmount
-  else 0.0
-
-let lostFertilizerPerHarvest model = function
-  | FarmCrop c -> farmCropFertilizerLossProb model c
-  | ForageCrop _ -> Fertilizer.lossProbability
 
 let replacementFertilizerAmount settings crop (harvests: nat) =
-  if settings.ReplaceLostFertilizer
-  then float (harvests - 1u) * lostFertilizerPerHarvest settings crop
+  if settings.Profit.ReplaceLostFertilizer
+  then float (harvests - 1u) * Game.fertilizerLossProb settings.Game crop
   else 0.0
 
 let fertilizerUsed model crop harvests =
   1.0 + replacementFertilizerAmount model crop harvests
 
-let farmingAmounts settings amount fertilizer =
-  let qualities = Skills.farmingQualitiesWith fertilizer settings.Skills
-  if giantCropsPossible settings
-  then CropAmount.farmingGiantAmounts settings.Skills settings.CropAmount amount qualities
-  else CropAmount.farmingAmounts settings.Skills settings.CropAmount amount qualities
-
-let foragingAmounts settings (crop: ForageCrop) =
-  Skills.foragingAmounts settings.Skills |> Qualities.map (fun a -> a / float crop.Items.Length)
-
-let farmCropItemAmounts settings (crop: FarmCrop) =
-  let extraItemAmount = crop.ExtraItem |> Option.map (snd >> Qualities.normalSingleton)
-  fun fertilizer ->
-    let amounts = farmingAmounts settings crop.Amount fertilizer
-    match extraItemAmount with
-    | Some extra -> [| amounts; extra |]
-    | None -> [| amounts |]
-
-let cropItemAmounts settings = function
-  | FarmCrop c -> farmCropItemAmounts settings c
-  | ForageCrop c ->
-    foragingAmounts settings c |> Array.create c.Items.Length |> konst
-
-let processorUnlocked data settings processor =
-  settings.Skills.IgnoreSkillLevelRequirements
-  || data.ProcessorUnlockLevel.TryFind processor |> Option.forall (fun l -> l <= settings.Skills.Farming.Level)
-
-let productUnlocked data settings = Product.processor >> processorUnlocked data settings
-
-let selectedFertilizers data settings = settings.SelectedFertilizers |> Seq.map data.Fertilizers.Find
+let selectedFertilizers data settings = settings.Selected.Fertilizers |> Seq.map data.Fertilizers.Find
 
 let selectedFertilizersOpt data settings =
   selectedFertilizers data settings
   |> Seq.map Some
-  |> Seq.append (if settings.AllowNoFertilizer then [ None ] else [])
+  |> Seq.append (if settings.Selected.NoFertilizer then [ None ] else [])
 
 let selectedFertilizerVendorPrices data settings fertilizer =
   let prices = data.FertilizerPrices[fertilizer]
-  settings.SelectedFertilizerPrices[fertilizer] |> Seq.map (fun vendor -> vendor, prices[vendor])
+  settings.Selected.FertilizerPrices[fertilizer] |> Seq.map (fun vendor -> vendor, prices[vendor])
 
 let selectedFertilizerPrices data settings fertilizer =
-  settings.SelectedFertilizerPrices[fertilizer] |> Seq.map data.FertilizerPrices[fertilizer].Find
+  settings.Selected.FertilizerPrices[fertilizer] |> Seq.map data.FertilizerPrices[fertilizer].Find
 
 let lowestFertilizerPrice data settings fertilizer =
   selectedFertilizerPrices data settings fertilizer
   |> Seq.tryMin
-  |> Option.min (settings.CustomFertilizerPrices |> Selection.selectedValue fertilizer)
+  |> Option.min (settings.Selected.CustomFertilizerPrices |> Selection.selectedValue fertilizer)
 
 let lowestFertilizerCost data settings fertilizer =
-  if settings.PayForFertilizer
+  if settings.Profit.PayForFertilizer
   then lowestFertilizerPrice data settings fertilizer
   else Some 0u
 
 let lowestFertilizerCostOpt data settings = Option.defaultOrMap (Some 0u) (lowestFertilizerCost data settings)
 
-let selectedCrops data settings = settings.SelectedCrops |> Seq.map data.Crops.Find
-
-let seedPrice data settings seed = function
-  | FixedPrice (_, price) -> price
-  | ScalingPrice (vendor, price) ->
-    let price =
-      match price with
-      | Some price -> price
-      | None -> 2u * (data.Items[item' seed] |> Item.sellPrice)
-    if vendor = Vendor.joja
-    then price |> withMultiplier (settings.Multipliers.ProfitMargin * if settings.JojaMembership then 1.0 else 1.25)
-    else price |> withMultiplier settings.Multipliers.ProfitMargin |> max 1u
+let selectedCrops data settings = settings.Selected.Crops |> Seq.map data.Crops.Find
 
 let selectedVendorSeedPrices data settings crop =
   let seedPrices = data.SeedPrices[crop]
-  settings.SelectedSeedPrices[crop] |> Seq.map (fun vendor -> vendor, seedPrices[vendor])
+  settings.Selected.SeedPrices[crop] |> Seq.map (fun vendor -> vendor, seedPrices[vendor])
 
 let selectedVendorSeedPriceValues data settings crop =
-  selectedVendorSeedPrices data settings crop |> Seq.map (fun (vendor, price) -> vendor, seedPrice data settings crop price)
+  selectedVendorSeedPrices data settings crop |> Seq.map (fun (vendor, price) -> vendor, Game.seedPrice data settings.Game crop price)
 
-let selectedSeedPrices data settings crop = settings.SelectedSeedPrices[crop] |> Seq.map data.SeedPrices[crop].Find
-let selectedSeedPriceValues data settings crop = selectedSeedPrices data settings crop |> Seq.map (seedPrice data settings crop)
+let selectedSeedPrices data settings crop = settings.Selected.SeedPrices[crop] |> Seq.map data.SeedPrices[crop].Find
+let selectedSeedPriceValues data settings crop = selectedSeedPrices data settings crop |> Seq.map (Game.seedPrice data settings.Game crop)
 
-let seedPriceValueFrom data settings vendor crop = data.SeedPrices[crop].TryFind vendor |> Option.map (seedPrice data settings crop)
+let seedPriceValueFrom data settings vendor crop = data.SeedPrices[crop].TryFind vendor |> Option.map (Game.seedPrice data settings.Game crop)
 
 let lowestSeedPrice data settings seed =
   selectedSeedPriceValues data settings seed
   |> Seq.tryMin
-  |> Option.min (settings.CustomSeedPrices |> Selection.selectedValue seed)
+  |> Option.min (settings.Selected.CustomSeedPrices |> Selection.selectedValue seed)
 
-let selectedProducts data settings seed item = settings.SelectedProducts.[seed, item] |> Seq.map data.Products[item].Find
-
-let inSeasonCrops data settings =
-  data.Crops.Values |> Seq.filter (cropInSeason settings)
+let selectedProducts data settings seed item = settings.Selected.Products.[seed, item] |> Seq.map data.Products[item].Find
 
 let selectedInSeasonCrops data settings =
-  selectedCrops data settings |> Seq.filter (cropInSeason settings)
+  selectedCrops data settings |> Game.inSeasonCrops settings.Game
 
 open type Quality
-
-let itemPrice settings item quality = Item.price settings.Skills settings.Multipliers item quality
-let itemPrices settings item = Item.prices settings.Skills settings.Multipliers item
-let itemForagePrice settings item quality = Item.Forage.price settings.Skills settings.Multipliers item quality
-let itemForagePrices settings item = Item.Forage.prices settings.Skills settings.Multipliers item
 
 // let productOutputQuality settings product quality = product |> Product.outputQuality settings.ModData quality
 
@@ -179,49 +96,37 @@ let itemForagePrices settings item = Item.Forage.prices settings.Skills settings
 //   | NonCustom (Some product) -> productOutputQuality settings product quality
 //   | Custom (_, preservesQuality) -> if preservesQuality then quality else Normal
 
-let customSellPrice settings seed item (quality: Quality) =
-  settings.CustomSellPrices
+let customSellPrice selected seed item (quality: Quality) =
+  selected.CustomSellPrices
   |> Selection.selectedValue (seed, item)
   |> Option.map (fun (price, preserveQuality) ->
     if preserveQuality
     then price |> withMultiplier Qualities.multipliers[quality]
     else price)
 
-let customSellPrices settings seed item =
-  settings.CustomSellPrices
+let customSellPrices selected seed item =
+  selected.CustomSellPrices
   |> Selection.selectedValue (seed, item)
   |> Option.map (fun (price, preserveQuality) ->
     if preserveQuality
     then Qualities.multipliers |> Qualities.map (flip withMultiplier price >> float)
     else price |> float |> Qualities.create)
 
-let productPrice data settings item quality product =
-  Product.price data.Items.Find settings.Skills settings.Multipliers settings.ModData item quality product
-
-let productPrices data settings item product =
-  Product.prices data.Items.Find settings.Skills settings.Multipliers settings.ModData item product
-
-let productProfit data settings item quality product =
-  Product.profit data.Items.Find settings.Skills settings.Multipliers settings.ModData item quality product
-
-let productProfits data settings item product =
-  Product.profits data.Items.Find settings.Skills settings.Multipliers settings.ModData item product
-
 let selectedProductsCalc mapping data settings seed item =
   selectedProducts data settings seed item |> Seq.choose (fun product ->
-    if productUnlocked data settings product
+    if Game.productUnlocked data settings.Game.Skills product
     then Some <| mapping product
     else None)
 
 let bestSelectedProducts data settings seed item =
-  let selected = selectedProducts data settings seed item |> Seq.filter (productUnlocked data settings) |> Array.ofSeq
+  let selected = selectedProducts data settings seed item |> Seq.filter (Game.productUnlocked data settings.Game.Skills) |> Array.ofSeq
   if selected.Length = 0 then None else
-  let profits = selected |> Array.map (productProfits data settings item)
+  let profits = selected |> Array.map (Game.productProfits data settings.Game item)
   Array.init Quality.count (fun quality ->
     let mutable maxI = 0
     let mutable maxProfit = -1.0
     for i = 0 to profits.Length - 1 do
-      let profit = profits[i].[quality]
+      let profit = profits[i].[enum quality]
       if profit > maxProfit then
         maxI <- i
         maxProfit <- profit
@@ -229,10 +134,10 @@ let bestSelectedProducts data settings seed item =
   |> Some
 
 let bestSelectedProductsAndProfit data settings seed item =
-  let selected = selectedProducts data settings seed item |> Seq.filter (productUnlocked data settings) |> Array.ofSeq
+  let selected = selectedProducts data settings seed item |> Seq.filter (Game.productUnlocked data settings.Game.Skills) |> Array.ofSeq
   if selected.Length = 0 then None else
-  let profits = selected |> Array.map (productProfits data settings item)
-  Array.init Quality.count (fun quality ->
+  let profits = selected |> Array.map (Game.productProfits data settings.Game item)
+  Qualities.init (fun quality ->
     let mutable maxI = 0
     let mutable maxProfit = -1.0
     for i = 0 to profits.Length - 1 do
@@ -244,46 +149,46 @@ let bestSelectedProductsAndProfit data settings seed item =
   |> Some
 
 let private itemBestProductCalc comparisonValue data settings seed (item: ItemId) quality =
-  selectedProductsCalc (comparisonValue data settings item quality) data settings seed item |> Seq.tryMin
+  selectedProductsCalc (comparisonValue data settings.Game item quality) data settings seed item |> Seq.tryMin
 
 let private itemBestProductCalcs comparisonValue data settings seed (item: ItemId) =
-  let products = selectedProductsCalc (comparisonValue data settings item) data settings seed item |> Array.ofSeq
+  let products = selectedProductsCalc (comparisonValue data settings.Game item) data settings seed item |> Array.ofSeq
   if products.Length = 0 then None else
   Some <| Qualities.init (fun quality -> products |> Array.mapReduce max (Qualities.item quality))
 
-let itemBestProductPrice data settings seed item quality = itemBestProductCalc productPrice data settings seed item quality
-let itemBestProductProfit data settings seed item quality = itemBestProductCalc productProfit data settings seed item quality
+let itemBestProductPrice data settings seed item quality = itemBestProductCalc Game.productPrice data settings seed item quality
+let itemBestProductProfit data settings seed item quality = itemBestProductCalc Game.productProfit data settings seed item quality
 
-let itemBestProductPrices app seed item = itemBestProductCalcs productPrices app seed item
-let itemBestProductProfits app seed item = itemBestProductCalcs productProfits app seed item
+let itemBestProductPrices app seed item = itemBestProductCalcs Game.productPrices app seed item
+let itemBestProductProfits app seed item = itemBestProductCalcs Game.productProfits app seed item
 
-let itemBestPrice data settings seed item quality =
-  if settings.SellRawItems.Contains (seed, item)
-  then Some <| itemPrice settings data.Items[item] quality
+let itemBestPrice (data: GameData) settings seed item quality =
+  if settings.Selected.SellRaw.Contains (seed, item)
+  then Some <| Game.itemPrice settings.Game data.Items[item] quality
   else None
   |> Option.max (itemBestProductPrice data settings seed item quality)
-  |> Option.max (customSellPrice settings seed item quality)
+  |> Option.max (customSellPrice settings.Selected seed item quality)
 
-let itemBestPrices data settings seed item =
-  if settings.SellRawItems.Contains (seed, item)
-  then Some <| itemPrices settings data.Items[item]
+let itemBestPrices (data: GameData) settings seed item =
+  if settings.Selected.SellRaw.Contains (seed, item)
+  then Some <| Game.itemPrices settings.Game data.Items[item]
   else None
   |> Option.reduce (Qualities.map2 max) (itemBestProductPrices data settings seed item)
-  |> Option.reduce (Qualities.map2 max) (customSellPrices settings seed item)
+  |> Option.reduce (Qualities.map2 max) (customSellPrices settings.Selected seed item)
 
-let itemBestProfit data settings seed item quality =
-  if settings.SellRawItems.Contains (seed, item)
-  then Some (float <| itemPrice settings data.Items[item] quality)
+let itemBestProfit (data: GameData) settings seed item quality =
+  if settings.Selected.SellRaw.Contains (seed, item)
+  then Some (float <| Game.itemPrice settings.Game data.Items[item] quality)
   else None
   |> Option.max (itemBestProductProfit data settings seed item quality)
-  |> Option.max (customSellPrice settings seed item quality |> Option.map float)
+  |> Option.max (customSellPrice settings.Selected seed item quality |> Option.map float)
 
-let itemBestProfits data settings seed item =
-  if settings.SellRawItems.Contains (seed, item)
-  then Some <| itemPrices settings data.Items[item]
+let itemBestProfits (data: GameData) settings seed item =
+  if settings.Selected.SellRaw.Contains (seed, item)
+  then Some <| Game.itemPrices settings.Game data.Items[item]
   else None
   |> Option.reduce (Qualities.map2 max) (itemBestProductProfits data settings seed item)
-  |> Option.reduce (Qualities.map2 max) (customSellPrices settings seed item)
+  |> Option.reduce (Qualities.map2 max) (customSellPrices settings.Selected seed item)
 
 // refactor / correct forage prices
 
@@ -294,7 +199,7 @@ let seedLowestPriceBuyFrom data settings seed =
     |> Option.map (fun (v, p) -> NonCustom v, p)
 
   let custom =
-    settings.CustomSeedPrices
+    settings.Selected.CustomSeedPrices
     |> Selection.selectedValue seed
     |> Option.map (tuple2 (Custom ()))
 
@@ -308,36 +213,35 @@ let fertilizerLowestPriceBuyFrom data settings fertilizer =
     |> Option.map (fun (v, p) -> NonCustom v, p)
 
   let custom =
-    settings.CustomFertilizerPrices
+    settings.Selected.CustomFertilizerPrices
     |> Selection.selectedValue fertilizer
     |> Option.map (tuple2 (Custom ()))
 
   Option.reduce (minBy snd) price custom
 
-let itemBestProfitsSellAs data settings seed item =
+let itemBestProfitsSellAs (data: GameData) settings seed item =
   let rawPrices =
-    if settings.SellRawItems.Contains (seed, item) then
-      let prices = itemPrices settings data.Items[item]
-      Quality.all
-      |> Array.map (fun quality -> NonCustom None, prices[quality])
+    if settings.Selected.SellRaw.Contains (seed, item) then
+      let prices = Game.itemPrices settings.Game data.Items[item]
+      Qualities.init (fun quality -> NonCustom None, prices[quality])
       |> Some
       // Some (NonCustom None, itemPrices model (getItem model item))
     else
       None
 
   let customPrices =
-    settings.CustomSellPrices
+    settings.Selected.CustomSellPrices
     |> Selection.selectedValue (seed, item)
     |> Option.map (fun ((price, preservesQuality) as custom) ->
       if preservesQuality then
-        Quality.all |> Array.map (fun quality ->
+        Qualities.init (fun quality ->
           Custom custom, price |> withMultiplier Qualities.multipliers[quality] |> float)
       else
-        Array.create Quality.count (Custom custom, float price))
+        Qualities.create (Custom custom, float price))
 
   let bestProducts =
     bestSelectedProductsAndProfit data settings seed item
-    |> Option.map (Array.map (fun (product, profit) -> NonCustom <| Some product, profit))
+    |> Option.map (Qualities.map (fun (product, profit) -> NonCustom <| Some product, profit))
 
   let sellAs = Array.choose id [|
     rawPrices
@@ -346,53 +250,52 @@ let itemBestProfitsSellAs data settings seed item =
   |]
 
   if sellAs.Length = 0 then None else
-  Quality.all
-  |> Array.map (fun quality ->
+  Qualities.init (fun quality ->
     sellAs
-    |> Array.map (Array.item (int quality))
+    |> Array.map (Qualities.item quality)
     |> Array.maxBy snd)
   |> Some
 
-let itemForageBestPrice data settings seed item quality =
-  if settings.SellRawItems.Contains (seed, item)
-  then Some <| itemForagePrice settings data.Items[item] quality
+let itemForageBestPrice (data: GameData) settings seed item quality =
+  if settings.Selected.SellRaw.Contains (seed, item)
+  then Some <| Game.itemForagePrice settings.Game data.Items[item] quality
   else None
   |> Option.max (itemBestProductPrice data settings seed item quality)
-  |> Option.max (customSellPrice settings seed item quality)
+  |> Option.max (customSellPrice settings.Selected seed item quality)
 
-let itemForageBestPrices data settings seed item =
-  if settings.SellRawItems.Contains (seed, item)
-  then Some <| itemForagePrices settings data.Items[item]
+let itemForageBestPrices (data: GameData) settings seed item =
+  if settings.Selected.SellRaw.Contains (seed, item)
+  then Some <| Game.itemForagePrices settings.Game data.Items[item]
   else None
   |> Option.reduce (Qualities.map2 max) (itemBestProductPrices data settings seed item)
-  |> Option.reduce (Qualities.map2 max) (customSellPrices settings seed item)
+  |> Option.reduce (Qualities.map2 max) (customSellPrices settings.Selected seed item)
 
-let itemForageBestProfit data settings seed item quality =
-  if settings.SellRawItems.Contains (seed, item)
-  then Some (float <| itemForagePrice settings data.Items[item] quality)
+let itemForageBestProfit (data: GameData) settings seed item quality =
+  if settings.Selected.SellRaw.Contains (seed, item)
+  then Some (float <| Game.itemForagePrice settings.Game data.Items[item] quality)
   else None
   |> Option.max (itemBestProductProfit data settings seed item quality)
-  |> Option.max (customSellPrice settings seed item quality |> Option.map float)
+  |> Option.max (customSellPrice settings.Selected seed item quality |> Option.map float)
 
-let itemForageBestProfits data settings seed item =
-  if settings.SellRawItems.Contains (seed, item)
-  then Some <| itemForagePrices settings data.Items[item]
+let itemForageBestProfits (data: GameData) settings seed item =
+  if settings.Selected.SellRaw.Contains (seed, item)
+  then Some <| Game.itemForagePrices settings.Game data.Items[item]
   else None
   |> Option.reduce (Qualities.map2 max) (itemBestProductProfits data settings seed item)
-  |> Option.reduce (Qualities.map2 max) (customSellPrices settings seed item)
+  |> Option.reduce (Qualities.map2 max) (customSellPrices settings.Selected seed item)
 
 let private cropBestItemCalc comparisonValue crop =
   Crop.items crop |> Array.mapReduce max comparisonValue
 
-let cropBestItemPriceFrom data settings crop quality =
+let cropBestItemPriceFrom (data: GameData) vars crop quality =
   crop |> cropBestItemCalc (fun item ->
   if Crop.isForage crop
-  then itemPrice settings data.Items[item] quality
-  else itemForagePrice settings data.Items[item] quality)
+  then Game.itemPrice vars data.Items[item] quality
+  else Game.itemForagePrice vars data.Items[item] quality)
 
-let cropBestProductPriceFrom data settings crop quality processor =
+let cropBestProductPriceFrom data vars crop quality processor =
   crop |> cropBestItemCalc (fun item ->
-    data.Products[item].TryFind processor |> Option.map (productPrice data settings item quality))
+    data.Products[item].TryFind processor |> Option.map (Game.productPrice data vars item quality))
 
 let cropBestCustomPrice model crop (quality: Quality) =
   crop |> cropBestItemCalc (fun item ->
@@ -403,30 +306,29 @@ let cropBestCustomPrice model crop (quality: Quality) =
 
 let seedAmount data settings seed mainItem item =
   if int seed = int item then
-    if settings.UseRawSeeds.Contains seed
+    if settings.Selected.UseHarvestedSeeds.Contains seed
     then Some 1.0
     else None
   elif mainItem
-    && Processor.seedMaker |> processorUnlocked data settings
-    && settings.UseSeedMaker.Contains seed
+    && Processor.seedMaker |> Game.processorUnlocked data settings.Game.Skills
+    && settings.Selected.UseSeedMaker.Contains seed
   then
     Some <| Processor.seedMakerAmountWith seed
   else
     None
 
 
-let seedItemPrice data settings (seed: SeedId) = itemPrice settings data.Items[item' seed] Normal
 
-let private forageSeedsProfit data settings seed = float (ForageCrop.forageSeedsPerCraft * seedItemPrice data settings seed)
+let private forageSeedsProfit data vars seed = float (ForageCrop.forageSeedsPerCraft * Game.seedItemSellPrice data vars seed)
 
-let private forageRawCropProfit profits i = profits |> Array.sumBy (Qualities.itemi i)
+let private forageRawCropProfit profits q = profits |> Array.sumBy (Qualities.item q)
 
 // Needs tests, e.g. compared to using brute force or lp methods
-let private forageCropProfitPerHarvestIgnoreSeedsCalc data settings crop profits (amounts: Qualities) =
-  if ForageCrop.seedsRecipeUnlocked settings.Skills crop
-    && settings.SellForageSeeds.Contains crop.Seed
+let private forageCropProfitPerHarvestIgnoreSeedsCalc data settings crop profits amounts =
+  if ForageCrop.seedsRecipeUnlocked settings.Game.Skills crop
+    && settings.Selected.SellForageSeeds.Contains crop.Seed
   then
-    let forageSeedsProfit = forageSeedsProfit data settings crop.Seed
+    let forageSeedsProfit = forageSeedsProfit data settings.Game crop.Seed
     let amounts = Qualities.toArray amounts
 
     // For all raw items and products: profitPerItem(low quality item/product) <= profitPerItem(high quality item/product)
@@ -436,7 +338,7 @@ let private forageCropProfitPerHarvestIgnoreSeedsCalc data settings crop profits
     let mutable forageSeedsSold = 0.0
     let mutable i = 0
 
-    while i < Quality.count && forageRawCropProfit profits i <= forageSeedsProfit do
+    while i < Quality.count && forageRawCropProfit profits (enum i) <= forageSeedsProfit do
       let amount = amounts[i]
       amounts[i] <- 0.0
       profit <- profit + forageSeedsProfit * amount
@@ -444,8 +346,8 @@ let private forageCropProfitPerHarvestIgnoreSeedsCalc data settings crop profits
       i <- i + 1
 
     while i < Quality.count do
-      assert (forageRawCropProfit profits i > forageSeedsProfit)
-      profit <- profit + (forageRawCropProfit profits i) * amounts[i]
+      assert (forageRawCropProfit profits (enum i) > forageSeedsProfit)
+      profit <- profit + (forageRawCropProfit profits (enum i)) * amounts[i]
       i <- i + 1
 
     {|
@@ -462,7 +364,7 @@ let private forageCropProfitPerHarvestIgnoreSeedsCalc data settings crop profits
 
 
 let private forageCropProfitPerHarvestIgnoreSeeds data settings crop =
-  let amounts = foragingAmounts settings crop
+  let amounts = Game.forageCropItemAmounts settings.Game crop
   let profits =
     crop.Items |> Array.map (itemForageBestProfits data settings crop.Seed >> Option.defaultValue Qualities.zero)
   forageCropProfitPerHarvestIgnoreSeedsCalc data settings crop profits amounts
@@ -478,7 +380,7 @@ type ItemUsage =
 open YALPS
 open YALPS.Operators
 
-let private forageCropNetProfitPerHarvestForageSeedsSolution data settings (crop: ForageCrop) seedPrice (profits: Qualities array) (amounts: Qualities) seedTarget =
+let private forageCropNetProfitPerHarvestForageSeedsSolution data settings (crop: ForageCrop) seedPrice (profits: _ Qualities array) (amounts: _ Qualities) seedTarget =
   // This linear programming solution is perhaps only needed for the case when
   // both forage seeds and the seedmaker are selected+unlocked.
   // Since this solution also covers and solves all other cases for net profit as well,
@@ -525,10 +427,10 @@ let private forageCropNetProfitPerHarvestForageSeedsSolution data settings (crop
 
   let oneOfEachItem = forageSeedAmounts |> Array.map (fun amount -> amount, 1.0)
 
-  if settings.SellForageSeeds.Contains crop.Seed then
-    variables.Add (SoldForageSeeds, [| "Profit", forageSeedsProfit data settings crop.Seed; yield! oneOfEachItem |])
+  if settings.Selected.SellForageSeeds.Contains crop.Seed then
+    variables.Add (SoldForageSeeds, [| "Profit", forageSeedsProfit data settings.Game crop.Seed; yield! oneOfEachItem |])
 
-  if settings.UseForageSeeds.Contains crop.Seed then
+  if settings.Selected.UseForageSeeds.Contains crop.Seed then
     variables.Add (UsedForageSeeds, [| "Seeds", float ForageCrop.forageSeedsPerCraft; yield! oneOfEachItem |])
 
   let solution = Solver.solve <| Model.create Maximize "Profit" constraints variables
@@ -558,20 +460,20 @@ let timeNormalizationDivisor (spanData: GrowthSpan) crop = function
   | PerDay -> Growth.daysUsedWith (Crop.regrowTime crop) spanData.GrowthTime spanData.Harvests |> float
   | PerSeason -> float spanData.Span.TotalDays / float Date.daysInSeason
 
-let seedCostsandLimits data settings (seedPrice: nat option) (seed: SeedId) (items: ItemId array) (profits: Qualities array) (amounts: Qualities array) =
+let seedCostsandLimits data settings (seedPrice: nat option) (seed: SeedId) (items: ItemId array) (profits: _ Qualities array) (amounts: _ Qualities array) =
   let costsAndLimits = ResizeArray ()
   let seedPrice = seedPrice |> Option.defaultOrMap System.Double.PositiveInfinity float
-  let inline addCostAndLimit (profits: Qualities) (amounts: Qualities) seedAmount =
+  let inline addCostAndLimit (profits: _ Qualities) (amounts: _ Qualities) seedAmount =
     for i = 0 to Quality.highest do
-      let cost = profits[i] / seedAmount
-      let amount = seedAmount * amounts[i]
+      let cost = profits[enum i] / seedAmount
+      let amount = seedAmount * amounts[enum i]
       if cost < seedPrice && amount > 0.0 then
         costsAndLimits.Add (cost, amount)
 
-  if Processor.seedMaker |> processorUnlocked data settings && settings.UseSeedMaker.Contains seed then
+  if Processor.seedMaker |> Game.processorUnlocked data settings.Game.Skills && settings.Selected.UseSeedMaker.Contains seed then
     addCostAndLimit profits[0] amounts[0] (Processor.seedMakerAmountWith seed)
 
-  if settings.UseRawSeeds.Contains seed then
+  if settings.Selected.UseHarvestedSeeds.Contains seed then
     match items |> Array.tryFindIndex (fun item -> int item = int seed) with
     | Some i -> addCostAndLimit profits[i] amounts[i] 1.0
     | None -> ()
@@ -604,10 +506,10 @@ let private farmCropProfitPerHarvestCalc profits amounts = Array.map2 Qualities.
 
 let cropItemProfits data settings seed items = items |> Array.map (itemBestProfits data settings seed >> Option.defaultValue Qualities.zero)
 
-let canUseSeedMakerForOwnSeeds data settings seed = Processor.seedMaker |> processorUnlocked data settings && settings.UseSeedMaker.Contains seed
+let canUseSeedMakerForOwnSeeds data settings seed = Processor.seedMaker |> Game.processorUnlocked data settings.Game.Skills && settings.Selected.UseSeedMaker.Contains seed
 
-let canUseForageSeeds model = function
-  | ForageCrop crop -> ForageCrop.seedsRecipeUnlocked model.Skills crop && model.UseForageSeeds.Contains crop.Seed
+let canUseForageSeeds settings = function
+  | ForageCrop crop -> ForageCrop.seedsRecipeUnlocked settings.Game.Skills crop && settings.Selected.UseForageSeeds.Contains crop.Seed
   | FarmCrop _ -> false
 
 let nonRegrowData data settings crop =
@@ -616,32 +518,31 @@ let nonRegrowData data settings crop =
   let hasSeedSource =
     seedPrice.IsSome
     || canUseSeedMakerForOwnSeeds data settings seed
-    || settings.UseRawSeeds.Contains seed
+    || settings.Selected.UseHarvestedSeeds.Contains seed
 
   match crop with
   | FarmCrop crop ->
     if not hasSeedSource then konst None else
     let items = FarmCrop.items crop
     let profits = items |> cropItemProfits data settings crop.Seed
-    let amounts = farmCropItemAmounts settings crop
     let seedCost = seedCost data settings seedPrice seed items profits
     if crop.RegrowTime.IsSome then konst None else
     fun fertilizer ->
-      let amounts = amounts fertilizer
+      let amounts = Game.farmCropItemAmounts settings.Game fertilizer crop
       match seedCost amounts 1u with
       | Some cost ->
         let profit = farmCropProfitPerHarvestCalc profits amounts
         Some (profit - cost)
       | None -> None
   | ForageCrop crop ->
-    let seedsUnlocked = ForageCrop.seedsRecipeUnlocked settings.Skills crop
-    let useForageSeeds = settings.UseForageSeeds.Contains seed
+    let seedsUnlocked = ForageCrop.seedsRecipeUnlocked settings.Game.Skills crop
+    let useForageSeeds = settings.Selected.UseForageSeeds.Contains seed
     let hasSeedSource = hasSeedSource || (seedsUnlocked && useForageSeeds)
     if not hasSeedSource then konst None else
-    let amounts = foragingAmounts settings crop
+    let amounts = Game.forageCropItemAmounts settings.Game crop
     let profits = crop.Items |> cropItemProfits data settings crop.Seed
     let net =
-      if seedsUnlocked && (useForageSeeds || settings.SellForageSeeds.Contains seed) then
+      if seedsUnlocked && (useForageSeeds || settings.Selected.SellForageSeeds.Contains seed) then
         forageCropNetProfitPerHarvestForageSeeds data settings crop seedPrice profits amounts
       else
         let profit = profits |> Array.sumBy (Qualities.dot amounts)
@@ -654,9 +555,8 @@ let regrowSeedData data settings crop =
   let seedPrice = lowestSeedPrice data settings seed
   let items = Crop.items crop
   let profits = cropItemProfits data settings seed items
-  let amounts = cropItemAmounts settings crop
   fun fertilizer ->
-    let amounts = amounts fertilizer
+    let amounts = Game.cropItemAmounts settings.Game fertilizer crop
     let profit = farmCropProfitPerHarvestCalc profits amounts
     let costsAndLimits = seedCostsandLimits data settings seedPrice seed items profits amounts
     costsAndLimits
@@ -672,7 +572,7 @@ let regrowSeedData data settings crop =
 let private cropProfitCalc netProfit data settings timeNormalization crop =
   let netProfit = netProfit data settings crop
   fun fertilizer ->
-    let growthSpan = bestGrowthSpan settings crop fertilizer
+    let growthSpan = bestGrowthSpan settings.Game fertilizer crop
     let fertCost = lowestFertilizerCostOpt data settings (Fertilizer.Opt.name fertilizer)
     match growthSpan, netProfit, fertCost with
     | Some span, Some netProfit, Some fertCost ->
@@ -692,9 +592,9 @@ let private cropProfitCalcIgnoreSeeds = cropProfitCalc (fun data settings crop -
   (match crop with
   | FarmCrop crop ->
     let profits = FarmCrop.items crop |> cropItemProfits data settings crop.Seed
-    let amounts = farmCropItemAmounts settings crop
     fun fertilizer harvests ->
-      Some ((amounts fertilizer |> farmCropProfitPerHarvestCalc profits) * float harvests)
+      let amounts = Game.farmCropItemAmounts settings.Game fertilizer crop
+      Some ((farmCropProfitPerHarvestCalc profits amounts) * float harvests)
   | ForageCrop crop ->
     let data = forageCropProfitPerHarvestIgnoreSeeds data settings crop
     fun _ harvests -> Some (data.Profit * float harvests))
@@ -706,25 +606,24 @@ let private cropProfitCalcStockpileSeeds = cropProfitCalc (fun data settings cro
   let hasSeedSource =
     seedPrice.IsSome
     || canUseSeedMakerForOwnSeeds data settings seed
-    || settings.UseRawSeeds.Contains seed
+    || settings.Selected.UseHarvestedSeeds.Contains seed
 
   match crop with
   | FarmCrop crop ->
     if not hasSeedSource then None else
     let items = FarmCrop.items crop
     let profits = items |> cropItemProfits data settings crop.Seed
-    let amounts = farmCropItemAmounts settings crop
     let seedCost = seedCost data settings seedPrice seed items profits
     (if crop.RegrowTime.IsSome then
       fun fertilizer harvests ->
-        let amounts = amounts fertilizer
+        let amounts = Game.farmCropItemAmounts settings.Game fertilizer crop
         let profit = farmCropProfitPerHarvestCalc profits amounts
         match seedCost amounts harvests with
         | Some cost -> Some (profit * float harvests - cost)
         | None -> None
       else
       fun fertilizer harvests ->
-        let amounts = amounts fertilizer
+        let amounts = Game.farmCropItemAmounts settings.Game fertilizer crop
         match seedCost amounts 1u with
         | Some cost ->
           let profit = farmCropProfitPerHarvestCalc profits amounts
@@ -732,14 +631,14 @@ let private cropProfitCalcStockpileSeeds = cropProfitCalc (fun data settings cro
         | None -> None)
     |> Some
   | ForageCrop crop ->
-    let seedsUnlocked = ForageCrop.seedsRecipeUnlocked settings.Skills crop
-    let useForageSeeds = settings.UseForageSeeds.Contains seed
+    let seedsUnlocked = ForageCrop.seedsRecipeUnlocked settings.Game.Skills crop
+    let useForageSeeds = settings.Selected.UseForageSeeds.Contains seed
     let hasSeedSource = hasSeedSource || (seedsUnlocked && useForageSeeds)
     if not hasSeedSource then None else
-    let amounts = foragingAmounts settings crop
+    let amounts = Game.forageCropItemAmounts settings.Game crop
     let profits = crop.Items |> cropItemProfits data settings crop.Seed
     let net =
-      if seedsUnlocked && (useForageSeeds || settings.SellForageSeeds.Contains seed) then
+      if seedsUnlocked && (useForageSeeds || settings.Selected.SellForageSeeds.Contains seed) then
         forageCropNetProfitPerHarvestForageSeeds data settings crop seedPrice profits amounts
       else
         let profit = profits |> Array.sumBy (Qualities.dot amounts)
@@ -757,28 +656,27 @@ let private cropProfitCalcBuyFirstSeed = cropProfitCalc (fun data settings crop 
     | FarmCrop crop ->
       let items = FarmCrop.items crop
       let profits = items |> cropItemProfits data settings crop.Seed
-      let amounts = farmCropItemAmounts settings crop
       let seedCost = seedCost data settings (Some seedPrice) crop.Seed items profits
       if crop.RegrowTime.IsSome then
         fun fertilizer harvests ->
-          let amounts = amounts fertilizer
+          let amounts = Game.farmCropItemAmounts settings.Game fertilizer crop
           let profit = farmCropProfitPerHarvestCalc profits amounts
           Some (profit * float harvests - float seedPrice)
       else
         fun fertilizer harvests ->
-          let amounts = amounts fertilizer
+          let amounts = Game.farmCropItemAmounts settings.Game fertilizer crop
           match seedCost amounts 1u with
           | Some cost ->
             let profit = farmCropProfitPerHarvestCalc profits amounts
             Some ((profit - cost) * float harvests + cost - float seedPrice)
           | None -> None
     | ForageCrop crop ->
-      let amounts = foragingAmounts settings crop
+      let amounts = Game.forageCropItemAmounts settings.Game crop
       let profits = crop.Items |> cropItemProfits data settings crop.Seed
       let profit = profits |> Array.sumBy (Qualities.dot amounts)
       let netAndcost =
-        if ForageCrop.seedsRecipeUnlocked settings.Skills crop
-          && (settings.UseForageSeeds.Contains seed || settings.SellForageSeeds.Contains seed)
+        if ForageCrop.seedsRecipeUnlocked settings.Game.Skills crop
+          && (settings.Selected.UseForageSeeds.Contains seed || settings.Selected.SellForageSeeds.Contains seed)
         then
           forageCropNetProfitPerHarvestForageSeeds data settings crop (Some seedPrice) profits amounts
           |> Option.map (fun net -> net, profit - net)
@@ -793,20 +691,17 @@ let private cropProfitCalcBuyFirstSeed = cropProfitCalc (fun data settings crop 
     |> Some)
 
 let cropProfit data settings timeNorm crop =
-  match settings.SeedStrategy with
+  match settings.Profit.SeedStrategy with
   | IgnoreSeeds -> cropProfitCalcIgnoreSeeds data settings timeNorm crop
   | StockpileSeeds -> cropProfitCalcStockpileSeeds data settings timeNorm crop
   | BuyFirstSeed -> cropProfitCalcBuyFirstSeed data settings timeNorm crop
   >> Result.map (fun (profit, timeNorm) -> profit / timeNorm)
 
-let xpPerHarvest data settings crop =
-  Crop.xpPerHarvest data.Items.Find (giantCropProb settings) settings.Skills crop
-
 let cropXP data settings timeNorm crop fertilizer =
   let seed = Crop.seed crop
   let hasFertPrice = lowestFertilizerCostOpt data settings (Fertilizer.Opt.name fertilizer) |> Option.isSome
   let enoughSeeds =
-    match settings.SeedStrategy with
+    match settings.Profit.SeedStrategy with
     | IgnoreSeeds -> true
     | BuyFirstSeed -> lowestSeedPrice data settings seed |> Option.isSome
     | StockpileSeeds ->
@@ -814,12 +709,12 @@ let cropXP data settings timeNorm crop fertilizer =
       || (match crop with
           | FarmCrop c ->
             canUseSeedMakerForOwnSeeds data settings seed
-            || (settings.UseRawSeeds.Contains seed && (int c.Item = int seed || c.ExtraItem |> Option.exists (fun (item, amount) -> amount >= 1.0 && int item = int seed)))
+            || (settings.Selected.UseHarvestedSeeds.Contains seed && (int c.Item = int seed || c.ExtraItem |> Option.exists (fun (item, amount) -> amount >= 1.0 && int item = int seed)))
           | ForageCrop _ -> canUseForageSeeds settings crop) // assume forage crop has >=3 items so that seedmaker does not give enough seeds
 
-  match bestGrowthSpan settings crop fertilizer with
+  match bestGrowthSpan settings.Game fertilizer crop with
   | Some span when hasFertPrice && enoughSeeds ->
-    let xpPerHarvest = xpPerHarvest data settings crop
+    let xpPerHarvest = Game.xpPerHarvest data settings.Game crop
     let xp = float span.Harvests * xpPerHarvest
     let divisor = timeNormalizationDivisor span crop timeNorm
     Ok (xp / divisor)
@@ -833,7 +728,7 @@ let cropXpData data settings timeNorm crop fertilizer =
   let seed = Crop.seed crop
   let hasFertPrice = lowestFertilizerCostOpt data settings (Fertilizer.Opt.name fertilizer) |> Option.isSome
   let enoughSeeds =
-    match settings.SeedStrategy with
+    match settings.Profit.SeedStrategy with
     | IgnoreSeeds -> true
     | BuyFirstSeed -> lowestSeedPrice data settings seed |> Option.isSome
     | StockpileSeeds ->
@@ -841,14 +736,14 @@ let cropXpData data settings timeNorm crop fertilizer =
       || (match crop with
           | FarmCrop c ->
             canUseSeedMakerForOwnSeeds data settings seed
-            || (settings.UseRawSeeds.Contains seed && (int c.Item = int seed || c.ExtraItem |> Option.exists (fun (item, amount) -> amount >= 1.0 && int item = int seed)))
+            || (settings.Selected.UseHarvestedSeeds.Contains seed && (int c.Item = int seed || c.ExtraItem |> Option.exists (fun (item, amount) -> amount >= 1.0 && int item = int seed)))
           | ForageCrop _ -> canUseForageSeeds settings crop) // assume forage crop has >=3 items so that seedmaker does not give enough seeds
 
-  match bestGrowthSpan settings crop fertilizer with
+  match bestGrowthSpan settings.Game fertilizer crop with
   | Some span when hasFertPrice && enoughSeeds ->
     Ok {|
       xpPerItem = Crop.xpPerItem data.Items.Find crop
-      xpPerHarvest = xpPerHarvest data settings crop
+      xpPerHarvest = Game.xpPerHarvest data settings.Game crop
       TimeNormalization = timeNormalizationDivisor span crop timeNorm
       Harvests = span.Harvests
     |}
@@ -860,7 +755,7 @@ let cropXpData data settings timeNorm crop fertilizer =
 
 let private cropROIWith metric data settings timeNormalization crop =
   let seedPrice =
-    match settings.SeedStrategy with
+    match settings.Profit.SeedStrategy with
     | BuyFirstSeed -> lowestSeedPrice data settings (Crop.seed crop)
     | _ -> Some 0u
   let metric = metric data settings timeNormalization crop
@@ -877,7 +772,7 @@ let private cropROIWith metric data settings timeNormalization crop =
 
 
 let cropROI data settings timeNormalization crop =
-  match settings.SeedStrategy with
+  match settings.Profit.SeedStrategy with
   | IgnoreSeeds -> cropROIWith cropProfitCalcIgnoreSeeds data settings timeNormalization crop
   | StockpileSeeds -> cropROIWith cropProfitCalcStockpileSeeds data settings timeNormalization crop
   | BuyFirstSeed -> cropROIWith cropProfitCalcBuyFirstSeed data settings timeNormalization crop
@@ -886,11 +781,11 @@ type HarvestsData = {
   GrowthSpan: GrowthSpan
   SeedPrice: (CustomChoice<Vendor, unit> * nat) option
   FertilizerPrice: (CustomChoice<Vendor, unit> * nat) option option
-  SellAs: (CustomChoice<Product option, nat * bool> * float) array option array
+  SellAs: (CustomChoice<Product option, nat * bool> * float) Qualities option array
   SeedsBought: float
   FertilizerBought: float
-  SoldAmounts: Qualities array
-  IntoSeedAmounts: (ItemId * Qualities) array
+  SoldAmounts: float Qualities array
+  IntoSeedAmounts: (ItemId * float Qualities) array
   ForageSeedsSold: float
   ForageSeedsUsed: float
   NetProfit: float option
@@ -912,8 +807,8 @@ let private seedData
   seedPrice
   (seed: SeedId)
   (items: ItemId array)
-  (profits: Qualities array)
-  (amounts: Qualities array)
+  (profits: float Qualities array)
+  (amounts: float Qualities array)
   =
   let amountsUsed = ResizeArray ()
 
@@ -923,8 +818,8 @@ let private seedData
     let profits = profits[item]
     let amounts = amounts[item]
     for i = 0 to Quality.highest do
-      let cost = profits[i] / seedAmount
-      let amount = amounts[i]
+      let cost = profits[enum i] / seedAmount
+      let amount = amounts[enum i]
       if cost < seedPrice && amount > 0.0 then
         d.Add {|
           Index = amountsUsed.Count
@@ -936,14 +831,14 @@ let private seedData
     amountsUsed.Add (item, Array.zeroCreate Quality.count)
 
   let seedItemIndex =
-    if settings.UseRawSeeds.Contains seed
+    if settings.Selected.UseHarvestedSeeds.Contains seed
     then items |> Array.findIndex (fun item -> int item = int seed) |> Some
     else None
   match seedItemIndex with
   | Some i -> addCostAndLimit i 1.0
   | None -> ()
 
-  let useSeedMaker = Processor.seedMaker |> processorUnlocked data settings && settings.UseSeedMaker.Contains seed
+  let useSeedMaker = Processor.seedMaker |> Game.processorUnlocked data settings.Game.Skills && settings.Selected.UseSeedMaker.Contains seed
   if useSeedMaker then addCostAndLimit 0 (Processor.seedMakerAmountWith (items[0] * 1u<_>))
 
   let data = resizeToArray d
@@ -974,7 +869,7 @@ let private seedData
 
 
 let cropProfitDataStockpileSeeds data settings timeNormalization crop fertilizer =
-  match bestGrowthSpan settings crop fertilizer with
+  match bestGrowthSpan settings.Game fertilizer crop with
   | None -> None
   | Some span ->
     let seed = Crop.seed crop
@@ -988,11 +883,11 @@ let cropProfitDataStockpileSeeds data settings timeNormalization crop fertilizer
     let profits =
       sellAs |> Array.map (function
         | Some sellAs ->
-          Qualities.initi (fun i -> snd sellAs[i])
+          Qualities.init (fun q -> snd sellAs[q])
         | None -> Qualities.zero)
-    let amounts = cropItemAmounts settings crop fertilizer
+    let amounts = Game.cropItemAmounts settings.Game fertilizer crop
     let fertCost' =
-      if settings.PayForFertilizer
+      if settings.Profit.PayForFertilizer
       then fertilizer |> Option.map (Fertilizer.name >> fertilizerLowestPriceBuyFrom data settings)
       else None
     let fertCost = fertCost' |> Option.defaultOrMap (Some 0u) (Option.map snd)
@@ -1001,16 +896,16 @@ let cropProfitDataStockpileSeeds data settings timeNormalization crop fertilizer
 
     let soldAmounts, seedAmounts, seedsBought, forageSeedsSold, forageSeedsUsed, net =
       match crop with
-      | ForageCrop c when ForageCrop.seedsRecipeUnlocked settings.Skills c
-          && (settings.UseForageSeeds.Contains seed || settings.SellForageSeeds.Contains seed) ->
-        let useForageSeeds = settings.UseForageSeeds.Contains seed
-        let seedMaker = not useForageSeeds && Processor.seedMaker |> processorUnlocked data settings && settings.UseSeedMaker.Contains seed
+      | ForageCrop c when ForageCrop.seedsRecipeUnlocked settings.Game.Skills c
+          && (settings.Selected.UseForageSeeds.Contains seed || settings.Selected.SellForageSeeds.Contains seed) ->
+        let useForageSeeds = settings.Selected.UseForageSeeds.Contains seed
+        let seedMaker = not useForageSeeds && Processor.seedMaker |> Game.processorUnlocked data settings.Game.Skills && settings.Selected.UseSeedMaker.Contains seed
         let maxSeeds =
           if seedPrice.IsSome
           then 1.0
           else min 1.0 (Qualities.sum amounts[0] * if useForageSeeds then float ForageCrop.forageSeedsPerCraft elif seedMaker then Processor.seedMakerAmount else 0.0)
 
-        let totalAmounts = amounts[0] |> Qualities.map ((*) (float harvests))
+        let totalAmounts = amounts[0] |> Qualities.mult (float harvests)
 
         let solution = forageCropNetProfitPerHarvestForageSeedsSolution data settings c seedPrice profits totalAmounts (maxSeeds * float harvests)
         assert (solution.status = Optimal)
@@ -1062,13 +957,13 @@ let cropProfitDataStockpileSeeds data settings timeNormalization crop fertilizer
         getUsage solution UsedForageSeeds * float ForageCrop.forageSeedsPerCraft,
         net
       | _ ->
-        let totalAmounts = amounts |> Array.map (Qualities.map ((*) (float harvests)))
+        let totalAmounts = amounts |> Array.map (Qualities.mult (float harvests))
         let seedData = seedData data settings seedPrice seed items profits (if Crop.regrows crop then totalAmounts else amounts)
         let seedsBought, soldAmounts, seedAmounts =
           if Crop.regrows crop then
             seedData.SeedsBought, seedData.Sold, seedData.IntoSeeds
           else
-            let scale = Qualities.map ((*) (float harvests))
+            let scale = Qualities.mult (float harvests)
             seedData.SeedsBought * float harvests,
             seedData.Sold |> Array.map scale,
             seedData.IntoSeeds |> Array.map (fun (item, amounts) -> item, scale amounts)
@@ -1098,7 +993,7 @@ let cropProfitDataStockpileSeeds data settings timeNormalization crop fertilizer
     }
 
 let cropProfitDataBuyFirstSeed data settings timeNormalization crop fertilizer =
-  match bestGrowthSpan settings crop fertilizer with
+  match bestGrowthSpan settings.Game fertilizer crop with
   | None -> None
   | Some span ->
     let seed = Crop.seed crop
@@ -1112,11 +1007,11 @@ let cropProfitDataBuyFirstSeed data settings timeNormalization crop fertilizer =
     let profits =
       sellAs |> Array.map (function
         | Some sellAs ->
-          Qualities.initi (fun i -> snd sellAs[i])
+          Qualities.init (fun q -> snd sellAs[q])
         | None -> Qualities.zero)
-    let amounts = cropItemAmounts settings crop fertilizer
+    let amounts = Game.cropItemAmounts settings.Game fertilizer crop
     let fertCost' =
-      if settings.PayForFertilizer
+      if settings.Profit.PayForFertilizer
       then fertilizer |> Option.map (Fertilizer.name >> fertilizerLowestPriceBuyFrom data settings)
       else None
     let fertCost = fertCost' |> Option.defaultOrMap (Some 0u) (Option.map snd)
@@ -1125,17 +1020,17 @@ let cropProfitDataBuyFirstSeed data settings timeNormalization crop fertilizer =
 
     let soldAmounts, seedAmounts, seedsBought, forageSeedsSold, forageSeedsUsed, net =
       match crop with
-      | ForageCrop c when ForageCrop.seedsRecipeUnlocked settings.Skills c
-          && (settings.UseForageSeeds.Contains seed || settings.SellForageSeeds.Contains seed) ->
-        let useForageSeeds = settings.UseForageSeeds.Contains seed
-        let seedMaker = not useForageSeeds && Processor.seedMaker |> processorUnlocked data settings && settings.UseSeedMaker.Contains seed
+      | ForageCrop c when ForageCrop.seedsRecipeUnlocked settings.Game.Skills c
+          && (settings.Selected.UseForageSeeds.Contains seed || settings.Selected.SellForageSeeds.Contains seed) ->
+        let useForageSeeds = settings.Selected.UseForageSeeds.Contains seed
+        let seedMaker = not useForageSeeds && Processor.seedMaker |> Game.processorUnlocked data settings.Game.Skills && settings.Selected.UseSeedMaker.Contains seed
         let maxSeeds =
           if seedPrice.IsSome
           then 1.0
           else min 1.0 (Qualities.sum amounts[0] * if useForageSeeds then float ForageCrop.forageSeedsPerCraft elif seedMaker then Processor.seedMakerAmount else 0.0)
 
         let h1 = float (harvests - 1u)
-        let totalAmounts = amounts[0] |> Qualities.map ((*) h1)
+        let totalAmounts = amounts[0] |> Qualities.mult h1
 
         let solution = forageCropNetProfitPerHarvestForageSeedsSolution data settings c seedPrice profits totalAmounts (maxSeeds * h1)
         assert (solution.status = Optimal)
@@ -1190,7 +1085,7 @@ let cropProfitDataBuyFirstSeed data settings timeNormalization crop fertilizer =
         getUsage solution UsedForageSeeds * float ForageCrop.forageSeedsPerCraft,
         net
       | _ ->
-        let totalAmounts = amounts |> Array.map (Qualities.map ((*) (float harvests)))
+        let totalAmounts = amounts |> Array.map (Qualities.mult (float harvests))
         let seedsBought, soldAmounts, seedAmounts =
           if Crop.regrows crop then
             1.0, totalAmounts, [| |]
@@ -1202,7 +1097,7 @@ let cropProfitDataBuyFirstSeed data settings timeNormalization crop fertilizer =
               (Qualities.map2 (fun sold amount -> sold * h1 + amount))
               seedData.Sold
               amounts,
-            seedData.IntoSeeds |> Array.map (fun (item, amounts) -> item, amounts |> Qualities.map ((*) h1))
+            seedData.IntoSeeds |> Array.map (fun (item, amounts) -> item, amounts |> Qualities.mult h1)
         let net =
           Option.map2 (fun fertCost seedPrice ->
             farmCropProfitPerHarvestCalc profits soldAmounts
@@ -1229,7 +1124,7 @@ let cropProfitDataBuyFirstSeed data settings timeNormalization crop fertilizer =
     }
 
 let cropProfitDataIgnoreSeeds data settings timeNormalization crop fertilizer =
-  match bestGrowthSpan settings crop fertilizer with
+  match bestGrowthSpan settings.Game fertilizer crop with
   | None -> None
   | Some span ->
     let seed = Crop.seed crop
@@ -1240,11 +1135,11 @@ let cropProfitDataIgnoreSeeds data settings timeNormalization crop fertilizer =
     let profits =
       sellAs |> Array.map (function
         | Some sellAs ->
-          Qualities.initi (fun i -> snd sellAs[i])
+          Qualities.init (fun q -> snd sellAs[q])
         | None -> Qualities.zero)
-    let amounts = cropItemAmounts settings crop fertilizer
+    let amounts = Game.cropItemAmounts settings.Game fertilizer crop
     let fertCost' =
-      if settings.PayForFertilizer
+      if settings.Profit.PayForFertilizer
       then fertilizer |> Option.map (Fertilizer.name >> fertilizerLowestPriceBuyFrom data settings)
       else None
     let fertCost = fertCost' |> Option.defaultOrMap (Some 0u) (Option.map snd)
@@ -1255,13 +1150,13 @@ let cropProfitDataIgnoreSeeds data settings timeNormalization crop fertilizer =
     let net, soldAmounts, forageSeedsSold =
       match crop with
       | ForageCrop c ->
-        let soldAmounts = amounts[0] |> Qualities.map ((*) (float harvests))
+        let soldAmounts = amounts[0] |> Qualities.mult (float harvests)
         let data = forageCropProfitPerHarvestIgnoreSeedsCalc data settings c profits soldAmounts
         fertCost |> Option.map (fun fertCost -> data.Profit - fertilizerBought * float fertCost),
         Array.create amounts.Length data.SoldAmounts,
         data.ForageSeeds
       | FarmCrop _ ->
-        let soldAmounts = amounts |> Array.map (Qualities.map ((*) (float harvests)))
+        let soldAmounts = amounts |> Array.map (Qualities.mult (float harvests))
         fertCost |> Option.map (fun fertCost -> farmCropProfitPerHarvestCalc profits soldAmounts - fertilizerBought * float fertCost),
         soldAmounts,
         0.0
@@ -1282,7 +1177,7 @@ let cropProfitDataIgnoreSeeds data settings timeNormalization crop fertilizer =
     }
 
 let cropProfitData data settings timeNormalization crop fertilizer =
-  match settings.SeedStrategy with
+  match settings.Profit.SeedStrategy with
   | IgnoreSeeds -> cropProfitDataIgnoreSeeds data settings timeNormalization crop fertilizer
   | StockpileSeeds -> cropProfitDataStockpileSeeds data settings timeNormalization crop fertilizer
   | BuyFirstSeed -> cropProfitDataBuyFirstSeed data settings timeNormalization crop fertilizer

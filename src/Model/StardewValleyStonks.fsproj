@@ -8,7 +8,7 @@
     <Compile Include="Skills.fs" />
     <Compile Include="Items.fs" />
     <Compile Include="Crops.fs" />
-    <Compile Include="GameData.fs" />
+    <Compile Include="Game.fs" />
     <Compile Include="Data.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />

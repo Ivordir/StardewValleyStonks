@@ -212,7 +212,7 @@ type SubRangeSolutionRequest =
     ExtraProfit: float }
 
 let solutionRequests data settings (fertilizers: FertilizerName option array) (crops: SeedId array) =
-  let nthSeason, days = Date.seasonsAndDays settings.StartDate settings.EndDate
+  let nthSeason, days = Date.seasonsAndDays settings.Game.StartDate settings.Game.EndDate
   // let nthSeason, days =
   //   if model.Location = Farm
   //   then nthSeason, days
@@ -220,7 +220,7 @@ let solutionRequests data settings (fertilizers: FertilizerName option array) (c
   let days = days |> Array.map (fun x -> x - 1u)
   let seasons = Seasons.ofSeq nthSeason
   let seasonNames =
-    if settings.Location = Farm
+    if settings.Game.Location = Farm
     then nthSeason |> Array.map Season.name
     else [| "InSeason" |]
 
@@ -246,8 +246,8 @@ let solutionRequests data settings (fertilizers: FertilizerName option array) (c
   let strs = Array.create 3 "" // [| cropName; fertName; seasonName |]
 
   let lossProb =
-    if settings.PayForFertilizer && settings.ReplaceLostFertilizer then
-      let giantProb = Query.giantCropProb settings
+    if settings.Profit.PayForFertilizer && settings.Profit.ReplaceLostFertilizer then
+      let giantProb = Game.giantCropProb settings.Game
       function
       | FarmCrop crop -> if crop.Amount.Giant then Fertilizer.lossProbability * giantProb else 0.0
       | ForageCrop _ -> Fertilizer.lossProbability
@@ -274,7 +274,7 @@ let solutionRequests data settings (fertilizers: FertilizerName option array) (c
         | Some net when net > 0.0 ->
           let replacementCost = lossProb * float fertCost
           strs[1] <- fertilizerIdOption fertilizer
-          let growthTime = Query.growthTime settings fertilizer crop
+          let growthTime = Game.growthTime settings.Game fertilizer crop
           let profit = Profit, net - replacementCost
 
           let mutable growsInPrevious = false
@@ -381,7 +381,7 @@ let solutionRequests data settings (fertilizers: FertilizerName option array) (c
 
         match regrowData fertilizer with
         | Some data ->
-          let growthTime = Query.growthTime settings fertilizer (FarmCrop crop)
+          let growthTime = Game.growthTime settings.Game fertilizer (FarmCrop crop)
 
           let rec recur start daysAfterFirstSeason harvestsAfterFirstSeason =
             let totalDays = daysAfterFirstSeason + days[start]
