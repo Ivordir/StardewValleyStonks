@@ -690,9 +690,7 @@
         4,
         1
       ],
-      "Amount": {
-        "Giant": true
-      },
+      "Giant": true,
       "Item": 190
     },
     {
@@ -816,9 +814,7 @@
         3,
         3
       ],
-      "Amount": {
-        "Giant": true
-      },
+      "Giant": true,
       "Item": 254
     },
     {
@@ -1093,9 +1089,7 @@
         4,
         3
       ],
-      "Amount": {
-        "Giant": true
-      },
+      "Giant": true,
       "Item": 276
     },
     {

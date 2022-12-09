@@ -31,11 +31,20 @@ ul
 button
   font-family: inherit
 
-input[type="number"]
-  font-family: Stardew Valley
+input[type=number]
+  font-family: Stardew Valley Stonks
 
-input[type="range"]
-  font-family: Stardew Valley
+input[type=file]
+  font-family: Stardew Valley Stonks
+
+.file-input
+  display: inline-block
+
+  &:hover
+    transform: scale(1.1)
+
+  & > input
+    display: none
 
 .tabs
   display: flex
@@ -57,6 +66,11 @@ input[type="range"]
     min-width: var(--chart-min-width)
     min-height: var(--chart-min-height)
     max-height: var(--app-min-height)
+
+    & > .controls
+      display: flex
+      justify-content: center
+      align-items: center
 
 #settings
   display: flex
@@ -191,12 +205,6 @@ img
     & > label
       color: brown
       text-align: left
-
-      & > input[type="number"]
-        font-family: Stardew Valley
-
-      & > input[type="range"]
-        font-family: Stardew Valley
 
 .professions
   display: flex
@@ -360,15 +368,15 @@ img
         left: calc(var(--counter-offset) + 0.25rem)
 
 
+.rselect
+  display: inline-block
+
 .audit-graph
 
   &-select
     display: flex
     flex-direction: column
     align-items: center
-
-    & .rselect
-      width: 40%
 
     & > div
       display: flex
@@ -446,15 +454,8 @@ img
 footer
   background: white
   display: flex
-  justify-content: center
-
-  & > span:not(:first-child)::before
-    margin: 0.5em
-    content: "|"
-
-
-
-
+  justify-content: space-evenly
+  text-align: center
 
 
 %crop-qualities-inline

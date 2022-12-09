@@ -155,11 +155,24 @@ module Date =
     resizeToArray spans
 
 
+type ToolLevel =
+  | Normal = 0
+  | Copper = 1
+  | Steel = 2
+  | Gold = 3
+  | Iridium = 4
+
+module ToolLevel =
+  let name (toolLevel: ToolLevel) = enumName toolLevel
+
+  let all = Array.init 5 enum<ToolLevel>
+
+
 type CropAmountSettings = {
   SpecialCharm: bool
   LuckBuff: nat
   GiantChecksPerTile: float
-  ShavingToolLevel: nat option
+  ShavingToolLevel: ToolLevel option
 }
 
 module CropAmountSettings =
@@ -229,8 +242,8 @@ module CropAmount =
     else
       Qualities.zero |> Qualities.updateQuality Normal a
 
-  let giantCropsFromShaving shavingToolLevel =
-    let damage = shavingToolLevel / 2u + 1u |> float
+  let giantCropsFromShaving (shavingToolLevel: ToolLevel) =
+    let damage = (int shavingToolLevel) / 2 + 1 |> float
     let numHits = 3.0 / damage |> ceil
     let shavingProb = damage / 5.0
     shavingProb * numHits

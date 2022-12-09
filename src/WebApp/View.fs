@@ -8,7 +8,7 @@ open StardewValleyStonks.WebApp.Update
 
 // fix flower crop stage img
 
-// use react select everywhere?
+// set selectOptions width
 
 // best indicator for Products. Prices
 
@@ -93,6 +93,8 @@ module Class =
   let iconProcessor = className "icon-processor"
   let iconProcessorLarge = className "icon-processor-large"
 
+  let fileInput = className "file-input"
+
   let active = className "active"
   let disabled = className "disabled"
   let open' = className "open"
@@ -117,6 +119,7 @@ module Class =
   let breakdownTable = className "breakdown-table"
 
   let graph = className "graph"
+  let graphControls = className "controls"
   let auditGraph = className "audit-graph"
   let auditGraphSelect = className "audit-graph-select"
 
@@ -277,30 +280,41 @@ let checkboxWith rest = checkboxCustom (Class.checkboxLabel :: rest)
 let checkbox = checkboxWith [] none
 let inline checkboxText str checked' msg = checkboxWith [] (ofStr str) checked' msg
 
-[<ReactComponent(import="default", from="react-select")>]
-let private ReactSelect _ = imported ()
+module Select =
+  [<ReactComponent(import="default", from="react-select")>]
+  let private ReactSelect _ = imported ()
 
-let selectUnitUnionWith viewOption allCases (current: 'a) dispatch =
-  select [
-    valueOrDefault (Reflection.getCaseTag current)
-    onChange ((int: string -> _) >> flip Array.item allCases >> dispatch)
-    children (allCases |> Array.map viewOption)
-  ]
+  // workaround for: https://github.com/JedWatson/react-select/issues/5369
+  let private wrap value = {| value = value |}
+  let private unwrap (o: {| value: _ |}) = o.value
 
-let selectUnitUnion allCases current dispatch =
-  selectUnitUnionWith (fun case ->
-    option [
-      text <| string case
-      valueOrDefault (Reflection.getCaseTag case)
-    ] )
-    allCases
-    current
-    dispatch
+  let select
+    (searchable: bool)
+    (name: 'a -> string)
+    (display: 'a -> ReactElement)
+    (options: 'a array)
+    (selected: 'a)
+    (dispatch: 'a -> unit)
+    =
+    ReactSelect {|
+      className = "rselect"
+      options = options |> Array.map wrap
+      value = wrap selected
+      isSearchable = searchable
+      getOptionLabel = unwrap >> name
+      formatOptionLabel = unwrap >> display
+      onChange = unwrap >> dispatch
+    |}
 
-let selectUnitUnionText text allCases current dispatch =
-  label [
-    ofStr text
-    selectUnitUnion allCases current dispatch
+  let inline options name display options selected dispatch = select false name display options selected dispatch
+
+  let inline unitUnion (selected: 'a) dispatch = select false Reflection.getCaseName (Reflection.getCaseName >> ofStr) unitUnionCases<'a> selected dispatch
+
+
+let labeled label element =
+  Html.label [
+    ofStr label
+    element
   ]
 
 
@@ -388,7 +402,7 @@ module Skills =
         div [
           quality |> qualityClass "bar"
           // using flex-grow instead of style.width prevents divs from overflowing into next line due to animations
-          style [ style.custom ("flexGrow",(qualities[quality] * 100.0)) ]
+          style [ style.custom ("flexGrow", qualities[quality] * 100.0) ]
         ] ))
       ]
 
@@ -568,6 +582,7 @@ let private sortKeysByHighestCount table =
   |> Seq.map fst
   |> Array.ofSeq
 
+
 // default crop sort
 module Crops =
   let seedVendors = sortKeysByHighestCount Data.gameData.SeedPrices
@@ -680,7 +695,7 @@ module Crops =
           Image.Icon.item' data item
         ]
         td [
-          checkbox (settings.Selected.SellRaw.Contains (seed, item)) (curry SetSelected (seed, item) >> SelectSellRawItems >> selectDispatch)
+          checkbox (settings.Selected.SellRaw.Contains (seed, item)) (curry SetSelected (seed, item) >> SelectSellRaw >> selectDispatch)
           ofNat <| Game.itemPrice settings.Game theItem productQuality
         ]
         yield! processors |> Array.mapi (fun i processor ->
@@ -721,19 +736,12 @@ module Crops =
     let productWidth = 100.0 * (1.0 - keyColWidth) / float (processors.Length + 2)
 
     [
-      label [
-        ofStr "View with quality: "
-        select [
-          valueOrDefault (Quality.name productQuality)
-          onChange ((Quality.Parse: string -> _) >> SetProductQuality >> uiDispatch)
-          children (Quality.all |> Array.map (fun quality ->
-            option [
-              text <| Quality.name quality
-              valueOrDefault (Quality.name quality)
-            ]
-          ))
-        ]
-      ]
+      labeled "View with quality: " <| Select.options
+        Quality.name
+        (Quality.name >> ofStr)
+        Quality.all
+        productQuality
+        (SetProductQuality >> uiDispatch)
 
       checkboxText "Normalize Prices" showNormalizedPrices (SetShowNormalizedProductPrices >> uiDispatch)
 
@@ -753,7 +761,7 @@ module Crops =
                   |> Seq.collect (fun (seed, crop) ->
                     Crop.items crop |> Array.map (tuple2 seed))
                   |> Seq.forall settings.Selected.SellRaw.Contains)
-                (selectMany (konst true) >> SelectSellRawItems >> selectDispatch)
+                (selectMany (konst true) >> SelectSellRaw >> selectDispatch)
             ofStr "Raw Crop"
           ]
           Width = productWidth
@@ -845,7 +853,7 @@ module Crops =
 
     [
       checkboxText "Joja Membership" settings.Game.JojaMembership (SetJojaMembership >> SetGameVariables >> settingsDispatch)
-      selectUnitUnionText "Seed Strategy:" unitUnionCases<SeedStrategy> settings.Profit.SeedStrategy (SetSeedStrategy >> SetProfit >> settingsDispatch)
+      labeled "Seed Strategy:" <| Select.unitUnion settings.Profit.SeedStrategy (SetSeedStrategy >> SetProfit >> settingsDispatch)
 
       let keyColWdith = 0.4
       let width = 100.0 * ((1.0 - keyColWdith) / float seedVendors.Length) // div by 0?
@@ -991,25 +999,20 @@ module Crops =
     |> Array.ofSeq
 
   let private selectFilter name value dispatch =
-    label [
-      ofStr name
-      select [
-        valueOrDefault
-          (match value with
-          | Some true -> "Yes"
-          | Some false -> "No"
-          | None -> "Any")
-        onChange ((function
-          | "Yes" -> Some true
-          | "No" -> Some false
-          | _ -> None) >> dispatch)
-        children [
-          option [ valueOrDefault "Any"; text "Any" ]
-          option [ valueOrDefault "Yes"; text "Yes" ]
-          option [ valueOrDefault "No"; text "No" ]
-        ]
-      ]
-    ]
+    Select.options
+      (function
+        | Some true -> "Yes"
+        | Some false -> "No"
+        | None -> "Any")
+      (function
+        | Some true -> "Yes"
+        | Some false -> "No"
+        | None -> "Any"
+        >> ofStr)
+      [| Some true; Some false; None |]
+      value
+      dispatch
+    |> labeled name
 
   let cropFilter filters dispatch =
     let toggleSeason season selected =
@@ -1079,7 +1082,7 @@ module Fertilizers =
       open'
       (ofStr "Fertilizers")
       [
-        checkboxText "Allow No Fertilizer" settings.Selected.NoFertilizer (SetAllowNoFertilizer >> selectDispatch)
+        checkboxText "Allow No Fertilizer" settings.Selected.NoFertilizer (SelectNoFertilizer >> selectDispatch)
         sortTableWith [ className "select" ] [
           {
             Header =
@@ -1222,15 +1225,12 @@ module Misc =
   let date message (date: Date) dispatch =
     let dispatch = message >> dispatch
     div [ Class.date; children [
-      select [
-        valueOrDefault (Season.name date.Season)
-        onChange (fun (str: string) -> dispatch { date with Season = Seasons.Parse str })
-        children (Season.all |> Array.map (fun season ->
-          option [
-            text <| Season.name season
-            valueOrDefault (Season.name season)
-          ] ))
-      ]
+      Select.options
+        Season.name
+        (Season.name >> ofStr)
+        Season.all
+        date.Season
+        (fun season -> dispatch {date with Season = season })
       input [
         type'.number
         min' Date.firstDay
@@ -1243,18 +1243,18 @@ module Misc =
   let multipliers multipliers dispatch =
     div [
       checkboxText "Bear's Knowledge" multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
-      label [
-        ofStr "Profit Margin:"
-        select [
-          valueOrDefault multipliers.ProfitMargin
-          onChange ((float: string -> _) >> SetProfitMargin >> dispatch)
-          children ({ 1.0..(-0.25)..0.25 } |> Seq.map (fun multiplier ->
-            option [
-              text (if multiplier = 1.0 then "Normal" else percent multiplier)
-              valueOrDefault multiplier
-            ] ))
-        ]
-      ]
+      labeled "Profit Margin:" <| Select.options
+        (function
+          | 1.0 -> "Normal"
+          | margin -> percent margin)
+        (function
+          | 1.0 -> "Normal"
+          | margin -> percent margin
+          >> ofStr)
+        [| yield! seq { 1.0..(-0.25)..0.25 } |]
+        multipliers.ProfitMargin
+        (SetProfitMargin >> dispatch)
+
       checkboxText "Apply Tiller to Foraged Grapes and Blackberries" multipliers.TillerForForagedFruit (SetTillerForForagedFruit >> dispatch)
     ]
 
@@ -1278,21 +1278,15 @@ module Misc =
         // (minYield, maxYield) -> avg yield
         // + crops from shaving
         // / 9 tiles
-      div [
-        ofStr "Shaving Enchantment"
-        select [
-          valueOrDefault (settings.ShavingToolLevel |> Option.defaultOrMap -1 int)
-          onChange ((int: string -> _ ) >> (function | -1 -> None | i -> Some <| nat i) >> SetShavingToolLevel >> dispatch)
-          children [
-            option [ valueOrDefault -1; text "None" ]
-            option [ valueOrDefault 0; text "Normal" ]
-            option [ valueOrDefault 1; text "Copper" ]
-            option [ valueOrDefault 2; text "Steel" ]
-            option [ valueOrDefault 3; text "Gold" ]
-            option [ valueOrDefault 4; text "Iridium" ]
-          ]
-        ]
-      ]
+
+      Select.options
+        (Option.defaultOrMap "None" ToolLevel.name)
+        (Option.defaultOrMap "None" ToolLevel.name >> ofStr)
+        [| None; yield! ToolLevel.all |> Array.map Some |]
+        settings.ShavingToolLevel
+        (SetShavingToolLevel >> dispatch)
+      |> labeled "Shaving Enchantment: "
+
       checkboxText "Special Charm" settings.SpecialCharm (SetSpecialCharm >> dispatch)
       label [
         ofStr "Luck Buff:"
@@ -1332,7 +1326,7 @@ module Misc =
     let dispatch = SetGameVariables >> SetSettings >> dispatch
     div [ id' "misc"; children [
       div [ Class.date; children [
-        selectUnitUnionText "Location:" unitUnionCases<Location> settings.Location (SetLocation >> dispatch)
+        labeled "Location: " <| Select.unitUnion settings.Location (SetLocation >> dispatch)
         // check that not: (startSeason = endSeason and endDay < startday)
         date SetStartDate settings.StartDate dispatch
         date SetEndDate settings.EndDate dispatch
@@ -1400,7 +1394,7 @@ module LoadSave =
     let save, setSave = useState None
 
     fragment [
-      label [
+      label [ Class.fileInput; children [
         ofStr "Import Save"
         input [
           type'.file
@@ -1413,7 +1407,7 @@ module LoadSave =
             |> ignore
           )
         ]
-      ]
+      ] ]
 
       match save with
       | None | Some (Some (_, [| |])) -> none
@@ -1464,19 +1458,22 @@ module LoadSave =
         )
       ]
 
-      saveCurrentSettings {| dispatch = saveDispatch |}
+      div [ style [ style.display.flex; style.flexDirection.column; style.width.maxContent ]; children [
+        saveCurrentSettings {| dispatch = saveDispatch |}
 
-      importSave {| dispatch = saveDispatch |}
+        importSave {| dispatch = saveDispatch |}
 
-      button [
-        onClick (fun _ -> loadDispatch (snd Data.defaultSavedSettings.Value[0]))
-        text "Reset Settings to Default"
-      ]
+        button [
+          onClick (fun _ -> loadDispatch (snd Data.defaultSavedSettings.Value[0]))
+          text "Reset Settings to Default"
+        ]
 
-      button [
-        onClick (fun _ -> dispatch HardReset)
-        text "Hard Reset"
-      ]
+        button [
+          // add warning
+          onClick (fun _ -> dispatch HardReset)
+          text "Hard Reset"
+        ]
+      ] ]
     ]
 
 let settings app dispatch =
@@ -1714,18 +1711,17 @@ let allPairData metric timeNorm data settings =
   |}
 
 let rankBy labelText ranker dispatch =
-  label [
+  fragment [
     ofStr labelText
-    selectUnitUnionWith (fun case ->
-      option [
-        text <| string case
-        title (RankMetric.fullName case)
-        valueOrDefault (Reflection.getCaseTag case)
-      ] )
+    Select.options string (fun metric ->
+      Html.span [
+        text (string metric)
+        title (RankMetric.fullName metric)
+      ])
       unitUnionCases<RankMetric>
       ranker.RankMetric
       (SetRankMetric >> dispatch)
-    selectUnitUnion unitUnionCases<TimeNormalization> ranker.TimeNormalization (SetTimeNormalization >> dispatch)
+    Select.unitUnion ranker.TimeNormalization (SetTimeNormalization >> dispatch)
   ]
 
 let graphView ranker (data, settings) dispatch =
@@ -1768,26 +1764,24 @@ let graphView ranker (data, settings) dispatch =
       | Error a, Error b -> setOrder a b)
 
     fragment [
-      div [
-        label [
-          ofStr "Rank "
-          selectUnitUnionWith (fun case ->
-            let str =
-              match case with
+      div [ Class.graphControls; children [
+        ofStr "Rank"
+        Select.options string (fun rankby ->
+          Html.span [
+            text <| string rankby
+            title (
+              match rankby with
               | RankCropsAndFertilizers -> "All pairs of crops and fertilizers."
               | RankCrops -> "Pick the best fertilizer for each crop."
               | RankFertilizers -> "Pick the best crop for each fertilizer."
-            option [
-              text <| string case
-              title str
-              valueOrDefault (Reflection.getCaseTag case)
-            ] )
-            unitUnionCases<RankItem>
-            ranker.RankItem
-            (SetRankItem >> dispatch)
-        ]
+            )
+          ])
+          unitUnionCases<RankItem>
+          ranker.RankItem
+          (SetRankItem >> dispatch)
+
         rankBy "By" ranker dispatch
-      ]
+      ] ]
       div [
         Class.graph
         children [
@@ -2393,39 +2387,34 @@ let selectedCropAndFertilizer2 =
 
       bestCrop, bestFert
 
-    let cropOption seed =
-      let crop = data.Crops[seed]
-      let name = Crop.name data.Items.Find crop
-      {|
-        name = name
-        value = Choice1Of2 crop
-      |}
+    let cropDisplayName crop = Crop.name data.Items.Find crop
 
-    let bestCropOption =
-      let bestCrop = bestCrop |> Option.map data.Crops.Find
-      let bestName = bestCrop |> Option.defaultOrMap "???" (Crop.name data.Items.Find)
-      {|
-        name = bestName
-        value = Choice2Of2 bestCrop
-      |}
+    let cropOption seed = Choice1Of2 data.Crops[seed]
+      // let crop = data.Crops[seed]
+      // let name = Crop.name data.Items.Find crop
+      // {|
+      //   name = name
+      //   value = Choice1Of2 crop
+      // |}
+
+    let bestCropOption = Choice2Of2 (bestCrop |> Option.map data.Crops.Find)
+      // let bestCrop = bestCrop |> Option.map data.Crops.Find
+      // let bestName = bestCrop |> Option.defaultOrMap "???" (Crop.name data.Items.Find)
+      // {|
+      //   name = bestName
+      //   value = Choice2Of2 bestCrop
+      // |}
 
     let cropOptions =
       pairData.Crops
       |> Array.map cropOption
       |> Array.append [| bestCropOption |]
 
-    let bestFertilizerOption =
-      let bestFertilizer = bestFert |> Option.map (Option.map data.Fertilizers.Find)
-      let bestName = bestFertilizer |> Option.defaultOrMap "???" (Option.defaultOrMap "No Fertilizer" Fertilizer.name)
-      {|
-        name = bestName
-        value = Choice2Of2 bestFertilizer
-      |}
+    let fertilizerDisplayName fert = fert |> Option.defaultOrMap "No Fertilizer" Fertilizer.name
 
-    let fertilizerOption fert = {|
-      name = fert |> Option.defaultOrMap "No Fertilizer" Fertilizer.name
-      value = Choice1Of2 fert
-    |}
+    let bestFertilizerOption = Choice2Of2 (bestFert |> Option.map (Option.map data.Fertilizers.Find))
+
+    let fertilizerOption fert = Choice1Of2 fert
 
     let fertilizerOptions =
       pairData.Fertilizers
@@ -2440,91 +2429,81 @@ let selectedCropAndFertilizer2 =
 
       div [ Class.auditGraphSelect; children [
         div [
-          ReactSelect {|
-            className = "rselect"
-            options = cropOptions
-            value =
-              seed |> Option.defaultOrMap bestCropOption (fun seed ->
+          Select.select
+            true
+            (function
+              | Choice1Of2 crop -> cropDisplayName crop
+              | Choice2Of2 crop -> crop |> Option.defaultOrMap "???" cropDisplayName)
+            (fun opt ->
+              Html.span [
+                match opt with
+                | Choice1Of2 crop -> Image.Icon.crop data crop
+                | Choice2Of2 bestCrop ->
+                  ofStr "Best Crop ("
+                  bestCrop |> Option.defaultOrMap none (Image.Icon.crop data)
+                  ofStr ")"
+              ])
+            cropOptions
+            (seed |> Option.defaultOrMap bestCropOption (fun seed ->
                 cropOptions
-                |> Array.tryFind (fun opt ->
-                  match opt.value with
+                |> Array.tryFind (function
                   | Choice1Of2 crop when Crop.seed crop = seed -> true
                   | _ -> false)
-                |> Option.defaultValue (cropOption seed))
-            isSearchable = true
-            filterOption = createFilter {| stringify = fun opt -> opt?data?name |}
-            formatOptionLabel = fun opt -> Html.span [
-              match opt?value with
-              | Choice1Of2 crop ->
-                Image.crop crop
-                ofStr opt?name
-              | Choice2Of2 bestCrop ->
-                ofStr "Best Crop ("
-                bestCrop |> Option.defaultOrMap none Image.crop
-                ofStr opt?name
-                ofStr ")"
-            ]
-            onChange = fun opt ->
+                |> Option.defaultValue (cropOption seed)))
+            (fun opt ->
               let seed =
-                match opt?value with
+                match opt with
                 | Choice1Of2 crop -> Some (Crop.seed crop)
                 | Choice2Of2 _ -> None
-              dispatch (SetSelectedCropAndFertilizer (Some (seed, fert')))
-          |}
+              dispatch (SetSelectedCropAndFertilizer (Some (seed, fert'))))
 
           ofStr " with "
 
-          ReactSelect {|
-            className = "rselect"
-            options = fertilizerOptions
-            value =
-              fert' |> Option.defaultOrMap bestFertilizerOption (fun fert ->
-                fertilizerOptions
-                |> Array.tryFind (fun opt ->
-                  match opt.value with
-                  | Choice1Of2 f when (Option.map Fertilizer.name f) = fert -> true
-                  | _ -> false)
-                |> Option.defaultValue (fertilizerOption (Option.map data.Fertilizers.Find fert)))
-            isSearchable = true
-            filterOption = createFilter {| stringify = fun opt -> opt?data?name |}
-            formatOptionLabel = fun opt -> Html.span [
-              match opt?value with
+          Select.select
+            true
+            (function
+              | Choice1Of2 fert -> fertilizerDisplayName fert
+              | Choice2Of2 fert -> fert |> Option.defaultOrMap "???" fertilizerDisplayName)
+            (fun opt -> Html.span [
+              match opt with
               | Choice1Of2 (Some fert) ->
-                Image.fertilizer fert
-                ofStr opt?name
+                Image.Icon.fertilizer fert
               | Choice1Of2 None ->
-                ofStr opt?name
+                ofStr "No Fertilizer"
               | Choice2Of2 bestFertilizer ->
                 ofStr "Best Fertilizer ("
                 match bestFertilizer with
                 | Some (Some fert) -> Image.fertilizer fert
                 | _ -> none
-                ofStr opt?name
+                ofStr (bestFertilizer |> Option.defaultOrMap "???" fertilizerDisplayName)
                 ofStr ")"
-            ]
-            onChange = fun opt ->
+            ])
+            fertilizerOptions
+            (fert' |> Option.defaultOrMap bestFertilizerOption (fun fert ->
+                fertilizerOptions
+                |> Array.tryFind (function
+                  | Choice1Of2 f when (Option.map Fertilizer.name f) = fert -> true
+                  | _ -> false)
+                |> Option.defaultValue (fertilizerOption (Option.map data.Fertilizers.Find fert))))
+            (fun opt ->
               let fert =
-                match opt?value with
+                match opt with
                 | Choice1Of2 fert -> Some (Option.map Fertilizer.name fert)
                 | Choice2Of2 _ -> None
-              SetSelectedCropAndFertilizer (Some (seed, fert)) |> dispatch
-          |}
+              SetSelectedCropAndFertilizer (Some (seed, fert)) |> dispatch)
         ]
 
         div [
-          label [
-            ofStr "Show "
-            selectUnitUnionWith (fun case ->
-              option [
-                text <| string case
-                title (RankMetric.fullName case)
-                valueOrDefault (Reflection.getCaseTag case)
-              ] )
-              unitUnionCases<RankMetric>
-              (fst state.current)
-              (fun metric -> state.update(fun (_, timeNorm) -> metric, timeNorm))
-            selectUnitUnion unitUnionCases<TimeNormalization> (snd state.current) (fun timeNorm -> state.update(fun (metric, _) -> metric, timeNorm))
-          ]
+          ofStr "Show "
+          Select.options string (fun metric ->
+            Html.span [
+              text (string metric)
+              title (RankMetric.fullName metric)
+            ])
+            unitUnionCases<RankMetric>
+            (fst state.current)
+            (fun metric -> state.update(fun (_, timeNorm) -> metric, timeNorm))
+          Select.unitUnion (snd state.current) (fun timeNorm -> state.update(fun (metric, _) -> metric, timeNorm))
         ]
       ] ]
 
@@ -2714,7 +2693,7 @@ let update msg app =
   | HardReset ->
     Data.LocalStorage.clear ()
     Browser.Dom.window.location.reload ()
-    Unchecked.defaultof<_>, []
+    app, []
 
 let view app dispatch =
   try viewApp app dispatch
