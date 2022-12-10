@@ -200,7 +200,6 @@ module CropAmount =
   let [<Literal>] maxExtraCropChance = 1.0
   let [<Literal>] minGiantCropChecks = 0.0
   let [<Literal>] maxGiantCropChecks = 9.0
-  let [<Literal>] maxShavingToolLevel = 4u
   let [<Literal>] baseGiantProb = 0.01
   let [<Literal>] giantYield = 2u
 
@@ -213,20 +212,35 @@ module CropAmount =
     FarmingQualities = true
   }
 
-  let doubleCropProb settings =
-    (float settings.LuckBuff / 1500.0) + (if settings.SpecialCharm then 0.025 / 1200.0 else 0.0)
+  let doubleHarvestProb settings =
+    // Daily luck follows a uniform distribution [-0.1, 0.1], or [-0.075, 0.125] with special charm
+    // P(DoubleHarvest) = DailyLuck / 1200.0 + LuckBuff / 1500.0
+    let upperBound = (0.1 + if settings.SpecialCharm then 0.025 else 0.0) / 1200.0 + float settings.LuckBuff / 1500.0
 
-  let applyDoubling settings extraAmount = (doubleCropProb settings) * extraAmount + extraAmount
+    // the average probability, ignoring all negative 'probabilities'
+    let lowerBound = max 0.0 (upperBound - 0.2)
+    let avg = (upperBound + lowerBound) / 2.0
 
-  let cropsFromExtraChance extraChance = (1.0 / (1.0 - min extraChance 0.9)) - 1.0
+    // multiply by the probability of getting a positive value
+    avg * (upperBound - lowerBound) / 0.2
 
-  let averageCropYield skills settings amount =
-    let yieldIncrease =
+  let applyDoubling settings amount =
+    // P(DbouleHarvest) * 2x + (1 - P(DoubleHarvest)) * x
+    // = P(DbouleHarvest) * 2x + x - P(DoubleHarvest) * x
+    // = P(DbouleHarvest) * x + x
+    (doubleHarvestProb settings) * amount + amount
+
+  let averageExtraCrops extraChance =
+    // sum n=1..inf (extraChance^n)
+    (1.0 / (1.0 - min extraChance 0.9)) - 1.0
+
+  let averageCropAmount skills settings amount =
+    let maxYieldIncrease =
       if amount.FarmLevelsPerYieldIncrease <> 0u && (amount.MinCropYield > 1u || amount.MaxCropYield > 1u)
       then skills.Farming.Level / amount.FarmLevelsPerYieldIncrease
       else 0u
-    let avgExtraYield = float (amount.MinCropYield + amount.MaxCropYield + yieldIncrease) / 2.0
-    let avgAmount = avgExtraYield + cropsFromExtraChance amount.ExtraCropChance
+    let avgYield = float (amount.MinCropYield + amount.MaxCropYield + maxYieldIncrease) / 2.0
+    let avgAmount = avgYield + averageExtraCrops amount.ExtraCropChance
     if amount.CanDouble
     then applyDoubling settings avgAmount
     else avgAmount
@@ -234,8 +248,9 @@ module CropAmount =
   open type Quality
 
   let farmingAmounts skills settings amount farmingQualities =
-    let a = averageCropYield skills settings amount
+    let a = averageCropAmount skills settings amount
     if amount.FarmingQualities then
+      // Only the first harvested crop can be of higher quality
       if a = 1.0
       then farmingQualities
       else farmingQualities |> Qualities.updateQuality Normal (a - 1.0 + farmingQualities[Normal])
