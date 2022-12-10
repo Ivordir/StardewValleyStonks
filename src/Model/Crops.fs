@@ -214,8 +214,11 @@ module CropAmount =
 
   let doubleHarvestProb settings =
     // Daily luck follows a uniform distribution [-0.1, 0.1], or [-0.075, 0.125] with special charm
-    // P(DoubleHarvest) = DailyLuck / 1200.0 + LuckBuff / 1500.0
-    let upperBound = (0.1 + if settings.SpecialCharm then 0.025 else 0.0) / 1200.0 + float settings.LuckBuff / 1500.0
+    // P(DoubleHarvest) = DailyLuck / 1200.0 + LuckBuff / 1500.0 + 0.0001
+    let upperBound =
+      (0.1 + if settings.SpecialCharm then 0.025 else 0.0) / 1200.0
+      + float settings.LuckBuff / 1500.0
+      + 0.0001
 
     // the average probability, ignoring all negative 'probabilities'
     let lowerBound = max 0.0 (upperBound - 0.2)
