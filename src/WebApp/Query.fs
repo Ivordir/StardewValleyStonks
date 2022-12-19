@@ -950,7 +950,7 @@ let cropProfitDataStockpileSeeds data settings timeNormalization crop fertilizer
           Option.map2 (fun fertCost seedPrice ->
             solution.result - fertCost - float seedPrice)
             fertCost
-            seedPrice
+            (if seedsBought = 0.0 then Some 0u else seedPrice)
 
         soldAmounts, seedAmounts, seedsBought,
         getUsage solution SoldForageSeeds * float ForageCrop.forageSeedsPerCraft,

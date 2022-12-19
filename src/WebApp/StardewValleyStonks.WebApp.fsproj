@@ -10,7 +10,9 @@
     <Compile Include="Solver.fs" />
     <Compile Include="Update.fs" />
     <Compile Include="Data.fs" />
-    <Compile Include="View.fs" />
+    <Compile Include="View/Select.fs" />
+    <Compile Include="View/View.fs" />
+    <Compile Include="Main.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
