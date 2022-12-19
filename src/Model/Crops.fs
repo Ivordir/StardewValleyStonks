@@ -213,28 +213,41 @@ module CropAmount =
   }
 
   let doubleHarvestProb settings =
-    // Daily luck follows a uniform distribution [-0.1, 0.1], or [-0.075, 0.125] with special charm
-    // P(DoubleHarvest) = DailyLuck / 1200.0 + LuckBuff / 1500.0 + 0.0001
-    let upperBound =
-      (0.1 + if settings.SpecialCharm then 0.025 else 0.0) / 1200.0
-      + float settings.LuckBuff / 1500.0
-      + 0.0001
+    // RolledDailyLuck ~ U{-100, 100}
+    // That is, a discrete uniform distribution whose probability mass function, f(x) = 1 / (100 - -100 + 1) = 1 / 201
+    // This is the daily luck rolled every day by the game.
 
-    // the average probability, ignoring all negative 'probabilities'
-    let lowerBound = max 0.0 (upperBound - 0.2)
-    let avg = (upperBound + lowerBound) / 2.0
+    // specialCharm = 0.025 if hasSpecialCharm otherwise 0
+    // doubleHarvestCutoff(rolledDailyLuck) = (rolledDailyLuck / 1000 + specialCharm) / 1200 + luckBuff / 1500 + 0.0001
+    // assume 0 <= luckBuff <= 1499.69375 such that 0 <= doubleHarvestCutoff <= 1
+    // The below random value must be less than doubleHarvestCutoff for a double harvest to happen.
 
-    // multiply by the probability of getting a positive value
-    avg * (upperBound - lowerBound) / 0.2
+    // Rand ~ U_[0, 1)
+    // That is, a continuous uniform distribution whose probability density function, f(x) = 1 / (1 - 0) = 1
+    // This is the random value generated every harvest to determine if a double harvest happens.
+
+    // Rand and RolledDailyLuck are independent, so:
+    // P(DoubleHarvest)
+    // = P(Rand < DoubleHarvestCutoff)
+    // = sum_(l=-100)^100 int_(r=0)^(doubleHarvestCutoff(l)) (f_RolledDailyLuck(l) * f_Rand(r)) dr
+    // = sum_(l=-100)^100 int_(r=0)^(doubleHarvestCutoff(l)) ((1 / 201) * 1) dr
+    // = sum_(l=-100)^100 doubleHarvestCutoff(l) / 201
+    // = 201 * (doubleHarvestCutoff(100) + doubleHarvestCutoff(-100)) / 2 / 201 => doubleHarvestCutoff is linear
+    // = (doubleHarvestCutoff(100) + doubleHarvestCutoff(-100)) / 2
+    // = ((100 / 1000) + (-100 / 1000)) / 1200 / 2 + specialCharm / 1200 + luckBuff / 1500 + 0.0001
+    // = specialCharm / 1200 + luckBuff / 1500 + 0.0001
+
+    (if settings.SpecialCharm then 0.025 else 0.0) / 1200.0 + float settings.LuckBuff / 1500.0 + 0.0001
+
 
   let applyDoubling settings amount =
-    // P(DbouleHarvest) * 2x + (1 - P(DoubleHarvest)) * x
-    // = P(DbouleHarvest) * 2x + x - P(DoubleHarvest) * x
-    // = P(DbouleHarvest) * x + x
+    // P(DoubleHarvest) * 2x + (1 - P(DoubleHarvest)) * x
+    // = P(DoubleHarvest) * 2x + x - P(DoubleHarvest) * x
+    // = P(DoubleHarvest) * x + x
     (doubleHarvestProb settings) * amount + amount
 
   let averageExtraCrops extraChance =
-    // sum n=1..inf (extraChance^n)
+    // sum_(n=1)^inf (min(0.9, extraChance)^n)
     (1.0 / (1.0 - min extraChance 0.9)) - 1.0
 
   let averageCropAmount skills settings amount =
