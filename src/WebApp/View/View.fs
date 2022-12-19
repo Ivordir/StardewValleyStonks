@@ -2335,9 +2335,9 @@ let selectedCropAndFertilizer =
     let { UI = ui; Settings = settings } = app.State
     let ranker = ui.Ranker
 
-    let state = Fable.React.HookBindings.Hooks.useState (ranker.RankMetric, ranker.TimeNormalization)
+    let (metric, timeNorm), setState = useState ((ranker.RankMetric, ranker.TimeNormalization))
 
-    let pairData = allPairData (fst state.current) (snd state.current) data settings
+    let pairData = allPairData metric timeNorm data settings
 
     let bestCrop, bestFert =
       if pairData.Pairs.Length = 0 then None, None else
@@ -2372,20 +2372,8 @@ let selectedCropAndFertilizer =
     let cropDisplayName crop = Crop.name data.Items.Find crop
 
     let cropOption seed = Choice1Of2 data.Crops[seed]
-      // let crop = data.Crops[seed]
-      // let name = Crop.name data.Items.Find crop
-      // {|
-      //   name = name
-      //   value = Choice1Of2 crop
-      // |}
 
     let bestCropOption = Choice2Of2 (bestCrop |> Option.map data.Crops.Find)
-      // let bestCrop = bestCrop |> Option.map data.Crops.Find
-      // let bestName = bestCrop |> Option.defaultOrMap "???" (Crop.name data.Items.Find)
-      // {|
-      //   name = bestName
-      //   value = Choice2Of2 bestCrop
-      // |}
 
     let cropOptions =
       pairData.Crops
@@ -2484,9 +2472,9 @@ let selectedCropAndFertilizer =
               title (RankMetric.fullName metric)
             ])
             unitUnionCases<RankMetric>
-            (fst state.current)
-            (fun metric -> state.update(fun (_, timeNorm) -> metric, timeNorm))
-          Select.unitUnion (length.em 7.5) (snd state.current) (fun timeNorm -> state.update(fun (metric, _) -> metric, timeNorm))
+            metric
+            (fun metric -> setState (metric, timeNorm))
+          Select.unitUnion (length.em 7.5) timeNorm (fun timeNorm -> setState (metric, timeNorm))
         ]
       ] ]
 
@@ -2496,10 +2484,10 @@ let selectedCropAndFertilizer =
           (ui.OpenDetails.Contains OpenDetails.RankerProfitBreakdown)
           (ofStr "Profit Breakdown")
           [
-            match fst state.current with
-            | Gold -> profitBreakdownTable false (snd state.current) data settings crop fert
-            | XP -> xpBreakdownTable (snd state.current) data settings crop fert
-            | ROI -> profitBreakdownTable true (snd state.current) data settings crop fert
+            match metric with
+            | Gold -> profitBreakdownTable false timeNorm data settings crop fert
+            | XP -> xpBreakdownTable timeNorm data settings crop fert
+            | ROI -> profitBreakdownTable true timeNorm data settings crop fert
           ]
           (curry SetDetailsOpen OpenDetails.RankerProfitBreakdown >> appDispatch)
         animatedDetails

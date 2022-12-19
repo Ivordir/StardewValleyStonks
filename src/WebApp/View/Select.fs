@@ -52,19 +52,23 @@ let private Select (props: {|
 
     handle e
 
-
   let initialState = {|
     Focused = false
     Hover = None
     Scroll = false
     Search = ""
-    Options = props.Options
+    Options = [||]
   |}
 
   let (prev, state), setState = useState ((initialState, initialState))
   let setState next = setState (state, next)
   let inputRef = useInputRef ()
   let listRef = useElementRef ()
+
+  useEffect ((fun () ->
+    setState {| initialState with Options = props.Options |}),
+    [| box props.Options |]
+  )
 
   useEffect (fun () ->
     match prev.Hover, state.Hover with
@@ -226,9 +230,9 @@ let private Select (props: {|
     ]
   ]
 
-let search minWidth toString display options selected dispatch =
+let search width toString display options selected dispatch =
   Select {|
-    Width = minWidth
+    Width = width
     ToString = Some toString
     Display = display
     Options = options
@@ -236,9 +240,9 @@ let search minWidth toString display options selected dispatch =
     Dispatch = dispatch
   |}
 
-let select minWidth display options selected dispatch =
+let select width display options selected dispatch =
   Select {|
-    Width = minWidth
+    Width = width
     ToString = None
     Display = display
     Options = options
@@ -246,5 +250,5 @@ let select minWidth display options selected dispatch =
     Dispatch = dispatch
   |}
 
-let inline unitUnion minWidth (selected: 'a) dispatch =
-  select minWidth (Reflection.getCaseName >> Html.text) unitUnionCases<'a> selected dispatch
+let inline unitUnion width (selected: 'a) dispatch =
+  select width (Reflection.getCaseName >> Html.text) unitUnionCases<'a> selected dispatch
