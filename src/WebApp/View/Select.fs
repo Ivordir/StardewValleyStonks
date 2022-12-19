@@ -57,7 +57,7 @@ let private Select (props: {|
     Hover = None
     Scroll = false
     Search = ""
-    Options = [||]
+    Options = props.Options
   |}
 
   let (prev, state), setState = useState ((initialState, initialState))
@@ -65,8 +65,8 @@ let private Select (props: {|
   let inputRef = useInputRef ()
   let listRef = useElementRef ()
 
-  useEffect ((fun () ->
-    setState {| initialState with Options = props.Options |}),
+  useEffect (
+    (fun () -> setState {| initialState with Options = props.Options |}),
     [| box props.Options |]
   )
 
