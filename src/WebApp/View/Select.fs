@@ -17,6 +17,11 @@ let private handle (event: Browser.Types.Event) =
   event.stopPropagation ()
   event.preventDefault ()
 
+let private tryScroll (list: Browser.Types.HTMLElement) index (mode: string) =
+  let elm = list.children.item index
+  if not (isNullOrUndefined elm) then
+    elm?scrollIntoView {| block = mode |}
+
 [<ReactComponent>]
 let private Select (props: {|
     Width: Styles.ICssUnit
@@ -78,18 +83,12 @@ let private Select (props: {|
       | None -> ()
 
       match listRef.current with
-      | Some list ->
-        let elm = list.children.item selectedIndex
-        if not (isNullOrUndefined elm) then
-          elm?scrollIntoView {| block = "center" |}
+      | Some list -> tryScroll list selectedIndex "center"
       | None -> ()
 
     | Some _, Some i when state.Scroll ->
       match listRef.current with
-      | Some list ->
-        let elm = list.children.item i
-        if not (isNullOrUndefined elm) then
-          elm?scrollIntoView {| block = "nearest" |}
+      | Some list -> tryScroll list i "nearest"
       | None -> ()
 
     | _ -> ())
@@ -162,33 +161,29 @@ let private Select (props: {|
               if state.Search <> "" then "searching"
             ]
             children [
-              match props.ToString with
-              | Some toString ->
-                input [
+              input [
+                onFocus (fun _ -> setState {| state with Focused = true |})
+                onBlur (fun _ -> setState initialState)
+                prop.ref inputRef
+
+                match props.ToString with
+                | Some toString ->
                   className "select-input-search"
-                  prop.ref inputRef
-                  value state.Search
                   prop.type'.text
-                  onFocus (fun _ -> setState {| state with Focused = true |})
-                  onBlur (fun _ -> setState initialState)
+                  value state.Search
                   onChange (fun (str: string) ->
-                    let str = str.ToLower ()
-                    let options = props.Options |> Array.filter (fun opt -> (toString opt).ToLower().Contains str)
+                    let lower = str.ToLower ()
+                    let options = props.Options |> Array.filter (fun opt -> (toString opt).ToLower().Contains lower)
                     setState {|
                       state with
                         Search = str
                         Hover = state.Hover |> Option.defaultOrMap 0 (min (options.Length - 1) >> max 0) |> Some
                         Options = options
                     |})
-                ]
-              | None ->
-                input [
+                | None ->
                   className "select-input-hidden"
-                  prop.ref inputRef
                   prop.inputMode.none
-                  onFocus (fun _ -> setState {| state with Focused = true |})
-                  onBlur (fun _ -> setState initialState)
-                ]
+              ]
 
               div (props.Display props.Selected)
             ]
@@ -202,8 +197,6 @@ let private Select (props: {|
         div [
           className "select-list"
           tabIndex -1
-          if not state.Scroll then
-            onMouseMove (fun _ -> setState {| state with Scroll = true |})
           children (ul [
             prop.ref listRef
             children (state.Options |> Array.mapi (fun i opt ->
@@ -212,15 +205,14 @@ let private Select (props: {|
                   if e.button = 0 then
                     props.Dispatch opt
                     clearHover e)
-                if state.Scroll then
-                  onMouseMove (fun _ ->
-                    if state.Hover |> Option.contains i then () else
-                    setState {|
-                      state with
-                        Focused = true
-                        Hover = Some i
-                        Scroll = false
-                    |})
+                onMouseMove (fun _ ->
+                  if state.Hover |> Option.contains i then () else
+                  setState {|
+                    state with
+                      Focused = true
+                      Hover = Some i
+                      Scroll = false
+                  |})
                 if hover = i then className "hover"
                 children (props.Display opt)
               ]
