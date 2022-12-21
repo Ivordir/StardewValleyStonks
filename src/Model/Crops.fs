@@ -200,6 +200,7 @@ module CropAmount =
   let [<Literal>] maxExtraCropChance = 1.0
   let [<Literal>] minGiantCropChecks = 0.0
   let [<Literal>] maxGiantCropChecks = 9.0
+  let [<Literal>] maxLuckBuff = 1499u
   let [<Literal>] baseGiantProb = 0.01
   let [<Literal>] giantYield = 2u
 
@@ -237,34 +238,37 @@ module CropAmount =
     // = ((100 / 1000) + (-100 / 1000)) / 1200 / 2 + specialCharm / 1200 + luckBuff / 1500 + 0.0001
     // = specialCharm / 1200 + luckBuff / 1500 + 0.0001
 
-    (if settings.SpecialCharm then 0.025 else 0.0) / 1200.0 + float settings.LuckBuff / 1500.0 + 0.0001
+    (if settings.SpecialCharm then 0.025 else 0.0) / 1200.0
+    + float settings.LuckBuff / 1500.0
+    + 0.0001
 
 
-  let applyDoubling settings amount =
-    // P(DoubleHarvest) * 2x + (1 - P(DoubleHarvest)) * x
+  let expectedDoubleAmount settings amount =
+    // E(DoubleAmount)
+    // = P(DoubleHarvest) * 2x + (1 - P(DoubleHarvest)) * x
     // = P(DoubleHarvest) * 2x + x - P(DoubleHarvest) * x
     // = P(DoubleHarvest) * x + x
     (doubleHarvestProb settings) * amount + amount
 
-  let averageExtraCrops extraChance =
+  let expectedExtraCrops extraChance =
     // sum_(n=1)^inf (min(0.9, extraChance)^n)
     (1.0 / (1.0 - min extraChance 0.9)) - 1.0
 
-  let averageCropAmount skills settings amount =
+  let expectedCropAmount skills settings amount =
     let maxYieldIncrease =
       if amount.FarmLevelsPerYieldIncrease <> 0u && (amount.MinCropYield > 1u || amount.MaxCropYield > 1u)
       then skills.Farming.Level / amount.FarmLevelsPerYieldIncrease
       else 0u
     let avgYield = float (amount.MinCropYield + amount.MaxCropYield + maxYieldIncrease) / 2.0
-    let avgAmount = avgYield + averageExtraCrops amount.ExtraCropChance
+    let avgAmount = avgYield + expectedExtraCrops amount.ExtraCropChance
     if amount.CanDouble
-    then applyDoubling settings avgAmount
+    then expectedDoubleAmount settings avgAmount
     else avgAmount
 
   open type Quality
 
   let farmingAmounts skills settings amount farmingQualities =
-    let a = averageCropAmount skills settings amount
+    let a = expectedCropAmount skills settings amount
     // Only the first harvested crop can be of higher quality
     if amount.FarmingQualities
     then farmingQualities |> Qualities.updateQuality Normal (a - 1.0 + farmingQualities[Normal])
