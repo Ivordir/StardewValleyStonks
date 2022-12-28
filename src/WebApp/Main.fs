@@ -1,5 +1,9 @@
 module StardewValleyStonks.WebApp.Main
 
+#if DEBUG
+Fable.Core.JsInterop.importDefault "preact/debug"
+#endif
+
 open Feliz
 open type Html
 
@@ -12,7 +16,7 @@ open Thoth.Json.Net
 #endif
 
 open StardewValleyStonks.WebApp
-open StardewValleyStonks.WebApp.Update
+open type StardewValleyStonks.WebApp.Update.AppMessage
 open StardewValleyStonks.WebApp.View
 
 let init () =
@@ -54,5 +58,5 @@ let view app dispatch =
 Program.mkProgram init update view
 |> Program.withErrorHandler (fun (msg, e) -> console.error (msg, e))
 |> Program.withReactBatched "app"
-|> Program.withSubscription (fun _ -> Cmd.ofSub Data.LocalStorage.subscribe)
+|> Program.withSubscription (fun _ -> Cmd.ofSub (fun dispatch -> Data.LocalStorage.subscribe (SyncSavedSettings >> dispatch)))
 |> Program.run

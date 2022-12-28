@@ -1,6 +1,10 @@
 {
   "private": true,
-  "source": "public/index.html",
+  "source": [
+    "public/index.html",
+    "public/info.html",
+    "public/credits.html"
+  ],
   "alias": {
     "react": "preact/compat",
     "react-dom/test-utils": "preact/test-utils",

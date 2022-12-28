@@ -380,6 +380,7 @@ let solutionRequests data settings (fertilizers: FertilizerName option array) (c
         strs[1] <- fertilizerIdOption fertilizer
 
         match regrowData fertilizer with
+        | None -> ()
         | Some data ->
           let growthTime = Game.growthTime settings.Game fertilizer (FarmCrop crop)
 
@@ -395,6 +396,7 @@ let solutionRequests data settings (fertilizers: FertilizerName option array) (c
 
                 for h in harvestsAfterFirstSeason..(min maxHarvests (data.HarvestsForMinCost - 1u)) do
                   match data.Cost h with
+                  | None -> ()
                   | Some cost ->
                     let usedDays = growthTime + (h - 1u) * regrowTime
                     ( "FixedRegrow" @ name @ string h,
@@ -402,7 +404,6 @@ let solutionRequests data settings (fertilizers: FertilizerName option array) (c
                          strs[2], float (if daysAfterFirstSeason > usedDays then 0u else usedDays - daysAfterFirstSeason)
                          endingCrop |] )
                     |> (fixedRegrowVars[i][start]).Add
-                  | None -> ()
 
                 if maxHarvests >= data.HarvestsForMinCost then
                   let harvests = max data.HarvestsForMinCost harvestsAfterFirstSeason
@@ -433,7 +434,6 @@ let solutionRequests data settings (fertilizers: FertilizerName option array) (c
 
           recur stop 0u 0u
 
-        | None -> ()
 
     for i = 0 to fertilizers.Length - 1 do
       let fixedRegrowVars = fixedRegrowVars[i]

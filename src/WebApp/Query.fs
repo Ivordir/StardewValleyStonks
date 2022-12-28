@@ -355,6 +355,7 @@ let private forageCropProfitPerHarvestIgnoreSeedsCalc data settings crop profits
       SoldAmounts = Qualities.wrap amounts
       ForageSeeds = forageSeedsSold
     |}
+
   else
     {|
       Profit = profits |> Array.sumBy (Qualities.dot amounts)
@@ -406,8 +407,8 @@ let private forageCropNetProfitPerHarvestForageSeedsSolution data settings (crop
   let variables = ResizeArray ()
 
   match seedPrice with
-  | Some price -> variables.Add (BoughtSeeds, [| "Profit", -float price; "Seeds", 1.0 |])
   | None -> ()
+  | Some price -> variables.Add (BoughtSeeds, [| "Profit", -float price; "Seeds", 1.0 |])
 
   for i = 0 to crop.Items.Length - 1 do
     let item = crop.Items[i]
@@ -422,8 +423,8 @@ let private forageCropNetProfitPerHarvestForageSeedsSolution data settings (crop
       variables.Add (SoldItem itemQuality, [| "Profit", profits[quality]; oneItem |])
       variables.Add (MadeForageSeeds itemQuality, [| forageSeedAmount, -1.0; oneItem |])
       match seedAmount with
-      | Some amount -> variables.Add (MadeSeeds itemQuality, [| "Seeds", amount; oneItem |])
       | None -> ()
+      | Some amount -> variables.Add (MadeSeeds itemQuality, [| "Seeds", amount; oneItem |])
 
   let oneOfEachItem = forageSeedAmounts |> Array.map (fun amount -> amount, 1.0)
 
@@ -475,8 +476,8 @@ let seedCostsandLimits data settings (seedPrice: nat option) (seed: SeedId) (ite
 
   if settings.Selected.UseHarvestedSeeds.Contains seed then
     match items |> Array.tryFindIndex (fun item -> int item = int seed) with
-    | Some i -> addCostAndLimit profits[i] amounts[i] 1.0
     | None -> ()
+    | Some i -> addCostAndLimit profits[i] amounts[i] 1.0
 
   costsAndLimits.Sort (compareBy fst)
   resizeToArray costsAndLimits
@@ -835,8 +836,8 @@ let private seedData
     then items |> Array.findIndex (fun item -> int item = int seed) |> Some
     else None
   match seedItemIndex with
-  | Some i -> addCostAndLimit i 1.0
   | None -> ()
+  | Some i -> addCostAndLimit i 1.0
 
   let useSeedMaker = Processor.seedMaker |> Game.processorUnlocked data settings.Game.Skills && settings.Selected.UseSeedMaker.Contains seed
   if useSeedMaker then addCostAndLimit 0 (Processor.seedMakerAmountWith (items[0] * 1u<_>))

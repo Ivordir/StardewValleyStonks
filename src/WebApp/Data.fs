@@ -19,7 +19,7 @@ let private load json decoder =
   |> Decode.fromValue "$" decoder
   |> Result.get
 
-let gameData =
+let private gameData =
   GameData.fromExtractedAndSupplementalData
     (load extractedData Decode.extractedData)
     (load supplementalData Decode.supplementalData)
@@ -115,7 +115,7 @@ module private Shorthand =
     ReplaceLostFertilizer: bool option
   }
 
-  module Decode =
+  module [<RequireQualifiedAccess>] Decode =
     let [<Literal>] private SelectField = "Select"
     let [<Literal>] private EntriesField = "Entries"
 
@@ -320,7 +320,7 @@ let private decodeUI = Decode.Auto.generateDecoder<UIState> (extra=ui)
 
 
 
-module Encode =
+module [<RequireQualifiedAccess>] Encode =
   let settings = encodeSettings
   let cropFilters = encodeCropFilters
   let ui = encodeUI
@@ -333,7 +333,7 @@ module Encode =
   let savedSettings (saved: _ list) = saved |> Encode.mapSeq (Encode.tuple2 Encode.string settings)
 
 
-module Decode =
+module [<RequireQualifiedAccess>] Decode =
   let settings = decodeSettings
   let cropFilters = decodeCropFilters
   let ui = decodeUI
@@ -463,12 +463,12 @@ module LocalStorage =
 
       | SavedSettingsKey when isNullOrUndefined e.newValue ->
         // user manually deleted key?
-        dispatch (Update.SyncSavedSettings [])
+        dispatch []
 
       | SavedSettingsKey ->
         // load new savedSettings
         match e.newValue |> Decode.fromString Decode.savedSettings with
-        | Ok saved -> dispatch (Update.SyncSavedSettings saved)
+        | Ok saved -> dispatch saved
         | Error e ->
           // failed to decode saved settings, saved settings may now race instead of syncing.
           console.error $"Failed to load saved settings from local storage: {e}"
@@ -517,8 +517,8 @@ module private XML =
       match elm with
       | Some e ->
         match parser e.textContent with
-        | Some value -> arr.Add value
         | None -> ()
+        | Some value -> arr.Add value
       | None ->
         finished <- true
 

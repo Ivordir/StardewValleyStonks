@@ -14,7 +14,7 @@ let [<Literal>] private SeedPriceTypeField = "Type"
 let [<Literal>] private FixedSeedPrice = "Fixed"
 let [<Literal>] private ScalingSeedPrice = "Scaling"
 
-module Encode =
+module [<RequireQualifiedAccess>] Encode =
   let mapSeq encoder (seq: _ seq) = seq |> Seq.map encoder |> Encode.seq
 
   let keyValues keyString encodeValue seq =
@@ -141,7 +141,7 @@ module Encode =
   ]
 
 
-module Decode =
+module [<RequireQualifiedAccess>] Decode =
   let inline private tryParseInt<[<Measure>] ^u> (str: string): uint<'u> option =
     match System.UInt32.TryParse str with
     | true, value -> Some (value * 1u<_>)
@@ -153,14 +153,14 @@ module Decode =
 
   let private wrap (wrapper: 'a -> 'b) (decoder: 'a Decoder) =
     #if FABLE_COMPILER
-    !!decoder : 'b Decoder
+    Fable.Core.JsInterop.(!!)decoder : 'b Decoder
     #else
     decoder |> Decode.map wrapper
     #endif
 
   let private natMeasure<[<Measure>] 'u> =
     #if FABLE_COMPILER
-    !!Decode.uint32 : uint<'u> Decoder
+    Fable.Core.JsInterop.(!!)Decode.uint32 : uint<'u> Decoder
     #else
     Decode.uint32 |> Decode.map LanguagePrimitives.UInt32WithMeasure<'u>
     #endif
@@ -169,7 +169,7 @@ module Decode =
 
   let private wrapKeys mapping (keyWrap: string -> 'k) (decodeValue: 'v Decoder) =
     #if FABLE_COMPILER
-    (!!Decode.keyValuePairs decodeValue: ('k * 'v) list Decoder) |> Decode.map mapping
+    (Fable.Core.JsInterop.(!!)Decode.keyValuePairs decodeValue: ('k * 'v) list Decoder) |> Decode.map mapping
     #else
     Decode.keyValuePairs decodeValue |> Decode.map (List.map (fun (k, v) -> keyWrap k, v) >> mapping)
     #endif

@@ -3,9 +3,10 @@ namespace StardewValleyStonks.WebApp
 open StardewValleyStonks
 open Fable.Core
 
-[<AutoOpen>]
-module internal Util =
+module [<AutoOpen>] internal Util =
   let console = JS.console
+
+  let inline (!!) x = JsInterop.(!!)x
 
   let inline item' (seed: SeedId): ItemId = seed * 1u<_>
   let inline seed' (item: ItemId): SeedId = item * 1u<_>
@@ -14,6 +15,8 @@ module internal Util =
 
   let minBy projection a b = if projection a <= projection b then a else b
   let maxBy projection a b = if projection a >= projection b then a else b
+
+  let inline resizeToArray (r: 'a ResizeArray) = !!r : 'a array
 
   let compareBy projection a b = compare (projection a) (projection b)
   let compareByRev projection a b = compare (projection b) (projection a)
@@ -42,6 +45,115 @@ module internal Util =
     // |> Option.defaultValue 0)
   // sorted
 
+  let refMemo f =
+    let mutable prevInput = Unchecked.defaultof<_>
+    let mutable prevOutput = Unchecked.defaultof<_>
+    fun x ->
+      if not (refEqual x prevInput) then
+        prevInput <- x
+        prevOutput <- f x
+      prevOutput
+
+
+module [<AutoOpen>] internal Combinators =
+  let inline flip f x y = f y x
+  let inline konst x _ = x
+  let inline tuple2 a b = a, b
+  let inline curry f a b = f (a, b)
+  let inline uncurry f (a, b) = f a b
+
+
+module [<RequireQualifiedAccess>] Option =
+  let reduce reduction a b =
+    match a, b with
+    | Some a, Some b -> Some (reduction a b)
+    | Some a, None -> Some a
+    | None, Some b -> Some b
+    | None, None -> None
+
+  let inline min a b = reduce min a b
+  let inline max a b = reduce max a b
+
+  /// Compares two options, treating `None` as the max value instead of the min value.
+  let noneMaxCompare a b =
+    match a, b with
+    | None, None -> 0
+    | None, Some _ -> 1
+    | Some _, None -> -1
+    | Some a, Some b -> compare a b
+
+  let noneMaxCompareBy projection a b = noneMaxCompare (projection a) (projection b)
+
+  let ofResult = function
+    | Ok x -> Some x
+    | Error _ -> None
+
+
+module [<RequireQualifiedAccess>] Result =
+  let get = function
+    | Ok x -> x
+    | Error _ -> invalidArg "result" "The result value was Error."
+
+  let isOk = function
+    | Ok _ -> true
+    | Error _ -> false
+
+  let isError = function
+    | Ok _ -> false
+    | Error _ -> true
+
+
+module [<RequireQualifiedAccess>] Seq =
+  let inline sortDirectionBy ascending projection seq =
+    if ascending
+    then Seq.sortBy projection seq
+    else Seq.sortByDescending projection seq
+
+  let inline sortDirectionWith ascending comparer seq =
+    if ascending
+    then Seq.sortWith comparer seq
+    else Seq.sortWith (fun x y -> comparer y x) seq
+
+  let tryReduce reduction (seq: _ seq) =
+    use e = seq.GetEnumerator ()
+    if not <| e.MoveNext () then None else
+    let mutable acc = e.Current
+    while e.MoveNext () do
+      acc <- reduction acc e.Current
+    Some acc
+
+  let inline tryMin seq = tryReduce min seq
+  let inline tryMax seq = tryReduce max seq
+
+  let tryMinBy projection (seq: _ seq) =
+    use e = seq.GetEnumerator ()
+    if not <| e.MoveNext () then None else
+    let mutable acc = e.Current
+    let mutable minVal = projection acc
+    while e.MoveNext () do
+      let v = projection e.Current
+      if v < minVal then
+        acc <- e.Current
+        minVal <- v
+    Some acc
+
+  let tryMaxBy projection (seq: _ seq) =
+    use e = seq.GetEnumerator ()
+    if not <| e.MoveNext () then None else
+    let mutable acc = e.Current
+    let mutable minVal = projection acc
+    while e.MoveNext () do
+      let v = projection e.Current
+      if v > minVal then
+        acc <- e.Current
+        minVal <- v
+    Some acc
+
+
+
+
+
+
 
 
 type TimeNormalization =
@@ -50,15 +162,12 @@ type TimeNormalization =
   | [<CompiledName ("Per Season")>] PerSeason
 
 
-
-
-
 type Selection<'a, 'b when 'a: comparison> = {
   Values: Map<'a, 'b>
   Selected: 'a Set
 }
 
-module Selection =
+module [<RequireQualifiedAccess>] Selection =
   let empty = {
     Values = Map.empty
     Selected = Set.empty
@@ -71,8 +180,6 @@ module Selection =
 
   let allSelected selection =
     selection.Values.Keys |> Seq.forall selection.Selected.Contains
-
-
 
 
 type Selections = {
@@ -158,7 +265,7 @@ type RankMetric =
   | ROI
   | XP
 
-module RankMetric =
+module [<RequireQualifiedAccess>] RankMetric =
   let unit = function
     | Gold -> "g"
     | ROI -> "%"
@@ -195,7 +302,7 @@ type CropFilters = {
   // name
 }
 
-module CropFilters =
+module [<RequireQualifiedAccess>] CropFilters =
   let empty = {
     InSeason = true
     Seasons = Seasons.All
@@ -211,15 +318,17 @@ type Ranker = {
   TimeNormalization: TimeNormalization
   BrushSpan: nat * nat
   SelectedCropAndFertilizer: (SeedId option * FertilizerName option option) option
+  ShowInvalid: bool
 }
 
-module Ranker =
+module [<RequireQualifiedAccess>] Ranker =
   let initial = {
     RankItem = RankCrops
     RankMetric = Gold
     TimeNormalization = PerSeason
     BrushSpan = 0u, 24u
     SelectedCropAndFertilizer = None
+    ShowInvalid = false
   }
 
 type UIState = {
@@ -239,7 +348,7 @@ type UIState = {
   Ranker: Ranker
 }
 
-module UIState =
+module [<RequireQualifiedAccess>] UIState =
   let initial = {
     Mode = Ranker
     SettingsTab = Skills
@@ -278,7 +387,7 @@ type Version = {
   Patch: nat
 }
 
-module Version =
+module [<RequireQualifiedAccess>] Version =
   let private (|Nat|_|) (str: string) =
     match System.UInt32.TryParse str with
     | true, value -> Some (Nat value)

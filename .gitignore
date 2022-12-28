@@ -5,7 +5,7 @@ parcel-bundle-reports/
 # NPM modules
 node_modules/
 
-# Final, minified output from parcel
+# Output from parcel
 dist/
 
 # Transpiled JS output
@@ -13,13 +13,13 @@ fable/
 *.fs.js
 
 # Temporary files
-temp
+temp/
 
 # Paket dependency manager
 .paket/paket.exe
 paket-files/
 
-# VS Code files for those working on multiple tools
+# VS Code files
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json

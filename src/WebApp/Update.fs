@@ -93,6 +93,7 @@ type RankerMessage =
   | SetTimeNormalization of TimeNormalization
   | SetBrushSpan of nat * nat
   | SetSelectedCropAndFertilizer of (SeedId option * FertilizerName option option) option
+  | SetShowInvalid of bool
 
 type SortMessage = bool * (int * bool)
 
@@ -274,6 +275,7 @@ let ranker msg ranker =
   | SetTimeNormalization norm -> { ranker with TimeNormalization = norm }
   | SetBrushSpan (start, finish) -> { ranker with BrushSpan = start, finish }
   | SetSelectedCropAndFertilizer pair -> { ranker with SelectedCropAndFertilizer = pair }
+  | SetShowInvalid value -> { ranker with ShowInvalid = value }
 
 let savedSettings msg settings saved =
   match msg with

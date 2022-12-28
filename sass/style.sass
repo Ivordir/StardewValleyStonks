@@ -2,9 +2,12 @@
 
 // style:
 // range input
-// text/number input
-// buttons / tabs
 // select
+// text/number input
+
+// buttons / tabs
+
+// add panels/borders with separate bg color? to graph, settings, etc.
 
 @font-face
   font-family: Stardew Valley Stonks
@@ -15,13 +18,23 @@ $phi: math.div(1 + math.sqrt(5), 2)
 // fix graph width + height
 
 body
-  background-color: antiquewhite
-  margin: 0
-  font-family: Stardew Valley Stonks, Nunito, sans
-  font-size: 16px
   --app-min-height: 80vh
   --chart-min-width: 250px
   --chart-min-height: 250px
+
+  display: flex
+  flex-direction: column
+
+  min-height: 100vh
+
+  font-family: Stardew Valley Stonks, Nunito, sans
+  font-size: 14px
+  // line-height: 1.5
+
+  background-image: url("../public/img/Gradient.png")
+  background-size: contain
+  background-repeat: repeat-x
+  margin: 0
 
 ul
   list-style: none
@@ -30,12 +43,11 @@ ul
 
 button
   font-family: inherit
+  font-size: inherit
 
-input[type=number]
-  font-family: Stardew Valley Stonks
-
-input[type=file]
-  font-family: Stardew Valley Stonks
+input
+  font-family: inherit
+  font-size: inherit
 
 .file-input
   display: inline-block
@@ -46,22 +58,102 @@ input[type=file]
   & > input
     display: none
 
+
+
+input[type=range]:focus
+  outline: none
+
+
+input[type=range]
+  -webkit-appearance: none
+  background: transparent
+  margin: 0
+
+  &::-webkit-slider-thumb
+    -webkit-appearance: none
+    border: none
+    height: 32px
+    width: 16px
+    image-rendering: pixelated
+    background: url("../public/img/Range Thumb.png")
+    background-size: contain
+    background-repeat: no-repeat
+    background-position: center
+    cursor: pointer
+    margin-top: -13px
+
+    &:hover, &:active
+      transform: scale(1.25)
+
+  &::-moz-range-thumb
+    border: none
+    height: 32px
+    width: 16px
+    image-rendering: crisp-edges
+    background: url("../public/img/Range Thumb.png")
+    background-size: contain
+    background-repeat: no-repeat
+    background-position: center
+    cursor: pointer
+
+    &:hover, &:active
+      transform: scale(1.25)
+
+  &::-webkit-slider-runnable-track
+    height: 6px
+    cursor: pointer
+    background: #b14e05
+
+  // &:focus::-webkit-slider-runnable-track
+  //   background: #367ebd
+
+  &::-moz-range-track
+    // width: 100%
+    height: 6px
+    cursor: pointer
+    background: #b14e05
+
+  // &:focus::-moz-range-track
+    // background: #367ebd
+
+
+
+
+
 .tabs
   display: flex
 
 
+main
+  flex-grow: 1
+
 #app
   display: flex
-  flex-flow: row wrap
+  flex-flow: row
   min-height: var(--app-min-height)
+
+  & > section
+    // transition: flex-basis 0.1s
+    flex-basis: 50%
+
 
 #visualization
   display: flex
   flex-direction: column
-  flex-grow: 1
-  flex-basis: var(--chart-min-width)
+
+  // flex-basis: 50%
+  // // flex-basis: 50%
+
+  // & + #settings
+  //   flex-basis: 50%
+
 
   &-graph
+    // flex-basis: 60%
+
+    // & + #settings
+    //   flex-basis: 40%
+
     @extend #visualization
     min-width: var(--chart-min-width)
     min-height: var(--chart-min-height)
@@ -75,8 +167,6 @@ input[type=file]
 #settings
   display: flex
   flex-direction: column
-  flex-grow: 1
-  flex-basis: min-content
 
   & > :last-child
     flex-grow: 1
@@ -152,23 +242,52 @@ img
   cursor: pointer
 
 
+
+@mixin checkbox-img($img, $width, $height)
+  -moz-appearance: none
+  -webkit-appearance: none
+  width: $width
+  height: $height
+  @extend .pixel
+  background-image: $img
+  background-repeat: no-repeat
+  background-size: contain
+  margin: 0
+  cursor: pointer
+
+  &:hover
+    transform: scale(1.1)
+
+
 .checkbox-label
   cursor: pointer
 
   & > input
-    // hides the input but keeps tab order
-    transform: scale(0)
-    opacity: 0
-    position: absolute
+    @include checkbox-img(url("../public/img/Checkbox.png"), 1em, 1em)
 
-  & > input:focus + img
-    outline: 2px solid cyan
+    &:checked
+      background-image: url("../public/img/Checkedbox.png")
 
-  &:hover .checkbox-img
-    transform: scale(1.1)
+    &:focus
+      outline: 2px solid cyan
 
-.checkbox-img
-  height: 1em
+
+@mixin opacity-checkbox($img, $width, $height)
+  cursor: pointer
+
+  & > input
+    @include checkbox-img($img, $width, $height)
+    @extend .disabled
+
+    &:checked
+      opacity: 1
+
+    // &:focus
+
+
+.qualities-checkbox
+  @include opacity-checkbox(url("../public/static/img/Qualities/All.png"), 2em, 1em)
+
 
 
 .right-arrow
@@ -223,10 +342,8 @@ img
       display: block
       width: 100%
       height: 2.5em
-      font-size: 0.75em
       color: purple
       border-radius: 10px
-      font-family: inherit
 
       &.active
         color: green
@@ -369,8 +486,7 @@ img
         left: calc(var(--counter-offset) + 0.25rem)
 
 
-.rselect
-  display: inline-block
+
 
 .audit-graph
 
@@ -386,52 +502,64 @@ img
       align-items: center
 
 
+.input-box
+  outline: none
+  background: none
+  @extend .pixel
+  border-image-source: url("../public/img/Input Box.png")
+  border-image-slice: 3 fill
+  border-image-width: 0.5em
+  padding: 0.5em
+
+  &::-webkit-outer-spin-button, &::-webkit-inner-spin-button
+    -webkit-appearance: none
+    margin: 0
+
+  -moz-appearance: textfield
+
+
+
+
 .select
+  $padding: 6px
+  $border-width: 3px
+  $height: 11 * $border-width
+
+  position: relative
+
   &-container
     position: relative
-    display: inline-block
+    display: inline-flex
+    height: $height
 
-  display: flex
-  min-height: 1em
-  padding: 0.5em
-  background-color: white
-  align-items: center
-  border: 1px solid black
-
-  &-list
-    max-height: 40vh
-    position: absolute
-    left: 0
-    top: 100%
-    width: 100%
-    background-color: white
-    z-index: 1
-    border: 1px solid black
-    box-sizing: border-box
-    overflow: auto
-
-    & > ul > li
-      padding: 0.5em
-
-      &:nth-child(odd)
-        background-color: #EEEEEE
-
-      &.hover
-        background-color: cyan
+    &::after
+      content: ""
+      flex-shrink: 0
+      display: block
+      width: $height - $border-width
+      height: $height
+      @extend .pixel
+      background-image: url("../public/img/Select Spinner.png")
+      background-size: cover
 
   &-control
     position: relative
-    flex-grow: 1
+    height: $height
+    box-sizing: border-box
+    border: #5b2b2a solid $border-width
+    background: #f9ba66
+    padding: 0 $padding
+
+    display: flex
+    align-items: center
     overflow: hidden
     white-space: nowrap
+    text-overflow: ellipsis
 
     & > div
       overflow: hidden
       text-overflow: ellipsis
       white-space: nowrap
-
-    &.searching > div
-      visibility: hidden
 
   &-input
     &-search
@@ -440,21 +568,40 @@ img
       border: none
       position: absolute
       padding: 0
-      width: 100%
+      width: calc(100% - 2 * $padding)
+      height: 100%
 
-      font-family: Stardew Valley Stonks
-      font-size: 16px
+      &:not(:placeholder-shown) + .select-value
+        visibility: hidden
 
     &-hidden
-      opacity: 0
       position: absolute
+      opacity: 0
       transform: scale(0)
 
-  &.focused
-    border: 1px solid cyan
 
-  &::after
-    content: "v"
+  &-list
+    max-height: 40vh
+    position: absolute
+    left: 0
+    top: 100%
+    width: 100%
+    z-index: 1
+    border: #5b2b2a solid $border-width
+    border-top: none
+    background: #f9ba66
+    box-sizing: border-box
+    overflow: auto
+
+    & > ul > li
+      padding: $padding
+
+      &.hover
+        background-color: #f5deb3
+
+  &:focus-within
+    // border: 1px solid cyan
+
 
 
 .quality
@@ -488,6 +635,7 @@ img
 footer
   background-color: white
   display: flex
+  align-items: center
   justify-content: space-evenly
   text-align: center
 

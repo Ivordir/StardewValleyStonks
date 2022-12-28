@@ -1,7 +1,5 @@
 namespace StardewValleyStonks
 
-open Fable.Core
-
 // Season bitset, multiple seasons
 type [<System.Flags>] Seasons =
   | None   = 0b0000
@@ -17,7 +15,7 @@ type Season =
   | Fall = 2
   | Winter = 3
 
-module Seasons =
+module [<RequireQualifiedAccess>] Seasons =
   let [<Literal>] count = 4
 
   let inline ofSeason (season: Season) = enum<Seasons> (1 <<< int season)
@@ -29,7 +27,7 @@ module Seasons =
   let inline add season (seasons: Seasons) = seasons ||| ofSeason season
   let inline remove season (seasons: Seasons) = seasons &&& ~~~(ofSeason season)
 
-  let ofSeq seasons = seasons |> Seq.fold (flip add) Seasons.None
+  let ofSeq seasons = seasons |> Seq.fold (fun seasons season -> seasons |> add season) Seasons.None
 
   let tryExactlyOne = function
     | Seasons.Spring -> Some Season.Spring
@@ -47,7 +45,7 @@ module Seasons =
       then setOrder (a >>> 1) (b >>> 1)
       else c
 
-module Season =
+module [<RequireQualifiedAccess>] Season =
   let name (season: Season) = enumName season
 
   let inline private ofInt (i: int) = i |> enum<Season>
@@ -152,7 +150,7 @@ module Date =
         j <- j + 1
       i <- j
 
-    resizeToArray spans
+    spans.ToArray ()
 
 
 type ToolLevel =
@@ -162,7 +160,7 @@ type ToolLevel =
   | Gold = 3
   | Iridium = 4
 
-module ToolLevel =
+module [<RequireQualifiedAccess>] ToolLevel =
   let name (toolLevel: ToolLevel) = enumName toolLevel
 
   let all = Array.init 5 enum<ToolLevel>
@@ -175,7 +173,7 @@ type CropAmountSettings = {
   ShavingToolLevel: ToolLevel option
 }
 
-module CropAmountSettings =
+module [<RequireQualifiedAccess>] CropAmountSettings =
   let common = {
     SpecialCharm = false
     LuckBuff = 0u
@@ -299,7 +297,7 @@ type SeedPrice =
   | FixedPrice of Vendor * nat
   | ScalingPrice of Vendor * nat option
 
-module SeedPrice =
+module [<RequireQualifiedAccess>]SeedPrice =
   let vendor = function
     | FixedPrice (v, _)
     | ScalingPrice (v, _) -> v
@@ -333,10 +331,17 @@ module Growth =
   //  = 6.99999988079071    = 7.0
   //  |> ceil |> int        |> ceil |> int
   //  = 7                   = 7 (wouldn't be equal if floor was used instead of ceil)
+  let inline fround (x: float) =
+    #if FABLE_COMPILER
+    Fable.Core.JS.Math.fround x
+    #else
+    x |> float32 |> float
+    #endif
+
   let stagesAndTime speedBonus stages =
     let total = Array.sum' stages
     let stages = Array.copy stages
-    let mutable daysToReduce = (JS.Math.fround speedBonus) * (float total) |> ceil |> nat
+    let mutable daysToReduce = (fround speedBonus) * (float total) |> ceil |> nat
     let mutable daysReduced = 0u
     let mutable traverses = 0u
 
@@ -390,7 +395,7 @@ type FarmCrop = {
   ExtraItem: (ItemId * float) option
 }
 
-module FarmCrop =
+module [<RequireQualifiedAccess>] FarmCrop =
   let regrowTime crop = crop.RegrowTime
   let seed crop = crop.Seed
   let seedItem crop: ItemId = seed crop * 1u<_>
@@ -425,7 +430,7 @@ type ForageCrop = {
   SeedRecipeUnlockLevel: nat
 }
 
-module ForageCrop =
+module [<RequireQualifiedAccess>] ForageCrop =
   let [<Literal>] forageSeedsPerCraft = 10u
   let [<Literal>] xpPerItem = 7u
 
@@ -449,7 +454,7 @@ type Crop =
   | FarmCrop of FarmCrop
   | ForageCrop of ForageCrop
 
-module Crop =
+module [<RequireQualifiedAccess>] Crop =
   let name item = function
     | FarmCrop a -> FarmCrop.name item a
     | ForageCrop o -> ForageCrop.name o

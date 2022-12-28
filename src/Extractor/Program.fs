@@ -3,7 +3,6 @@
 open System.IO
 open Thoth.Json.Net
 open Microsoft.Xna.Framework
-open Microsoft.Xna.Framework.Content
 open Microsoft.Xna.Framework.Graphics
 open StardewValleyStonks
 open StardewValleyStonks.Json
@@ -13,7 +12,7 @@ type ItemOverride = {
   Category: Category option
 }
 
-module ItemOverride =
+module [<RequireQualifiedAccess>] ItemOverride =
   let none = {
     SellPrice = None
     Category = None
@@ -24,7 +23,7 @@ type CropAmountOverride = {
   FarmingDistribution: bool option
 }
 
-module CropAmountOverride =
+module [<RequireQualifiedAccess>] CropAmountOverride =
   let none = {
     CanDouble = None
     FarmingDistribution = None
@@ -38,7 +37,7 @@ type FarmCropOverride = {
   ExtraItem: (ItemId * float) option
 }
 
-module FarmCropOverride =
+module [<RequireQualifiedAccess>] FarmCropOverride =
   let none = {
     Seasons = None
     Paddy = None
@@ -64,7 +63,7 @@ type Config = {
   ItemImageOutputPath: string
 }
 
-module Decode =
+module [<RequireQualifiedAccess>] Decode =
   let farmCropOverride =
     let u = Unchecked.defaultof<FarmCropOverride>
     Decode.object (fun get ->
@@ -105,8 +104,7 @@ module Decode =
     )
 
 
-[<AutoOpen>]
-module Constants =
+module [<AutoOpen>] Constants =
   let [<Literal>] forageSpriteSheetRow = 23u
   let [<Literal>] cropImageWidth = 16
   let [<Literal>] cropImageHeight = 32
@@ -342,8 +340,7 @@ let saveItemImage (itemSpriteSheet: Texture2D) item =
 
 
 
-[<EntryPoint>]
-let main args =
+let [<EntryPoint>] main args =
   let stardewValleyRoot =
     match args with
     | [| root |] -> root
@@ -362,7 +359,7 @@ let main args =
           then graphicsManager :> obj
           else null
     }
-    new ContentManager (dummyServiceProvider, stardewValleyRoot)
+    new Content.ContentManager (dummyServiceProvider, stardewValleyRoot)
 
   let tryLoad name path =
     try content.Load path

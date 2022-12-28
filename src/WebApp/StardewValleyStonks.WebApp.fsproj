@@ -8,9 +8,12 @@
     <Compile Include="Types.fs" />
     <Compile Include="Query.fs" />
     <Compile Include="Solver.fs" />
-    <Compile Include="Update.fs" />
     <Compile Include="Data.fs" />
+    <Compile Include="Update.fs" />
+    <Compile Include="View/Prelude.fs" />
+    <Compile Include="View/Input.fs" />
     <Compile Include="View/Select.fs" />
+    <Compile Include="View/Table.fs" />
     <Compile Include="View/View.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>

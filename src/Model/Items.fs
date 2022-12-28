@@ -9,7 +9,7 @@ type Category =
   | Seeds
   | Other
 
-module Category =
+module [<RequireQualifiedAccess>] Category =
   let multiplier skills = function
     | Fruit | Vegetable | Flower when skills |> Skills.professionActive Tiller -> Multiplier.tiller
     | ArtisanGood when skills |> Skills.professionActive Artisan -> Multiplier.artisan
@@ -46,7 +46,7 @@ type Item = {
   Category: Category
 }
 
-module Item =
+module [<RequireQualifiedAccess>] Item =
   let [<Literal>] ancientSeeds = 499u<ItemNum>
   let [<Literal>] blackberry = 410u<ItemNum>
   let [<Literal>] grape = 398u<ItemNum>
@@ -130,7 +130,7 @@ module Processor =
     seedMakerAmount + if nat seed = nat Item.ancientSeeds then seedMakerAncientSeedProb else 0.0
 
 
-module ModData =
+module [<RequireQualifiedAccess>] ModData =
   let common = {
     QualityProducts = false
     QualityProcessors = Set.ofArray [| Processor.preservesJar; Processor.keg; ProcessorName "Oil Maker" |]
@@ -149,7 +149,7 @@ type Product =
       Ratio: (nat * nat) option
     |}
 
-module Product =
+module [<RequireQualifiedAccess>] Product =
   let item = function
     | Jam | Pickles | Wine | Juice -> None
     | SeedsFromSeedMaker seed -> Some seed
@@ -277,10 +277,10 @@ module Product =
       | None -> 1.0
     | _ -> 1.0
 
-  let profit getItem skills multipliers modData item quality product =
+  let normalizedPrice getItem skills multipliers modData item quality product =
     float (price getItem skills multipliers modData item quality product) * amountPerItem product
 
-  let profits getItem skills multipliers modData item product =
+  let normalizedPrices getItem skills multipliers modData item product =
     let prices = prices getItem skills multipliers modData item product
     let amount = amountPerItem product
     if amount = 1.0

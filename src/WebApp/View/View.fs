@@ -4,97 +4,64 @@ open StardewValleyStonks
 open StardewValleyStonks.WebApp
 open StardewValleyStonks.WebApp.Update
 open StardewValleyStonks.WebApp.View
-
-// double check profit margin:
-//  sweet gem berry sell
-//  sweet gem berry buy
-//  other sell?
-//  other buy?
+open StardewValleyStonks.WebApp.View.Table
 
 // limitations: ranker chooses dateSpan with most harvests (least days if tie) if there are two dateSpans
 
-// fix flower crop stage img
-
-// set selectOptions width
-
-// best indicator for Products. Prices
 
 // refactor tables
 //   sticky
+
 // refactor model calcs
 
+// extractor cleanup
 
-// Tooltips
-// Reduced indicators on growth time, seed price, product price
-
-// crop tooltips;
-// growthtime/stages
-// lowest seedPrice?
-// bestSellPrice?
-// Products item
-// Seeds price reduction
-// lowest fertPrice?
-
-
-// // Solver view
-// // solver solve for max xp
-
-// refactor Graph indicator icons:
+// Solver
 
 // error handling
 
 // Load/Save cleanup
+//   error message on failed import
+
+// style
+
+// graph indicator icons
+
+// // best indicator for Products. Prices
+
+// // select box scroll bar
+// // all scroll bars
+
+// // cursors?
+
+// // solver solve for max xp
+
+// // Tooltips
+// // Reduced indicators on growth time, seed price, product price
+
+// // crop tooltips;
+// // growthtime/stages
+// // lowest seedPrice?
+// // bestSellPrice?
+// // Products item
+// // Seeds price reduction
+// // lowest fertPrice?
+
+
 
 open Fable.Core
 open Fable.Core.JsInterop
 open Elmish.React
 open Feliz
 
-#if DEBUG
-importDefault "preact/debug"
-#endif
-
-type prop with
-  static member inline onChange (handler: nat -> unit) =
-    Interop.mkAttr "onChange" (fun (e: Browser.Types.Event) ->
-      let value: double = !!e.target?valueAsNumber
-      if not <| isNullOrUndefined value
-        && not <| System.Double.IsNaN value
-        && value >= 0.0
-      then
-        round value |> unbox<nat> |> handler)
-
-  static member inline onToggle (handler: bool -> unit) =
-    Interop.mkAttr "onToggle" (fun (e: Browser.Types.Event) -> handler e.target?``open``)
-
-  static member inline valueOrDefault (n: nat) =
-    prop.ref (fun e -> if e |> isNull |> not && !!e?value <> !!n then e?value <- !!n)
-
-  static member inline value (n: nat) = Interop.mkAttr "value" n
-
 open type Html
 open type prop
 open type React
 
-type type' = prop.type'
-let inline id' (id: string) = prop.id id
-
 open Core.Operators
 open Core.ExtraTopLevelOperators
 
-let inline min' (n: nat) = Interop.mkAttr "min" n
-let inline max' (n: nat) = Interop.mkAttr "max" n
-
-let inline text (str: string) = prop.text str
-
-let inline ofStr (str: string) = Html.text str
-let inline ofNat (n: nat) = string n |> ofStr
-let inline ofInt (i: int) = Html.text i
-let inline ofFloat (x: float) = Html.text x
-let inline ofOption elm = elm |> Option.defaultValue none
-
-
-module Class =
+module [<RequireQualifiedAccess>] Class =
   let checkboxLabel = className "checkbox-label"
   let checkboxImg = className "checkbox-img"
   let iconProcessor = className "icon-processor"
@@ -139,7 +106,7 @@ module Class =
   let auditGraphSelect = className "audit-graph-select"
 
 
-module Image =
+module [<RequireQualifiedAccess>] Image =
   let path = sprintf "img/%s/%s.png"
   let skillRoot = path "Skills"
   let fertilizerRoot = path "Fertilizers"
@@ -196,7 +163,7 @@ module Image =
   //     children (img [ src <| uiRoot "Right Arrow" ])
   //   ]
 
-  module Icon =
+  module [<RequireQualifiedAccess>] Icon =
     let withClass css path name =
       fragment [
         withClass css path
@@ -259,39 +226,30 @@ let floatRound (x: float) = System.Math.Round (x, 2) |> string
 let goldFixedRound = sprintf "%.2fg"
 
 
-let opacityCheckbox children' checked' dispatch =
+let opacityCheckbox checked' dispatch =
   label [
-    classes [
-      "checkbox-label"
-      if not checked' then "disabled"
-    ]
-    children [
+    className "qualities-checkbox"
+    children (
       input [
-        type'.checkbox
+        prop.type'.checkbox
         isChecked checked'
         onCheckedChange dispatch
       ]
-      children'
-    ]
+    )
   ]
 
 let checkboxCustom props children' checked' dispatch =
   label [ yield! props; children [
     input [
-      type'.checkbox
+      prop.type'.checkbox
       isChecked checked'
       onCheckedChange dispatch
     ]
-    Image.withClass Class.checkboxImg (Image.uiRoot <| if checked' then "Checkedbox" else "Checkbox")
     children'
   ] ]
 
-let checkboxWith rest = checkboxCustom (Class.checkboxLabel :: rest)
+let checkboxWith rest = checkboxCustom (className "checkbox-label" :: rest)
 
-// let checkboxDisabledWith alsoDisplay disabled msg =
-//   checkboxCss (classBase "checkbox-label" "disabled" disabled) alsoDisplay msg
-// let checkboxDisabled disabled msg = checkboxDisabledWith [] disabled msg
-// let checkboxDisabledText text disabled msg = checkboxDisabledWith [ str text ] disabled msg
 let checkbox = checkboxWith [] none
 let inline checkboxText str checked' msg = checkboxWith [] (ofStr str) checked' msg
 
@@ -309,7 +267,7 @@ let viewTab toString msg tab currentTab dispatch =
     children (
       button [
         onClick (fun _ -> dispatch <| msg tab)
-        text <| toString tab
+        text (toString tab: string)
       ] )
   ]
 
@@ -334,20 +292,6 @@ let viewTabs msg = viewTabsWith (box >> Reflection.getCaseName) [] msg
 //     src (Image.uiRoot "Error")
 //   ]
 
-let debouncer timeout (f : _ -> unit) =
-  let mutable last = None
-  fun value ->
-    last |> Option.iter Browser.Dom.window.clearInterval
-    let delayed _ = f value
-    last <- Some <| Browser.Dom.window.setTimeout (delayed, timeout)
-
-let debounce timeout =
-  let mutable last = None
-  fun (action: unit -> unit) ->
-    last |> Option.iter Browser.Dom.window.clearInterval
-    let delayed _ = action ()
-    last <- Some (Browser.Dom.window.setTimeout (delayed, timeout))
-
 let animatedDetails open' (summary': ReactElement) (children': _ seq) dispatch =
   details [
     isOpen open'
@@ -371,7 +315,7 @@ module Skills =
       ]
       children [
         input [
-          type'.checkbox
+          prop.type'.checkbox
           isChecked selected
           onCheckedChange (curry SetProfession profession >> dispatch)
         ]
@@ -381,13 +325,12 @@ module Skills =
 
   let qualityClass suffix quality = className ((Quality.name quality).ToLower () + "-" + suffix)
 
-  let cropQualities (qualities: _ Qualities) =
+  let cropQualities (qualities: float Qualities) =
     div [ Class.cropQualities; children [
       div [ Class.cropQualitiesBars; children (Quality.all |> Array.map (fun quality ->
         div [
           quality |> qualityClass "bar"
-          // using flex-grow instead of style.width prevents divs from overflowing into next line due to animations
-          style [ style.custom ("flexGrow", qualities[quality] * 100.0) ]
+          style [ style.custom ("flexGrow", qualities[quality]) ]
         ] ))
       ]
 
@@ -405,30 +348,15 @@ module Skills =
     fragment [
       Html.span (Image.Icon.skill name)
 
-      // let debounce = debouncerWith (fun str -> tryParseNat str |> Option.iter (fun l -> dispatch { data with Level = l } )) 150
-      // let onChange = onChange (fun e -> debounce e.Value)
-      let props = [
-        min' 0u
-        max' Skill.maxLevel
-        valueOrDefault skill.Level
-        onChange (SetLevel >> dispatch)
-        //(debouncerWith dispatch 150) ]
-      ]
       label [
         ofStr "Level:"
-        input (type'.number :: props)
-        input (type'.range :: props)
+        Input.natWith (length.em 2) None (Some Skill.maxLevel) skill.Level (SetLevel >> dispatch)
+        Input.natRange 0u Skill.maxLevel skill.Level (SetLevel >> dispatch)
       ]
 
       label [
         ofStr "Buff:"
-        input [
-          type'.number
-          min' 0u
-          valueOrDefault skill.Buff
-          onChange (SetBuff >> dispatch)
-          // (debouncerWith dispatch 150)
-        ]
+        Input.nat (length.em 2) skill.Buff (SetBuff >> dispatch)
       ]
     ]
 
@@ -494,51 +422,7 @@ let viewPrice price =
     // | multiple -> ul (multiple |> Seq.map li)
   ]
 
-type Column<'item> = {
-  Header: ReactElement
-  Width: float
-  Sort: ('item -> 'item -> int) option
-}
 
-let sortTableWith attrs columns displayItem setSort sortCols items =
-  let columns = Array.ofSeq columns
-  let sortData = Array.create columns.Length None
-  let numSorts, items =
-    sortCols |> List.fold (fun (i, items) (col, asc) ->
-      sortData[col] <- Some (i, asc)
-      i + 1,
-      match columns[col].Sort with
-      | Some sort -> items |> Seq.sortDirectionWith asc sort
-      | None -> items)
-      (0, items)
-
-  let headers = columns |> Seq.mapi (fun i column ->
-    th [
-      if column.Sort.IsSome then
-        onClick (fun e -> setSort (e.shiftKey || e.ctrlKey, (i, sortData[i] |> Option.defaultOrMap true snd)))
-      children [
-        column.Header
-        Html.span [
-          match sortData[i] with
-          | Some (i, asc) ->
-            let num = if numSorts > 1 then string (numSorts - i) else ""
-            text $"^{num}"
-            if not asc then
-              style [
-                style.display.inlineBlock
-                style.transform.scale(1, -1)
-              ]
-          | None ->
-            if column.Sort.IsSome then
-              text "-"
-        ]
-      ]
-    ] )
-
-  table [ yield! attrs; children [
-    // colWidths (columns |> Seq.map Column.width)
-    thead [ tr headers ]
-    tbody (items |> Seq.map displayItem) ] ]
 
 let viewCustom (selection: Selection<_,_>) viewValue key dispatch =
   fragment [
@@ -570,14 +454,14 @@ let private sortKeysByHighestCount table =
 
 // default crop sort
 module Crops =
-  let seedVendors = sortKeysByHighestCount Data.gameData.SeedPrices
+  let seedVendors = refMemo (fun (data: GameData) -> sortKeysByHighestCount data.SeedPrices)
 
-  let processors =
-    Data.gameData.Products.Values
+  let processors = refMemo (fun (data: GameData) ->
+    data.Products.Values
     |> Seq.collect Table.keys
     |> Seq.distinct
-    |> Seq.sortWith (Option.noneMaxCompareBy Data.gameData.ProcessorUnlockLevel.TryFind)
-    |> Array.ofSeq
+    |> Seq.sortWith (Option.noneMaxCompareBy data.ProcessorUnlockLevel.TryFind)
+    |> Array.ofSeq)
 
   let table app cropSort crops dispatch =
     let data = app.Data
@@ -585,7 +469,7 @@ module Crops =
     let uiDispatch = SetUI >> dispatch
     let selectDispatch = SelectCrops >> SetSelections >> SetSettings >> dispatch
     [
-      sortTableWith [ className "" ] [
+      sortTable [
         {
           Header = checkbox (data.Crops.Keys |> Seq.forall settings.Selected.Crops.Contains) (curry SetManySelected (crops |> Seq.map Crop.seed |> set) >> selectDispatch)
           Width = 0
@@ -667,6 +551,7 @@ module Crops =
 
     let selectMany filter = keys |> Seq.filter filter |> set |> curry SetManySelected
 
+    let processors = processors data
     let processorUnlocked = processors |> Array.map (Game.processorUnlocked data settings.Game.Skills)
 
     let viewItemRow mainCrop seed item =
@@ -700,17 +585,8 @@ module Crops =
         td [
           viewCustom settings.Selected.CustomSellPrices (fun (price, q) ->
             fragment [
-              input [
-                type'.number
-                min' 0u
-                valueOrDefault price
-                onChange (flip tuple2 q >> curry SetCustom (seed, item) >> SetCustomSellPrice >> selectDispatch)
-              ]
-              opacityCheckbox Image.allQualities q (tuple2 price >> curry SetCustom (seed, item) >> SetCustomSellPrice >> selectDispatch)
-              // input [
-              //   type'.checkbox
-              //   isChecked q
-              //   onCheckedChange (tuple2 price >> curry SetCustom (seed, item) >> SetCustomSellPrice >> dispatch) ]
+              Input.nat (length.em 2) price (flip tuple2 q >> curry SetCustom (seed, item) >> SetCustomSellPrice >> selectDispatch)
+              opacityCheckbox q (tuple2 price >> curry SetCustom (seed, item) >> SetCustomSellPrice >> selectDispatch)
             ] )
             (seed, item)
             (SetCustomSellPrice >> selectDispatch)
@@ -721,7 +597,7 @@ module Crops =
     let productWidth = 100.0 * (1.0 - keyColWidth) / float (processors.Length + 2)
 
     [
-      labeled "View with quality: " <| Select.select
+      labeled "View with quality: " <| Select.options
         (length.em 5)
         (Quality.name >> ofStr)
         Quality.all
@@ -730,7 +606,7 @@ module Crops =
 
       checkboxText "Normalize Prices" showNormalizedPrices (SetShowNormalizedProductPrices >> uiDispatch)
 
-      sortTableWith [ className "products" ] [
+      sortTable [
         {
           Header = ofStr "Crop"
           Width = 100.0 * keyColWidth
@@ -836,13 +712,15 @@ module Crops =
 
     let selectMany filter = curry SetManySelected (crops |> Seq.filter filter |> Seq.map Crop.seed |> set)
 
+    let seedVendors = seedVendors data
+
     [
       checkboxText "Joja Membership" settings.Game.JojaMembership (SetJojaMembership >> SetGameVariables >> settingsDispatch)
-      labeled "Seed Strategy:" <| Select.unitUnion (length.em 10) settings.Profit.SeedStrategy (SetSeedStrategy >> SetProfit >> settingsDispatch)
+      labeled "Seed Strategy:" <| Select.unitUnion (length.em 8) settings.Profit.SeedStrategy (SetSeedStrategy >> SetProfit >> settingsDispatch)
 
       let keyColWdith = 0.4
       let width = 100.0 * ((1.0 - keyColWdith) / float seedVendors.Length) // div by 0?
-      sortTableWith [ className "prices" ] [
+      sortTable [
         {
           Header = ofStr "Crop"
           Width = 100.0 * keyColWdith
@@ -952,13 +830,9 @@ module Crops =
               ]
             )
             td [
-              viewCustom settings.Selected.CustomSeedPrices (fun price ->
-                input [
-                  type'.number
-                  min' 0u
-                  valueOrDefault price
-                  onChange (curry SetCustom seed >> SetCustomSeedPrice >> selectDispatch)
-                ] )
+              viewCustom
+                settings.Selected.CustomSeedPrices
+                (fun price -> Input.nat (length.em 2) price (curry SetCustom seed >> SetCustomSeedPrice >> selectDispatch))
                 seed
                 (SetCustomSeedPrice >> selectDispatch)
             ]
@@ -984,8 +858,8 @@ module Crops =
     |> Array.ofSeq
 
   let private selectFilter name value dispatch =
-    Select.select
-      (length.em 4)
+    Select.options
+      (length.em 3)
       (function
         | Some true -> "Yes"
         | Some false -> "No"
@@ -1055,7 +929,7 @@ module Crops =
 
 
 module Fertilizers =
-  let fertilizerVendors = sortKeysByHighestCount Data.gameData.FertilizerPrices
+  let fertilizerVendors = refMemo (fun (data: GameData) -> sortKeysByHighestCount data.FertilizerPrices)
 
   let table (data: GameData) settings fertSort open' dispatch =
     let uiDispatch = SetUI >> dispatch
@@ -1065,7 +939,7 @@ module Fertilizers =
       (ofStr "Fertilizers")
       [
         checkboxText "Allow No Fertilizer" settings.Selected.NoFertilizer (SelectNoFertilizer >> selectDispatch)
-        sortTableWith [ className "" ] [
+        sortTable [
           {
             Header =
               checkbox
@@ -1122,6 +996,7 @@ module Fertilizers =
     let selectDispatch = SetSelections >> dispatch
 
     let selectMany filter = curry SetManySelected (data.Fertilizers.Keys |> Seq.filter filter |> set)
+    let fertilizerVendors = fertilizerVendors data
 
     animatedDetails
       open'
@@ -1132,7 +1007,7 @@ module Fertilizers =
 
         let keyColWdith = 0.40
         let width = 100.0 * (1.0 - keyColWdith) / float fertilizerVendors.Length // div by 0?
-        sortTableWith [ className "prices" ] [
+        sortTable [
           {
             Header = ofStr "Fertilizer"
             Width = 100.0 * keyColWdith
@@ -1180,12 +1055,9 @@ module Fertilizers =
                   | None -> yield none
                 ] )
               td [
-                viewCustom settings.Selected.CustomFertilizerPrices (fun price ->
-                  input [
-                    type'.number
-                    valueOrDefault price
-                    onChange (curry SetCustom name >> SetCustomFertilizerPrice >> selectDispatch)
-                  ] )
+                viewCustom
+                  settings.Selected.CustomFertilizerPrices
+                  (fun price -> Input.nat (length.em 2) price (curry SetCustom name >> SetCustomFertilizerPrice >> selectDispatch))
                   name
                   (SetCustomFertilizerPrice >> selectDispatch)
               ]
@@ -1198,7 +1070,7 @@ module Fertilizers =
 
   let tab app dispatch =
     let { UI = ui; Settings = settings } = app.State
-    div [ id' "fertilizer-tab"; children [
+    div [ prop.id "fertilizer-tab"; children [
       table app.Data settings ui.FertilizerSort (ui.OpenDetails.Contains OpenDetails.Fertilizers) dispatch
       prices app.Data settings ui.FertilizerPriceSort (ui.OpenDetails.Contains OpenDetails.FertilizerPrices) dispatch
     ] ]
@@ -1207,25 +1079,19 @@ module Misc =
   let date message (date: Date) dispatch =
     let dispatch = message >> dispatch
     div [ Class.date; children [
-      Select.select
+      Select.options
         (length.em 6)
         (Season.name >> ofStr)
         Season.all
         date.Season
         (fun season -> dispatch { date with Season = season })
-      input [
-        type'.number
-        min' Date.firstDay
-        max' Date.lastDay
-        valueOrDefault date.Day
-        onChange (fun day -> dispatch { date with Day = day })
-      ]
+      Input.natWith (length.em 2) (Some Date.firstDay) (Some Date.lastDay) date.Day (fun day -> dispatch { date with Day = day })
     ] ]
 
   let multipliers multipliers dispatch =
     div [
       checkboxText "Bear's Knowledge" multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
-      labeled "Profit Margin:" <| Select.select
+      labeled "Profit Margin:" <| Select.options
         (length.em 5)
         (function
           | 1.0 -> "Normal"
@@ -1242,14 +1108,8 @@ module Misc =
     div [
       label [
         ofStr "Giant Crop Checks Per Tile:"
-        let props = [
-          prop.min CropAmount.minGiantCropChecks
-          prop.max CropAmount.maxGiantCropChecks
-          Interop.mkAttr "step" "any"
-          onChange (SetGiantChecksPerTile >> dispatch)
-        ]
-        input ((valueOrDefault (System.Math.Round (settings.GiantChecksPerTile, 2))) :: type'.number :: props)
-        input ((valueOrDefault settings.GiantChecksPerTile) :: type'.range :: props)
+        Input.floatWith (length.em 4) 10e4 (Some CropAmount.minGiantCropChecks) (Some CropAmount.maxGiantCropChecks) settings.GiantChecksPerTile (SetGiantChecksPerTile >> dispatch)
+        Input.floatRange 10e4 CropAmount.minGiantCropChecks CropAmount.maxGiantCropChecks settings.GiantChecksPerTile (SetGiantChecksPerTile >> dispatch)
       ]
       // giant crop prob
         // P(not Giant) = (1.0 - baseGiantProb) ^ giantCropsPerTile
@@ -1259,7 +1119,7 @@ module Misc =
         // + crops from shaving
         // / 9 tiles
 
-      Select.select
+      Select.options
         (length.em 5)
         (Option.defaultOrMap "None" ToolLevel.name >> ofStr)
         [| None; yield! ToolLevel.all |> Array.map Some |]
@@ -1270,17 +1130,12 @@ module Misc =
       checkboxText "Special Charm" settings.SpecialCharm (SetSpecialCharm >> dispatch)
       label [
         ofStr "Luck Buff:"
-        input [
-          type'.number
-          min' 0u
-          valueOrDefault settings.LuckBuff
-          onChange (SetLuckBuff >> dispatch)
-        ]
+        Input.nat (length.em 2) settings.LuckBuff (SetLuckBuff >> dispatch)
       ]
       // doubleCrop Chance
     ]
 
-  let mods open' modData dispatch =
+  let mods data open' modData dispatch =
     animatedDetails
       open'
       (ofStr "Mods")
@@ -1289,7 +1144,7 @@ module Misc =
         checkboxText "Quality Products" modData.QualityProducts (SetQualityProducts >> dispatch)
         ul [
           if not modData.QualityProducts then Class.disabled
-          children (Crops.processors |> Array.filter ((<>) Processor.seedMaker) |> Array.map (fun processor ->
+          children (Crops.processors data |> Array.filter ((<>) Processor.seedMaker) |> Array.map (fun processor ->
             li [
               checkboxWith []
                 (Image.Icon.processor processor)
@@ -1301,10 +1156,10 @@ module Misc =
       ]
       (curry SetDetailsOpen OpenDetails.Mod >> SetUI >> dispatch)
 
-  let tab modsOpen settings dispatch =
+  let tab modsOpen data settings dispatch =
     let appDispatch = dispatch
     let dispatch = SetGameVariables >> SetSettings >> dispatch
-    div [ id' "misc"; children [
+    div [ prop.id "misc"; children [
       div [ Class.date; children [
         // labeled "Location: " <| Select.unitUnion settings.Location (SetLocation >> dispatch)
         labeled "Location: " <| Select.unitUnion
@@ -1325,7 +1180,7 @@ module Misc =
         checkboxText "Irrigated" settings.Irrigated (SetIrrigated >> dispatch)
       ]
 
-      mods modsOpen settings.ModData appDispatch
+      mods data modsOpen settings.ModData appDispatch
     ] ]
 
 module LoadSave =
@@ -1351,13 +1206,7 @@ module LoadSave =
           onClose = (fun () -> setName None; true)
           isOpen = true
           header = ofStr "Save Current Settings As"
-          children = [|
-            input [
-              type'.text
-              value name
-              onChange (Some >> setName)
-            ]
-          |]
+          children = [| Input.text name (Some >> setName) |]
           footer = [|
             button [
               onClick (fun _ ->
@@ -1382,7 +1231,7 @@ module LoadSave =
       label [ Class.fileInput; children [
         ofStr "Import Save"
         input [
-          type'.file
+          prop.type'.file
           onChange (fun (e: Browser.Types.File) ->
             let text: string JS.Promise = e?text()
             text.``then`` (fun text ->
@@ -1471,7 +1320,7 @@ let settings app dispatch =
     | Skills -> Skills.tab settings.Game.Skills (SetSkills >> SetGameVariables >> SetSettings >> dispatch)
     | Crops -> Crops.tab app dispatch
     | Fertilizers -> Fertilizers.tab app dispatch
-    | Misc -> Misc.tab (ui.OpenDetails.Contains OpenDetails.Mod) settings.Game dispatch
+    | Misc -> Misc.tab (ui.OpenDetails.Contains OpenDetails.Mod) app.Data settings.Game dispatch
     | SettingsTab.LoadSettings -> LoadSave.tab app appDispatch
   ] ]
 
@@ -1698,7 +1547,7 @@ let allPairData metric timeNorm data settings =
 let rankBy labelText ranker dispatch =
   fragment [
     ofStr labelText
-    Select.select (length.em 5) (fun metric ->
+    Select.options (length.em 4) (fun metric ->
       Html.span [
         text (string metric)
         title (RankMetric.fullName metric)
@@ -1706,7 +1555,7 @@ let rankBy labelText ranker dispatch =
       unitUnionCases<RankMetric>
       ranker.RankMetric
       (SetRankMetric >> dispatch)
-    Select.unitUnion (length.em 7.5) ranker.TimeNormalization (SetTimeNormalization >> dispatch)
+    Select.unitUnion (length.em 7) ranker.TimeNormalization (SetTimeNormalization >> dispatch)
   ]
 
 let graphView ranker (data, settings) dispatch =
@@ -1723,62 +1572,73 @@ let graphView ranker (data, settings) dispatch =
       | RankCrops -> pairData.Pairs |> Array.groupBy (fst >> fst) |> Array.map (snd >> Array.maxBy (snd >> Option.ofResult))
       | RankFertilizers -> pairData.Pairs |> Array.groupBy (fst >> snd) |> Array.map (snd >> Array.maxBy (snd >> Option.ofResult))
 
-    let pairData =
-      pairs
-      |> Array.indexed
-      |> Array.map (fun (i, (_, profit)) -> i, profit)
+    let pairs =
+      if ranker.ShowInvalid then pairs else
+      pairs |> Array.filter (snd >> Result.isOk)
 
-    let pairs = pairs |> Array.map fst
-
-    let setOrder a b =
-      let rec next a b =
-        if int a = 0 || int b = 0 then
-          compare a b
-        else
-          let c = compare (int b &&& 1) (int a &&& 1)
-          if c = 0
-          then next (a >>> 1) (b >>> 1)
-          else c
-      next a b
-
-    pairData |> Array.sortInPlaceWith (fun a b ->
-      match snd a, snd b with
-      | Ok a, Ok b -> compare b a
-      | Ok _, Error _ -> -1
-      | Error _, Ok _ -> 1
-      | Error a, Error b -> setOrder a b)
-
-    fragment [
-      div [ Class.graphControls; children [
-        ofStr "Rank"
-        Select.select (length.em 7.5) (fun rankby ->
-          Html.span [
-            text <| string rankby
-            title (
-              match rankby with
-              | RankCropsAndFertilizers -> "All pairs of crops and fertilizers."
-              | RankCrops -> "Pick the best fertilizer for each crop."
-              | RankFertilizers -> "Pick the best crop for each fertilizer."
-            )
-          ])
-          unitUnionCases<RankItem>
-          ranker.RankItem
-          (SetRankItem >> dispatch)
-
-        rankBy "By" ranker dispatch
-      ] ]
+    if pairs.Length = 0 then
       div [
-        Class.graph
-        children [
-          lazyView3With
-            (fun (data1, _) (data2, _) -> data1 = data2)
-            (fun (pairs, pairData) (ranker, data) -> graph ranker data pairs pairData)
-            (pairs, pairData)
-            (ranker, data)
-            dispatch
+        ofStr "No valid items found"
+      ]
+    else
+      let pairData =
+        pairs
+        |> Array.indexed
+        |> Array.map (fun (i, (_, profit)) -> i, profit)
+
+      let pairs = pairs |> Array.map fst
+
+      let setOrder a b =
+        let rec next a b =
+          if int a = 0 || int b = 0 then
+            compare a b
+          else
+            let c = compare (int b &&& 1) (int a &&& 1)
+            if c = 0
+            then next (a >>> 1) (b >>> 1)
+            else c
+        next a b
+
+      pairData |> Array.sortInPlaceWith (fun a b ->
+        match snd a, snd b with
+        | Ok a, Ok b -> compare b a
+        | Ok _, Error _ -> -1
+        | Error _, Ok _ -> 1
+        | Error a, Error b -> setOrder a b)
+
+      fragment [
+        div [ Class.graphControls; children [
+          ofStr "Rank"
+          Select.options (length.em 6) (fun rankby ->
+            Html.span [
+              prop.text (string rankby)
+              title (
+                match rankby with
+                | RankCropsAndFertilizers -> "All pairs of crops and fertilizers."
+                | RankCrops -> "Pick the best fertilizer for each crop."
+                | RankFertilizers -> "Pick the best crop for each fertilizer."
+              )
+            ])
+            unitUnionCases<RankItem>
+            ranker.RankItem
+            (SetRankItem >> dispatch)
+
+          rankBy "By" ranker dispatch
+
+          checkboxText "Show Invalid" ranker.ShowInvalid (SetShowInvalid >> dispatch)
+        ] ]
+        div [
+          Class.graph
+          children [
+            lazyView3With
+              (fun (data1, _) (data2, _) -> data1 = data2)
+              (fun (pairs, pairData) (ranker, data) -> graph ranker data pairs pairData)
+              (pairs, pairData)
+              (ranker, data)
+              dispatch
+          ]
         ]
       ]
-    ]
 
 let growthCalender app seed fertilizer =
   let data = app.Data
@@ -1793,11 +1653,7 @@ let growthCalender app seed fertilizer =
       |> Array.mapi (fun i stage ->
         Array.create (int stage) (div [ Image.growthStage i seed ]))
       |> Array.concat
-    let last =
-      match crop with
-      | FarmCrop _ -> Image.growthStage span.Stages.Length seed
-      | ForageCrop _ -> Image.item' <| Crop.mainItem crop
-    let last = [| div last |]
+    let last = [| div (Image.item' <| Crop.mainItem crop) |]
     let stageImages =
       let first =
         match Crop.regrowTime crop with
@@ -2201,7 +2057,7 @@ let profitBreakdownTable roi timeNorm (data: GameData) settings seed fertName =
                       Image.Icon.productQuality data item product (Product.outputQuality settings.Game.ModData quality product)
                     ]
                     td [
-                      ofStr <| goldFixedRound (profit / amountPerItem)
+                      ofStr <| gold (nat (profit / amountPerItem))
                     ]
                     td [
                       ofStr " x "
@@ -2400,7 +2256,7 @@ let selectedCropAndFertilizer =
       div [ Class.auditGraphSelect; children [
         div [
           Select.search
-            (length.percent 40)
+            (length.em 15)
             (function
               | Choice1Of2 crop
               | Choice2Of2 (Some crop) -> Crop.name data.Items.Find crop
@@ -2431,7 +2287,7 @@ let selectedCropAndFertilizer =
           ofStr " with "
 
           Select.search
-            (length.percent 40)
+            (length.em 15)
             (function
               | Choice1Of2 fert -> fertilizerDisplayName fert
               | Choice2Of2 fert -> fert |> Option.defaultOrMap "???" fertilizerDisplayName)
@@ -2466,7 +2322,7 @@ let selectedCropAndFertilizer =
 
         div [
           ofStr "Show "
-          Select.select (length.em 5) (fun metric ->
+          Select.options (length.em 4) (fun metric ->
             Html.span [
               text (string metric)
               title (RankMetric.fullName metric)
@@ -2474,7 +2330,7 @@ let selectedCropAndFertilizer =
             unitUnionCases<RankMetric>
             metric
             (fun metric -> setState (metric, timeNorm))
-          Select.unitUnion (length.em 7.5) timeNorm (fun timeNorm -> setState (metric, timeNorm))
+          Select.unitUnion (length.em 7) timeNorm (fun timeNorm -> setState (metric, timeNorm))
         ]
       ] ]
 
@@ -2622,7 +2478,7 @@ let view app dispatch =
   let rankerChart = ui.Mode = Ranker && ui.Ranker.SelectedCropAndFertilizer.IsNone
   fragment [
     section [
-      id' (if rankerChart then "visualization-graph" else "visualization")
+      prop.id (if rankerChart then "visualization-graph" else "visualization")
       children [
         viewTabsCss [ Class.tabs ] SetAppMode unitUnionCases<AppMode> ui.Mode (SetUI >> dispatch)
         match ui.Mode with

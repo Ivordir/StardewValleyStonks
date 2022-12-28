@@ -8,7 +8,6 @@ module Vendor =
   let pierre = VendorName "Pierre"
   let joja = VendorName "Joja"
   let oasis = VendorName "Oasis"
-  let travelingCart = VendorName "Traveling Cart"
 
 
 type FertilizerName = string
@@ -19,7 +18,7 @@ type Fertilizer = {
   Speed: float
 }
 
-module Fertilizer =
+module [<RequireQualifiedAccess>] Fertilizer =
   let [<Literal>] lossProbability = 0.1
   let [<Literal>] minSpeed = 0.0
 
@@ -50,7 +49,7 @@ type Quality =
   | Gold = 2
   | Iridium = 3
 
-module Quality =
+module [<RequireQualifiedAccess>] Quality =
   let [<Literal>] highest = 3
   let [<Literal>] count = 4
 
@@ -60,9 +59,9 @@ module Quality =
 
 type [<Erase>] 'a Qualities = ByQuality of 'a array
 
-module Qualities =
+module [<RequireQualifiedAccess>] Qualities =
   #if FABLE_COMPILER
-  let inline unwrap (qualities: 'a Qualities) = !!qualities : 'a array
+  let inline unwrap (qualities: 'a Qualities) = Fable.Core.JsInterop.(!!)qualities : 'a array
   #else
   let inline unwrap (ByQuality arr) = arr
   #endif
@@ -144,7 +143,7 @@ type Skill = {
   Buff: nat
 }
 
-module Skill =
+module [<RequireQualifiedAccess>] Skill =
   let [<Literal>] maxLevel = 10u
 
   let zero = {

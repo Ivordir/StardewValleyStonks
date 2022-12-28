@@ -2,8 +2,7 @@
 
 WIP
 
-
-Gold Per Day takes the total profit and divides it by the number of days the crop spent growing / had to be watered.
+<!-- Gold Per Day takes the total profit and divides it by the number of days the crop spent growing / had to be watered.
 Gold Per Season takes the total profit and divides it by the number of days in the season(s) the crop can grow.
 
 If you care more about energy, i.e. how much gold you get from watering each crop, gold per day is a better metric.
@@ -21,3 +20,5 @@ This heavily favors crops that can grow in multiple seasons.
 Special Charm and Luck Buff
 these settings are here for completion only --
 they have a negligable effect on profit.
+
+# Documentation / debugging / local server instructions coming soon -->

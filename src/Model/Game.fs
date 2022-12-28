@@ -17,7 +17,7 @@ type SupplementalData = {
   GenerateSeedPrices: (Vendor * SeedId array) list
 }
 
-// The model type for all of Stardew Valley's relevant game data. (This does not include save game data.)
+// The model type for all of Stardew Valley's relevant game data/content. (I.e., this does not include save game data.)
 type GameData = {
   Fertilizers: Table<FertilizerName, Fertilizer>
   FertilizerPrices: Table<FertilizerName, Table<Vendor, nat>>
@@ -36,7 +36,7 @@ module GameData =
     data.Crops
     |> Table.toSeq
     |> Seq.collect (fun (seed, crop) ->
-      Crop.items crop |> Array.map (tuple2 seed))
+      Crop.items crop |> Array.map (fun item -> seed, item))
     |> Array.ofSeq
 
   let cropCanGetOwnSeedsFromSeedMaker crop data =
@@ -142,7 +142,7 @@ type GameVariables = {
   Location: Location
 }
 
-module GameVariables =
+module [<RequireQualifiedAccess>] GameVariables =
   let common = {
     Skills = Skills.zero
     Multipliers = Multipliers.common
@@ -251,10 +251,10 @@ module Game =
     Product.prices data.Items.Find vars.Skills vars.Multipliers vars.ModData item product
 
   let productProfit data vars item quality product =
-    Product.profit data.Items.Find vars.Skills vars.Multipliers vars.ModData item quality product
+    Product.normalizedPrice data.Items.Find vars.Skills vars.Multipliers vars.ModData item quality product
 
   let productProfits data vars item product =
-    Product.profits data.Items.Find vars.Skills vars.Multipliers vars.ModData item product
+    Product.normalizedPrices data.Items.Find vars.Skills vars.Multipliers vars.ModData item product
 
   let seedItemSellPrice data vars (seed: SeedId) = itemPrice vars data.Items[seed * 1u<ItemNum/SeedNum>] Quality.Normal
 
