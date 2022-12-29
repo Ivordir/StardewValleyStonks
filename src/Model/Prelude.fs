@@ -52,42 +52,34 @@ open Fable.Core
 
 type Dictionary<'a, 'b> = System.Collections.Generic.Dictionary<'a, 'b>
 
-/// An immutable wrapper around ESM Map.
-/// Keys should be primitive (string, number, etc.),
-/// and values should not be Option / null.
 type [<Erase>] Table<'a, 'b> = ReadOnlyDictionary of Dictionary<'a, 'b>
 
 module [<RequireQualifiedAccess>] Table =
-  #if FABLE_COMPILER
-  let inline wrap (map: JS.Map<'a, 'b>) = JsInterop.(!!)map: Table<'a, 'b>
-  #else
-  let inline wrap dict = ReadOnlyDictionary dict
-  #endif
-
   #if FABLE_COMPILER
   let inline unwrap (table: Table<'a, 'b>) = JsInterop.(!!)table: Dictionary<'a, 'b>
   #else
   let inline unwrap (ReadOnlyDictionary dict) = dict
   #endif
 
-  let inline empty () =
-    #if FABLE_COMPILER
-    JS.Constructors.Map.Create ()
-    #else
-    Dictionary ()
-    #endif
-    |> wrap
+  let inline empty () = Dictionary () |> ReadOnlyDictionary
+
+  #if FABLE_COMPILER
+  let addAll (dict: Dictionary<_, _>) seq =
+    for key, value in seq do
+      dict[key] <- value
+    dict
+  #endif
 
   let inline ofSeq seq =
     #if FABLE_COMPILER
-    JS.Constructors.Map.Create seq
+    addAll (Dictionary ()) seq
     #else
     Dictionary (seq |> Seq.map System.Collections.Generic.KeyValuePair.Create)
     #endif
-    |> wrap
+    |> ReadOnlyDictionary
 
-  let ofKeys value keys = keys |> Seq.map (fun k -> k, value k) |> ofSeq
-  let ofValues key values = values |> Seq.map (fun v -> key v, v) |> ofSeq
+  let inline ofKeys value keys = keys |> Seq.map (fun k -> k, value k) |> ofSeq
+  let inline ofValues key values = values |> Seq.map (fun v -> key v, v) |> ofSeq
 
   let inline toSeq (table: Table<'k, 'v>) =
     #if FABLE_COMPILER
@@ -103,27 +95,13 @@ module [<RequireQualifiedAccess>] Table =
   let inline values table = (unwrap table).Values
   let inline count table = (unwrap table).Count
 
-  #if FABLE_COMPILER
-  open Fable.Core.JsInterop
-  let find (key: 'a) (table: Table<'a, 'b>) =
-    let value: 'b = table?get key
-    if isNullOrUndefined value
-    then failwith $"The key {key} is not present in the map."
-    else value
-  #else
-  let inline find key table = (unwrap table)[key]
-  #endif
-
-  #if FABLE_COMPILER
-  let inline tryFind (key: 'a) (table: Table<'a, 'b>) = (table?get key): 'b option
-  #else
-  let tryFind key table =
-    match (unwrap table).TryGetValue key with
-    | true, value -> Some value
-    | _ -> None
-  #endif
-
   let inline containsKey key table = (unwrap table).ContainsKey key
+  let inline find key table = (unwrap table)[key]
+  let tryFind key table =
+    if table |> containsKey key
+    then Some (table |> find key)
+    else None
+
   let exists predicate table = toSeq table |> Seq.exists (fun (k, v) -> predicate k v)
   let forall predicate table = toSeq table |> Seq.forall (fun (k, v) -> predicate k v)
 

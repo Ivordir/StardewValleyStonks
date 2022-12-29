@@ -1130,7 +1130,7 @@ module Misc =
       checkboxText "Special Charm" settings.SpecialCharm (SetSpecialCharm >> dispatch)
       label [
         ofStr "Luck Buff:"
-        Input.nat (length.em 2) settings.LuckBuff (SetLuckBuff >> dispatch)
+        Input.natWith (length.em 2) None (Some CropAmount.maxLuckBuff) settings.LuckBuff (SetLuckBuff >> dispatch)
       ]
       // doubleCrop Chance
     ]
