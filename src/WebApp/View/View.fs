@@ -14,8 +14,6 @@ open StardewValleyStonks.WebApp.View.Table
 
 // refactor model calcs
 
-// extractor cleanup
-
 // Solver
 
 // error handling

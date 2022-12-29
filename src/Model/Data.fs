@@ -321,6 +321,6 @@ module [<RequireQualifiedAccess>] Decode =
         ProcessorUnlockLevel = field (nameof u.ProcessorUnlockLevel) (table ProcessorName Decode.uint32)
         FertilizerPrices = field (nameof u.FertilizerPrices) (table id (table VendorName Decode.uint32))
         SeedPrices = field (nameof u.SeedPrices) (tableParse parseSeedId (Decode.array seedPrice))
-        GenerateSeedPrices = field (nameof u.GenerateSeedPrices) (wrapKeys id VendorName (Decode.array seedId))
+        GenerateSeedPrices = field (nameof u.GenerateSeedPrices) (table VendorName (Decode.array seedId))
       }
     )

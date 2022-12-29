@@ -14,7 +14,7 @@ type SupplementalData = {
   ProcessorUnlockLevel: Table<Processor, nat>
   FertilizerPrices: Table<FertilizerName, Table<Vendor, nat>>
   SeedPrices: Table<SeedId, SeedPrice array>
-  GenerateSeedPrices: (Vendor * SeedId array) list
+  GenerateSeedPrices: Table<Vendor, SeedId array>
 }
 
 // The model type for all of Stardew Valley's relevant game data/content. (I.e., this does not include save game data.)
@@ -67,6 +67,7 @@ module GameData =
 
     let seedPrices =
       supplemental.GenerateSeedPrices
+      |> Table.toSeq
       |> Seq.collect (fun (vendor, seeds) ->
         seeds |> Array.map (fun seed -> seed, ScalingPrice (vendor, None)))
       |> Seq.groupBy fst

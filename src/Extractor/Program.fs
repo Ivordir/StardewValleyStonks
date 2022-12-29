@@ -119,41 +119,15 @@ module [<AutoOpen>] Constants =
   let [<Literal>] itemSpriteSheetPath = "Content/Maps/springobjects"
 
 
-let {
-  SkipCrops = skipCrops
-  IncludeItems = includeItems
-  ItemOverrides = itemOverrides
-  FarmCropOverrides = farmCropOverrides
-  ForageCropData = forageCropData
-  DataOutputPath = dataOutputPath
-  CropImageOutputPath = cropImageOutputPath
-  ItemImageOutputPath = itemImageOutputPath
-} =
-  let json =
-    try File.ReadAllText configPath
-    with _ -> printfn "Error reading config file."; reraise ()
-
-  match Decode.fromString Decode.config json with
-  | Ok config -> config
-  | Error e -> failwithf "Error parsing config file: %A" e
-
-
-let game = new Game ()
-let graphicsManager = new GraphicsDeviceManager (game)
-(graphicsManager :> IGraphicsDeviceManager).CreateDevice ()
-let graphics = graphicsManager.GraphicsDevice
-
-game.RunOneFrame ()
-
-
-let parseItem (items: Dictionary<_,_>) (itemData: Table<_,_>) itemId =
+let parseItem overrrides (items: Dictionary<_,_>) itemData itemId =
   if items.ContainsKey itemId then () else
-  match itemData.TryFind itemId with
+  match itemData |> Table.tryFind itemId with
   | None -> failwith $"Could not find data for item with id: {itemId}"
   | Some (str: string) ->
     let splitted = str.Split '/'
     if splitted.Length < 5 then failwith $"Unexpected item data format for item {itemId}: '{str}'"
-    let o = itemOverrides.TryFind itemId |> Option.defaultValue ItemOverride.none
+
+    let o = overrrides |> Table.tryFind itemId |> Option.defaultValue ItemOverride.none
 
     let sellPrice = o.SellPrice |> Option.defaultValue (uint splitted.[1])
 
@@ -181,7 +155,7 @@ let parseItem (items: Dictionary<_,_>) (itemData: Table<_,_>) itemId =
       Category = category
     } )
 
-let parseCrop parseItem seedId (data: string) =
+let parseCrop farmCropOverrides forageCropData parseItem seedId (data: string) =
   match data.Split '/' with
   | [| growthStages; seasons; spriteSheetRow; itemId; regrowTime; scythe; cropAmount; _; _ |] ->
     let spriteSheetRow = uint spriteSheetRow
@@ -216,7 +190,7 @@ let parseCrop parseItem seedId (data: string) =
       if regrowTime.IsSome then failwith $"Forage crop {seedId} regrows."
 
       let data =
-        match forageCropData.TryFind season with
+        match forageCropData |> Table.tryFind season with
         | Some data -> data
         | None -> failwith $"No data was provided for {Season.name season} Forage in the config."
 
@@ -235,7 +209,7 @@ let parseCrop parseItem seedId (data: string) =
     else
       parseItem itemId
 
-      let overrides = farmCropOverrides.TryFind seedId |> Option.defaultValue FarmCropOverride.none
+      let overrides = farmCropOverrides |> Table.tryFind seedId |> Option.defaultValue FarmCropOverride.none
 
       overrides.ExtraItem |> Option.iter (fst >> parseItem)
 
@@ -294,7 +268,7 @@ let parseCrop parseItem seedId (data: string) =
 
 
 
-let getSubTexture x y width height (texture: Texture2D) =
+let getSubTexture graphics x y width height (texture: Texture2D) =
   let data: Color array = Array.zeroCreate (texture.Width * texture.Height)
   texture.GetData data
   let sub = Array.zeroCreate (width * height)
@@ -307,35 +281,36 @@ let getSubTexture x y width height (texture: Texture2D) =
   subtexture.SetData sub
   subtexture
 
-let saveStageImages cropSpriteSheet crop (spriteSheetRow: uint) =
-  let path = Path.Combine (cropImageOutputPath, string (Crop.seed crop))
-  if not <| Directory.Exists path then Directory.CreateDirectory path |> ignore
+let saveStageImages graphics outputPath cropSpriteSheet crop (spriteSheetRow: uint) =
+  let path = Path.Combine (outputPath, string (Crop.seed crop))
+  Directory.CreateDirectory path |> ignore
 
   let x = if spriteSheetRow % 2u = 0u then 0 else 128
   let y = (int spriteSheetRow / 2) * cropImageHeight
 
   let save name i =
-    let subTexture = cropSpriteSheet |> getSubTexture (x + i * cropImageWidth) y cropImageWidth cropImageHeight
+    let subTexture = cropSpriteSheet |> getSubTexture graphics (x + i * cropImageWidth) y cropImageWidth cropImageHeight
     use file = Path.Combine (path, name + ".png") |> File.OpenWrite
     subTexture.SaveAsPng (file, cropImageWidth, cropImageHeight)
 
   save (string 0) 0
   let stages = Crop.stages crop
-  for i = 1 to stages.Length - (if Crop.isForage crop then 1 else 0) do
+  for i = 1 to stages.Length - 1 do
     save (string i) (i + 1)
 
   if Crop.regrows crop then save "Regrow" (stages.Length + 2)
 
-let saveItemImage (itemSpriteSheet: Texture2D) item =
+let saveItemImage graphics outputPath (itemSpriteSheet: Texture2D) item =
   let id = int item.Id
   let subTexture =
     getSubTexture
+      graphics
       (id * itemImageWidth % itemSpriteSheet.Width)
       (id * itemImageWidth / itemSpriteSheet.Width * itemImageHeight)
       itemImageWidth
       itemImageHeight
       itemSpriteSheet
-  use file = Path.Combine (itemImageOutputPath, string id + ".png") |> File.OpenWrite
+  use file = Path.Combine (outputPath, string id + ".png") |> File.OpenWrite
   subTexture.SaveAsPng (file, itemImageWidth, itemImageHeight)
 
 
@@ -347,9 +322,24 @@ let [<EntryPoint>] main args =
     | [| |] -> failwith "Pass the root directory of the Stardew Valley exe as the first command line argument."
     | _ -> failwith "Unexpected number of command line arguments."
 
+  let config =
+    let json =
+      try File.ReadAllText configPath
+      with _ -> printfn "Error reading config file."; reraise ()
+
+    match Decode.fromString Decode.config json with
+    | Ok config -> config
+    | Error e -> failwithf "Error parsing config file: %A" e
+
   printfn "Press enter to run the extractor..."
   |> System.Console.ReadLine
   |> ignore
+
+  let game = new Game ()
+  let graphicsManager = new GraphicsDeviceManager (game)
+  (graphicsManager :> IGraphicsDeviceManager).CreateDevice ()
+  let graphics = graphicsManager.GraphicsDevice
+  game.RunOneFrame ()
 
   let content =
     let dummyServiceProvider = {
@@ -369,7 +359,7 @@ let [<EntryPoint>] main args =
     (tryLoad (name + " data") path: Dictionary<int,_>)
     |> Seq.map (fun (KeyValue (k, v)) -> nat k * 1u<_>, v)
 
-  let cropData = tryLoadData "crop" cropDataPath |> Seq.filter (fst >> skipCrops.Contains >> not) |> Array.ofSeq
+  let cropData = tryLoadData "crop" cropDataPath |> Seq.filter (fst >> config.SkipCrops.Contains >> not) |> Array.ofSeq
   let itemData = tryLoadData "item" itemDataPath |> Table.ofSeq
 
   let tryLoadSpriteSheet name path: Texture2D = tryLoad (name + " spritesheet") path
@@ -378,13 +368,13 @@ let [<EntryPoint>] main args =
   let itemSpriteSheet = tryLoadSpriteSheet "item" itemSpriteSheetPath
 
   let items = Dictionary ()
-  let parseItem = parseItem items itemData
-  includeItems |> Array.iter parseItem
+  let parseItem = parseItem config.ItemOverrides items itemData
+  config.IncludeItems |> Array.iter parseItem
 
   let farmCrops = ResizeArray (cropData.Length - 4)
   let forageCrops = ResizeArray 4
   for seedId, data in cropData do
-    match parseCrop parseItem seedId data with
+    match parseCrop config.FarmCropOverrides config.ForageCropData parseItem seedId data with
     | spriteSheetRow, FarmCrop crop -> farmCrops.Add (crop, spriteSheetRow)
     | _, ForageCrop crop -> forageCrops.Add crop
 
@@ -392,9 +382,16 @@ let [<EntryPoint>] main args =
   |> System.Console.ReadLine
   |> ignore
 
-  items.Values |> Seq.iter (saveItemImage itemSpriteSheet)
-  farmCrops |> Seq.iter (fun (crop, spriteSheetRow) -> saveStageImages cropSpriteSheet (FarmCrop crop) spriteSheetRow)
-  forageCrops |> Seq.iter (fun crop -> saveStageImages cropSpriteSheet (ForageCrop crop) forageSpriteSheetRow)
+  try
+    Directory.CreateDirectory config.ItemImageOutputPath |> ignore
+    items.Values |> Seq.iter (saveItemImage graphics config.ItemImageOutputPath itemSpriteSheet)
+  with _ -> printfn "Error writing the item images."; reraise ()
+
+  try
+    Directory.CreateDirectory config.CropImageOutputPath |> ignore
+    farmCrops |> Seq.iter (fun (crop, spriteSheetRow) -> saveStageImages graphics config.CropImageOutputPath cropSpriteSheet (FarmCrop crop) spriteSheetRow)
+    forageCrops |> Seq.iter (fun crop -> saveStageImages graphics config.CropImageOutputPath cropSpriteSheet (ForageCrop crop) forageSpriteSheetRow)
+  with _ -> printfn "Error writing the crop images."; reraise ()
 
   let dataStr =
     Encode.extractedData {
@@ -404,7 +401,7 @@ let [<EntryPoint>] main args =
     }
     |> Encode.toString 2
 
-  try File.WriteAllText (dataOutputPath, dataStr)
+  try File.WriteAllText (config.DataOutputPath, dataStr)
   with _ -> printfn "Error writing the data file."; reraise ()
 
   0
