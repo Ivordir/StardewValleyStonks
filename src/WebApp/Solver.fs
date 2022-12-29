@@ -55,15 +55,29 @@
 
 module StardewValleyStonks.WebApp.Solver
 
+open StardewValleyStonks
+
+type Variable =
+  | PlantCrop of SeedId * FertilizerName option
+  | PlantCropUnreplacedFertilizer of SeedId * FertilizerName option
+  | PlantBridgeCrop of SeedId * FertilizerName option
+  | DayUsedForBridgeCropIntoNextSeason
+  | DayUsedForBridgeCropFromPrevSeason
+  | PlantRegrowCropFixedHarvests of SeedId * FertilizerName option * harvests: nat
+  | PlantRegrowCropFirstHarvest of SeedId * FertilizerName option
+  | PlantRegrowCropRegrowHarvests of SeedId * FertilizerName option
+  | DayUsedForRegrowCrop
+
+
+
 open YALPS
 open YALPS.Operators
-open StardewValleyStonks
 
 module ValueNames =
   let [<Literal>] Profit = "Profit"
   let [<Literal>] RegrowDays = "RegrowDays"
-  let [<Literal>] CrossDays = "CrossDays"
-  let [<Literal>] CrossHarvests = "CrossHarvests"
+  let [<Literal>] BridgeDays = "BridgeDays"
+  let [<Literal>] BridgeHarvests = "BridgeHarvests"
 open ValueNames
 
 
@@ -104,7 +118,8 @@ let private fertilizerIdOption = Option.defaultOrMap "" Fertilizer.name
 let endingCrop = "EndingCrop", 1.0
 
 
-(* A description of the problem:
+(*
+A description of the problem:
 Basically, this is an unbounded knapsack problem with some extra bells and whistles.
 
 First consider a single season:
@@ -114,19 +129,22 @@ that provide the maxiumum possible profit.
 
 There are also the following caveats:
 - Crops that become giant and forage crops may destroy their fertilizer after being fully grown.
-Fertilizer must be replaced between harvests (accounting for some cost),
-but the last harvest does not have to have its fertilizer replaced.
-So, the season may "end" with one of these harvests without replacement to save cost.
+  Fertilizer must be replaced between harvests (accounting for some cost),
+  but the last harvest does not have to have its fertilizer replaced.
+  So, the season may "end" with one of these harvests without replacement to save cost.
+
 - The cost of replacing the fertilizer may make the crop less profitable,
-such that it becomes more profitable when planted without any fertilizer.
-Since fertilizer can be added always be added to ground with no fertilizer,
-but fertilizers cannot be swapped without destroying the previous one,
-then the season may "start" with some amount of harvests of these crops without fertilizer.
+  such that it becomes more profitable when planted without any fertilizer.
+  Since fertilizer can be added always be added to ground with no fertilizer,
+  but fertilizers cannot be swapped without destroying the previous one,
+  then the season may "start" with some amount of harvests of these crops without fertilizer.
+
 - Regrow crops must "end" the season, since they remain in the ground until the end of the season.
-As a consequence, there can only be one distinct regrow crop per season.
+  As a consequence, there can only be one distinct regrow crop per season / dateSpan.
+
 - The growth time and regrow time of a regrow crop may differ.
-The growth time for the first harvest can only happen once,
-and only once it happens can the regrow harvests happen.
+  The growth time for the first harvest can only happen once,
+  and only once it happens can the regrow harvests happen.
 
 On top of this, crops can grow in two consecutive seasons.
 If one is planted with fertilizer at the end of the season,
@@ -134,26 +152,21 @@ then the fertilizer is not lost at the start of the season.
 This crop could be a regular crop or one that regrows.
 Additionally, this crop also gains a day of growth that would normally not be utilized
 (from the last day of the previous season to the first day of the next).
-Because of this, instead of solving a model for each pair
-of fertilizer and season, a model/subproblem must be solved for each pair
-of fertilizer and consecutive season range.
+Because of this, instead of solving a model for each pair of fertilizer and season,
+a model/subproblem must be solved for each pair of fertilizer and consecutive season range / dateSpan.
 E.g., for Spring-Fall: Spring, Summer, Fall, Spring-Summer, Summer-Fall, Spring-Fall
 The "start" and "end" crops mentioned before must still occur
 in the starting and ending season, respectively, for each season range.
 Taking the sequence of non-overlapping solved subproblems that provide the maximum profit
-yields the final optimal solution for the
+yields the final optimal solution for the given game data and variables.
 
-Discounting Winter because it has only one crop and no crops grow into/out of it consecutively,
+Discounting Winter because it has only one crop and no crops grow into/out of it,
 then for a Spring start date and Fall end date there can be at most
 7 fertilizers * 6 season ranges = 42 subproblems that need to be solved.
-In this worst case, the solver takes about 150-200ms to finish.
-If the following code is hard to read, it is because readability
-has been sacraficed for performance.
 
 TODO:
 - make an estimation for how long the solver will take,
-and start a p-cancellable web worker if necessary to not block the main thread.
-- Allow partial regrow crop ranges.
+  and start a p-cancellable web worker if necessary to not block the main thread ?
 
 There is one case where the solver may not produce a correct answer.
 This is if a crop can both destroy fertilizer and grow in two consecutive seasons.
@@ -205,24 +218,30 @@ Variables:
   ]
 *)
 
-type SubRangeSolutionRequest =
-  { Start: int
-    Stop: int
-    Model: Model<string, string>
-    ExtraProfit: float }
+type SubRangeSolutionRequest = {
+  Start: int
+  Stop: int
+  Model: Model<Season * Variable, string>
+  ExtraProfit: float
+}
 
 let solutionRequests data settings (fertilizers: FertilizerName option array) (crops: SeedId array) =
-  let nthSeason, days = Date.seasonsAndDays settings.Game.StartDate settings.Game.EndDate
-  // let nthSeason, days =
-  //   if model.Location = Farm
-  //   then nthSeason, days
-  //   else Seasons.ofSeq nthSeason |> Season |> Array.singleton, Array.natSum days |> Array.singleton
+  let crops = crops |> Array.map data.Crops.Find
+  let varSeasons, days, crops, growsInSeason =
+    let seasons, days = Date.seasonsAndDays settings.Game.StartDate settings.Game.EndDate
+    if settings.Game.Location = Farm then
+      let s = Seasons.ofSeq seasons
+      seasons,
+      days,
+      crops |> Array.filter (Crop.growsInSeasons s),
+      fun j crop -> crop |> Crop.growsInSeason seasons[j]
+    else
+      [| settings.Game.StartDate.Season |],
+      [| Array.sum days |],
+      crops,
+      fun _ _ -> true
+
   let days = days |> Array.map (fun x -> x - 1u)
-  let seasons = Seasons.ofSeq nthSeason
-  let seasonNames =
-    if settings.Game.Location = Farm
-    then nthSeason |> Array.map Season.name
-    else [| "InSeason" |]
 
   let fertilizers =
     fertilizers |> Seq.choose (fun fertilizerName ->
@@ -232,18 +251,16 @@ let solutionRequests data settings (fertilizers: FertilizerName option array) (c
       | None -> None)
     |> Array.ofSeq
 
-  let byFertAndSeason () = Array.init fertilizers.Length (fun _ -> Array.init nthSeason.Length (fun _ -> ResizeArray ()))
+  let byFertAndSeason () = Array.init fertilizers.Length (fun _ -> Array.init varSeasons.Length (fun _ -> ResizeArray ()))
 
   let cropVars = byFertAndSeason ()
   let crossVars = byFertAndSeason ()
   let unreplacedFertilizerVars = byFertAndSeason ()
-  let noFertilizerVars = Array.init nthSeason.Length (fun _ -> ResizeArray ())
-  let regrowFirstSeasonVars = Array.init nthSeason.Length (fun j ->
-    "RegrowDays" @ seasonNames[j],
-    [| seasonNames[j], 1.0
+  let noFertilizerVars = Array.init varSeasons.Length (fun _ -> ResizeArray ())
+  let regrowFirstSeasonVars = Array.init varSeasons.Length (fun j ->
+    (varSeasons[j], DayUsedForRegrowCrop),
+    [| string j, 1.0
        RegrowDays, -1.0 |])
-
-  let strs = Array.create 3 "" // [| cropName; fertName; seasonName |]
 
   let lossProb =
     if settings.Profit.PayForFertilizer && settings.Profit.ReplaceLostFertilizer then
@@ -256,77 +273,71 @@ let solutionRequests data settings (fertilizers: FertilizerName option array) (c
 
   let netProfit = Query.nonRegrowData data settings
 
-  let crops, regrowCrops = crops |> Array.map data.Crops.Find |> Array.partition (Crop.regrowTime >> Option.isNone)
+  let crops, regrowCrops = crops |> Array.partition (Crop.regrowTime >> Option.isNone)
   let regrowCrops = regrowCrops |> Array.map (function | FarmCrop crop -> crop | ForageCrop _ -> failwith "unreachable")
 
   for crop in crops do
     let seed = Crop.seed crop
-    let seasons = seasons &&& Crop.seasons crop
+    let lossProb = lossProb crop
+    let profit = netProfit crop
 
-    if seasons <> Seasons.None then
-      strs[0] <- string seed
-      let lossProb = lossProb crop
-      let profit = netProfit crop
+    for i = 0 to fertilizers.Length - 1 do
+      let fertilizer, fertCost = fertilizers[i]
+      let fertName = Fertilizer.Opt.name fertilizer
+      match profit fertilizer with
+      | Some net when net > 0.0 ->
+        let replacementCost = lossProb * float fertCost
+        let growthTime = Game.growthTime settings.Game fertilizer crop
+        let profit = Profit, net - replacementCost
 
-      for i = 0 to fertilizers.Length - 1 do
-        let fertilizer, fertCost = fertilizers[i]
-        match profit fertilizer with
-        | Some net when net > 0.0 ->
-          let replacementCost = lossProb * float fertCost
-          strs[1] <- fertilizerIdOption fertilizer
-          let growthTime = Game.growthTime settings.Game fertilizer crop
-          let profit = Profit, net - replacementCost
+        let mutable growsInPrevious = false
+        for j = 0 to varSeasons.Length - 1 do
+          let varSeason = varSeasons[j]
+          if crop |> growsInSeason j then
+            if growthTime <= days[j] then
+              let time = string j, float growthTime
 
-          let mutable growsInPrevious = false
-          for j = 0 to nthSeason.Length - 1 do
-            if seasons |> Seasons.contains nthSeason[j] then
-              strs[2] <- seasonNames[j]
-              let name = strs |> String.concat "@"
+              let var = (varSeason, PlantCrop (seed, fertName)), [| profit; time |]
+              (cropVars[i][j]).Add var
 
-              if growthTime <= days[j] then
-                let time = strs[2], float growthTime
+              if lossProb > 0.0 then
+                if fertilizer = None then
+                  noFertilizerVars[j].Add var
+                elif replacementCost > 0.0 then
+                  ((varSeason, PlantCropUnreplacedFertilizer (seed, fertName)),
+                    [| Profit, net
+                       endingCrop
+                       time |] )
+                  |> (unreplacedFertilizerVars[i][j]).Add
 
-                let var = name, [| profit; time |]
-                (cropVars[i][j]).Add var
-
-                if lossProb > 0.0 then
-                  if fertilizer = None then
-                    noFertilizerVars[j].Add var
-                  elif replacementCost > 0.0 then
-                    ( "UnreplacedFertilizer" @ name,
-                      [| Profit, net
-                         endingCrop
-                         time |] )
-                    |> (unreplacedFertilizerVars[i][j]).Add
-
-              //cross season giant/forage crop vars don't allow unreplaced fertilizer
-              if growsInPrevious then
-                ( "CrossCrop" @ name,
-                  [| CrossHarvests @ seasonNames[j], 1.0
-                     CrossDays @ seasonNames[j], float growthTime
-                     profit |] )
-                |> (crossVars[i][j]).Add
-              else
-                growsInPrevious <- true
+            //TODO? cross season giant/forage crop vars don't allow unreplaced fertilizer
+            if growsInPrevious then
+              ((varSeason, PlantBridgeCrop (seed, fertName)),
+                [| BridgeHarvests @ string j, 1.0
+                   BridgeDays @ string j, float growthTime
+                   profit |] )
+              |> (crossVars[i][j]).Add
             else
-              growsInPrevious <- false
+              growsInPrevious <- true
+          else
+            growsInPrevious <- false
 
-        | _ -> ()
+      | _ -> ()
 
-  for j = 0 to nthSeason.Length - 2 do
+  for j = 0 to varSeasons.Length - 2 do
     let var =
-      ( "CrossDaysForNext" @ seasonNames[j],
-        [| seasonNames[j], 1.0
-           CrossDays @ seasonNames[j + 1], -1.0 |] )
+      ((varSeasons[j], DayUsedForBridgeCropIntoNextSeason),
+        [| string j, 1.0
+           BridgeDays @ string (j + 1), -1.0 |] )
     for i = 0 to fertilizers.Length - 1 do
       if (crossVars[i][j + 1]).Count > 0 then
         (crossVars[i][j + 1]).Add var
 
-  for j = 1 to nthSeason.Length - 1 do
+  for j = 1 to varSeasons.Length - 1 do
     let var =
-      ( "CrossDaysForPrevious" @ seasonNames[j],
-        [| seasonNames[j], 1.0
-           CrossDays @ seasonNames[j], -1.0 |] )
+      ((varSeasons[j], DayUsedForBridgeCropFromPrevSeason),
+        [| string j, 1.0
+           BridgeDays @ string j, -1.0 |] )
     for i = 0 to fertilizers.Length - 1 do
       if (crossVars[i][j]).Count > 0 then
         (crossVars[i][j]).Add var
@@ -336,7 +347,7 @@ let solutionRequests data settings (fertilizers: FertilizerName option array) (c
   let continuationModel constraints vars fertId start stop =
     let _, fertCost = fertilizers[fertId]
     let rec recur start constraints vars =
-      let constraints = (seasonNames[start] <== float days[start]) :: constraints
+      let constraints = (string start <== float days[start]) :: constraints
       let vars = cropVars[fertId][start] :: vars
 
       { Start = start
@@ -349,35 +360,34 @@ let solutionRequests data settings (fertilizers: FertilizerName option array) (c
         let cross = crossVars[fertId][start]
         if cross.Count > 0 then
           let constraints =
-            (CrossDays @ seasonNames[start] === 1.0)
-            :: (CrossHarvests @ seasonNames[start] === 1.0)
+            (BridgeDays @ string start === 1.0)
+            :: (BridgeHarvests @ string start === 1.0)
             :: constraints
 
           recur (start - 1) constraints (cross :: vars)
 
     recur start constraints vars
 
-  for stop = nthSeason.Length - 1 downto 0 do
+  for stop = varSeasons.Length - 1 downto 0 do
     let crops =
       let predicate =
-        if stop = nthSeason.Length - 1
-        then (fun crop -> crop |> FarmCrop.growsInSeason nthSeason[stop])
-        else (fun crop -> crop |> FarmCrop.growsInSeason nthSeason[stop] && crop |> FarmCrop.growsInSeason nthSeason[stop + 1] |> not)
+        if stop = varSeasons.Length - 1
+        then (fun crop -> crop |> FarmCrop |> growsInSeason stop)
+        else (fun crop -> crop |> FarmCrop |> growsInSeason stop && crop |> FarmCrop |> growsInSeason (stop + 1) |> not)
       regrowCrops |> Array.filter predicate
 
     let fixedRegrowVars = Array.init fertilizers.Length (fun _ -> Array.init (stop + 1) (fun _ -> ResizeArray ()))
     let regrowVars = Array.init fertilizers.Length (fun _ -> Array.init (stop + 1) (fun _ -> ResizeArray ()))
-    let strs = Array.create 4 "" // [| cropName; fertName; startSeasonName; endSeasonName |]
-    strs[3] <- seasonNames[stop]
+    // let strs = Array.create 4 "" // [| cropName; fertName; startSeasonName; endSeasonName |]
 
     for crop in crops do
+      let seed = crop.Seed
       let regrowData = Query.regrowSeedData data settings (FarmCrop crop)
       let regrowTime = Option.get crop.RegrowTime
-      strs[0] <- string crop.Seed
 
       for i = 0 to fertilizers.Length - 1 do
         let fertilizer, _ = fertilizers[i]
-        strs[1] <- fertilizerIdOption fertilizer
+        let fertName = Fertilizer.Opt.name fertilizer
 
         match regrowData fertilizer with
         | None -> ()
@@ -390,8 +400,6 @@ let solutionRequests data settings (fertilizers: FertilizerName option array) (c
               if totalDays < growthTime then
                 0u
               else
-                strs[2] <- seasonNames[start]
-                let name = strs |> String.concat "@"
                 let maxHarvests = (totalDays - growthTime) / regrowTime + 1u
 
                 for h in harvestsAfterFirstSeason..(min maxHarvests (data.HarvestsForMinCost - 1u)) do
@@ -399,26 +407,26 @@ let solutionRequests data settings (fertilizers: FertilizerName option array) (c
                   | None -> ()
                   | Some cost ->
                     let usedDays = growthTime + (h - 1u) * regrowTime
-                    ( "FixedRegrow" @ name @ string h,
+                    ((varSeasons[start], PlantRegrowCropFixedHarvests (seed, fertName, h)),
                       [| Profit, data.Profit * float h - cost
-                         strs[2], float (if daysAfterFirstSeason > usedDays then 0u else usedDays - daysAfterFirstSeason)
+                         string start, float (if daysAfterFirstSeason > usedDays then 0u else usedDays - daysAfterFirstSeason)
                          endingCrop |] )
                     |> (fixedRegrowVars[i][start]).Add
 
                 if maxHarvests >= data.HarvestsForMinCost then
                   let harvests = max data.HarvestsForMinCost harvestsAfterFirstSeason
                   let usedDays = growthTime + regrowTime * (harvests - 1u)
-                  let harvestsName = name @ "Harvests"
+                  let harvestsName = string seed @ string i @ string start @ "Harvests"
 
                   let firstVar =
-                    ( "FirstRegrow" @ name,
+                    ((varSeasons[start], PlantRegrowCropFirstHarvest (seed, fertName)),
                       [| Profit, data.Profit * float harvests - data.MinCost
                          RegrowDays, -float(daysAfterFirstSeason - usedDays)
                          harvestsName, -float(maxHarvests - harvests)
                          endingCrop |] )
 
                   let var =
-                    ( "Regrow" @ name,
+                    ((varSeasons[start], PlantRegrowCropRegrowHarvests (seed, fertName)),
                       [| Profit, data.Profit
                          harvestsName, 1.0
                          RegrowDays, float regrowTime |] )
@@ -429,7 +437,7 @@ let solutionRequests data settings (fertilizers: FertilizerName option array) (c
 
             if start > 0 then
               let start = start - 1
-              if crop |> FarmCrop.growsInSeason nthSeason[start] then
+              if crop |> FarmCrop |> growsInSeason start then
                 recur start (totalDays + 1u) harvests
 
           recur stop 0u 0u

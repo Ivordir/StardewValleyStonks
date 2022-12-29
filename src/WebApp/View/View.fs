@@ -22,8 +22,7 @@ open StardewValleyStonks.WebApp.View.Table
 //   error message on failed import
 
 // style
-
-// graph indicator icons
+//   graph indicator icons
 
 // // best indicator for Products. Prices
 
@@ -2453,16 +2452,8 @@ let solver app dispatch =
         children (
           solution
           |> Seq.collect (fun res -> res.variables)
-          |> Seq.map (fun (n, i) ->
-            let varName =
-              n.Split "@"
-              |> Array.map (fun s ->
-                match System.UInt32.TryParse s with
-                | true, value -> data.Crops[value * 1u<_>] |> Crop.name data.Items.Find
-                | _ -> s)
-              |> String.concat " "
-
-            div (ofStr $"{varName}: {i}"))
+          |> Seq.map (fun ((season, var), i) ->
+            div (ofStr $"{Season.name season} {var}: {i}"))
         )
       ]
     ] ]
