@@ -339,7 +339,7 @@ module Growth =
     #endif
 
   let stagesAndTime speedBonus stages =
-    let total = Array.sum' stages
+    let total = Array.sum stages
     let stages = Array.copy stages
     let mutable daysToReduce = (fround speedBonus) * (float total) |> ceil |> nat
     let mutable daysReduced = 0u
@@ -475,7 +475,7 @@ module [<RequireQualifiedAccess>] Crop =
     | FarmCrop c -> c.Stages
     | ForageCrop c -> c.Stages
 
-  let totalDays crop = stages crop |> Array.sum'
+  let totalDays crop = stages crop |> Array.sum
 
   let paddy = function
     | FarmCrop c -> c.Paddy

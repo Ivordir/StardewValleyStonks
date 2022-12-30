@@ -18,23 +18,6 @@ module [<RequireQualifiedAccess>] Option =
 
 
 module [<RequireQualifiedAccess>] Array =
-  let inline internal sum' array = Array.sum array
-
-  #if FABLE_COMPILER
-  // This gives faster and cleaner JS compared to `Array.sum` or `array?reduce(fun x y -> x + y)`
-  let sum (array: float array) =
-    let mutable sum = 0.0
-    for x in array do
-      sum <- sum + x
-    sum
-
-  let sumBy projection (array: _ array) =
-    let mutable sum = 0.0
-    for x in array do
-      sum <- sum + projection x
-    sum
-  #endif
-
   let mapReduce reduction mapping (array: _ array) =
     if array.Length = 0 then invalidArg (nameof array) "The given array cannot be empty."
     let mutable current = mapping array[0]
