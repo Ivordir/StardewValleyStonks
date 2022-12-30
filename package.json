@@ -12,9 +12,11 @@
     "react/jsx-runtime": "preact/jsx-runtime"
   },
   "scripts": {
-    "postinstall": "dotnet tool restore",
-    "start": "dotnet fable watch src/WebApp -s -o fable & parcel",
+    "postinstall": "dotnet tool restore && dotnet paket install",
+    "watch": "dotnet fable watch src/WebApp -s -o fable",
+    "start": "parcel",
     "build": "dotnet fable src/WebApp -s -o fable --run parcel build --public-url \"./\"",
+    "build-fable": "dotnet fable src/WebApp -s -o fable",
     "bundle-report": "parcel build --public-url \"./\" --reporter @parcel/reporter-bundle-analyzer"
   },
   "dependencies": {

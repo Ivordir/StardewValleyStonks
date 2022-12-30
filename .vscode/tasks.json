@@ -13,8 +13,28 @@
       "problemMatcher": {
         "fileLocation": "absolute",
         "background": {
-          "beginsPattern": { "regexp": "Started Fable compilation..." },
-          "endsPattern": { "regexp": "✨ Built in (.*)s" },
+          "beginsPattern": "(.*)Building(.*)",
+          "endsPattern": "✨ Built in (.*)",
+          "activeOnStart": true
+        },
+        "pattern": {
+          "regexp": "^🚨 Build failed$",
+        }
+      },
+      "dependsOn": ["Watch"]
+    },
+    {
+      "label": "Watch",
+      "command": "pnpm",
+      "args": [ "watch" ],
+      "type": "shell",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": {
+        "fileLocation": "absolute",
+        "background": {
+          "beginsPattern": "Started Fable compilation...",
+          "endsPattern": "Fable compilation finished in (.*)",
           "activeOnStart": true
         },
         "pattern": {
@@ -35,9 +55,9 @@
       "type": "process",
       "args": [ "build" ],
       "options": {
-        "cwd": "${workspaceFolder}/Extractor"
+        "cwd": "${workspaceFolder}/src/Extractor"
       },
-      "problemMatcher": "$tsc"
+      "problemMatcher": "$msCompile"
     }
   ]
 }
