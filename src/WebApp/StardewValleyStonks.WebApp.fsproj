@@ -8,6 +8,7 @@
     <Compile Include="Types.fs" />
     <Compile Include="Query.fs" />
     <Compile Include="Solver.fs" />
+    <Compile Include="Worker.fs" />
     <Compile Include="Data.fs" />
     <Compile Include="Update.fs" />
     <Compile Include="View/Prelude.fs" />

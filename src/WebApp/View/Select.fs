@@ -18,8 +18,7 @@ let private tryScroll (list: Browser.Types.HTMLElement) (index: int) (mode: stri
   if not (isNullOrUndefined elm) then
     elm?scrollIntoView {| block = mode |}
 
-[<ReactComponent>]
-let private Select (props: {|
+let [<ReactComponent>] private Select (props: {|
     Width: Styles.ICssUnit
     ToString: ('a -> string) option
     Display: 'a -> ReactElement
@@ -144,9 +143,7 @@ let private Select (props: {|
         style [ style.width props.Width ]
         children [
           div [
-            classes [
-              "select-control"
-            ]
+            className "select-control"
             children [
               input [
                 onFocus (fun _ -> setState {| state with Focused = true |})

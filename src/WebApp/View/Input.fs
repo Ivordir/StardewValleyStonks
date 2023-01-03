@@ -27,8 +27,7 @@ let natRange (min: nat) (max: nat) (value: nat) dispatch =
   floatRange 1.0 (float min) (float max) (float value) (nat >> dispatch)
 
 
-[<ReactComponent>]
-let private NumberInput (props: {|
+let [<ReactComponent>] private NumberInput (props: {|
     Width: Styles.ICssUnit
     Min: float option
     Max: float option

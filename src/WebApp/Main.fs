@@ -46,6 +46,7 @@ let update msg app =
 let view app dispatch =
   try view app dispatch
   with e ->
+    console.error e
     div [
       ofStr "Whoops, something went wrong. Please reload the page..."
       br []

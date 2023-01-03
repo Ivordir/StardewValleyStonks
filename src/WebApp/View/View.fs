@@ -44,8 +44,6 @@ open StardewValleyStonks.WebApp.View.Table
 // // Seeds price reduction
 // // lowest fertPrice?
 
-
-
 open Fable.Core
 open Fable.Core.JsInterop
 open Elmish.React
@@ -1183,11 +1181,9 @@ module Misc =
 module LoadSave =
   importDefault "react-pure-modal/dist/react-pure-modal.min.css"
 
-  [<ReactComponent(import="default", from="react-pure-modal")>]
-  let private reactModal _ = imported ()
+  let [<ReactComponent(import="default", from="react-pure-modal")>] private reactModal _ = imported ()
 
-  [<ReactComponent>]
-  let saveCurrentSettings (props: {| dispatch: _ |}) =
+  let [<ReactComponent>] saveCurrentSettings (props: {| dispatch: _ |}) =
     let name, setName = useState None
 
     fragment [
@@ -1220,8 +1216,7 @@ module LoadSave =
         |}
     ]
 
-  [<ReactComponent>]
-  let importSave (props: {| dispatch: _ |}) =
+  let [<ReactComponent>] importSave (props: {| dispatch: _ |}) =
     let save, setSave = useState None
 
     fragment [
@@ -2367,98 +2362,37 @@ let ranker app dispatch =
 
 
 
-let debug app =
-  let inline time f x name n =
-    console.time name
-    for _ = 1 to n do
-      f x |> ignore
-    console.timeEnd name
+let [<ReactComponent>] solver (props: {|
+  Data: GameData
+  Settings: Settings
+  |})
+  =
+  let (solution, solving), setState = useState ((None, false))
 
-  ()
+  Solver.workerSub (fun solution -> setState (Some solution, false))
 
-let solver app dispatch =
-  let data = app.Data
-  let settings = app.State.Settings
+  useEffect ((fun () ->
+    setState (solution, true)
+    Solver.queueRequest props.Data props.Settings
+  ), [| box props.Data; box props.Settings |])
 
-  let viewIt n (calc: unit -> #seq<YALPS.Solution> * float) =
+  match solution with
+  | Some (solution, total) ->
     div [
-      let x, y = calc ()
-      ofFloat y
-      yield!
-        x
-        |> Seq.collect (fun res -> res.variables)
-        |> Seq.map (fun (n, i) -> div (ofStr $"{n}: {i}"))
-      button [
-        onClick (fun _ ->
-          console.time n
-          for _ = 0 to 10 do
-            calc() |> ignore
-          console.timeEnd n)
-        text "Time"
-      ]
-    ]
-
-  // let calc func () =
-  //   func
-  //     app.Models.Current
-  //     app.CropFertilizerSelections.Current.Crops
-  //     (app.CropFertilizerSelections.Current.Fertilizers |> Seq.map (Option.map app.Models.Current.Fertilizers.Find))
-
-  let solve name solver n =
-    console.time name
-    let data: Solver.SubRangeSolutionRequest array =
-      solver
-        data
-        settings
-        (settings.Selected.Fertilizers |> Seq.map Some |> Seq.append [ if settings.Selected.NoFertilizer then None ] |> Array.ofSeq)
-        (settings.Selected.Crops |> Array.ofSeq)
-    for _ = 1 to n do
-      data |> Solver.solveRanges |> ignore
-    console.timeEnd name
-
-  div [
-    button [
-      onClick (fun _ -> debug app)
-      text "debug"
-    ]
-
-    br []
-
-    button [
-      onClick (fun _ -> solve "s1" Solver.solutionRequests 100)
-      text "s1 x 100"
-    ]
-
-    br []
-
-    button [
-      onClick (fun _ -> solve "s1" Solver.solutionRequests 1)
-      text "s1"
-    ]
-
-    let solution, total =
-      Solver.solutionRequests
-        data
-        settings
-        (settings.Selected.Fertilizers |> Seq.map Some |> Seq.append [ if settings.Selected.NoFertilizer then None ] |> Array.ofSeq)
-        (settings.Selected.Crops |> Array.ofSeq)
-      |> Solver.solveRanges
-
-    details [ children [
-      summary $"Total: {total}"
-      div [
-        Class.open'
-
-        children (
+      if solving then className "disabled"
+      children [
+        ofStr $"Total: {total}"
+        yield!
           solution
-          |> Seq.collect (fun res -> res.variables)
+          |> Seq.collect (fun res -> res.Variables)
           |> Seq.map (fun ((season, var), i) ->
             div (ofStr $"{Season.name season} {var}: {i}"))
-        )
       ]
-    ] ]
-  ]
-
+    ]
+  | None ->
+    div [
+      ofStr "Loading..."
+    ]
 
 let view app dispatch =
   let appDispatch = dispatch
@@ -2472,7 +2406,7 @@ let view app dispatch =
         viewTabsCss [ Class.tabs ] SetAppMode unitUnionCases<AppMode> ui.Mode (SetUI >> dispatch)
         match ui.Mode with
         | Ranker -> ranker app (SetUI >> dispatch)
-        | Solver -> solver app dispatch
+        | Solver -> solver {| Data = app.Data; Settings = app.State.Settings |}
       ]
     ]
 

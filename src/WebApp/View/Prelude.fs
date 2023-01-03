@@ -40,15 +40,14 @@ let debouncer timeout (f : _ -> unit) =
   let mutable last = None
   fun value ->
     last |> Option.iter Browser.Dom.window.clearInterval
-    let delayed _ = f value
-    last <- Some <| Browser.Dom.window.setTimeout (delayed, timeout)
+    last <- Some <| Browser.Dom.window.setTimeout ((fun () -> f value), timeout)
 
-let debounce timeout =
-  let mutable last = None
-  fun (action: unit -> unit) ->
-    last |> Option.iter Browser.Dom.window.clearInterval
-    let delayed _ = action ()
-    last <- Some (Browser.Dom.window.setTimeout (delayed, timeout))
+// let debounce timeout =
+//   let mutable last = None
+//   fun (action: unit -> unit) ->
+//     last |> Option.iter Browser.Dom.window.clearInterval
+//     let delayed _ = action ()
+//     last <- Some (Browser.Dom.window.setTimeout (delayed, timeout))
 
 let internal handle (event: Browser.Types.Event) =
   event.stopPropagation ()
