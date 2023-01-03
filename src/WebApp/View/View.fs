@@ -6,45 +6,6 @@ open StardewValleyStonks.WebApp.Update
 open StardewValleyStonks.WebApp.View
 open StardewValleyStonks.WebApp.View.Table
 
-// limitations: ranker chooses dateSpan with most harvests (least days if tie) if there are two dateSpans
-
-
-// refactor model calcs
-
-// error handling
-
-// Load/Save cleanup
-//   error message on failed import
-
-// graph tooltip
-
-// style
-//   graph indicator icons
-//   refactor tables
-//     sticky
-
-
-// // best indicator for Products. Prices
-
-// // select box scroll bar
-// // all scroll bars
-
-// // cursors?
-
-// // solver solve for max xp
-// // solver solve for BuyFirstSeedStrategy
-
-// // Tooltips
-// // Reduced indicators on growth time, seed price, product price
-
-// // crop tooltips:
-// // growthtime/stages
-// // lowest seedPrice?
-// // bestSellPrice?
-// // Products item
-// // Seeds price reduction
-// // lowest fertPrice?
-
 open Fable.Core
 open Fable.Core.JsInterop
 open Elmish.React

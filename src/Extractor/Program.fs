@@ -125,7 +125,7 @@ let parseItem overrrides (items: Dictionary<_,_>) itemData itemId =
   | None -> failwith $"Could not find data for item with id: {itemId}"
   | Some (str: string) ->
     let splitted = str.Split '/'
-    if splitted.Length < 5 then failwith $"Unexpected item data format for item {itemId}: '{str}'"
+    if splitted.Length < 5 then failwith $"Unexpected item data format for item {itemId}: {str}"
 
     let o = overrrides |> Table.tryFind itemId |> Option.defaultValue ItemOverride.none
 
@@ -153,7 +153,7 @@ let parseItem overrrides (items: Dictionary<_,_>) itemData itemId =
       Name = splitted[4]
       SellPrice = sellPrice
       Category = category
-    } )
+    })
 
 let parseCrop farmCropOverrides forageCropData parseItem seedId (data: string) =
   match data.Split '/' with
@@ -217,7 +217,7 @@ let parseCrop farmCropOverrides forageCropData parseItem seedId (data: string) =
         match scythe with
         | "0" -> false
         | "1" -> true
-        | _ -> failwith $"Unexpected scythe value for crop {seedId}."
+        | str -> failwith $"Unexpected scythe value for crop {seedId}: {str}"
 
       let cropAmount =
         match cropAmount.Split ' ' with
@@ -249,7 +249,7 @@ let parseCrop farmCropOverrides forageCropData parseItem seedId (data: string) =
             FarmingQualities = o.FarmingDistribution |> Option.defaultValue true
           }
 
-        | _ -> failwith $"Unexpected crop amount format for crop {seedId}: '{cropAmount}'"
+        | _ -> failwith $"Unexpected crop amount format for crop {seedId}: {cropAmount}"
 
       FarmCrop {
         Seasons = overrides.Seasons |> Option.defaultValue seasons
@@ -263,7 +263,7 @@ let parseCrop farmCropOverrides forageCropData parseItem seedId (data: string) =
         ExtraItem = overrides.ExtraItem
       }
 
-  | _ -> failwith $"Unexpected crop data format for crop {seedId}: '{data}'"
+  | _ -> failwith $"Unexpected crop data format for crop {seedId}: {data}"
 
 
 
@@ -317,10 +317,9 @@ let saveItemImage graphics outputPath (itemSpriteSheet: Texture2D) item =
 
 let [<EntryPoint>] main args =
   let stardewValleyRoot =
-    match args with
-    | [| root |] -> root
-    | [| |] -> failwith "Pass the root directory of the Stardew Valley exe as the first command line argument."
-    | _ -> failwith "Unexpected number of command line arguments."
+    match Array.tryExactlyOne args with
+    | Some root -> root
+    | None -> failwith "Unexpected number of command line arguments. Pass the root directory of the Stardew Valley exe as the first and only command line argument."
 
   let config =
     let json =
@@ -329,7 +328,7 @@ let [<EntryPoint>] main args =
 
     match Decode.fromString Decode.config json with
     | Ok config -> config
-    | Error e -> failwithf "Error parsing config file: %A" e
+    | Error e -> failwithf "Error parsing config file: %s" e
 
   printfn "Press enter to run the extractor..."
   |> System.Console.ReadLine
@@ -371,8 +370,8 @@ let [<EntryPoint>] main args =
   let parseItem = parseItem config.ItemOverrides items itemData
   config.IncludeItems |> Array.iter parseItem
 
-  let farmCrops = ResizeArray (cropData.Length - 4)
-  let forageCrops = ResizeArray 4
+  let farmCrops = ResizeArray (cropData.Length - Seasons.count)
+  let forageCrops = ResizeArray Seasons.count
   for seedId, data in cropData do
     match parseCrop config.FarmCropOverrides config.ForageCropData parseItem seedId data with
     | spriteSheetRow, FarmCrop crop -> farmCrops.Add (crop, spriteSheetRow)
