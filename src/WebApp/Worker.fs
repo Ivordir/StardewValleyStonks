@@ -13,9 +13,9 @@ onmessage <- fun message ->
   | :? ((int * Model<int, string>) array) as data ->
     postMessage (data |> Array.choose (fun (i, model) ->
       let solution = Solver.solve model
-      // the nature of the problem should prevent unbounded solutions
-      // the profit on a regrow or bridge crop may return None,
-      // preventing a fertilizer from being carried over and making the model infeasible
+      // The nature of the problem should prevent unbounded solutions.
+      // But, the profit on a regrow or bridge crop may return None,
+      // preventing the fertilizer from being carried over and making the model infeasible.
       assert (solution.status = Optimal || solution.status = Infeasible)
       if solution.status = Optimal
       then Some (i, solution)

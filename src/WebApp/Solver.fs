@@ -227,7 +227,7 @@ let private fertilizerSpans data settings =
               let minHarvests = Growth.harvestsWith (Some regrowTime) data.GrowthTime prevDays
               let maxHarvests = Growth.harvestsWith (Some regrowTime) data.GrowthTime totalDays
               let fixedVars = [
-                for h in (minHarvests |> max 1u)..(min maxHarvests (data.HarvestsForMinCost - 1u)) do
+                for h in (max minHarvests 1u)..(min maxHarvests (data.HarvestsForMinCost - 1u)) do
                   let cost = data.Cost h
                   if cost.IsSome then
                     let usedDays = data.GrowthTime + (h - 1u) * regrowTime
@@ -398,35 +398,36 @@ open Browser.Worker
 
 let [<Global>] private import: {| meta: {| url: string |} |} = jsNative
 
-type [<AllowNullLiteral>] private URLType =
-  [<Emit("new $0($1...)")>] abstract Create: url: string * ?``base``: string -> string //Browser.Types.URL
+type [<AllowNullLiteral>] private URLType = // Browser.Types.URL
+  [<Emit("new $0($1...)")>] abstract Create: url: string * ?``base``: string -> string
 
 let [<Global>] private URL: URLType = jsNative
 
-let mutable private inProgressRequest = None
-let mutable private nextRequest = None
+let createWorker () =
+  let worker = Worker.Create (URL.Create ("Worker.js", import.meta.url), unbox {| ``type`` = Browser.Types.WorkerType.Module |} )
+  let mutable inProgressRequest = None
+  let mutable nextRequest = None
 
-let private worker = Worker.Create (URL.Create ("Worker.js", import.meta.url), unbox {| ``type`` = Browser.Types.WorkerType.Module |} )
+  let postWorker data settings =
+    let spans = fertilizerSpans data settings
+    inProgressRequest <- Some spans
+    worker.postMessage (spans |> Array.mapi (fun i (_, model) -> i, model))
 
-let private postWorker data settings =
-  let spans = fertilizerSpans data settings
-  inProgressRequest <- Some spans
-  worker.postMessage (spans |> Array.mapi (fun i (_, model) -> i, model))
+  let queue data settings =
+    if inProgressRequest.IsNone
+    then postWorker data settings
+    else nextRequest <- Some (data, settings)
 
-let queueRequest data settings =
-  if inProgressRequest.IsNone
-  then postWorker data settings
-  else nextRequest <- Some (data, settings)
-
-let workerSub dispatch =
-  worker.onmessage <- (fun e ->
-    match e.data with
-    | :? ((int * int Solution) array) as solutions ->
-      match inProgressRequest with
-      | None -> assert false
-      | Some spans ->
-        match nextRequest with
-        | None ->
+  let subscribe dispatch =
+    worker.onmessage <- (fun e ->
+      match e.data with
+      | :? ((int * int Solution) array) as solutions ->
+        match inProgressRequest, nextRequest with
+        | None, _ -> assert false
+        | Some _, Some (data, settings) ->
+          nextRequest <- None
+          postWorker data settings
+        | Some spans, None ->
           inProgressRequest <- None
 
           let solution, totalProfit =
@@ -442,9 +443,6 @@ let workerSub dispatch =
           })
 
           dispatch (solution, totalProfit)
+      | _ -> ())
 
-        | Some (data, settings) ->
-          postWorker data settings
-          nextRequest <- None
-
-    | _ -> ())
+  queue, subscribe

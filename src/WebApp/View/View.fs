@@ -2372,7 +2372,14 @@ let ranker app dispatch =
 
 
 
+let private workerQueue, private workerSubscribe =
+  let queue, subscribe = Solver.createWorker ()
+  debouncer 200 (fun (data, settings) -> queue data settings), subscribe
 
+// The solver typically takes < 50ms, but with
+//   StartSeason = Spring, StopSeason = Fall, Location = Greenhouse, and FarmingLevel in [0..7],
+// it can take around 600ms if all fertilizers and crops are selected.
+// For this reason, the solver is put in a web worker with a debouncer and queue system.
 
 let [<ReactComponent>] solver (props: {|
   Data: GameData
@@ -2381,11 +2388,11 @@ let [<ReactComponent>] solver (props: {|
   =
   let (solution, solving), setState = useState ((None, false))
 
-  Solver.workerSub (fun solution -> setState (Some solution, false))
+  workerSubscribe (fun solution -> setState (Some solution, false))
 
   useEffect ((fun () ->
     setState (solution, true)
-    Solver.queueRequest props.Data props.Settings
+    workerQueue (props.Data, props.Settings)
   ), [| box props.Data; box props.Settings |])
 
   match solution with
@@ -2396,9 +2403,10 @@ let [<ReactComponent>] solver (props: {|
         ofStr $"Total: {total}"
         yield!
           solution
-          |> Seq.collect (fun res -> res.Variables)
-          |> Seq.map (fun ((season, var), i) ->
-            div (ofStr $"{Season.name season} {var}: {i}"))
+          |> Seq.map (fun res ->
+            res.Variables |> Seq.map (fun ((season, var), i) ->
+              div (ofStr $"{Season.name season} {var} {res.Fertilizer}: {i}")))
+          |> Seq.concat
       ]
     ]
   | None ->
