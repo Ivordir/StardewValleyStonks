@@ -2,7 +2,7 @@ module StardewValleyStonks.WebApp.Query
 
 open StardewValleyStonks
 
-/// Returnes the DateSpan for this crop that has the most harvests,
+/// Returns the DateSpan for this crop that has the most harvests,
 /// and, in the case of a tie, the date span with the least days.
 let bestGrowthSpan vars fert crop =
   let spans =

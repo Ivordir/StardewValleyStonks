@@ -185,29 +185,32 @@ let [<ReactComponent>] private Select (props: {|
               tabIndex -1
               onMouseDown handle
               children (
-                ul [
-                  prop.ref listRef
-                  children (state.Options |> Array.mapi (fun i opt ->
-                    li [
-                      onMouseDown (fun e ->
-                        if e.button = 0 then
-                          props.Dispatch opt
-                          clearHover e)
-                      onMouseMove (fun _ ->
-                        if state.Hover <> Some i then
-                          setState {|
-                            state with
-                              Focused = true
-                              Hover = Some i
-                              Scroll = false
-                          |})
-                      if hover = i then className "hover"
-                      children (props.Display opt)
-                    ]
-                  ))
-                ]
-              )
-            ]
+                if state.Options.Length = 0 then
+                  div (ofStr "No results found...")
+                else
+                  ul [
+                    prop.ref listRef
+                    children (state.Options |> Array.mapi (fun i opt ->
+                      li [
+                        onMouseDown (fun e ->
+                          if e.button = 0 then
+                            props.Dispatch opt
+                            clearHover e)
+                        onMouseMove (fun _ ->
+                          if state.Hover <> Some i then
+                            setState {|
+                              state with
+                                Focused = true
+                                Hover = Some i
+                                Scroll = false
+                            |})
+                        if hover = i then className "hover"
+                        children (props.Display opt)
+                      ]
+                    ))
+                  ]
+                )
+              ]
         ]
       ]
     ]

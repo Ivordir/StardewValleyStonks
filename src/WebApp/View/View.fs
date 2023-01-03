@@ -2231,9 +2231,8 @@ let selectedCropAndFertilizer =
               match opt with
               | Choice1Of2 crop -> Image.Icon.crop data crop
               | Choice2Of2 bestCrop ->
-                ofStr "Best Crop ("
+                ofStr "Best Crop: "
                 bestCrop |> Option.defaultOrMap none (Image.Icon.crop data)
-                ofStr ")"
             ])
             cropOptions
             (seed |> Option.defaultOrMap bestCropOption (fun seed ->
@@ -2263,12 +2262,11 @@ let selectedCropAndFertilizer =
               | Choice1Of2 None ->
                 ofStr "No Fertilizer"
               | Choice2Of2 bestFertilizer ->
-                ofStr "Best Fertilizer ("
+                ofStr "Best Fertilizer: "
                 match bestFertilizer with
                 | Some (Some fert) -> Image.fertilizer fert
                 | _ -> none
                 ofStr (bestFertilizer |> Option.defaultOrMap "???" fertilizerDisplayName)
-                ofStr ")"
             ])
             fertilizerOptions
             (fert' |> Option.defaultOrMap bestFertilizerOption (fun fert ->
