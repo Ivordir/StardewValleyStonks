@@ -1,12 +1,7 @@
 module StardewValleyStonks.WebApp.Main
 
-#if DEBUG
-Fable.Core.JsInterop.importDefault "preact/debug"
-#endif
-
+open Fable.Core.JsInterop
 open Feliz
-open type Html
-
 open Elmish
 open Elmish.React
 #if FABLE_COMPILER
@@ -15,9 +10,15 @@ open Thoth.Json
 open Thoth.Json.Net
 #endif
 
+open type Html
+
 open StardewValleyStonks.WebApp
 open type StardewValleyStonks.WebApp.Update.AppMessage
 open StardewValleyStonks.WebApp.View
+
+#if DEBUG
+importDefault "preact/debug"
+#endif
 
 let init () =
   let app = Data.LocalStorage.loadApp ()
@@ -55,6 +56,17 @@ let view app dispatch =
       // ofStr "If this message remains after reloading the page, try doing a "
       // hardResetButton
     ]
+
+do
+  let pxToFloat (px: string) = float (px.Substring(0, px.Length - 2))
+  let borderWidth fontPx divisor = $"{fontPx / float divisor |> ceil}px"
+
+  let root = Browser.Dom.document.documentElement
+  let fontSize: string = Browser.Dom.window?getComputedStyle(root)?getPropertyValue("font-size")
+  let fontPx = pxToFloat fontSize
+  root?style?setProperty("--font-size", fontSize)
+  root?style?setProperty("--eighth-border", borderWidth fontPx 8)
+  root?style?setProperty("--sixth-border", borderWidth fontPx 6)
 
 Program.mkProgram init update view
 |> Program.withErrorHandler (fun (msg, e) -> console.error (msg, e))

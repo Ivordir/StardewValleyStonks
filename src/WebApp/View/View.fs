@@ -9,20 +9,20 @@ open StardewValleyStonks.WebApp.View.Table
 // limitations: ranker chooses dateSpan with most harvests (least days if tie) if there are two dateSpans
 
 
-// refactor tables
-//   sticky
-
 // refactor model calcs
-
-// Solver
 
 // error handling
 
 // Load/Save cleanup
 //   error message on failed import
 
+// graph tooltip
+
 // style
 //   graph indicator icons
+//   refactor tables
+//     sticky
+
 
 // // best indicator for Products. Prices
 
@@ -32,11 +32,12 @@ open StardewValleyStonks.WebApp.View.Table
 // // cursors?
 
 // // solver solve for max xp
+// // solver solve for BuyFirstSeedStrategy
 
 // // Tooltips
 // // Reduced indicators on growth time, seed price, product price
 
-// // crop tooltips;
+// // crop tooltips:
 // // growthtime/stages
 // // lowest seedPrice?
 // // bestSellPrice?
@@ -505,15 +506,19 @@ module Crops =
         (fun crop ->
           let seed = Crop.seed crop
           let price = Query.seedLowestPriceBuyFrom data settings seed
-          // let hasSeedSource =
-          //   prices.Length > 0
-          //   || Model.canUseSeedMakerForOwnSeeds model seed
-          //   || (model.UseRawSeeds.Contains seed && model.SeedMode = StockpileSeeds)
-          //   || Model.canUseForageSeeds model crop
+          let hasSeedSource =
+            match settings.Profit.SeedStrategy with
+            | IgnoreSeeds -> true
+            | BuyFirstSeed -> price.IsSome
+            | StockpileSeeds ->
+              price.IsSome
+              || Query.canUseSeedMakerForOwnSeeds data settings seed
+              || settings.Selected.UseHarvestedSeeds.Contains seed
+              || Query.canUseForageSeeds settings crop
 
           tr [
             key (string seed)
-            if not <| Game.cropIsInSeason settings.Game crop then Class.disabled
+            if not hasSeedSource || not <| Game.cropIsInSeason settings.Game crop then Class.disabled
             children [
               td (checkbox (settings.Selected.Crops.Contains seed) (curry SetSelected seed >> selectDispatch))
               td (Image.Icon.crop data crop)
@@ -970,7 +975,7 @@ module Fertilizers =
 
             tr [
               key (string name)
-              if price = None then Class.disabled
+              if settings.Profit.PayForFertilizer && price = None then Class.disabled
               children [
                 td (checkbox (settings.Selected.Fertilizers.Contains name) (curry SetSelected name >> SelectFertilizers >> selectDispatch))
                 td (Image.Icon.fertilizer fertilizer)
@@ -998,7 +1003,14 @@ module Fertilizers =
       (ofStr "Prices")
       [
         checkboxText "Pay for Fertilizer" settings.Profit.PayForFertilizer (SetPayForFertilizer >> SetProfit >> dispatch)
-        checkboxText "Replace Lost Fertilizer" settings.Profit.ReplaceLostFertilizer (SetReplaceLostFertilizer >> SetProfit >> dispatch)
+        checkboxCustom [
+          classes [
+            "checkbox-label"
+            if not settings.Profit.PayForFertilizer then "disabled"
+          ]]
+          (ofStr "Replace Lost Fertilizer")
+          settings.Profit.ReplaceLostFertilizer
+          (SetReplaceLostFertilizer >> SetProfit >> dispatch)
 
         let keyColWdith = 0.40
         let width = 100.0 * (1.0 - keyColWdith) / float fertilizerVendors.Length // div by 0?
@@ -2283,7 +2295,7 @@ let selectedCropAndFertilizer =
             (function
               | Choice1Of2 fert -> fertilizerDisplayName fert
               | Choice2Of2 fert -> fert |> Option.defaultOrMap "???" fertilizerDisplayName)
-            (fun opt -> Html.span [
+            (fun opt -> fragment [
               match opt with
               | Choice1Of2 (Some fert) ->
                 Image.Icon.fertilizer fert

@@ -170,7 +170,7 @@ let [<ReactComponent>] private Select (props: {|
                   prop.inputMode.none
               ]
 
-              div [
+              Html.span [
                 className "select-value"
                 children (props.Display props.Selected)
               ]
