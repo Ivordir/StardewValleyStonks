@@ -270,7 +270,7 @@ module CropAmount =
     // Only the first harvested crop can be of higher quality
     if amount.FarmingQualities
     then farmingQualities |> Qualities.updateQuality Normal (a - 1.0 + farmingQualities[Normal])
-    else Qualities.zero |> Qualities.updateQuality Normal a
+    else Qualities.zerof |> Qualities.updateQuality Normal a
 
   let giantCropsFromShaving (shavingToolLevel: ToolLevel) =
     let damage = (int shavingToolLevel) / 2 + 1 |> float

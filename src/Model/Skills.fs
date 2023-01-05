@@ -72,7 +72,8 @@ module [<RequireQualifiedAccess>] Qualities =
 
   let inline wrap arr = ByQuality arr
 
-  let zero = create 0.0
+  let zero = create 0u
+  let zerof = create 0.0
   let multipliers = ByQuality [| 1.0; 1.25; 1.5; 2.0 |]
 
   let inline item (quality: Quality) qualities = (unwrap qualities)[int quality]

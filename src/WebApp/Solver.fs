@@ -143,9 +143,9 @@ let private fertilizerSpans data settings =
     else [| settings.Game.StartDate.Season |], [| Array.sum days |]
 
   let fertilizerData =
-    Query.selectedFertilizersOpt data settings
+    Query.Selected.fertilizersOpt data settings
     |> Seq.choose (fun fertilizer ->
-      match Query.lowestFertilizerCostOpt data settings (Fertilizer.Opt.name fertilizer) with
+      match Query.fertilizerCostOpt data settings (Fertilizer.Opt.name fertilizer) with
       | Some cost -> Some (fertilizer, cost)
       | None -> None)
     |> Array.ofSeq
@@ -153,7 +153,7 @@ let private fertilizerSpans data settings =
     |> Array.map (fun (fert, cost) -> Fertilizer.Opt.name fert, fert, cost)
 
   let crops, regrowCrops =
-    Query.selectedInSeasonCrops data settings
+    Query.Selected.inSeasonCrops data settings
     |> Array.ofSeq
     |> Array.partition (Crop.regrowTime >> Option.isNone)
 
@@ -210,7 +210,7 @@ let private fertilizerSpans data settings =
             let regularVars = regularCropVars |> Array.choose (fun (seed, crop, profit) ->
               match profit fert with
               | Some profit ->
-                let profit = profit - Query.replacementFertilizerPerHarvest settings crop * float fertCost
+                let profit = profit - Query.replacedFertilizerPerHarvest settings crop * float fertCost
                 if profit < 0.0 then None else Some (
                   (season, PlantCrop seed), [
                     Profit, profit
@@ -256,7 +256,7 @@ let private fertilizerSpans data settings =
               else
                 fixedVars, constraints)
 
-            let regrowVars = Array.collect List.toArray regrowVars
+            let regrowVars = Array.collect Array.ofList regrowVars
             let vars =
               bridgeVars
               :: regularVars
@@ -279,7 +279,7 @@ let private fertilizerSpans data settings =
         let noFertilizerVars =
           if settings.Selected.NoFertilizer then
             regularCropVars |> Array.choose (fun (seed, crop, profit) ->
-              if Query.replacementFertilizerPerHarvest settings crop = 0.0 then None else
+              if Query.replacedFertilizerPerHarvest settings crop = 0.0 then None else
               match profit None with
               | Some profit when profit >= 0.0 ->
                 Some (
@@ -359,7 +359,7 @@ let private fertilizerSpans data settings =
         [ seasonDays <== float (days[endSeason] - 1u); EndingCrop <== 1.0 ],
         [
           cropData[endSeason] |> Array.choose (fun (seed, crop, profit) ->
-            if fertCost = 0u || Query.replacementFertilizerPerHarvest settings crop = 0.0 then None else
+            if fertCost = 0u || Query.replacedFertilizerPerHarvest settings crop = 0.0 then None else
             match profit fert with
             | Some profit when profit >= 0.0 ->
               Some (

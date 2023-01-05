@@ -17,15 +17,6 @@ module [<RequireQualifiedAccess>] Option =
     | None -> defaultValue
 
 
-module [<RequireQualifiedAccess>] Array =
-  let mapReduce reduction mapping (array: _ array) =
-    if array.Length = 0 then invalidArg (nameof array) "The given array cannot be empty."
-    let mutable current = mapping array[0]
-    for x in array do
-      current <- reduction current (mapping x)
-    current
-
-
 module [<RequireQualifiedAccess>] Map =
   let ofValues (key: 'value -> 'key) values = values |> Seq.map (fun v -> key v, v) |> Map.ofSeq
   let ofKeys (value: 'key -> 'value) keys = keys |> Seq.map (fun k -> k, value k) |> Map.ofSeq

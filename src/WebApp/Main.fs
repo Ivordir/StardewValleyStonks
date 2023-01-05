@@ -1,6 +1,11 @@
 module StardewValleyStonks.WebApp.Main
 
 open Fable.Core.JsInterop
+
+#if DEBUG
+importDefault "preact/debug"
+#endif
+
 open Feliz
 open Elmish
 open Elmish.React
@@ -15,10 +20,6 @@ open type Html
 open StardewValleyStonks.WebApp
 open type StardewValleyStonks.WebApp.Update.AppMessage
 open StardewValleyStonks.WebApp.View
-
-#if DEBUG
-importDefault "preact/debug"
-#endif
 
 let init () =
   let app = Data.LocalStorage.loadApp ()
@@ -70,6 +71,6 @@ do
 
 Program.mkProgram init update view
 |> Program.withErrorHandler (fun (msg, e) -> console.error (msg, e))
-|> Program.withReactBatched "app"
 |> Program.withSubscription (fun _ -> Cmd.ofSub (fun dispatch -> Data.LocalStorage.subscribe (SyncSavedSettings >> dispatch)))
+|> Program.withReactBatched "app"
 |> Program.run

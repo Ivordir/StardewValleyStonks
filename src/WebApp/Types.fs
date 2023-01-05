@@ -64,15 +64,15 @@ module [<AutoOpen>] internal Combinators =
 
 
 module [<RequireQualifiedAccess>] Option =
-  let reduce reduction a b =
+  let merge merger a b =
     match a, b with
-    | Some a, Some b -> Some (reduction a b)
+    | Some a, Some b -> Some (merger a b)
     | Some a, None -> Some a
     | None, Some b -> Some b
     | None, None -> None
 
-  let inline min a b = reduce min a b
-  let inline max a b = reduce max a b
+  let inline min a b = merge min a b
+  let inline max a b = merge max a b
 
   /// Compares two options, treating `None` as the max value instead of the min value.
   let noneMaxCompare a b =
@@ -103,57 +103,22 @@ module [<RequireQualifiedAccess>] Result =
     | Error _ -> true
 
 
-module [<RequireQualifiedAccess>] Seq =
-  let inline sortDirectionBy ascending projection seq =
-    if ascending
-    then Seq.sortBy projection seq
-    else Seq.sortByDescending projection seq
+module [<RequireQualifiedAccess>] Array =
+  let mapReduce reduction mapping (array: _ array) =
+    if array.Length = 0 then invalidArg (nameof array) "The given array cannot be empty."
+    let mutable current = mapping array[0]
+    for x in array do
+      current <- reduction current (mapping x)
+    current
 
-  let inline sortDirectionWith ascending comparer seq =
-    if ascending
-    then Seq.sortWith comparer seq
-    else Seq.sortWith (fun x y -> comparer y x) seq
-
-  let tryReduce reduction (seq: _ seq) =
-    use e = seq.GetEnumerator ()
-    if not <| e.MoveNext () then None else
-    let mutable acc = e.Current
-    while e.MoveNext () do
-      acc <- reduction acc e.Current
-    Some acc
-
-  let inline tryMin seq = tryReduce min seq
-  let inline tryMax seq = tryReduce max seq
-
-  let tryMinBy projection (seq: _ seq) =
-    use e = seq.GetEnumerator ()
-    if not <| e.MoveNext () then None else
-    let mutable acc = e.Current
-    let mutable minVal = projection acc
-    while e.MoveNext () do
-      let v = projection e.Current
-      if v < minVal then
-        acc <- e.Current
-        minVal <- v
-    Some acc
-
-  let tryMaxBy projection (seq: _ seq) =
-    use e = seq.GetEnumerator ()
-    if not <| e.MoveNext () then None else
-    let mutable acc = e.Current
-    let mutable minVal = projection acc
-    while e.MoveNext () do
-      let v = projection e.Current
-      if v > minVal then
-        acc <- e.Current
-        minVal <- v
-    Some acc
-
-
-
-
-
-
+  let map2Reduce reduction mapping (array1: _ array) (array2: _ array) =
+    let len = array1.Length
+    if len = 0 then invalidArg (nameof array1) "The given arrays cannot be empty."
+    elif len <> array2.Length then invalidArg (nameof array1) "The given arrays had different lengths."
+    let mutable current = mapping array1[0] array2[0]
+    for i = 1 to len - 1 do
+      current <- reduction current (mapping array1[i] array2[i])
+    current
 
 
 type TimeNormalization =

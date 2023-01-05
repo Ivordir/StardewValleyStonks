@@ -440,7 +440,7 @@ module Crops =
         {
           Header = ofStr "Lowest Seed Price"
           Width = 25
-          Sort = Some (Option.noneMaxCompareBy (Crop.seed >> Query.lowestSeedPrice data settings))
+          Sort = Some (Option.noneMaxCompareBy (Crop.seed >> Query.Price.seedMinPrice data settings))
         }
         {
           Header = ofStr "Growth Time"
@@ -466,7 +466,7 @@ module Crops =
       ]
         (fun crop ->
           let seed = Crop.seed crop
-          let price = Query.seedLowestPriceBuyFrom data settings seed
+          let price = Query.Price.seedMinVendorAndPrice data settings seed
           let hasSeedSource =
             match settings.Profit.SeedStrategy with
             | IgnoreSeeds -> true
@@ -515,7 +515,7 @@ module Crops =
     let processors = processors data
     let processorUnlocked = processors |> Array.map (Game.processorUnlocked data settings.Game.Skills)
 
-    let viewItemRow mainCrop seed item =
+    let viewItemRow mainCrop forage seed item =
       let theItem = data.Items[item]
       let products = data.Products[item]
       let selected = settings.Selected.Products[seed, item]
@@ -527,7 +527,7 @@ module Crops =
         ]
         td [
           checkbox (settings.Selected.SellRaw.Contains (seed, item)) (curry SetSelected (seed, item) >> SelectSellRaw >> selectDispatch)
-          ofNat <| Game.itemPrice settings.Game theItem productQuality
+          ofNat <| Game.itemPrice settings.Game forage theItem productQuality
         ]
         yield! processors |> Array.mapi (fun i processor ->
           match products.TryFind processor with
@@ -537,7 +537,7 @@ module Crops =
               children [
                 checkbox (selected.Contains processor) (curry SetSelected (seed, item) >> curry SelectProducts processor >> selectDispatch)
                 if showNormalizedPrices
-                then ofFloat <| Game.productProfit data settings.Game item productQuality product
+                then ofFloat <| Game.productNormalizedPrice data settings.Game item productQuality product
                 else ofNat <| Game.productPrice data settings.Game item productQuality product
               ]
             ]
@@ -587,7 +587,7 @@ module Crops =
             ofStr "Raw Crop"
           ]
           Width = productWidth
-          Sort = Some <| compareByRev (fun crop -> Query.cropBestItemPriceFrom data settings.Game crop productQuality)
+          Sort = Some <| compareByRev (fun crop -> Query.cropItemsHighestRawPrice data settings.Game crop productQuality)
         }
         yield! processors |> Array.mapi (fun i processor ->
           {
@@ -604,7 +604,10 @@ module Crops =
                 ]
               ]
             Width = productWidth
-            Sort = Some <| compareByRev (fun crop -> Query.cropBestProductPriceFrom data settings.Game crop productQuality processor)
+            Sort = Some (
+              if showNormalizedPrices
+              then compareByRev (fun crop -> Query.cropItemsHighestProductNormalizedPriceFrom data settings.Game crop productQuality processor)
+              else compareByRev (fun crop -> Query.cropItemsHighestProductPriceFrom data settings.Game crop productQuality processor))
           } )
         {
           Header =
@@ -620,7 +623,7 @@ module Crops =
               ]
             ]
           Width = productWidth
-          Sort = Some <| compareByRev (fun crop -> if Crop.isForage crop then Some <| Game.itemPrice settings.Game data.Items[item' <| Crop.seed crop] Quality.Normal else None)
+          Sort = Some <| compareByRev (fun crop -> if Crop.isForage crop then Some <| Game.itemPrice settings.Game true data.Items[item' <| Crop.seed crop] Quality.Normal else None)
         }
         { Header = fragment [
             if settings.Selected.CustomSellPrices.Values.IsEmpty then
@@ -634,7 +637,7 @@ module Crops =
             ofStr "Custom"
           ]
           Width = 0
-          Sort = Some <| compareByRev (fun crop -> Query.cropBestCustomPrice settings.Selected crop productQuality)
+          Sort = Some <| compareByRev (fun crop -> Query.cropItemsHighestCustomPrice settings.Selected crop productQuality)
         }
       ]
         (fun crop ->
@@ -642,9 +645,9 @@ module Crops =
           keyedFragment (int seed, [
             match crop with
             | FarmCrop c ->
-              viewItemRow true seed c.Item
+              viewItemRow true false seed c.Item
               match c.ExtraItem with
-              | Some (item, _) -> viewItemRow false seed item
+              | Some (item, _) -> viewItemRow false false seed item
               | None -> none
             | ForageCrop c ->
               tr [
@@ -654,12 +657,12 @@ module Crops =
                   if not <| ForageCrop.seedsRecipeUnlocked settings.Game.Skills c then Class.disabled
                   children [
                     checkbox (settings.Selected.SellForageSeeds.Contains seed) (curry SetSelected seed >> SelectSellForageSeeds >> selectDispatch)
-                    ofNat <| Game.itemPrice settings.Game data.Items[item' seed] Quality.Normal
+                    ofNat <| Game.itemPrice settings.Game true data.Items[item' seed] Quality.Normal
                   ]
                 ]
                 td []
               ]
-              yield! c.Items |> Array.map (viewItemRow false seed)
+              yield! c.Items |> Array.map (viewItemRow false true seed)
           ] ))
         (SetProductSort >> uiDispatch)
         productSort
@@ -698,7 +701,7 @@ module Crops =
               Image.Icon.vendor vendor
             ]
             Width = width
-            Sort = Some <| Option.noneMaxCompareBy (Crop.seed >> Query.seedPriceValueFrom data settings vendor)
+            Sort = Some <| Option.noneMaxCompareBy (Crop.seed >> Query.seedPriceValueFromVendor  data settings vendor)
           } )
         {
           Header =
@@ -917,7 +920,7 @@ module Fertilizers =
           {
             Header = ofStr "Lowest Price"
             Width = 20
-            Sort = Some <| Option.noneMaxCompareBy (Fertilizer.name >> Query.lowestFertilizerPrice data settings)
+            Sort = Some <| Option.noneMaxCompareBy (Fertilizer.name >> Query.Price.fertilizerMinPrice data settings)
           }
           {
             Header = ofStr "Speed Bonus"
@@ -932,7 +935,7 @@ module Fertilizers =
         ]
           (fun fertilizer ->
             let name = Fertilizer.name fertilizer
-            let price = Query.fertilizerLowestPriceBuyFrom data settings name
+            let price = Query.Price.fertilizerMinVendorAndPrice data settings name
 
             tr [
               key (string name)
@@ -1467,7 +1470,7 @@ let graph ranker model pairs (data: _ array) dispatch =
 
 let allPairData metric timeNorm data settings =
   let crops =
-    Query.selectedInSeasonCrops data settings |> sortByMany [|
+    Query.Selected.inSeasonCrops data settings |> sortByMany [|
       (fun c1 c2 ->
         match Crop.seasons c1, Crop.seasons c2 with
         | Seasons.None, Seasons.None -> 0
@@ -1479,7 +1482,7 @@ let allPairData metric timeNorm data settings =
     |]
 
   let fertilizers =
-    Query.selectedFertilizers data settings
+    Query.Selected.fertilizers data settings
     |> sortByMany [|
       compareBy Fertilizer.speed
       compareBy Fertilizer.quality

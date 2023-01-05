@@ -56,11 +56,18 @@ module [<RequireQualifiedAccess>] Item =
   let sellPrice item = item.SellPrice
   let category item = item.Category
 
-  let private multiplierValue multipliers item =
-    multipliers.ProfitMargin * if multipliers.BearsKnowledge && item.Id = blackberry then Multiplier.bearsKnowledge else 1.0
+  let fruitTillerPossible = [| blackberry; grape |]
 
-  let multiplier skills multipliers item =
-    Category.multiplier skills item.Category * multiplierValue multipliers item
+  let fruitTillerActive multipliers item = multipliers.TillerForForagedFruit && fruitTillerPossible |> Array.contains item.Id
+
+  let multiplier skills multipliers forage item =
+    let categoryMultiplier =
+      if not forage || item.Category <> Fruit || fruitTillerActive multipliers item
+      then Category.multiplier skills item.Category
+      else 1.0
+    categoryMultiplier
+    * multipliers.ProfitMargin
+    * if multipliers.BearsKnowledge && item.Id = blackberry then Multiplier.bearsKnowledge else 1.0
 
   let internal priceCalc multiplier basePrice (quality: Quality) =
     if basePrice = 0u then 0u else
@@ -69,33 +76,17 @@ module [<RequireQualifiedAccess>] Item =
     |> withMultiplier multiplier
     |> max 1u
 
-  let price skills multipliers item quality = priceCalc (multiplier skills multipliers item) item.SellPrice quality
+  let price skills multipliers forage item quality = priceCalc (multiplier skills multipliers forage item) item.SellPrice quality
 
-  let internal pricesCalc multiplier basePrice =
+  let internal priceByQualityCalc multiplier basePrice =
     if basePrice = 0u then Qualities.zero else
     Qualities.multipliers |> Qualities.map (fun quality ->
       basePrice
       |> withMultiplier quality
       |> withMultiplier multiplier
-      |> max 1u
-      |> float)
+      |> max 1u)
 
-  let prices skills multipliers item = pricesCalc (multiplier skills multipliers item) item.SellPrice
-
-  module Forage =
-    let fruitTillerPossible = [| blackberry; grape |]
-
-    let fruitTillerActive multipliers item = multipliers.TillerForForagedFruit && fruitTillerPossible |> Array.contains item.Id
-
-    let multipler skills multipliers item =
-      let multiplier =
-        if item.Category <> Fruit || fruitTillerActive multipliers item
-        then Category.multiplier skills item.Category
-        else 1.0
-      multiplier * multiplierValue multipliers item
-
-    let price skills multipliers item quality = priceCalc (multiplier skills multipliers item) item.SellPrice quality
-    let prices skills multipliers item = pricesCalc (multiplier skills multipliers item) item.SellPrice
+  let priceByQuality skills multipliers forage item = priceByQualityCalc (multiplier skills multipliers forage item) item.SellPrice
 
 
 type [<Fable.Core.Erase>] Processor = ProcessorName of string
@@ -186,33 +177,31 @@ module [<RequireQualifiedAccess>] Product =
   let price getItem skills multipliers modData item quality product =
     match product with
     | Jam | Pickles ->
-      let item = getItem item
       priceCalc
         modData
         (artisanMultiplier skills multipliers)
-        (preservesJarPrice item.SellPrice)
+        (getItem item |> Item.sellPrice |> preservesJarPrice)
         Processor.preservesJar
         quality
     | Wine ->
-      let item = getItem item
       priceCalc
         modData
         (artisanMultiplier skills multipliers)
-        (winePrice item.SellPrice)
-        Processor.keg quality
+        (getItem item |> Item.sellPrice |> winePrice)
+        Processor.keg
+        quality
     | Juice ->
-      let item = getItem item
       priceCalc
         modData
         (artisanMultiplier skills multipliers)
-        (juicePrice item.SellPrice)
+        (getItem item |> Item.sellPrice |> juicePrice)
         Processor.keg
         quality
     | SeedsFromSeedMaker seedId ->
       let item = getItem seedId
       priceCalc
         modData
-        (Item.multiplier skills multipliers item)
+        (Item.multiplier skills multipliers false item)
         item.SellPrice
         Processor.seedMaker
         quality
@@ -220,50 +209,50 @@ module [<RequireQualifiedAccess>] Product =
       let item = getItem p.Item
       priceCalc
         modData
-        (Item.multiplier skills multipliers item)
+        (Item.multiplier skills multipliers false item)
         item.SellPrice
         p.Processor
         quality
 
-  let pricesCalc modData multiplier basePrice processor =
+  let private priceByQualityCalc modData multiplier basePrice processor =
     if processor |> Processor.preservesQuality modData
-    then Item.pricesCalc multiplier basePrice
-    else Item.priceCalc multiplier basePrice Quality.Normal |> float |> Qualities.create
+    then Item.priceByQualityCalc multiplier basePrice
+    else Item.priceCalc multiplier basePrice Quality.Normal |> Qualities.create
 
-  let prices getItem skills multipliers modData item = function
+  let priceByQuality getItem skills multipliers modData item = function
     | Jam | Pickles ->
       let item = getItem item
-      pricesCalc
+      priceByQualityCalc
         modData
         (artisanMultiplier skills multipliers)
         (preservesJarPrice item.SellPrice)
         Processor.preservesJar
     | Wine ->
       let item = getItem item
-      pricesCalc
+      priceByQualityCalc
         modData
         (artisanMultiplier skills multipliers)
         (winePrice item.SellPrice)
         Processor.keg
     | Juice ->
       let item = getItem item
-      pricesCalc
+      priceByQualityCalc
         modData
         (artisanMultiplier skills multipliers)
         (juicePrice item.SellPrice)
         Processor.keg
     | SeedsFromSeedMaker seedId ->
       let item = getItem seedId
-      pricesCalc
+      priceByQualityCalc
         modData
-        (Item.multiplier skills multipliers item)
+        (Item.multiplier skills multipliers false item)
         item.SellPrice
         Processor.seedMaker
     | Processed p ->
       let item = getItem p.Item
-      pricesCalc
+      priceByQualityCalc
         modData
-        (Item.multiplier skills multipliers item)
+        (Item.multiplier skills multipliers false item)
         item.SellPrice
         p.Processor
 
@@ -280,9 +269,6 @@ module [<RequireQualifiedAccess>] Product =
   let normalizedPrice getItem skills multipliers modData item quality product =
     float (price getItem skills multipliers modData item quality product) * amountPerItem product
 
-  let normalizedPrices getItem skills multipliers modData item product =
-    let prices = prices getItem skills multipliers modData item product
+  let normalizedPriceByQuality getItem skills multipliers modData item product =
     let amount = amountPerItem product
-    if amount = 1.0
-    then prices
-    else prices |> Qualities.mult amount
+    priceByQuality getItem skills multipliers modData item product |> Qualities.map (fun price -> float price * amount)
