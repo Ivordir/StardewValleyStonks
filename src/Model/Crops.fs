@@ -126,7 +126,7 @@ module Date =
     (Season.distance start.Season finish.Season) * daysInSeason - start.Day + finish.Day + 1u
 
   let spans startDate endDate seasons =
-    let spans = ResizeArray()
+    let spans = ResizeArray ()
     let nthSeason, days = seasonsAndDays startDate endDate
 
     let mutable i = 0
@@ -213,7 +213,8 @@ module CropAmount =
 
   let doubleHarvestProb settings =
     // RolledDailyLuck ~ U{-100, 100}
-    // That is, a discrete uniform distribution whose probability mass function, f(x) = 1 / (100 - -100 + 1) = 1 / 201
+    // That is, a discrete uniform variable whose probability mass function for x in {-100...100} is:
+    // f(x) = 1 / (100 - -100 + 1) = 1 / 201
     // This is the daily luck rolled every day by the game.
 
     // specialCharm = 0.025 if hasSpecialCharm otherwise 0
@@ -222,16 +223,19 @@ module CropAmount =
     // The below random value must be less than doubleHarvestCutoff for a double harvest to happen.
 
     // Rand ~ U_[0, 1)
-    // That is, a continuous uniform distribution whose probability density function, f(x) = 1 / (1 - 0) = 1
+    // That is, a continuous uniform variable whose cummulative distribution function is:
+    //        { 0                     for x < 0
+    // F(x) = { (x - 0) / (1 - 0) = x for x in [0, 1)
+    //        { 1                     for x >= 1
     // This is the random value generated every harvest to determine if a double harvest happens.
 
-    // Rand and RolledDailyLuck are independent, so:
     // P(DoubleHarvest)
     // = P(Rand < DoubleHarvestCutoff)
-    // = sum_(l=-100)^100 int_(r=0)^(doubleHarvestCutoff(l)) (f_RolledDailyLuck(l) * f_Rand(r)) dr
-    // = sum_(l=-100)^100 int_(r=0)^(doubleHarvestCutoff(l)) ((1 / 201) * 1) dr
-    // = sum_(l=-100)^100 doubleHarvestCutoff(l) / 201
-    // = 201 * (doubleHarvestCutoff(100) + doubleHarvestCutoff(-100)) / 2 / 201 => doubleHarvestCutoff is linear
+    // = sum_(l=-100)^100 P(RolledDailyLuck = l, Rand <= doubleHarvestCutoff(l))      // for all possible l, what is the probability that Rand <= doubleHarvestCutoff(l)?
+    // = sum_(l=-100)^100 P(RolledDailyLuck = l) * P(Rand <= doubleHarvestCutoff(l))  => RolledDailyLuck and Rand are independent
+    // = sum_(l=-100)^100 f_RolledDailyLuck(l) * F_Rand(doubleHarvestCutoff(l))       => definition of probability mass function and cummulative distribution function
+    // = sum_(l=-100)^100 (1 / 201) * doubleHarvestCutoff(l)                          => substitution, l is in {-100...100} and 0 <= doubleHarvestCutoff(l) <= 1
+    // = (1 / 201) * 201 * (doubleHarvestCutoff(100) + doubleHarvestCutoff(-100)) / 2 => doubleHarvestCutoff is linear
     // = (doubleHarvestCutoff(100) + doubleHarvestCutoff(-100)) / 2
     // = ((100 / 1000) + (-100 / 1000)) / 1200 / 2 + specialCharm / 1200 + luckBuff / 1500 + 0.0001
     // = specialCharm / 1200 + luckBuff / 1500 + 0.0001
@@ -239,7 +243,6 @@ module CropAmount =
     (if settings.SpecialCharm then 0.025 else 0.0) / 1200.0
     + float settings.LuckBuff / 1500.0
     + 0.0001
-
 
   let expectedDoubleAmount settings amount =
     // E(DoubleAmount)
@@ -257,40 +260,40 @@ module CropAmount =
       if amount.FarmLevelsPerYieldIncrease <> 0u && (amount.MinCropYield > 1u || amount.MaxCropYield > 1u)
       then skills.Farming.Level / amount.FarmLevelsPerYieldIncrease
       else 0u
-    let avgYield = float (amount.MinCropYield + amount.MaxCropYield + maxYieldIncrease) / 2.0
-    let avgAmount = avgYield + expectedExtraCrops amount.ExtraCropChance
+    let expectedYield = float (amount.MinCropYield + amount.MaxCropYield + maxYieldIncrease) / 2.0
+    let expectedAmount = expectedYield + expectedExtraCrops amount.ExtraCropChance
     if amount.CanDouble
-    then expectedDoubleAmount settings avgAmount
-    else avgAmount
+    then expectedDoubleAmount settings expectedAmount
+    else expectedAmount
 
   open type Quality
 
-  let farmingAmounts skills settings amount farmingQualities =
-    let a = expectedCropAmount skills settings amount
+  let expectedFarmingAmountByQuality skills settings cropAmount farmingQualities =
+    let amount = expectedCropAmount skills settings cropAmount
     // Only the first harvested crop can be of higher quality
-    if amount.FarmingQualities
-    then farmingQualities |> Qualities.updateQuality Normal (a - 1.0 + farmingQualities[Normal])
-    else Qualities.zerof |> Qualities.updateQuality Normal a
+    if cropAmount.FarmingQualities
+    then farmingQualities |> Qualities.updateQuality Normal (amount - 1.0 + farmingQualities[Normal])
+    else Qualities.zerof |> Qualities.updateQuality Normal amount
 
-  let giantCropsFromShaving (shavingToolLevel: ToolLevel) =
+  let expectedGiantCropsFromShaving (shavingToolLevel: ToolLevel) =
     let damage = (int shavingToolLevel) / 2 + 1 |> float
     let numHits = 3.0 / damage |> ceil
     let shavingProb = damage / 5.0
     shavingProb * numHits
 
-  let inline giantCropYield settings =
-    float giantYield + (settings.ShavingToolLevel |> Option.defaultOrMap 0.0 giantCropsFromShaving)
+  let expectedGiantCropYield settings =
+    float giantYield + (settings.ShavingToolLevel |> Option.defaultOrMap 0.0 expectedGiantCropsFromShaving)
 
   let noGiantCropProb settings =
     (1.0 - baseGiantProb) ** settings.GiantChecksPerTile
 
   let inline giantCropProb settings = 1.0 - noGiantCropProb settings
 
-  let farmingGiantAmounts skills settings amount farmingQualities =
+  let expectedFarmingGiantAmountByQuality skills settings amount farmingQualities =
     let noGiantProb = noGiantCropProb settings
-    let expectedGiant = (1.0 - noGiantProb) * giantCropYield settings
-    let giantAmounts = farmingAmounts skills settings amount farmingQualities |> Qualities.mult noGiantProb
-    giantAmounts |> Qualities.updateQuality Normal (expectedGiant + giantAmounts[Normal])
+    let expectedGiant = (1.0 - noGiantProb) * expectedGiantCropYield settings
+    let farmingAmounts = expectedFarmingAmountByQuality skills settings amount farmingQualities |> Qualities.mult noGiantProb
+    farmingAmounts |> Qualities.updateQuality Normal (expectedGiant + farmingAmounts[Normal])
 
 
 type SeedPrice =
@@ -396,6 +399,9 @@ type FarmCrop = {
 }
 
 module [<RequireQualifiedAccess>] FarmCrop =
+  let [<Literal>] minRegrowTime = 1u
+  let [<Literal>] minExtraItemAmount = 0.0
+
   let regrowTime crop = crop.RegrowTime
   let seed crop = crop.Seed
   let seedItem crop: ItemId = seed crop * 1u<_>
@@ -433,6 +439,7 @@ type ForageCrop = {
 module [<RequireQualifiedAccess>] ForageCrop =
   let [<Literal>] forageSeedsPerCraft = 10u
   let [<Literal>] xpPerItem = 7u
+  let [<Literal>] minItems = 1u
 
   let seed crop = crop.Seed
   let seedItem crop: ItemId = seed crop * 1u<_>
@@ -527,12 +534,14 @@ module [<RequireQualifiedAccess>] Crop =
     | FarmCrop _ -> false
     | ForageCrop _ -> true
 
-  let canGetOwnSeedsFromSeedMaker items crop =
-    // assume that if mainItem = seed, then mainItem.Category = Seeds
-    match mainItem crop |> items |> Item.category with
-    | Fruit | Vegetable | Flower -> true
-    | _ -> isForage crop
+  let canGetOwnSeedsFromSeedMaker items = function
+    | FarmCrop crop ->
+      // assume that if mainItem = seed, then mainItem.Category = Seeds
+      match items crop.Item |> Item.category with
+      | Fruit | Vegetable | Flower -> true
+      | _ -> crop.Item = Item.sweetGemBerry
+    | ForageCrop _ -> true
 
   let makesOwnSeeds crop =
     let seed = seed crop
-    items crop |> Array.exists (fun item -> int item = int seed)
+    items crop |> Array.exists (fun item -> nat item = nat seed)

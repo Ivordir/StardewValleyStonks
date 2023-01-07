@@ -211,24 +211,28 @@ module Game =
     | FarmCrop c -> farmCropFertilizerLossProb vars c
     | ForageCrop _ -> forageCropFertilizerLossProb vars.Location
 
-  let farmCropMainItemAmounts vars fertilizer (crop: FarmCrop) =
+  let farmCropMainItemAmountByQuality vars fertilizer (crop: FarmCrop) =
     let qualities = Skills.farmCropQualitiesWith fertilizer vars.Skills
     if crop.Giant && giantCropsPossible vars.Location
-    then CropAmount.farmingGiantAmounts vars.Skills vars.CropAmount crop.Amount qualities
-    else CropAmount.farmingAmounts vars.Skills vars.CropAmount crop.Amount qualities
+    then CropAmount.expectedFarmingGiantAmountByQuality vars.Skills vars.CropAmount crop.Amount qualities
+    else CropAmount.expectedFarmingAmountByQuality vars.Skills vars.CropAmount crop.Amount qualities
 
-  let farmCropItemAmounts vars fertilizer (crop: FarmCrop) =
-    let amounts = farmCropMainItemAmounts vars fertilizer crop
+  let farmCropItemAmountsByQuality vars fertilizer (crop: FarmCrop) =
+    let amounts = farmCropMainItemAmountByQuality vars fertilizer crop
     match crop.ExtraItem with
     | Some (_, amount) -> [| amounts; Qualities.zerof |> Qualities.updateQuality Quality.Normal amount |]
     | None -> [| amounts |]
 
-  let forageCropItemAmounts vars (crop: ForageCrop) =
+  let forageCropItemAmountByQuality vars (crop: ForageCrop) =
     Skills.forageCropHarvestAmounts vars.Skills |> Qualities.map (fun a -> a / float crop.Items.Length)
 
-  let cropItemAmounts vars fertilizer = function
-    | FarmCrop c -> farmCropItemAmounts vars fertilizer c
-    | ForageCrop c -> forageCropItemAmounts vars c |> Array.create c.Items.Length
+  let cropItemAmountsByQuality vars fertilizer = function
+    | FarmCrop c -> farmCropItemAmountsByQuality vars fertilizer c
+    | ForageCrop c -> forageCropItemAmountByQuality vars c |> Array.create c.Items.Length
+
+  let cropMainItemAmountByQuality vars fertilizer = function
+    | FarmCrop c -> farmCropMainItemAmountByQuality vars fertilizer c
+    | ForageCrop c -> forageCropItemAmountByQuality vars c
 
   let processorUnlocked data skills processor =
     skills.IgnoreSkillLevelRequirements

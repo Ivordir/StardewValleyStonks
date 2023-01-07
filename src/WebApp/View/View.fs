@@ -473,7 +473,7 @@ module Crops =
             | BuyFirstSeed -> price.IsSome
             | StockpileSeeds ->
               price.IsSome
-              || Query.canUseSeedMakerForOwnSeeds data settings seed
+              || Query.canUseSeedMakerForOwnSeeds data settings crop
               || settings.Selected.UseHarvestedSeeds.Contains seed
               || Query.canUseForageSeeds settings crop
 
@@ -1878,7 +1878,7 @@ let profitBreakdownTable roi timeNorm (data: GameData) settings seed fertName =
         ]
 
         tbody (profitData.IntoSeedAmounts |> Array.map (fun (item, amounts) ->
-          if int item = int seed then
+          if nat item = nat seed then
             fragment [
               for i = Quality.highest downto 0 do
               let quality = enum i
@@ -1923,11 +1923,11 @@ let profitBreakdownTable roi timeNorm (data: GameData) settings seed fertName =
                 td []
                 td [
                   ofStr " x "
-                  ofStr <| floatFixedRound (amount * Processor.seedMakerAmountWith seed)
+                  ofStr <| floatFixedRound (amount * Processor.seedMakerExpectedAmount seed)
                 ]
                 td []
                 td [
-                  ofStr <| floatFixedRound (amount * Processor.seedMakerAmountWith seed)
+                  ofStr <| floatFixedRound (amount * Processor.seedMakerExpectedAmount seed)
                 ]
               ]
             ]
@@ -2119,9 +2119,9 @@ let xpBreakdownTable timeNorm (data: GameData) settings seed fertName =
     ]
   | Ok data ->
     div [
-      let total = data.xpPerHarvest * float data.Harvests
+      let total = data.XpPerHarvest * float data.Harvests
       div [
-        ofStr (sprintf "%.2fxp" data.xpPerHarvest)
+        ofStr (sprintf "%.2fxp" data.XpPerHarvest)
         ofStr " x "
         ofStr $"{data.Harvests} harvests"
         ofStr " = "

@@ -231,7 +231,7 @@ module private Shorthand =
         UseHarvestedSeeds =
           selectKeys
             (seedItemPairs |> Seq.choose (fun (seed, item) ->
-              if int seed = int item
+              if nat seed = nat item
               then Some seed
               else None))
             short.UseHarvestedSeeds

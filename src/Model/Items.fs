@@ -48,6 +48,7 @@ type Item = {
 
 module [<RequireQualifiedAccess>] Item =
   let [<Literal>] ancientSeeds = 499u<ItemNum>
+  let [<Literal>] sweetGemBerry = 417u<ItemNum>
   let [<Literal>] blackberry = 410u<ItemNum>
   let [<Literal>] grape = 398u<ItemNum>
 
@@ -56,37 +57,40 @@ module [<RequireQualifiedAccess>] Item =
   let sellPrice item = item.SellPrice
   let category item = item.Category
 
-  let fruitTillerPossible = [| blackberry; grape |]
+  let foragedFruitTillerPossible = [| blackberry; grape |]
 
-  let fruitTillerActive multipliers item = multipliers.TillerForForagedFruit && fruitTillerPossible |> Array.contains item.Id
+  let foragedFruitTillerActive multipliers item =
+    multipliers.TillerForForagedFruit && foragedFruitTillerPossible |> Array.contains item.Id
 
   let multiplier skills multipliers forage item =
     let categoryMultiplier =
-      if not forage || item.Category <> Fruit || fruitTillerActive multipliers item
-      then Category.multiplier skills item.Category
-      else 1.0
+      if forage && item.Category = Fruit && not <| foragedFruitTillerActive multipliers item
+      then 1.0
+      else Category.multiplier skills item.Category
     categoryMultiplier
     * multipliers.ProfitMargin
     * if multipliers.BearsKnowledge && item.Id = blackberry then Multiplier.bearsKnowledge else 1.0
 
-  let internal priceCalc multiplier basePrice (quality: Quality) =
-    if basePrice = 0u then 0u else
+  let private finalPrice qualityMultiplier multiplier basePrice =
     basePrice
-    |> withMultiplier Qualities.multipliers[quality]
+    |> withMultiplier qualityMultiplier
     |> withMultiplier multiplier
     |> max 1u
 
-  let price skills multipliers forage item quality = priceCalc (multiplier skills multipliers forage item) item.SellPrice quality
+  let internal priceCalc multiplier basePrice (quality: Quality) =
+    if basePrice = 0u then 0u else
+    basePrice |> finalPrice Qualities.multipliers[quality] multiplier
+
+  let price skills multipliers forage item quality =
+    priceCalc (multiplier skills multipliers forage item) item.SellPrice quality
 
   let internal priceByQualityCalc multiplier basePrice =
     if basePrice = 0u then Qualities.zero else
     Qualities.multipliers |> Qualities.map (fun quality ->
-      basePrice
-      |> withMultiplier quality
-      |> withMultiplier multiplier
-      |> max 1u)
+      basePrice |> finalPrice quality multiplier)
 
-  let priceByQuality skills multipliers forage item = priceByQualityCalc (multiplier skills multipliers forage item) item.SellPrice
+  let priceByQuality skills multipliers forage item =
+    priceByQualityCalc (multiplier skills multipliers forage item) item.SellPrice
 
 
 type [<Fable.Core.Erase>] Processor = ProcessorName of string
@@ -115,10 +119,12 @@ module Processor =
     then quality
     else Quality.Normal
 
-  let seedMakerAmount = seedMakerSeedProb * float seedMakerSeedAmount
+  let seedMakerExpectedAmount (seed: SeedId) =
+    seedMakerSeedProb * float seedMakerSeedAmount
+    + if nat seed = nat Item.ancientSeeds then seedMakerAncientSeedProb else 0.0
 
-  let seedMakerAmountWith (seed: SeedId) =
-    seedMakerAmount + if nat seed = nat Item.ancientSeeds then seedMakerAncientSeedProb else 0.0
+  let seedMakerInputNeededForOneSeed (seed: SeedId) =
+    1.0 / seedMakerExpectedAmount seed
 
 
 module [<RequireQualifiedAccess>] ModData =

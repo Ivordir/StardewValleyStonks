@@ -57,6 +57,7 @@ module [<RequireQualifiedAccess>] Quality =
 
   let all = Array.init count enum<Quality>
 
+
 type [<Erase>] 'a Qualities = ByQuality of 'a array
 
 module [<RequireQualifiedAccess>] Qualities =
@@ -100,40 +101,6 @@ module [<RequireQualifiedAccess>] Qualities =
     for i = 0 to Quality.highest do
       sum <- sum + itemi i a * itemi i b
     sum
-
-
-  // Models the probabilities that result from a chain of if-else statements.
-  // E.g. given that p(x) is the raw probability of the check on x succeeding:
-  // if p(x1) then
-  //   x1
-  // elif p(x2) then
-  //   x2
-  // elif p(x3) then
-  //   x3
-  // else // p(x4) = 1
-  //   x4
-  //
-  // The actual probability of x_n, P(x_n), depends on all previous branches not happening:
-  // P(x_n) = p(x_n) * (1 - p(x_(n-1))) * (1 - p(x_(n-2))) * ... * (1 - p(x1)):
-  //
-  // P(x1) = p(x1)
-  //
-  // P(x2) = p(x2) * (1 - p(x1))
-  //
-  // P(x3) = p(x3) * (1 - p(x2)) * (1 - p(x1))
-  //
-  // P(x4) = 1 * (1 - p(x3)) * (1 - p(x2)) * (1 - p(x1))
-  //
-  // Assumes each quality only appears once in `probabilities`.
-  let ifElseDistribution (probabilities: (Quality * float) array) =
-    let dist = Array.zeroCreate Quality.count
-    let mutable runningProb = 1.0
-    for quality, rawProb in probabilities do
-      let prob = runningProb * min 1.0 rawProb
-      dist[int quality] <- prob
-      runningProb <- runningProb - prob // = runningProb * (1.0 - rawProb)
-    assert (abs (Array.sum dist - 1.0) < 1e-10)
-    wrap dist
 
 type 'a Qualities with
   member inline this.Item quality = Qualities.item quality this
@@ -193,6 +160,39 @@ module Skills =
 
   open type Quality
 
+  // Models the probabilities that result from a chain of if-else statements.
+  // E.g. given that p(x) is the raw probability of the check on x succeeding:
+  // if p(x1) then
+  //   x1
+  // elif p(x2) then
+  //   x2
+  // elif p(x3) then
+  //   x3
+  // else // p(x4) = 1
+  //   x4
+  //
+  // The actual probability of x_n, P(x_n), depends on all previous branches not happening:
+  // P(x_n) = p(x_n) * (1 - p(x_(n-1))) * (1 - p(x_(n-2))) * ... * (1 - p(x1)):
+  //
+  // P(x1) = p(x1)
+  //
+  // P(x2) = p(x2) * (1 - p(x1))
+  //
+  // P(x3) = p(x3) * (1 - p(x2)) * (1 - p(x1))
+  //
+  // P(x4) = 1 * (1 - p(x3)) * (1 - p(x2)) * (1 - p(x1))
+  //
+  // Assumes each quality only appears once in `probabilities`.
+  let private ifElseDistribution (probabilities: (Quality * float) array) =
+    let dist = Array.zeroCreate Quality.count
+    let mutable runningProb = 1.0
+    for quality, rawProb in probabilities do
+      let prob = runningProb * min 1.0 rawProb
+      dist[int quality] <- prob
+      runningProb <- runningProb - prob // = runningProb * (1.0 - rawProb)
+    assert (abs (Array.sum dist - 1.0) < 1e-10)
+    Qualities.wrap dist
+
   let private farmCropQualitiesCalc fertQuality skills =
     let buffLevel = Skill.buffedLevel skills.Farming
     let gold = 0.01 + 0.2 * (float buffLevel / 10.0 + float fertQuality * float (buffLevel + 2u) / 12.0)
@@ -206,7 +206,7 @@ module Skills =
         Silver, min (2.0 * gold) 0.75
         Normal, 1.0
       |]
-    Qualities.ifElseDistribution probabilities
+    ifElseDistribution probabilities
 
   let farmCropQualitiesWith fert skills = farmCropQualitiesCalc (Fertilizer.Opt.quality fert) skills
 
@@ -217,7 +217,7 @@ module Skills =
       Qualities.wrap [| 0.0; 0.0; 0.0; 1.0 |]
     else
       let buffLevel = Skill.buffedLevel skills.Foraging |> float
-      Qualities.ifElseDistribution [|
+      ifElseDistribution [|
         Gold, buffLevel / 30.0
         Silver, buffLevel / 15.0
         Normal, 1.0
