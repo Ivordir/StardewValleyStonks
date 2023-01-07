@@ -14,6 +14,10 @@ let [<Literal>] private SeedPriceTypeField = "Type"
 let [<Literal>] private FixedSeedPrice = "Fixed"
 let [<Literal>] private ScalingSeedPrice = "Scaling"
 
+let private encodeProcessor (ProcessorName processor) = Encode.string processor
+let private decodeProcessor = Decode.string |> Decode.map ProcessorName
+let private processorCoders = Extra.empty |> Extra.withCustom encodeProcessor decodeProcessor
+
 module [<RequireQualifiedAccess>] Encode =
   let mapSeq encoder (seq: _ seq) = seq |> Seq.map encoder |> Encode.seq
 
@@ -33,25 +37,12 @@ module [<RequireQualifiedAccess>] Encode =
 
   let vendor (VendorName vendor) = Encode.string vendor
 
-  let processor (ProcessorName processor) = Encode.string processor
+  let processor = encodeProcessor
 
   let seedId (seed: SeedId) = Encode.uint32 (nat seed)
   let itemId (item: ItemId) = Encode.uint32 (nat item)
 
-  let product = function
-    | Jam -> Encode.string (nameof Jam)
-    | Wine -> Encode.string (nameof Wine)
-    | Pickles -> Encode.string (nameof Pickles)
-    | Juice -> Encode.string (nameof Juice)
-    | SeedsFromSeedMaker seed ->
-      Encode.object [ nameof SeedsFromSeedMaker, itemId seed ]
-    | Processed p ->
-      Encode.object [
-        nameof p.Item, itemId p.Item
-        nameof p.Processor, processor p.Processor
-        if p.Ratio <> None then
-          nameof p.Ratio, Encode.tuple2 Encode.uint32 Encode.uint32 (Option.get p.Ratio)
-      ]
+  let processedItem = Encode.Auto.generateEncoder<ProcessedItem> (extra = processorCoders)
 
   let season (season: Season) = Season.name season |> Encode.string
 
@@ -136,6 +127,7 @@ module [<RequireQualifiedAccess>] Encode =
 
   let extractedData (data: ExtractedData) = Encode.object [
     nameof data.Items, data.Items |> mapSeq (Encode.Auto.generateEncoder ())
+    nameof data.Products, data.Products |> table string (mapSeq processedItem)
     nameof data.FarmCrops, data.FarmCrops |> mapSeq farmCrop
     nameof data.ForageCrops, data.ForageCrops |> mapSeq forageCrop
   ]
@@ -150,13 +142,6 @@ module [<RequireQualifiedAccess>] Decode =
   let parseItemId = tryParseInt<ItemNum>
 
   let parseSeedId = tryParseInt<SeedNum>
-
-  let private wrap (wrapper: 'a -> 'b) (decoder: 'a Decoder) =
-    #if FABLE_COMPILER
-    Fable.Core.JsInterop.(!!)decoder : 'b Decoder
-    #else
-    decoder |> Decode.map wrapper
-    #endif
 
   let private natMeasure<[<Measure>] 'u> =
     #if FABLE_COMPILER
@@ -195,7 +180,7 @@ module [<RequireQualifiedAccess>] Decode =
   let mapObj keyWrap decodeValue = wrapKeys Map.ofSeq keyWrap decodeValue
   let mapObjParse parseKey decodeValue = parseKeysWith Map.ofSeq parseKey decodeValue
 
-  let fertilizer: Fertilizer Decoder =
+  let fertilizer =
     let u = Unchecked.defaultof<Fertilizer>
     Decode.object (fun get -> {
       Name = get.Required.Field (nameof u.Name) Decode.string
@@ -203,40 +188,22 @@ module [<RequireQualifiedAccess>] Decode =
       Speed = get.Optional.Field (nameof u.Speed) Decode.float |> Option.defaultValue 0.0
     } )
 
-  let vendor: Vendor Decoder = Decode.string |> wrap VendorName
+  let vendor: Vendor Decoder = Decode.string |> Decode.map VendorName
 
-  let processor: Processor Decoder = Decode.string |> wrap ProcessorName
+  let processor = decodeProcessor
 
   let itemId = natMeasure<ItemNum>
   let seedId = natMeasure<SeedNum>
 
-  let product: Product Decoder =
-    let (Processed processed) = Processed Unchecked.defaultof<_>
-    Decode.oneOf [
-      Decode.string |> Decode.andThen (function
-        | nameof Jam -> Decode.succeed Jam
-        | nameof Wine -> Decode.succeed Wine
-        | nameof Pickles -> Decode.succeed Pickles
-        | nameof Juice -> Decode.succeed Juice
-        | _ -> Decode.fail $"Was not '{nameof Jam}', '{nameof Wine}', '{nameof Pickles}', or '{nameof Juice}'.")
+  let processedItem = Decode.Auto.generateDecoder<ProcessedItem> (extra = processorCoders)
 
-      Decode.object (fun get ->
-        SeedsFromSeedMaker (get.Required.Field (nameof SeedsFromSeedMaker) itemId))
-
-      Decode.object (fun get -> Processed {|
-        Item = get.Required.Field (nameof processed.Item) itemId
-        Processor = get.Required.Field (nameof processed.Processor) processor
-        Ratio = get.Optional.Field (nameof processed.Ratio) (Decode.tuple2 Decode.uint32 Decode.uint32)
-      |} )
-    ]
-
-  let season: Season Decoder =
+  let season =
     Decode.string |> Decode.andThen (fun str ->
       match Season.TryParse str with
       | true, season -> Decode.succeed season
       | _ -> Decode.fail $"Failed to parse season: {str}")
 
-  let seasons: Seasons Decoder = Decode.array season |> Decode.map Seasons.ofSeq
+  let seasons = Decode.array season |> Decode.map Seasons.ofSeq
 
   let date: Date Decoder =
     let u = Unchecked.defaultof<Date>
@@ -258,7 +225,7 @@ module [<RequireQualifiedAccess>] Decode =
       | ScalingSeedPrice, None -> Ok (ScalingPrice (vendor, None))
       | _ -> Error (path, BadPrimitive ($"a valid price type ('{FixedSeedPrice}' or '{ScalingSeedPrice}')", value)))
 
-  let cropAmount: CropAmount Decoder =
+  let cropAmount =
     let u = Unchecked.defaultof<CropAmount>
     Decode.object (fun get ->
       let field name decoder defVal = get.Optional.Field name decoder |> Option.defaultValue defVal
@@ -273,7 +240,7 @@ module [<RequireQualifiedAccess>] Decode =
       }
     )
 
-  let farmCrop: FarmCrop Decoder =
+  let farmCrop =
     let u = Unchecked.defaultof<FarmCrop>
     Decode.object (fun get -> {
       Seasons = get.Required.Field (nameof u.Seasons) seasons
@@ -287,7 +254,7 @@ module [<RequireQualifiedAccess>] Decode =
       ExtraItem = get.Optional.Field (nameof u.ExtraItem) (Decode.tuple2 itemId Decode.float)
     } )
 
-  let forageCrop: ForageCrop Decoder =
+  let forageCrop =
     let u = Unchecked.defaultof<ForageCrop>
     Decode.object (fun get ->
       let field name decoder = get.Required.Field name decoder
@@ -306,6 +273,7 @@ module [<RequireQualifiedAccess>] Decode =
       let field name decode = get.Required.Field name decode
       {
         Items = field (nameof u.Items) (Decode.Auto.generateDecoder ())
+        Products = field (nameof u.Products) (tableParse parseItemId (Decode.array (Decode.Auto.generateDecoder (extra=(Extra.empty |> Extra.withCustom Encode.processor processor)))))
         FarmCrops = field (nameof u.FarmCrops) (Decode.array farmCrop)
         ForageCrops = field (nameof u.ForageCrops) (Decode.array forageCrop)
       }
@@ -317,7 +285,6 @@ module [<RequireQualifiedAccess>] Decode =
       let field name decode = get.Required.Field name decode
       {
         Fertilizers = field (nameof u.Fertilizers) (Decode.array fertilizer)
-        Products = field (nameof u.Products) (tableParse parseItemId (Decode.array product))
         ProcessorUnlockLevel = field (nameof u.ProcessorUnlockLevel) (table ProcessorName Decode.uint32)
         FertilizerPrices = field (nameof u.FertilizerPrices) (table id (table VendorName Decode.uint32))
         SeedPrices = field (nameof u.SeedPrices) (tableParse parseSeedId (Decode.array seedPrice))

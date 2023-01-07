@@ -1,534 +1,6 @@
 {
   "Items": [
     {
-      "Id": 245,
-      "Name": "Sugar",
-      "SellPrice": 50,
-      "Category": "Other"
-    },
-    {
-      "Id": 246,
-      "Name": "Wheat Flour",
-      "SellPrice": 50,
-      "Category": "Other"
-    },
-    {
-      "Id": 247,
-      "Name": "Oil",
-      "SellPrice": 100,
-      "Category": "Other"
-    },
-    {
-      "Id": 303,
-      "Name": "Pale Ale",
-      "SellPrice": 300,
-      "Category": "ArtisanGood"
-    },
-    {
-      "Id": 346,
-      "Name": "Beer",
-      "SellPrice": 200,
-      "Category": "ArtisanGood"
-    },
-    {
-      "Id": 347,
-      "Name": "Rare Seed",
-      "SellPrice": 200,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 395,
-      "Name": "Coffee",
-      "SellPrice": 150,
-      "Category": "Other"
-    },
-    {
-      "Id": 423,
-      "Name": "Rice",
-      "SellPrice": 100,
-      "Category": "Other"
-    },
-    {
-      "Id": 472,
-      "Name": "Parsnip Seeds",
-      "SellPrice": 10,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 24,
-      "Name": "Parsnip",
-      "SellPrice": 35,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 473,
-      "Name": "Bean Starter",
-      "SellPrice": 30,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 188,
-      "Name": "Green Bean",
-      "SellPrice": 40,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 474,
-      "Name": "Cauliflower Seeds",
-      "SellPrice": 40,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 190,
-      "Name": "Cauliflower",
-      "SellPrice": 175,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 475,
-      "Name": "Potato Seeds",
-      "SellPrice": 25,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 192,
-      "Name": "Potato",
-      "SellPrice": 80,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 476,
-      "Name": "Garlic Seeds",
-      "SellPrice": 20,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 248,
-      "Name": "Garlic",
-      "SellPrice": 60,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 273,
-      "Name": "Rice Shoot",
-      "SellPrice": 20,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 271,
-      "Name": "Unmilled Rice",
-      "SellPrice": 30,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 831,
-      "Name": "Taro Tuber",
-      "SellPrice": 20,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 830,
-      "Name": "Taro Root",
-      "SellPrice": 100,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 477,
-      "Name": "Kale Seeds",
-      "SellPrice": 35,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 250,
-      "Name": "Kale",
-      "SellPrice": 110,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 478,
-      "Name": "Rhubarb Seeds",
-      "SellPrice": 50,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 252,
-      "Name": "Rhubarb",
-      "SellPrice": 220,
-      "Category": "Fruit"
-    },
-    {
-      "Id": 745,
-      "Name": "Strawberry Seeds",
-      "SellPrice": 0,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 400,
-      "Name": "Strawberry",
-      "SellPrice": 120,
-      "Category": "Fruit"
-    },
-    {
-      "Id": 479,
-      "Name": "Melon Seeds",
-      "SellPrice": 40,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 254,
-      "Name": "Melon",
-      "SellPrice": 250,
-      "Category": "Fruit"
-    },
-    {
-      "Id": 480,
-      "Name": "Tomato Seeds",
-      "SellPrice": 25,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 256,
-      "Name": "Tomato",
-      "SellPrice": 60,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 481,
-      "Name": "Blueberry Seeds",
-      "SellPrice": 40,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 258,
-      "Name": "Blueberry",
-      "SellPrice": 50,
-      "Category": "Fruit"
-    },
-    {
-      "Id": 482,
-      "Name": "Pepper Seeds",
-      "SellPrice": 20,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 260,
-      "Name": "Hot Pepper",
-      "SellPrice": 40,
-      "Category": "Fruit"
-    },
-    {
-      "Id": 483,
-      "Name": "Wheat Seeds",
-      "SellPrice": 5,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 262,
-      "Name": "Wheat",
-      "SellPrice": 25,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 178,
-      "Name": "Hay",
-      "SellPrice": 0,
-      "Category": "Other"
-    },
-    {
-      "Id": 484,
-      "Name": "Radish Seeds",
-      "SellPrice": 20,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 264,
-      "Name": "Radish",
-      "SellPrice": 90,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 485,
-      "Name": "Red Cabbage Seeds",
-      "SellPrice": 50,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 266,
-      "Name": "Red Cabbage",
-      "SellPrice": 260,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 486,
-      "Name": "Starfruit Seeds",
-      "SellPrice": 200,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 268,
-      "Name": "Starfruit",
-      "SellPrice": 750,
-      "Category": "Fruit"
-    },
-    {
-      "Id": 833,
-      "Name": "Pineapple Seeds",
-      "SellPrice": 240,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 832,
-      "Name": "Pineapple",
-      "SellPrice": 300,
-      "Category": "Fruit"
-    },
-    {
-      "Id": 433,
-      "Name": "Coffee Bean",
-      "SellPrice": 15,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 802,
-      "Name": "Cactus Seeds",
-      "SellPrice": 0,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 90,
-      "Name": "Cactus Fruit",
-      "SellPrice": 75,
-      "Category": "Fruit"
-    },
-    {
-      "Id": 487,
-      "Name": "Corn Seeds",
-      "SellPrice": 75,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 270,
-      "Name": "Corn",
-      "SellPrice": 50,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 302,
-      "Name": "Hops Starter",
-      "SellPrice": 30,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 304,
-      "Name": "Hops",
-      "SellPrice": 25,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 301,
-      "Name": "Grape Starter",
-      "SellPrice": 30,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 398,
-      "Name": "Grape",
-      "SellPrice": 80,
-      "Category": "Fruit"
-    },
-    {
-      "Id": 299,
-      "Name": "Amaranth Seeds",
-      "SellPrice": 35,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 300,
-      "Name": "Amaranth",
-      "SellPrice": 150,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 488,
-      "Name": "Eggplant Seeds",
-      "SellPrice": 10,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 272,
-      "Name": "Eggplant",
-      "SellPrice": 60,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 489,
-      "Name": "Artichoke Seeds",
-      "SellPrice": 15,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 274,
-      "Name": "Artichoke",
-      "SellPrice": 160,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 490,
-      "Name": "Pumpkin Seeds",
-      "SellPrice": 50,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 276,
-      "Name": "Pumpkin",
-      "SellPrice": 320,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 491,
-      "Name": "Bok Choy Seeds",
-      "SellPrice": 25,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 278,
-      "Name": "Bok Choy",
-      "SellPrice": 80,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 492,
-      "Name": "Yam Seeds",
-      "SellPrice": 30,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 280,
-      "Name": "Yam",
-      "SellPrice": 160,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 493,
-      "Name": "Cranberry Seeds",
-      "SellPrice": 60,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 282,
-      "Name": "Cranberries",
-      "SellPrice": 75,
-      "Category": "Fruit"
-    },
-    {
-      "Id": 494,
-      "Name": "Beet Seeds",
-      "SellPrice": 10,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 284,
-      "Name": "Beet",
-      "SellPrice": 100,
-      "Category": "Vegetable"
-    },
-    {
-      "Id": 499,
-      "Name": "Ancient Seeds",
-      "SellPrice": 30,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 454,
-      "Name": "Ancient Fruit",
-      "SellPrice": 550,
-      "Category": "Fruit"
-    },
-    {
-      "Id": 427,
-      "Name": "Tulip Bulb",
-      "SellPrice": 10,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 591,
-      "Name": "Tulip",
-      "SellPrice": 30,
-      "Category": "Flower"
-    },
-    {
-      "Id": 429,
-      "Name": "Jazz Seeds",
-      "SellPrice": 15,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 597,
-      "Name": "Blue Jazz",
-      "SellPrice": 50,
-      "Category": "Flower"
-    },
-    {
-      "Id": 453,
-      "Name": "Poppy Seeds",
-      "SellPrice": 50,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 376,
-      "Name": "Poppy",
-      "SellPrice": 140,
-      "Category": "Flower"
-    },
-    {
-      "Id": 455,
-      "Name": "Spangle Seeds",
-      "SellPrice": 25,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 593,
-      "Name": "Summer Spangle",
-      "SellPrice": 90,
-      "Category": "Flower"
-    },
-    {
-      "Id": 431,
-      "Name": "Sunflower Seeds",
-      "SellPrice": 20,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 421,
-      "Name": "Sunflower",
-      "SellPrice": 80,
-      "Category": "Flower"
-    },
-    {
-      "Id": 425,
-      "Name": "Fairy Seeds",
-      "SellPrice": 100,
-      "Category": "Seeds"
-    },
-    {
-      "Id": 595,
-      "Name": "Fairy Rose",
-      "SellPrice": 290,
-      "Category": "Flower"
-    },
-    {
-      "Id": 417,
-      "Name": "Sweet Gem Berry",
-      "SellPrice": 3000,
-      "Category": "Other"
-    },
-    {
-      "Id": 495,
-      "Name": "Spring Seeds",
-      "SellPrice": 35,
-      "Category": "Seeds"
-    },
-    {
       "Id": 16,
       "Name": "Wild Horseradish",
       "SellPrice": 50,
@@ -553,10 +25,244 @@
       "Category": "Other"
     },
     {
-      "Id": 496,
-      "Name": "Summer Seeds",
-      "SellPrice": 55,
+      "Id": 24,
+      "Name": "Parsnip",
+      "SellPrice": 35,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 90,
+      "Name": "Cactus Fruit",
+      "SellPrice": 75,
+      "Category": "Fruit"
+    },
+    {
+      "Id": 178,
+      "Name": "Hay",
+      "SellPrice": 0,
+      "Category": "Other"
+    },
+    {
+      "Id": 188,
+      "Name": "Green Bean",
+      "SellPrice": 40,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 190,
+      "Name": "Cauliflower",
+      "SellPrice": 175,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 192,
+      "Name": "Potato",
+      "SellPrice": 80,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 245,
+      "Name": "Sugar",
+      "SellPrice": 50,
+      "Category": "Other"
+    },
+    {
+      "Id": 246,
+      "Name": "Wheat Flour",
+      "SellPrice": 50,
+      "Category": "Other"
+    },
+    {
+      "Id": 247,
+      "Name": "Oil",
+      "SellPrice": 100,
+      "Category": "Other"
+    },
+    {
+      "Id": 248,
+      "Name": "Garlic",
+      "SellPrice": 60,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 250,
+      "Name": "Kale",
+      "SellPrice": 110,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 252,
+      "Name": "Rhubarb",
+      "SellPrice": 220,
+      "Category": "Fruit"
+    },
+    {
+      "Id": 254,
+      "Name": "Melon",
+      "SellPrice": 250,
+      "Category": "Fruit"
+    },
+    {
+      "Id": 256,
+      "Name": "Tomato",
+      "SellPrice": 60,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 258,
+      "Name": "Blueberry",
+      "SellPrice": 50,
+      "Category": "Fruit"
+    },
+    {
+      "Id": 260,
+      "Name": "Hot Pepper",
+      "SellPrice": 40,
+      "Category": "Fruit"
+    },
+    {
+      "Id": 262,
+      "Name": "Wheat",
+      "SellPrice": 25,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 264,
+      "Name": "Radish",
+      "SellPrice": 90,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 266,
+      "Name": "Red Cabbage",
+      "SellPrice": 260,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 268,
+      "Name": "Starfruit",
+      "SellPrice": 750,
+      "Category": "Fruit"
+    },
+    {
+      "Id": 270,
+      "Name": "Corn",
+      "SellPrice": 50,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 271,
+      "Name": "Unmilled Rice",
+      "SellPrice": 30,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 272,
+      "Name": "Eggplant",
+      "SellPrice": 60,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 273,
+      "Name": "Rice Shoot",
+      "SellPrice": 20,
       "Category": "Seeds"
+    },
+    {
+      "Id": 274,
+      "Name": "Artichoke",
+      "SellPrice": 160,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 276,
+      "Name": "Pumpkin",
+      "SellPrice": 320,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 278,
+      "Name": "Bok Choy",
+      "SellPrice": 80,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 280,
+      "Name": "Yam",
+      "SellPrice": 160,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 282,
+      "Name": "Cranberries",
+      "SellPrice": 75,
+      "Category": "Fruit"
+    },
+    {
+      "Id": 284,
+      "Name": "Beet",
+      "SellPrice": 100,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 299,
+      "Name": "Amaranth Seeds",
+      "SellPrice": 35,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 300,
+      "Name": "Amaranth",
+      "SellPrice": 150,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 301,
+      "Name": "Grape Starter",
+      "SellPrice": 30,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 302,
+      "Name": "Hops Starter",
+      "SellPrice": 30,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 303,
+      "Name": "Pale Ale",
+      "SellPrice": 300,
+      "Category": "ArtisanGood"
+    },
+    {
+      "Id": 304,
+      "Name": "Hops",
+      "SellPrice": 25,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 346,
+      "Name": "Beer",
+      "SellPrice": 200,
+      "Category": "ArtisanGood"
+    },
+    {
+      "Id": 347,
+      "Name": "Rare Seed",
+      "SellPrice": 200,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 376,
+      "Name": "Poppy",
+      "SellPrice": 140,
+      "Category": "Flower"
+    },
+    {
+      "Id": 395,
+      "Name": "Coffee",
+      "SellPrice": 150,
+      "Category": "Other"
     },
     {
       "Id": 396,
@@ -565,16 +271,22 @@
       "Category": "Fruit"
     },
     {
+      "Id": 398,
+      "Name": "Grape",
+      "SellPrice": 80,
+      "Category": "Fruit"
+    },
+    {
+      "Id": 400,
+      "Name": "Strawberry",
+      "SellPrice": 120,
+      "Category": "Fruit"
+    },
+    {
       "Id": 402,
       "Name": "Sweet Pea",
       "SellPrice": 50,
       "Category": "Flower"
-    },
-    {
-      "Id": 497,
-      "Name": "Fall Seeds",
-      "SellPrice": 45,
-      "Category": "Seeds"
     },
     {
       "Id": 404,
@@ -601,12 +313,6 @@
       "Category": "Fruit"
     },
     {
-      "Id": 498,
-      "Name": "Winter Seeds",
-      "SellPrice": 30,
-      "Category": "Seeds"
-    },
-    {
       "Id": 412,
       "Name": "Winter Root",
       "SellPrice": 70,
@@ -625,15 +331,279 @@
       "Category": "Other"
     },
     {
+      "Id": 417,
+      "Name": "Sweet Gem Berry",
+      "SellPrice": 3000,
+      "Category": "Other"
+    },
+    {
       "Id": 418,
       "Name": "Crocus",
       "SellPrice": 60,
       "Category": "Flower"
     },
     {
-      "Id": 885,
-      "Name": "Fiber Seeds",
+      "Id": 421,
+      "Name": "Sunflower",
+      "SellPrice": 80,
+      "Category": "Flower"
+    },
+    {
+      "Id": 423,
+      "Name": "Rice",
+      "SellPrice": 100,
+      "Category": "Other"
+    },
+    {
+      "Id": 425,
+      "Name": "Fairy Seeds",
+      "SellPrice": 100,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 427,
+      "Name": "Tulip Bulb",
+      "SellPrice": 10,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 429,
+      "Name": "Jazz Seeds",
+      "SellPrice": 15,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 431,
+      "Name": "Sunflower Seeds",
+      "SellPrice": 20,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 433,
+      "Name": "Coffee Bean",
+      "SellPrice": 15,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 453,
+      "Name": "Poppy Seeds",
+      "SellPrice": 50,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 454,
+      "Name": "Ancient Fruit",
+      "SellPrice": 550,
+      "Category": "Fruit"
+    },
+    {
+      "Id": 455,
+      "Name": "Spangle Seeds",
+      "SellPrice": 25,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 472,
+      "Name": "Parsnip Seeds",
+      "SellPrice": 10,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 473,
+      "Name": "Bean Starter",
+      "SellPrice": 30,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 474,
+      "Name": "Cauliflower Seeds",
+      "SellPrice": 40,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 475,
+      "Name": "Potato Seeds",
+      "SellPrice": 25,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 476,
+      "Name": "Garlic Seeds",
+      "SellPrice": 20,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 477,
+      "Name": "Kale Seeds",
+      "SellPrice": 35,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 478,
+      "Name": "Rhubarb Seeds",
+      "SellPrice": 50,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 479,
+      "Name": "Melon Seeds",
+      "SellPrice": 40,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 480,
+      "Name": "Tomato Seeds",
+      "SellPrice": 25,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 481,
+      "Name": "Blueberry Seeds",
+      "SellPrice": 40,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 482,
+      "Name": "Pepper Seeds",
+      "SellPrice": 20,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 483,
+      "Name": "Wheat Seeds",
       "SellPrice": 5,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 484,
+      "Name": "Radish Seeds",
+      "SellPrice": 20,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 485,
+      "Name": "Red Cabbage Seeds",
+      "SellPrice": 50,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 486,
+      "Name": "Starfruit Seeds",
+      "SellPrice": 200,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 487,
+      "Name": "Corn Seeds",
+      "SellPrice": 75,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 488,
+      "Name": "Eggplant Seeds",
+      "SellPrice": 10,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 489,
+      "Name": "Artichoke Seeds",
+      "SellPrice": 15,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 490,
+      "Name": "Pumpkin Seeds",
+      "SellPrice": 50,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 491,
+      "Name": "Bok Choy Seeds",
+      "SellPrice": 25,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 492,
+      "Name": "Yam Seeds",
+      "SellPrice": 30,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 493,
+      "Name": "Cranberry Seeds",
+      "SellPrice": 60,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 494,
+      "Name": "Beet Seeds",
+      "SellPrice": 10,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 495,
+      "Name": "Spring Seeds",
+      "SellPrice": 35,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 496,
+      "Name": "Summer Seeds",
+      "SellPrice": 55,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 497,
+      "Name": "Fall Seeds",
+      "SellPrice": 45,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 498,
+      "Name": "Winter Seeds",
+      "SellPrice": 30,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 499,
+      "Name": "Ancient Seeds",
+      "SellPrice": 30,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 591,
+      "Name": "Tulip",
+      "SellPrice": 30,
+      "Category": "Flower"
+    },
+    {
+      "Id": 593,
+      "Name": "Summer Spangle",
+      "SellPrice": 90,
+      "Category": "Flower"
+    },
+    {
+      "Id": 595,
+      "Name": "Fairy Rose",
+      "SellPrice": 290,
+      "Category": "Flower"
+    },
+    {
+      "Id": 597,
+      "Name": "Blue Jazz",
+      "SellPrice": 50,
+      "Category": "Flower"
+    },
+    {
+      "Id": 745,
+      "Name": "Strawberry Seeds",
+      "SellPrice": 0,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 770,
+      "Name": "Mixed Seeds",
+      "SellPrice": 0,
       "Category": "Seeds"
     },
     {
@@ -643,13 +613,288 @@
       "Category": "Other"
     },
     {
-      "Id": 770,
-      "Name": "Mixed Seeds",
+      "Id": 802,
+      "Name": "Cactus Seeds",
       "SellPrice": 0,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 830,
+      "Name": "Taro Root",
+      "SellPrice": 100,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 831,
+      "Name": "Taro Tuber",
+      "SellPrice": 20,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 832,
+      "Name": "Pineapple",
+      "SellPrice": 300,
+      "Category": "Fruit"
+    },
+    {
+      "Id": 833,
+      "Name": "Pineapple Seeds",
+      "SellPrice": 240,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 885,
+      "Name": "Fiber Seeds",
+      "SellPrice": 5,
       "Category": "Seeds"
     }
   ],
+  "Products": {
+    "262": [
+      {
+        "Item": 346,
+        "Processor": "Keg"
+      },
+      {
+        "Item": 246,
+        "Processor": "Mill"
+      }
+    ],
+    "270": [
+      {
+        "Item": 247,
+        "Processor": "Oil Maker"
+      }
+    ],
+    "271": [
+      {
+        "Item": 423,
+        "Processor": "Mill"
+      }
+    ],
+    "284": [
+      {
+        "Item": 245,
+        "Processor": "Mill",
+        "Ratio": [
+          1,
+          3
+        ]
+      }
+    ],
+    "304": [
+      {
+        "Item": 303,
+        "Processor": "Keg"
+      }
+    ],
+    "421": [
+      {
+        "Item": 247,
+        "Processor": "Oil Maker"
+      }
+    ],
+    "431": [
+      {
+        "Item": 247,
+        "Processor": "Oil Maker"
+      }
+    ],
+    "433": [
+      {
+        "Item": 395,
+        "Processor": "Keg",
+        "Ratio": [
+          5,
+          1
+        ]
+      }
+    ]
+  },
   "FarmCrops": [
+    {
+      "Seasons": [
+        "Spring"
+      ],
+      "Seed": 273,
+      "Stages": [
+        1,
+        2,
+        2,
+        3
+      ],
+      "Paddy": true,
+      "Amount": {
+        "ExtraCropChance": 0.1,
+        "FarmLevelsPerYieldIncrease": 10
+      },
+      "Item": 271
+    },
+    {
+      "Seasons": [
+        "Fall"
+      ],
+      "Seed": 299,
+      "Stages": [
+        1,
+        2,
+        2,
+        2
+      ],
+      "Item": 300
+    },
+    {
+      "Seasons": [
+        "Fall"
+      ],
+      "Seed": 301,
+      "Stages": [
+        1,
+        1,
+        2,
+        3,
+        3
+      ],
+      "RegrowTime": 3,
+      "Item": 398
+    },
+    {
+      "Seasons": [
+        "Summer"
+      ],
+      "Seed": 302,
+      "Stages": [
+        1,
+        1,
+        2,
+        3,
+        4
+      ],
+      "RegrowTime": 1,
+      "Item": 304
+    },
+    {
+      "Seasons": [
+        "Fall"
+      ],
+      "Seed": 347,
+      "Stages": [
+        2,
+        4,
+        6,
+        6,
+        6
+      ],
+      "Item": 417
+    },
+    {
+      "Seasons": [
+        "Fall"
+      ],
+      "Seed": 425,
+      "Stages": [
+        1,
+        4,
+        4,
+        3
+      ],
+      "Item": 595
+    },
+    {
+      "Seasons": [
+        "Spring"
+      ],
+      "Seed": 427,
+      "Stages": [
+        1,
+        1,
+        2,
+        2
+      ],
+      "Item": 591
+    },
+    {
+      "Seasons": [
+        "Spring"
+      ],
+      "Seed": 429,
+      "Stages": [
+        1,
+        2,
+        2,
+        2
+      ],
+      "Item": 597
+    },
+    {
+      "Seasons": [
+        "Summer",
+        "Fall"
+      ],
+      "Seed": 431,
+      "Stages": [
+        1,
+        2,
+        3,
+        2
+      ],
+      "Amount": {
+        "CanDouble": false
+      },
+      "ExtraItem": [
+        431,
+        1.0
+      ],
+      "Item": 421
+    },
+    {
+      "Seasons": [
+        "Spring",
+        "Summer"
+      ],
+      "Seed": 433,
+      "Stages": [
+        1,
+        2,
+        2,
+        3,
+        2
+      ],
+      "Amount": {
+        "MinCropYield": 4,
+        "MaxCropYield": 4,
+        "ExtraCropChance": 0.02,
+        "CanDouble": false
+      },
+      "RegrowTime": 2,
+      "Item": 433
+    },
+    {
+      "Seasons": [
+        "Summer"
+      ],
+      "Seed": 453,
+      "Stages": [
+        1,
+        2,
+        2,
+        2
+      ],
+      "Item": 376
+    },
+    {
+      "Seasons": [
+        "Summer"
+      ],
+      "Seed": 455,
+      "Stages": [
+        1,
+        2,
+        3,
+        2
+      ],
+      "Item": 593
+    },
     {
       "Seasons": [
         "Spring"
@@ -728,38 +973,6 @@
       "Seasons": [
         "Spring"
       ],
-      "Seed": 273,
-      "Stages": [
-        1,
-        2,
-        2,
-        3
-      ],
-      "Paddy": true,
-      "Amount": {
-        "ExtraCropChance": 0.1,
-        "FarmLevelsPerYieldIncrease": 10
-      },
-      "Item": 271
-    },
-    {
-      "Seasons": [
-        "Summer"
-      ],
-      "Seed": 831,
-      "Stages": [
-        1,
-        2,
-        3,
-        4
-      ],
-      "Paddy": true,
-      "Item": 830
-    },
-    {
-      "Seasons": [
-        "Spring"
-      ],
       "Seed": 477,
       "Stages": [
         1,
@@ -782,25 +995,6 @@
         4
       ],
       "Item": 252
-    },
-    {
-      "Seasons": [
-        "Spring"
-      ],
-      "Seed": 745,
-      "Stages": [
-        1,
-        1,
-        2,
-        2,
-        2
-      ],
-      "Amount": {
-        "ExtraCropChance": 0.02,
-        "CanDouble": false
-      },
-      "RegrowTime": 4,
-      "Item": 400
     },
     {
       "Seasons": [
@@ -937,56 +1131,6 @@
     },
     {
       "Seasons": [
-        "Summer"
-      ],
-      "Seed": 833,
-      "Stages": [
-        1,
-        3,
-        3,
-        4,
-        3
-      ],
-      "RegrowTime": 7,
-      "Item": 832
-    },
-    {
-      "Seasons": [
-        "Spring",
-        "Summer"
-      ],
-      "Seed": 433,
-      "Stages": [
-        1,
-        2,
-        2,
-        3,
-        2
-      ],
-      "Amount": {
-        "MinCropYield": 4,
-        "MaxCropYield": 4,
-        "ExtraCropChance": 0.02,
-        "CanDouble": false
-      },
-      "RegrowTime": 2,
-      "Item": 433
-    },
-    {
-      "Seasons": [],
-      "Seed": 802,
-      "Stages": [
-        2,
-        2,
-        2,
-        3,
-        3
-      ],
-      "RegrowTime": 3,
-      "Item": 90
-    },
-    {
-      "Seasons": [
         "Summer",
         "Fall"
       ],
@@ -1000,49 +1144,6 @@
       ],
       "RegrowTime": 4,
       "Item": 270
-    },
-    {
-      "Seasons": [
-        "Summer"
-      ],
-      "Seed": 302,
-      "Stages": [
-        1,
-        1,
-        2,
-        3,
-        4
-      ],
-      "RegrowTime": 1,
-      "Item": 304
-    },
-    {
-      "Seasons": [
-        "Fall"
-      ],
-      "Seed": 301,
-      "Stages": [
-        1,
-        1,
-        2,
-        3,
-        3
-      ],
-      "RegrowTime": 3,
-      "Item": 398
-    },
-    {
-      "Seasons": [
-        "Fall"
-      ],
-      "Seed": 299,
-      "Stages": [
-        1,
-        2,
-        2,
-        2
-      ],
-      "Item": 300
     },
     {
       "Seasons": [
@@ -1173,101 +1274,62 @@
       "Seasons": [
         "Spring"
       ],
-      "Seed": 427,
+      "Seed": 745,
       "Stages": [
         1,
         1,
         2,
-        2
-      ],
-      "Item": 591
-    },
-    {
-      "Seasons": [
-        "Spring"
-      ],
-      "Seed": 429,
-      "Stages": [
-        1,
         2,
-        2,
-        2
-      ],
-      "Item": 597
-    },
-    {
-      "Seasons": [
-        "Summer"
-      ],
-      "Seed": 453,
-      "Stages": [
-        1,
-        2,
-        2,
-        2
-      ],
-      "Item": 376
-    },
-    {
-      "Seasons": [
-        "Summer"
-      ],
-      "Seed": 455,
-      "Stages": [
-        1,
-        2,
-        3,
-        2
-      ],
-      "Item": 593
-    },
-    {
-      "Seasons": [
-        "Summer",
-        "Fall"
-      ],
-      "Seed": 431,
-      "Stages": [
-        1,
-        2,
-        3,
         2
       ],
       "Amount": {
+        "ExtraCropChance": 0.02,
         "CanDouble": false
       },
-      "ExtraItem": [
-        431,
-        1.0
+      "RegrowTime": 4,
+      "Item": 400
+    },
+    {
+      "Seasons": [],
+      "Seed": 802,
+      "Stages": [
+        2,
+        2,
+        2,
+        3,
+        3
       ],
-      "Item": 421
+      "RegrowTime": 3,
+      "Item": 90
     },
     {
       "Seasons": [
-        "Fall"
+        "Summer"
       ],
-      "Seed": 425,
+      "Seed": 831,
       "Stages": [
         1,
-        4,
+        2,
+        3,
+        4
+      ],
+      "Paddy": true,
+      "Item": 830
+    },
+    {
+      "Seasons": [
+        "Summer"
+      ],
+      "Seed": 833,
+      "Stages": [
+        1,
+        3,
+        3,
         4,
         3
       ],
-      "Item": 595
-    },
-    {
-      "Seasons": [
-        "Fall"
-      ],
-      "Seed": 347,
-      "Stages": [
-        2,
-        4,
-        6,
-        6,
-        6
-      ],
-      "Item": 417
+      "RegrowTime": 7,
+      "Item": 832
     },
     {
       "Seasons": [

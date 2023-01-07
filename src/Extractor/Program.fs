@@ -52,12 +52,11 @@ type ForageCropData = {
 }
 
 type Config = {
-  SkipCrops: SeedId Set
-  IncludeItems: ItemId array
   ItemOverrides: Table<ItemId, ItemOverride>
+  Products: Table<ItemId, ProcessedItem array>
+  SkipCrops: SeedId Set
   FarmCropOverrides: Table<SeedId, FarmCropOverride>
   ForageCropData: Table<Season, ForageCropData>
-
   DataOutputPath: string
   CropImageOutputPath: string
   ItemImageOutputPath: string
@@ -82,12 +81,15 @@ module [<RequireQualifiedAccess>] Decode =
     Decode.object (fun get ->
       let inline field name decode = get.Required.Field name decode
       {
-        SkipCrops = field (nameof u.SkipCrops) (Decode.set Decode.seedId)
-        IncludeItems = field (nameof u.IncludeItems) (Decode.array Decode.itemId)
         ItemOverrides =
           field
             (nameof u.ItemOverrides)
             (Decode.tableParse Decode.parseItemId (Decode.Auto.generateDecoder ()))
+        Products =
+          field
+            (nameof u.Products)
+            (Decode.tableParse Decode.parseItemId (Decode.array Decode.processedItem))
+        SkipCrops = field (nameof u.SkipCrops) (Decode.set Decode.seedId)
         FarmCropOverrides =
           field
             (nameof u.FarmCropOverrides)
@@ -96,7 +98,6 @@ module [<RequireQualifiedAccess>] Decode =
           field
             (nameof u.ForageCropData)
             (Decode.tableParse (Season.TryParse >> function true, s -> Some s | _ -> None) (Decode.Auto.generateDecoder ()))
-
         DataOutputPath = field (nameof u.DataOutputPath) Decode.string
         CropImageOutputPath = field (nameof u.CropImageOutputPath) Decode.string
         ItemImageOutputPath = field (nameof u.ItemImageOutputPath) Decode.string
@@ -119,8 +120,7 @@ module [<AutoOpen>] Constants =
   let [<Literal>] itemSpriteSheetPath = "Content/Maps/springobjects"
 
 
-let parseItem overrrides (items: Dictionary<_,_>) itemData itemId =
-  if items.ContainsKey itemId then () else
+let parseItem overrrides itemData itemId =
   match itemData |> Table.tryFind itemId with
   | None -> failwith $"Could not find data for item with id: {itemId}"
   | Some (str: string) ->
@@ -129,38 +129,41 @@ let parseItem overrrides (items: Dictionary<_,_>) itemData itemId =
 
     let o = overrrides |> Table.tryFind itemId |> Option.defaultValue ItemOverride.none
 
-    let sellPrice = o.SellPrice |> Option.defaultValue (uint splitted.[1])
+    let sellPrice =
+      match o.SellPrice with
+      | Some price -> price
+      | None -> nat splitted[1]
 
     let category =
-      match splitted[3] with
-      | "Basic" // sugar, flour, etc
-      | "Basic -16" // buildingResources (fiber)
-      | "Basic -17" // sweet gem berry
-      | "Basic -81" // forage
-      | "Crafting" // (coffee bean)
-        -> Other
-      | "Seeds -74" -> Seeds
-      | "Basic -75" -> Vegetable
-      | "Basic -79" -> Fruit
-      | "Basic -80" -> Flower
-      | "Basic -26" -> ArtisanGood
-      | str -> failwith $"Unexpected item category for item {itemId}: {str}"
+      match o.Category with
+      | Some category -> category
+      | None ->
+        match splitted[3] with
+        | "Basic" // sugar, flour, etc
+        | "Basic -16" // buildingResources (fiber)
+        | "Basic -17" // sweet gem berry
+        | "Basic -81" // forage
+        | "Crafting" // (coffee bean)
+          -> Other
+        | "Seeds -74" -> Seeds
+        | "Basic -75" -> Vegetable
+        | "Basic -79" -> Fruit
+        | "Basic -80" -> Flower
+        | "Basic -26" -> ArtisanGood
+        | str -> failwith $"Unexpected item category for item {itemId}: {str}"
 
-    let category = o.Category |> Option.defaultValue category
-
-    items.Add (itemId, {
+    {
       Id = itemId
       Name = splitted[4]
       SellPrice = sellPrice
       Category = category
-    })
+    }
 
-let parseCrop farmCropOverrides forageCropData parseItem seedId (data: string) =
+let parseCrop farmCropOverrides forageCropData seedId (data: string) =
   match data.Split '/' with
   | [| growthStages; seasons; spriteSheetRow; itemId; regrowTime; scythe; cropAmount; _; _ |] ->
     let spriteSheetRow = uint spriteSheetRow
     let itemId = nat itemId * 1u<_>
-    parseItem (seedId * 1u<_>)
 
     let growthStages =
       let splitted = growthStages.Split ' '
@@ -196,8 +199,6 @@ let parseCrop farmCropOverrides forageCropData parseItem seedId (data: string) =
 
       if data.Items[0] <> itemId then failwith "The main item provided for {Season.name season} Forage does not match {itemId}."
 
-      data.Items |> Array.iter parseItem
-
       ForageCrop {
         Season = season
         Stages = growthStages
@@ -207,11 +208,7 @@ let parseCrop farmCropOverrides forageCropData parseItem seedId (data: string) =
       }
 
     else
-      parseItem itemId
-
       let overrides = farmCropOverrides |> Table.tryFind seedId |> Option.defaultValue FarmCropOverride.none
-
-      overrides.ExtraItem |> Option.iter (fst >> parseItem)
 
       let scythe =
         match scythe with
@@ -361,42 +358,47 @@ let [<EntryPoint>] main args =
   let cropData = tryLoadData "crop" cropDataPath |> Seq.filter (fst >> config.SkipCrops.Contains >> not) |> Array.ofSeq
   let itemData = tryLoadData "item" itemDataPath |> Table.ofSeq
 
-  let tryLoadSpriteSheet name path: Texture2D = tryLoad (name + " spritesheet") path
+  let inline tryLoadSpriteSheet name path: Texture2D = tryLoad (name + " spritesheet") path
 
   let cropSpriteSheet = tryLoadSpriteSheet "crop" cropSpriteSheetPath
   let itemSpriteSheet = tryLoadSpriteSheet "item" itemSpriteSheetPath
 
-  let items = Dictionary ()
-  let parseItem = parseItem config.ItemOverrides items itemData
-  config.IncludeItems |> Array.iter parseItem
+  let crops = cropData |> Array.map (fun (seedId, data) ->
+    parseCrop config.FarmCropOverrides config.ForageCropData seedId data)
+  crops |> Array.sortInPlaceBy (snd >> Crop.seed)
 
-  let farmCrops = ResizeArray (cropData.Length - Seasons.count)
-  let forageCrops = ResizeArray Seasons.count
-  for seedId, data in cropData do
-    match parseCrop config.FarmCropOverrides config.ForageCropData parseItem seedId data with
-    | spriteSheetRow, FarmCrop crop -> farmCrops.Add (crop, spriteSheetRow)
-    | _, ForageCrop crop -> forageCrops.Add crop
+  let items =
+    [|
+      config.Products.Values |> Seq.collect (Seq.map (fun p -> p.Item))
+      crops |> Seq.collect (snd >> Crop.items)
+      crops |> Seq.map (snd >> Crop.seedItem)
+    |]
+    |> Seq.concat
+    |> Seq.distinct
+    |> Seq.map (parseItem config.ItemOverrides itemData)
+    |> Array.ofSeq
+  items |> Array.sortInPlaceBy Item.id
 
-  printfn "Successfully parsed all items and crops. Press enter to output the data file and images."
+  printfn "Successfully parsed all crops and items. Press enter to output the data file and images."
   |> System.Console.ReadLine
   |> ignore
 
   try
     Directory.CreateDirectory config.ItemImageOutputPath |> ignore
-    items.Values |> Seq.iter (saveItemImage graphics config.ItemImageOutputPath itemSpriteSheet)
+    items |> Array.iter (saveItemImage graphics config.ItemImageOutputPath itemSpriteSheet)
   with _ -> printfn "Error writing the item images."; reraise ()
 
   try
     Directory.CreateDirectory config.CropImageOutputPath |> ignore
-    farmCrops |> Seq.iter (fun (crop, spriteSheetRow) -> saveStageImages graphics config.CropImageOutputPath cropSpriteSheet (FarmCrop crop) spriteSheetRow)
-    forageCrops |> Seq.iter (fun crop -> saveStageImages graphics config.CropImageOutputPath cropSpriteSheet (ForageCrop crop) forageSpriteSheetRow)
+    crops |> Array.iter (fun (spriteSheetRow, crop) -> saveStageImages graphics config.CropImageOutputPath cropSpriteSheet crop spriteSheetRow)
   with _ -> printfn "Error writing the crop images."; reraise ()
 
   let dataStr =
     Encode.extractedData {
-      Items = Array.ofSeq items.Values
-      FarmCrops = farmCrops |> Seq.map fst |> Array.ofSeq
-      ForageCrops = forageCrops.ToArray ()
+      Items = items
+      Products = config.Products
+      FarmCrops = crops |> Array.choose (function | (_, FarmCrop crop) -> Some crop | _ -> None)
+      ForageCrops = crops |> Array.choose (function | (_, ForageCrop crop) -> Some crop | _ -> None)
     }
     |> Encode.toString 2
 

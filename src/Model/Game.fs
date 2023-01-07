@@ -1,8 +1,9 @@
 namespace StardewValleyStonks
 
-// Bulk data extrarced from the game's xnb files
+// Bulk data extracted from the game's xnb files.
 type ExtractedData = {
   Items: Item array
+  Products: Table<ItemId, ProcessedItem array>
   FarmCrops: FarmCrop array
   ForageCrops: ForageCrop array
 }
@@ -10,7 +11,6 @@ type ExtractedData = {
 // Data found / inputted manually by digging through game code.
 type SupplementalData = {
   Fertilizers: Fertilizer array
-  Products: Table<ItemId, Product array>
   ProcessorUnlockLevel: Table<Processor, nat>
   FertilizerPrices: Table<FertilizerName, Table<Vendor, nat>>
   SeedPrices: Table<SeedId, SeedPrice array>
@@ -105,7 +105,7 @@ module GameData =
           | _ -> [| |]
 
         [|
-          supplemental.Products.TryFind item |> Option.defaultValue Array.empty
+          extracted.Products.TryFind item |> Option.defaultOrMap Array.empty (Array.map Processed)
           seedMakerItems.TryFind item |> Option.toArray
           generate
         |]

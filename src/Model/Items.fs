@@ -128,17 +128,19 @@ module [<RequireQualifiedAccess>] ModData =
   }
 
 
+type ProcessedItem = {
+  Item: ItemId
+  Processor: Processor
+  Ratio: (nat * nat) option
+}
+
 type Product =
   | Jam
   | Pickles
   | Wine
   | Juice
   | SeedsFromSeedMaker of seed: ItemId
-  | Processed of {|
-      Item: ItemId
-      Processor: Processor
-      Ratio: (nat * nat) option
-    |}
+  | Processed of ProcessedItem
 
 module [<RequireQualifiedAccess>] Product =
   let item = function
@@ -161,8 +163,6 @@ module [<RequireQualifiedAccess>] Product =
     | Processed p -> p.Processor
 
   let outputQuality modData quality product = processor product |> Processor.outputQuality modData quality
-
-  let ratioAmount (i: nat, o: nat) = float o / float i
 
   let private artisanMultiplier skills multipliers =
     Category.multiplier skills ArtisanGood * multipliers.ProfitMargin
@@ -258,12 +258,8 @@ module [<RequireQualifiedAccess>] Product =
 
   let amountPerItem product =
     match product with
-    | SeedsFromSeedMaker seedId ->
-      Processor.seedMakerAmountWith (seedId * 1u<_>)
-    | Processed p ->
-      match p.Ratio with
-      | Some ratio -> ratioAmount ratio
-      | None -> 1.0
+    | SeedsFromSeedMaker seedId -> Processor.seedMakerExpectedAmount (seedId * 1u<_>)
+    | Processed { Ratio = Some (i, o) } -> float o / float i
     | _ -> 1.0
 
   let normalizedPrice getItem skills multipliers modData item quality product =

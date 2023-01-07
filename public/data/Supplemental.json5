@@ -26,13 +26,6 @@
     }
   ],
 
-  ProcessorUnlockLevel: {
-    'Preserves Jar': 4,
-    Keg: 8,
-    'Seed Maker': 9,
-    'Oil Maker': 9
-  },
-
   FertilizerPrices: {
     'Basic Fertilizer': { Pierre: 100 },
     'Quality Fertilizer': { Pierre: 150 },
@@ -79,34 +72,10 @@
     ]
   },
 
-  Products: {
-    '262': [
-      { Item: 346, Processor: 'Keg' },
-      { Item: 246, Processor: 'Mill' }
-    ],
-    '270': [
-      { Item: 247, Processor: 'Oil Maker' }
-    ],
-    '271': [
-      { Item: 423, Processor: 'Mill' }
-    ],
-    '284': [
-      { Item: 245, Processor: 'Mill', Ratio: [ 1, 3 ] }
-    ],
-    '304': [
-      { Item: 303, Processor: 'Keg' }
-    ],
-    '417': [
-      { SeedsFromSeedMaker: 347 }
-    ],
-    '421': [
-      { Item: 247, Processor: 'Oil Maker' }
-    ],
-    '431': [
-      { Item: 247, Processor: 'Oil Maker' }
-    ],
-    '433': [
-      { Item: 395, Processor: 'Keg', Ratio: [ 5, 1 ] }
-    ]
-  }
+  ProcessorUnlockLevel: {
+    'Preserves Jar': 4,
+    Keg: 8,
+    'Seed Maker': 9,
+    'Oil Maker': 9
+  },
 }
