@@ -307,13 +307,13 @@ module Skills =
 
       label [
         ofStr "Level:"
-        Input.natWith (length.em 2) None (Some Skill.maxLevel) skill.Level (SetLevel >> dispatch)
+        Input.natWith (length.rem 2) None (Some Skill.maxLevel) skill.Level (SetLevel >> dispatch)
         Input.natRange 0u Skill.maxLevel skill.Level (SetLevel >> dispatch)
       ]
 
       label [
         ofStr "Buff:"
-        Input.nat (length.em 2) skill.Buff (SetBuff >> dispatch)
+        Input.nat (length.rem 2) skill.Buff (SetBuff >> dispatch)
       ]
     ]
 
@@ -546,7 +546,7 @@ module Crops =
         td [
           viewCustom settings.Selected.CustomSellPrices (fun (price, q) ->
             fragment [
-              Input.nat (length.em 2) price (flip tuple2 q >> curry SetCustom (seed, item) >> SetCustomSellPrice >> selectDispatch)
+              Input.nat (length.rem 2) price (flip tuple2 q >> curry SetCustom (seed, item) >> SetCustomSellPrice >> selectDispatch)
               opacityCheckbox q (tuple2 price >> curry SetCustom (seed, item) >> SetCustomSellPrice >> selectDispatch)
             ] )
             (seed, item)
@@ -559,7 +559,7 @@ module Crops =
 
     [
       labeled "View with quality: " <| Select.options
-        (length.em 5)
+        (length.rem 5)
         (Quality.name >> ofStr)
         Quality.all
         productQuality
@@ -680,7 +680,7 @@ module Crops =
 
     [
       checkboxText "Joja Membership" settings.Game.JojaMembership (SetJojaMembership >> SetGameVariables >> settingsDispatch)
-      labeled "Seed Strategy:" <| Select.unitUnion (length.em 8) settings.Profit.SeedStrategy (SetSeedStrategy >> SetProfit >> settingsDispatch)
+      labeled "Seed Strategy:" <| Select.unitUnion (length.rem 8) settings.Profit.SeedStrategy (SetSeedStrategy >> SetProfit >> settingsDispatch)
 
       let keyColWdith = 0.4
       let width = 100.0 * ((1.0 - keyColWdith) / float seedVendors.Length) // div by 0?
@@ -796,7 +796,7 @@ module Crops =
             td [
               viewCustom
                 settings.Selected.CustomSeedPrices
-                (fun price -> Input.nat (length.em 2) price (curry SetCustom seed >> SetCustomSeedPrice >> selectDispatch))
+                (fun price -> Input.nat (length.rem 2) price (curry SetCustom seed >> SetCustomSeedPrice >> selectDispatch))
                 seed
                 (SetCustomSeedPrice >> selectDispatch)
             ]
@@ -823,7 +823,7 @@ module Crops =
 
   let private selectFilter name value dispatch =
     Select.options
-      (length.em 3)
+      (length.rem 3)
       (function
         | Some true -> "Yes"
         | Some false -> "No"
@@ -1028,7 +1028,7 @@ module Fertilizers =
               td [
                 viewCustom
                   settings.Selected.CustomFertilizerPrices
-                  (fun price -> Input.nat (length.em 2) price (curry SetCustom name >> SetCustomFertilizerPrice >> selectDispatch))
+                  (fun price -> Input.nat (length.rem 2) price (curry SetCustom name >> SetCustomFertilizerPrice >> selectDispatch))
                   name
                   (SetCustomFertilizerPrice >> selectDispatch)
               ]
@@ -1051,19 +1051,19 @@ module Misc =
     let dispatch = message >> dispatch
     div [ Class.date; children [
       Select.options
-        (length.em 6)
+        (length.rem 6)
         (Season.name >> ofStr)
         Season.all
         date.Season
         (fun season -> dispatch { date with Season = season })
-      Input.natWith (length.em 2) (Some Date.firstDay) (Some Date.lastDay) date.Day (fun day -> dispatch { date with Day = day })
+      Input.natWith (length.rem 2) (Some Date.firstDay) (Some Date.lastDay) date.Day (fun day -> dispatch { date with Day = day })
     ] ]
 
   let multipliers multipliers dispatch =
     div [
       checkboxText "Bear's Knowledge" multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
       labeled "Profit Margin:" <| Select.options
-        (length.em 5)
+        (length.rem 5)
         (function
           | 1.0 -> "Normal"
           | margin -> percent margin
@@ -1079,7 +1079,7 @@ module Misc =
     div [
       label [
         ofStr "Giant Crop Checks Per Tile:"
-        Input.floatWith (length.em 4) 10e4 (Some CropAmount.minGiantCropChecks) (Some CropAmount.maxGiantCropChecks) settings.GiantChecksPerTile (SetGiantChecksPerTile >> dispatch)
+        Input.floatWith (length.rem 4) 10e4 (Some CropAmount.minGiantCropChecks) (Some CropAmount.maxGiantCropChecks) settings.GiantChecksPerTile (SetGiantChecksPerTile >> dispatch)
         Input.floatRange 10e4 CropAmount.minGiantCropChecks CropAmount.maxGiantCropChecks settings.GiantChecksPerTile (SetGiantChecksPerTile >> dispatch)
       ]
       // giant crop prob
@@ -1091,7 +1091,7 @@ module Misc =
         // / 9 tiles
 
       Select.options
-        (length.em 5)
+        (length.rem 5)
         (Option.defaultOrMap "None" ToolLevel.name >> ofStr)
         [| None; yield! ToolLevel.all |> Array.map Some |]
         settings.ShavingToolLevel
@@ -1101,7 +1101,7 @@ module Misc =
       checkboxText "Special Charm" settings.SpecialCharm (SetSpecialCharm >> dispatch)
       label [
         ofStr "Luck Buff:"
-        Input.natWith (length.em 2) None (Some CropAmount.maxLuckBuff) settings.LuckBuff (SetLuckBuff >> dispatch)
+        Input.natWith (length.rem 2) None (Some CropAmount.maxLuckBuff) settings.LuckBuff (SetLuckBuff >> dispatch)
       ]
       // doubleCrop Chance
     ]
@@ -1134,7 +1134,7 @@ module Misc =
       div [ Class.date; children [
         // labeled "Location: " <| Select.unitUnion settings.Location (SetLocation >> dispatch)
         labeled "Location: " <| Select.unitUnion
-          (length.em 7.5)
+          (length.rem 7.5)
           settings.Location
           (SetLocation >> dispatch)
 
@@ -1515,15 +1515,15 @@ let allPairData metric timeNorm data settings =
 let rankBy labelText ranker dispatch =
   fragment [
     ofStr labelText
-    Select.options (length.em 4) (fun metric ->
-      Html.span [
+    Select.options (length.rem 4) (fun metric ->
+      div [
         text (string metric)
         title (RankMetric.fullName metric)
       ])
       unitUnionCases<RankMetric>
       ranker.RankMetric
       (SetRankMetric >> dispatch)
-    Select.unitUnion (length.em 7) ranker.TimeNormalization (SetTimeNormalization >> dispatch)
+    Select.unitUnion (length.rem 7) ranker.TimeNormalization (SetTimeNormalization >> dispatch)
   ]
 
 let graphView ranker (data, settings) dispatch =
@@ -1577,8 +1577,8 @@ let graphView ranker (data, settings) dispatch =
       fragment [
         div [ Class.graphControls; children [
           ofStr "Rank"
-          Select.options (length.em 6) (fun rankby ->
-            Html.span [
+          Select.options (length.rem 6) (fun rankby ->
+            div [
               prop.text (string rankby)
               title (
                 match rankby with
@@ -1860,7 +1860,7 @@ let profitBreakdownTable roi timeNorm (data: GameData) settings seed fertName =
               td [
                 match profitData.SeedPrice with
                 | Some (_, cost) -> gold cost |> ofStr
-                | None -> ofStr "???"
+                | None -> none
               ]
               td [
                 ofStr " x "
@@ -2224,7 +2224,7 @@ let selectedCropAndFertilizer =
       div [ Class.auditGraphSelect; children [
         div [
           Select.search
-            (length.em 15)
+            (length.rem 15)
             (function
               | Choice1Of2 crop
               | Choice2Of2 (Some crop) -> Crop.name data.Items.Find crop
@@ -2254,7 +2254,7 @@ let selectedCropAndFertilizer =
           ofStr " with "
 
           Select.search
-            (length.em 15)
+            (length.rem 15)
             (function
               | Choice1Of2 fert -> fertilizerDisplayName fert
               | Choice2Of2 fert -> fert |> Option.defaultOrMap "???" fertilizerDisplayName)
@@ -2288,15 +2288,15 @@ let selectedCropAndFertilizer =
 
         div [
           ofStr "Show "
-          Select.options (length.em 4) (fun metric ->
-            Html.span [
+          Select.options (length.rem 4) (fun metric ->
+            div [
               text (string metric)
               title (RankMetric.fullName metric)
             ])
             unitUnionCases<RankMetric>
             metric
             (fun metric -> setState (metric, timeNorm))
-          Select.unitUnion (length.em 7) timeNorm (fun timeNorm -> setState (metric, timeNorm))
+          Select.unitUnion (length.rem 7) timeNorm (fun timeNorm -> setState (metric, timeNorm))
         ]
       ] ]
 
