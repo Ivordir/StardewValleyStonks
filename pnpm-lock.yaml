@@ -5,7 +5,7 @@ specifiers:
   '@parcel/reporter-bundle-analyzer': ^2.8.2
   '@parcel/transformer-sass': ^2.8.2
   parcel: ^2.8.2
-  parcel-reporter-static-files-copy: ^1.4.0
+  parcel-reporter-static-files-copy: ^1.5.0
   preact: ^10.11.3
   process: ^0.11.10
   react-pure-modal: ^2.2.0
@@ -23,7 +23,7 @@ devDependencies:
   '@parcel/reporter-bundle-analyzer': 2.8.2
   '@parcel/transformer-sass': 2.8.2
   parcel: 2.8.2
-  parcel-reporter-static-files-copy: 1.4.0
+  parcel-reporter-static-files-copy: 1.5.0
   process: 0.11.10
 
 packages:
@@ -1758,11 +1758,13 @@ packages:
     resolution: {integrity: sha512-EHQ/jk4/a9hLupIKxTfUsQRej1Yd/0QLQs3vGvIqg5ZtCYSzNhkzHoZc7Zf4e4kUlDaC3Uw8Q/1opOLNN2OKRQ==}
     dev: true
 
-  /parcel-reporter-static-files-copy/1.4.0:
-    resolution: {integrity: sha512-bOX94IbN97QT345staIdUUCFFEc2LC8rqfOf1CgVODWxE0rPZzEtWxboOI6d2OdO2SyZY0P6i6ngTBnkvvRswg==}
+  /parcel-reporter-static-files-copy/1.5.0:
+    resolution: {integrity: sha512-dsY3MQkbYSgEqS0/22vtD2mZtel8UC0ItH0ok8LmgFeCMTsdhyOtJgvt945ODIzu9lYc/sCIzksM8C77uSE3Fg==}
     engines: {parcel: ^2.0.0-beta.1}
     dependencies:
       '@parcel/plugin': 2.8.2
+    transitivePeerDependencies:
+      - '@parcel/core'
     dev: true
 
   /parcel/2.8.2:
