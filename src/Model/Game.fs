@@ -268,5 +268,11 @@ module Game =
 
   let seedItemSellPrice data vars (seed: SeedId) = itemPrice vars false data.Items[seed * 1u<_>] Quality.Normal
 
+  let xpPerItem data crop =
+    Crop.xpPerItem data.Items.Find crop
+
+  let xpItemsPerHarvest vars crop =
+    Crop.xpItemsPerHarvest (giantCropProb vars) vars.Skills crop
+
   let xpPerHarvest data vars crop =
     Crop.xpPerHarvest data.Items.Find (giantCropProb vars) vars.Skills crop

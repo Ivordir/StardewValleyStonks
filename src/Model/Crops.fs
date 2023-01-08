@@ -380,10 +380,10 @@ module Growth =
       else 1u + (days - growthTime) / time
     | None -> days / growthTime
 
-  let daysUsedWith regrowTime growthTime harvests =
+  let daysNeededFor regrowTime growthTime harvests =
     match regrowTime with
-    | Some time -> growthTime + (harvests - 1u) * time + 1u
-    | None -> harvests * growthTime + 1u
+    | Some time -> growthTime + (harvests - 1u) * time
+    | None -> harvests * growthTime
 
 
 type FarmCrop = {
@@ -417,8 +417,11 @@ module [<RequireQualifiedAccess>] FarmCrop =
     let price = item crop.Item |> Item.sellPrice
     (16.0 * log(0.018 * float price + 1.0)) |> round |> nat
 
+  let xpItemsPerHarvest giantCropProb crop =
+    if crop.Giant then 1.0 - giantCropProb else 1.0
+
   let xpPerHarvest item giantCropProb crop =
-    (if crop.Giant then 1.0 - giantCropProb else 1.0) * float (xpPerItem item crop)
+    xpItemsPerHarvest giantCropProb crop * float (xpPerItem item crop)
 
   let items crop =
     match crop.ExtraItem with
@@ -452,7 +455,8 @@ module [<RequireQualifiedAccess>] ForageCrop =
   let growsInSeason season crop = crop.Season = season
   let growsInSeasons seasons crop = seasons |> Seasons.contains crop.Season
 
-  let xpPerHarvest skills = float xpPerItem * if skills |> Skills.professionActive Gatherer then Multiplier.gatherer else 1.0
+  let xpItemsPerHarvest skills = if skills |> Skills.professionActive Gatherer then Multiplier.gatherer else 1.0
+  let xpPerHarvest skills = xpItemsPerHarvest skills * float xpPerItem
 
   let name crop = (Season.name crop.Season) + " Forage"
 
@@ -463,67 +467,71 @@ type Crop =
 
 module [<RequireQualifiedAccess>] Crop =
   let name item = function
-    | FarmCrop a -> FarmCrop.name item a
-    | ForageCrop o -> ForageCrop.name o
+    | FarmCrop crop -> FarmCrop.name item crop
+    | ForageCrop crop -> ForageCrop.name crop
 
   let seasons = function
-    | FarmCrop c -> FarmCrop.seasons c
-    | ForageCrop c -> ForageCrop.seasons c
+    | FarmCrop crop -> FarmCrop.seasons crop
+    | ForageCrop crop -> ForageCrop.seasons crop
 
   let growsInSeason season = function
-    | FarmCrop c -> FarmCrop.growsInSeason season c
-    | ForageCrop c -> ForageCrop.growsInSeason season c
+    | FarmCrop crop -> FarmCrop.growsInSeason season crop
+    | ForageCrop crop -> ForageCrop.growsInSeason season crop
 
   let growsInSeasons seasons = function
-    | FarmCrop c -> FarmCrop.growsInSeasons seasons c
-    | ForageCrop c -> ForageCrop.growsInSeasons seasons c
+    | FarmCrop crop -> FarmCrop.growsInSeasons seasons crop
+    | ForageCrop crop -> ForageCrop.growsInSeasons seasons crop
 
   let stages = function
-    | FarmCrop c -> c.Stages
-    | ForageCrop c -> c.Stages
+    | FarmCrop crop -> crop.Stages
+    | ForageCrop crop -> crop.Stages
 
   let totalDays crop = stages crop |> Array.sum
 
   let paddy = function
-    | FarmCrop c -> c.Paddy
+    | FarmCrop crop -> crop.Paddy
     | ForageCrop _ -> false
 
   let giant = function
-    | FarmCrop c -> c.Giant
+    | FarmCrop crop -> crop.Giant
     | _ -> false
 
   let mainItem = function
-    | FarmCrop c -> c.Item
-    | ForageCrop f -> f.Items[0]
+    | FarmCrop crop -> crop.Item
+    | ForageCrop crop -> crop.Items[0]
 
   let items = function
-    | FarmCrop c -> FarmCrop.items c
-    | ForageCrop c -> ForageCrop.items c
+    | FarmCrop crop -> FarmCrop.items crop
+    | ForageCrop crop -> ForageCrop.items crop
 
   let seed = function
-    | FarmCrop c -> FarmCrop.seed c
-    | ForageCrop c -> ForageCrop.seed c
+    | FarmCrop crop -> FarmCrop.seed crop
+    | ForageCrop crop -> ForageCrop.seed crop
 
   let seedItem = function
-    | FarmCrop c -> FarmCrop.seedItem c
-    | ForageCrop c -> ForageCrop.seedItem c
+    | FarmCrop crop -> FarmCrop.seedItem crop
+    | ForageCrop crop -> ForageCrop.seedItem crop
 
   let growthTime speed crop = Growth.time speed (stages crop)
 
   let stagesAndTime speed crop = Growth.stagesAndTime speed (stages crop)
 
   let regrowTime = function
-    | FarmCrop c -> c.RegrowTime
+    | FarmCrop crop -> crop.RegrowTime
     | ForageCrop _ -> None
 
   let regrows = regrowTime >> Option.isSome
 
   let xpPerItem item = function
-    | FarmCrop c -> FarmCrop.xpPerItem item c
+    | FarmCrop crop -> FarmCrop.xpPerItem item crop
     | ForageCrop _ -> ForageCrop.xpPerItem
 
+  let xpItemsPerHarvest giantCropProb skills = function
+    | FarmCrop crop -> FarmCrop.xpItemsPerHarvest giantCropProb crop
+    | ForageCrop _ -> ForageCrop.xpItemsPerHarvest skills
+
   let xpPerHarvest item giantCropProb skills = function
-    | FarmCrop c -> FarmCrop.xpPerHarvest item giantCropProb c
+    | FarmCrop crop -> FarmCrop.xpPerHarvest item giantCropProb crop
     | ForageCrop _ -> ForageCrop.xpPerHarvest skills
 
   let isFarm = function

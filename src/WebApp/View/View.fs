@@ -467,19 +467,11 @@ module Crops =
         (fun crop ->
           let seed = Crop.seed crop
           let price = Query.Price.seedMinVendorAndPrice data settings seed
-          let hasSeedSource =
-            match settings.Profit.SeedStrategy with
-            | IgnoreSeeds -> true
-            | BuyFirstSeed -> price.IsSome
-            | StockpileSeeds ->
-              price.IsSome
-              || Query.canUseSeedMakerForOwnSeeds data settings crop
-              || settings.Selected.UseHarvestedSeeds.Contains seed
-              || Query.canUseForageSeeds settings crop
+          let enoughSeeds = Query.canMakeEnoughSeeds data settings crop
 
           tr [
             key (string seed)
-            if not hasSeedSource || not <| Game.cropIsInSeason settings.Game crop then Class.disabled
+            if not enoughSeeds || not <| Game.cropIsInSeason settings.Game crop then Class.disabled
             children [
               td (checkbox (settings.Selected.Crops.Contains seed) (curry SetSelected seed >> selectDispatch))
               td (Image.Icon.crop data crop)

@@ -383,7 +383,7 @@ type private NPR = NoProfitReasons
 
 let timeNormalizationDivisor (growthSpan: GrowthSpan) crop = function
   | TotalPeriod -> 1.0
-  | PerDay -> Growth.daysUsedWith (Crop.regrowTime crop) growthSpan.GrowthTime growthSpan.Harvests |> float
+  | PerDay -> Growth.daysNeededFor (Crop.regrowTime crop) growthSpan.GrowthTime growthSpan.Harvests |> float
   | PerSeason -> float growthSpan.Span.TotalDays / float Date.daysInSeason
 
 let private seedCostsandLimits data settings (seedPrice: nat option) (seed: SeedId) (items: ItemId array) (profits: _ Qualities array) (amounts: _ Qualities array) =
@@ -509,7 +509,7 @@ let regrowSeedData data settings crop =
       Cost = seedCostCalc seedPrice costsAndLimits
     }))
 
-let private maxSeeds data settings crop mainItemAmountsPerHarvest =
+let private maxNonBoughtSeeds data settings crop mainItemAmountsPerHarvest =
   let mainItemAmount = Qualities.sum mainItemAmountsPerHarvest
   match crop with
   | FarmCrop c ->
@@ -536,6 +536,14 @@ let private maxSeeds data settings crop mainItemAmountsPerHarvest =
       else 0.0
 
     mainItemAmount * max craftedAmount seedMakerAmount
+
+let canMakeEnoughSeeds data (settings: Settings) crop =
+  match settings.Profit.SeedStrategy with
+  | IgnoreSeeds -> true
+  | BuyFirstSeed -> Price.seedMinPrice data settings (Crop.seed crop) |> Option.isSome
+  | StockpileSeeds ->
+    Price.seedMinPrice data settings (Crop.seed crop) |> Option.isSome
+    || maxNonBoughtSeeds data settings crop (Game.cropMainItemAmountByQuality settings.Game None crop) >= 1.0
 
 let private cropProfitDataCalc profitAndSeedCost data settings timeNormalization crop =
   let profitAndSeedCost = profitAndSeedCost data settings crop
@@ -663,7 +671,7 @@ let cropXP data (settings: Settings) timeNorm crop =
     | BuyFirstSeed -> Price.seedMinPrice data settings seed |> Option.isSome
     | StockpileSeeds ->
       Price.seedMinPrice data settings seed |> Option.isSome
-      || maxSeeds data settings crop (Game.cropMainItemAmountByQuality settings.Game None crop) >= 1.0
+      || canMakeEnoughSeeds data settings crop
 
   fun fertilizer ->
     let hasFertPrice = fertilizerCostOpt data settings (Fertilizer.Opt.name fertilizer) |> Option.isSome
@@ -1104,23 +1112,19 @@ let cropProfitData data (settings: Settings) timeNormalization crop fertilizer =
   | BuyFirstSeed -> cropProfitDataBuyFirstSeed data settings timeNormalization crop fertilizer
 
 let cropXpData data settings timeNorm crop fertilizer =
-  let seed = Crop.seed crop
   let hasFertPrice = fertilizerCostOpt data settings (Fertilizer.Opt.name fertilizer) |> Option.isSome
-  let enoughSeeds =
-    match settings.Profit.SeedStrategy with
-    | IgnoreSeeds -> true
-    | BuyFirstSeed -> Price.seedMinPrice data settings seed |> Option.isSome
-    | StockpileSeeds ->
-      Price.seedMinPrice data settings seed |> Option.isSome
-      || maxSeeds data settings crop (Game.cropMainItemAmountByQuality settings.Game None crop) >= 1.0
+  let enoughSeeds = canMakeEnoughSeeds data settings crop
 
   match bestGrowthSpan settings.Game fertilizer crop with
   | Some span when hasFertPrice && enoughSeeds ->
+    let xpPerItem = Game.xpPerItem data crop
+    let xpItemsPerHarvest = Game.xpItemsPerHarvest settings.Game crop
     Ok {|
-      XpPerItem = Crop.xpPerItem data.Items.Find crop
-      XpPerHarvest = Game.xpPerHarvest data settings.Game crop
-      TimeNormalization = timeNormalizationDivisor span crop timeNorm
+      XpPerItem = xpPerItem
+      ItemsPerHarvest = xpItemsPerHarvest
       Harvests = span.Harvests
+      XpPerHarvest = xpItemsPerHarvest * float xpPerItem
+      TimeNormalization = timeNormalizationDivisor span crop timeNorm
     |}
   | span ->
     ((if not hasFertPrice then NPR.NoFertilizerPrice else NPR.None)
