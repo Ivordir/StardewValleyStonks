@@ -201,13 +201,13 @@ let checkboxWith props children' checked' dispatch =
     className "checkbox-label"
     yield! props
     children [
-    input [
-      prop.type'.checkbox
-      isChecked checked'
-      onCheckedChange dispatch
-    ]
+      input [
+        prop.type'.checkbox
+        isChecked checked'
+        onCheckedChange dispatch
+      ]
       img []
-    children'
+      children'
   ] ]
 
 let checkbox = checkboxWith [] none
