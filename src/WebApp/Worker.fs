@@ -10,14 +10,10 @@ let [<Global>] mutable private onmessage: Browser.Types.MessageEvent -> unit = j
 
 onmessage <- fun message ->
   match message.data with
-  | :? ((int * Model<int, string>) array) as data ->
-    postMessage (data |> Array.choose (fun (i, model) ->
+  | :? (Model<int, string> array) as data ->
+    postMessage (data |> Array.map (fun model ->
       let solution = Solver.solve model
-      // The nature of the problem should prevent unbounded solutions.
-      // But, the profit on a regrow or bridge crop may return None,
-      // preventing the fertilizer from being carried over and making the model infeasible.
-      assert (solution.status = Optimal || solution.status = Infeasible)
-      if solution.status = Optimal
-      then Some (i, solution)
-      else None))
-  | _ -> ()
+      // The nature of the problem should prevent infeasible or unbounded solutions.
+      assert (solution.status = Optimal)
+      solution))
+  | _ -> assert false

@@ -157,26 +157,28 @@ let private fertilizerSpans data settings =
     |> Array.ofSeq
     |> Array.partition (Crop.regrowTime >> Option.isNone)
 
-  let groupBySeason arr =
+  let groupBySeason growsInSeason arr =
     if settings.Game.Location = Farm
-    then seasons |> Array.map (fun season -> arr |> Array.filter (fun x -> sndOf3 x |> Crop.growsInSeason season))
+    then seasons |> Array.map (fun season -> arr |> Array.filter (fun x -> sndOf3 x |> growsInSeason season))
     else [| arr |]
 
   let cropData =
     crops
     |> Array.choose (fun crop ->
-      match Query.nonRegrowData data settings crop with
-      | Some data -> Some (Crop.seed crop, crop, data)
+      match Query.Profit.cropNonRegrowProfitPerHarvest data settings crop with
+      | Some profit -> Some (Crop.seed crop, crop, profit)
       | None -> None)
-    |> groupBySeason
+    |> groupBySeason Crop.growsInSeason
 
   let regrowCropData =
     regrowCrops
-    |> Array.choose (fun crop ->
-      match Query.regrowSeedData data settings crop with
-      | Some data -> Some (Crop.seed crop, crop, fertilizerData |> Array.map (sndOf3 >> data))
-      | None -> None)
-    |> groupBySeason
+    |> Array.choose (function
+      | FarmCrop crop ->
+        match Query.Profit.cropRegrowProfitData data settings crop with
+        | Some data -> Some (crop.Seed, crop, fertilizerData |> Array.map (sndOf3 >> data))
+        | None -> None
+      | ForageCrop _ -> None)
+    |> groupBySeason FarmCrop.growsInSeason
 
   [
     for endSeason = seasons.Length - 1 downto 0 do
@@ -196,61 +198,52 @@ let private fertilizerSpans data settings =
 
         let constraintsAndVars =
           (constraintsAndVars, fertilizerData) ||> Array.mapi2 (fun i (constraints, vars) (_, fert, fertCost) ->
-            let bridgeVars = bridgeCropVars |> Array.choose (fun (seed, crop, profit) ->
-              match profit fert with
-              | Some profit ->
-                Some (
+            let bridgeVars = bridgeCropVars |> Array.map (fun (seed, crop, profit) ->
+              let profit = profit fert
                   (season, PlantBridgeCrop seed), [
                     Profit, profit
                     BridgeDays @ seasonDays, Game.growthTime settings.Game fert crop |> float
                     BridgeHarvests @ seasonDays, 1.0
                   ])
-              | None -> None)
 
             let regularVars = regularCropVars |> Array.choose (fun (seed, crop, profit) ->
-              match profit fert with
-              | Some profit ->
-                let profit = profit - Query.replacedFertilizerPerHarvest settings crop * float fertCost
+              let profit = profit fert - Query.replacedFertilizerPerHarvest settings crop * float fertCost
                 if profit < 0.0 then None else Some (
                   (season, PlantCrop seed), [
                     Profit, profit
                     seasonDays, Game.growthTime settings.Game fert crop |> float
                   ])
-              | None -> None
             )
 
-            let regrowVars, constraints = (constraints, regrowCropVars) ||> Array.mapFold (fun constraints (seed, crop, (data: Query.RegrowData option array)) ->
-              match data[i] with
-              | None -> [], constraints
-              | Some data ->
-              let regrowTime = Crop.regrowTime crop |> Option.get
-              let minHarvests = Growth.harvestsWith (Some regrowTime) data.GrowthTime prevDays
-              let maxHarvests = Growth.harvestsWith (Some regrowTime) data.GrowthTime totalDays
+            let regrowVars, constraints = (constraints, regrowCropVars) ||> Array.mapFold (fun constraints (seed, crop, (data: Query.RegrowCropProfitData array)) ->
+              let data = data[i]
+              let growthTime = Game.growthTime settings.Game fert (FarmCrop crop)
+              let minHarvests = Growth.harvestsWith crop.RegrowTime growthTime prevDays
+              let maxHarvests = Growth.harvestsWith crop.RegrowTime growthTime totalDays
               let fixedVars = [
                 for h in (max minHarvests 1u)..(min maxHarvests (data.HarvestsForMinCost - 1u)) do
                   let cost = data.Cost h
-                  if cost.IsSome then
-                    let usedDays = data.GrowthTime + (h - 1u) * regrowTime
+                  let usedDays = growthTime + (h - 1u) * crop.RegrowTime.Value
                     ((season, PlantRegrowCropFixedHarvests (seed, h)),
-                      (Profit, data.Profit * float h - cost.Value)
+                    (Profit, data.ProfitPerHarvest * float h - cost)
                       :: (seasonDays, float (if prevDays > usedDays then 0u else usedDays - prevDays))
                       :: regrowValues)
               ]
 
               if maxHarvests >= data.HarvestsForMinCost then
                 let harvests = max data.HarvestsForMinCost minHarvests
-                let usedDays = data.GrowthTime + regrowTime * (harvests - 1u)
+                let usedDays = growthTime + crop.RegrowTime.Value * (harvests - 1u)
                 let harvestsName = string seed @ seasonDays
 
                 ((season, PlantRegrowCropFirstHarvest seed),
-                  (Profit, data.Profit * float harvests - data.MinCost)
-                  :: (RegrowDays @ seasonDays, -float(prevDays - usedDays))
-                  :: (harvestsName, -float(maxHarvests - harvests))
+                  (Profit, data.ProfitPerHarvest * float harvests - data.MinCost)
+                  :: (RegrowDays @ seasonDays, -float (prevDays - usedDays))
+                  :: (harvestsName, -float (maxHarvests - harvests))
                   :: regrowValues)
                 :: ((season, PlantRegrowCropRegrowHarvests seed), [
-                    Profit, data.Profit
+                    Profit, data.ProfitPerHarvest
                     harvestsName, 1.0
-                    RegrowDays @ seasonDays, float regrowTime
+                    RegrowDays @ seasonDays, float crop.RegrowTime.Value
                   ])
                 :: fixedVars, (harvestsName <== 0.0) :: constraints
               else
@@ -280,14 +273,13 @@ let private fertilizerSpans data settings =
           if settings.Selected.NoFertilizer then
             regularCropVars |> Array.choose (fun (seed, crop, profit) ->
               if Query.replacedFertilizerPerHarvest settings crop = 0.0 then None else
-              match profit None with
-              | Some profit when profit >= 0.0 ->
+              let profit = profit None
+              if profit < 0.0 then None else
                 Some (
                   (season, PlantCropNoFertilizer seed), [
                     Profit, profit
                     seasonDays, Game.growthTime settings.Game None crop |> float
-                  ])
-              | _ -> None)
+                ]))
           else
             [| |]
 
@@ -318,7 +310,7 @@ let private fertilizerSpans data settings =
         let seasonDays' = Season.name season'
 
         let bridgeCropsVars = regularCropVars |> Array.filter (sndOf3 >> Crop.growsInSeason season')
-        let regrowCropsVars = regrowCropVars |> Array.filter (sndOf3 >> Crop.growsInSeason season')
+        let regrowCropsVars = regrowCropVars |> Array.filter (sndOf3 >> FarmCrop.growsInSeason season')
 
         if bridgeCropsVars.Length + regrowCropsVars.Length = 0 then models else
 
@@ -360,16 +352,15 @@ let private fertilizerSpans data settings =
         [
           cropData[endSeason] |> Array.choose (fun (seed, crop, profit) ->
             if fertCost = 0u || Query.replacedFertilizerPerHarvest settings crop = 0.0 then None else
-            match profit fert with
-            | Some profit when profit >= 0.0 ->
+            let profit = profit fert
+            if profit < 0.0 then None else
               Some (
                 ((season, PlantCropUnreplacedFertilizer seed), [
                   Profit, profit
                   seasonDays, Game.growthTime settings.Game fert crop |> float
                   EndingCrop, 1.0
                 ])
-              )
-            | _ -> None)
+            ))
         ]
       )
 
@@ -378,28 +369,39 @@ let private fertilizerSpans data settings =
   |> List.concat
   |> Array.concat
 
-
 let private weightedIntervalSchedule (spans: (FertilizerDateSpanRequest * int Solution) array) =
   let bestDownTo = Array.create (spans.Length + 1) ([], 0.0)
   spans |> Array.sortInPlaceBy (fun (span, _) -> span.Start)
 
   for i = spans.Length - 1 downto 0 do
     let span, solution = spans[i]
+
+    // spans[j..] |> Array.find (fun (prev, _) -> span.Stop < prev.Start)
     let mutable j = i + 1
     while j < spans.Length && span.Stop >= (fst spans[j]).Start do
       j <- j + 1
     let prevSpan, prevProfit = bestDownTo[j]
+
     bestDownTo[i] <- maxBy snd bestDownTo[i + 1] ((span, solution) :: prevSpan, solution.result - float span.FertilizerCost + prevProfit)
 
   bestDownTo[0]
+
+let private mapSolution ((solution: (FertilizerDateSpanRequest * int Solution) list), totalProfit) =
+  let solution = solution |> List.map (fun (span, solution) -> {
+    Start = span.Start
+    Stop = span.Stop
+    Fertilizer = span.Fertilizer
+    Variables = solution.variables |> Array.map (fun (i, n) -> span.Variables[i], nat n)
+  })
+  solution, totalProfit
 
 open Fable.Core
 open Browser.Worker
 
 let [<Global>] private import: {| meta: {| url: string |} |} = jsNative
 
-type [<AllowNullLiteral>] private URLType = // Browser.Types.URL
-  [<Emit("new $0($1...)")>] abstract Create: url: string * ?``base``: string -> string
+type [<AllowNullLiteral>] private URLType =
+  [<Emit("new $0($1...)")>] abstract Create: url: string * ?``base``: string -> string // Browser.Types.URL
 
 let [<Global>] private URL: URLType = jsNative
 
@@ -411,7 +413,7 @@ let createWorker () =
   let postWorker data settings =
     let spans = fertilizerSpans data settings
     inProgressRequest <- Some spans
-    worker.postMessage (spans |> Array.mapi (fun i (_, model) -> i, model))
+    worker.postMessage (spans |> Array.map snd)
 
   let queue data settings =
     if inProgressRequest.IsNone
@@ -420,29 +422,23 @@ let createWorker () =
 
   let subscribe dispatch =
     worker.onmessage <- (fun e ->
-      match e.data with
-      | :? ((int * int Solution) array) as solutions ->
-        match inProgressRequest, nextRequest with
-        | None, _ -> assert false
-        | Some _, Some (data, settings) ->
+      match e.data, inProgressRequest with
+      | :? (int Solution array) as solutions, Some spans ->
+        match nextRequest with
+        | Some (data, settings) ->
+          // old request finished solving, ignore and send most recent request to worker
           nextRequest <- None
           postWorker data settings
-        | Some spans, None ->
+        | None ->
+          // finished solving most recent request, dispatch solution
           inProgressRequest <- None
 
-          let solution, totalProfit =
             solutions
-            |> Array.map (fun (i, solution) -> fst spans[i], solution)
+          |> Array.mapi (fun i solution -> fst spans[i], solution)
             |> weightedIntervalSchedule
+          |> mapSolution
+          |> dispatch
 
-          let solution = solution |> List.map (fun (span, solution) -> {
-            Start = span.Start
-            Stop = span.Stop
-            Fertilizer = span.Fertilizer
-            Variables = solution.variables |> Array.map (fun (i, n) -> span.Variables[i], nat n)
-          })
-
-          dispatch (solution, totalProfit)
-      | _ -> ())
+      | _ -> assert false)
 
   queue, subscribe

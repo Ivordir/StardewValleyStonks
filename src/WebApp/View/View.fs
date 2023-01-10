@@ -1339,7 +1339,7 @@ let chartTooltip (data: GameData) (pairs: (SeedId * string option) array) props 
   // normalized profit /oi
   match props?payload with
   | Some (payload: _ array) when payload.Length > 0 && props?active ->
-    let (index: int, result: Result<float, Query.NoProfitReasons>) = payload[0]?payload
+    let (index: int, result: Result<float, Query.InvalidReasons>) = payload[0]?payload
     let crop, fert = pairs[index]
     let fertDesc = Option.defaultOrMap "" (fun f -> " with " + string f)
     div [
@@ -1388,7 +1388,7 @@ let errorBar (pairs: (SeedId * string option) array) props =
       svg.height height
       svg.d (getPath x y width height)
     ]
-  | Error (flags: Query.NoProfitReasons) ->
+  | Error (flags: Query.InvalidReasons) ->
     let crop, fert = pairs[fst props?payload]
     let mutable height = 0
     let maxHeight = width * 3.0
@@ -1399,20 +1399,20 @@ let errorBar (pairs: (SeedId * string option) array) props =
       svg.width width
       svg.height maxHeight
       svg.children [
-        if flags.HasFlag Query.NoProfitReasons.NoFertilizerPrice then
+        if flags.HasFlag Query.InvalidReasons.NoFertilizerPrice then
           Svg.image [
             svg.className "pixel"
             svg.href <| Image.fertilizerRoot (string fert)
             svg.height width
           ]
-        if flags.HasFlag Query.NoProfitReasons.NotEnoughSeeds then
+        if flags.HasFlag Query.InvalidReasons.NotEnoughSeeds then
           Svg.image [
             svg.className "pixel"
             svg.href <| Image.itemRoot (string crop)
             svg.height width
             svg.y width
           ]
-        if flags.HasFlag Query.NoProfitReasons.NotEnoughDays then
+        if flags.HasFlag Query.InvalidReasons.NotEnoughDays then
           Svg.image [
             svg.className "pixel"
             svg.href <| Image.uiRoot "Time"
@@ -2105,11 +2105,11 @@ let xpBreakdownTable timeNorm (data: GameData) settings seed fertName =
   match Query.cropXpData data settings timeNorm crop fert with
   | Error e ->
     div [
-      if e.HasFlag Query.NoProfitReasons.NotEnoughDays then
+      if e.HasFlag Query.InvalidReasons.NotEnoughDays then
         ofStr (if not <| Game.cropIsInSeason settings.Game crop then "Crop not in season!" else "No harvests possible!")
-      if e.HasFlag Query.NoProfitReasons.NoFertilizerPrice then
+      if e.HasFlag Query.InvalidReasons.NoFertilizerPrice then
         ofStr "No Fertilizer Price!"
-      if e.HasFlag Query.NoProfitReasons.NotEnoughSeeds then
+      if e.HasFlag Query.InvalidReasons.NotEnoughSeeds then
         ofStr "No Seed Source!"
     ]
   | Ok data ->
