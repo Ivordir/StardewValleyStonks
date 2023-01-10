@@ -35,8 +35,8 @@ let replacedFertilizerPerHarvest settings crop =
 let replacedFertilizerAmount settings crop (harvests: nat) =
   float (harvests - 1u) * replacedFertilizerPerHarvest settings crop
 
-let fertilizerBought model crop harvests =
-  1.0 + replacedFertilizerAmount model crop harvests
+let fertilizerBought settings crop harvests =
+  1.0 + replacedFertilizerAmount settings crop harvests
 
 let seedPriceValueFromVendor data settings vendor seed =
   data.SeedPrices[seed].TryFind vendor |> Option.map (Game.seedPrice data settings.Game seed)
@@ -68,6 +68,7 @@ let cropItemsHighestProductNormalizedPriceFrom data vars crop quality processor 
 let cropItemsHighestCustomPrice model crop (quality: Quality) =
   crop |> itemsHighest (fun item ->
     model.CustomSellPrices.Values.TryFind (Crop.seed crop, item) |> Option.map (customSellPriceValue quality))
+
 
 module Selected =
   let private mapSelected (table: Table<_,_>) selected = selected |> Seq.map table.Find

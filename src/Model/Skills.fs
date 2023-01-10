@@ -62,7 +62,7 @@ type [<Erase>] 'a Qualities = ByQuality of 'a array
 
 module [<RequireQualifiedAccess>] Qualities =
   #if FABLE_COMPILER
-  let inline unwrap (qualities: 'a Qualities) = Fable.Core.JsInterop.(!!)qualities : 'a array
+  let inline unwrap (qualities: 'a Qualities) = unbox<'a array> qualities
   #else
   let inline unwrap (ByQuality arr) = arr
   #endif
@@ -73,8 +73,7 @@ module [<RequireQualifiedAccess>] Qualities =
 
   let inline wrap arr = ByQuality arr
 
-  let zero = create 0u
-  let zerof = create 0.0
+  let zero = create 0.0
   let multipliers = ByQuality [| 1.0; 1.25; 1.5; 2.0 |]
 
   let inline item (quality: Quality) qualities = (unwrap qualities)[int quality]
@@ -190,7 +189,7 @@ module Skills =
       let prob = runningProb * min 1.0 rawProb
       dist[int quality] <- prob
       runningProb <- runningProb - prob // = runningProb * (1.0 - rawProb)
-    assert (abs (Array.sum dist - 1.0) < 1e-10)
+    assert (Array.sum dist = 1.0)
     Qualities.wrap dist
 
   let private farmCropQualitiesCalc fertQuality skills =

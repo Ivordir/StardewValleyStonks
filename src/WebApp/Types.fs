@@ -6,17 +6,15 @@ open Fable.Core
 module [<AutoOpen>] internal Util =
   let console = JS.console
 
-  let inline (!!) x = JsInterop.(!!)x
-
-  let inline item' (seed: SeedId): ItemId = seed * 1u<_>
-  let inline seed' (item: ItemId): SeedId = item * 1u<_>
+  let inline konst x _ = x
+  let inline curry f a b = f (a, b)
 
   let inline refEqual a b = System.Object.ReferenceEquals (a, b)
 
   let minBy projection a b = if projection a <= projection b then a else b
   let maxBy projection a b = if projection a >= projection b then a else b
 
-  let inline resizeToArray (r: 'a ResizeArray) = !!r : 'a array
+  let inline resizeToArray (r: 'a ResizeArray) = unbox<'a array> r
 
   let compareBy projection a b = compare (projection a) (projection b)
   let compareByRev projection a b = compare (projection b) (projection a)
@@ -24,7 +22,7 @@ module [<AutoOpen>] internal Util =
   let inline unitUnionCases<'a> =
     typeof<'a>
     |> Reflection.FSharpType.GetUnionCases
-    |> Array.map (fun x -> Reflection.FSharpValue.MakeUnion (x, Array.empty) |> unbox<'a>)
+    |> Array.map (fun x -> Reflection.FSharpValue.MakeUnion (x, [||]) |> unbox<'a>)
 
   let sortByMany comparers seq =
     let comparers = Array.ofSeq comparers
@@ -53,14 +51,6 @@ module [<AutoOpen>] internal Util =
         prevInput <- x
         prevOutput <- f x
       prevOutput
-
-
-module [<AutoOpen>] internal Combinators =
-  let inline flip f x y = f y x
-  let inline konst x _ = x
-  let inline tuple2 a b = a, b
-  let inline curry f a b = f (a, b)
-  let inline uncurry f (a, b) = f a b
 
 
 module [<RequireQualifiedAccess>] Option =
@@ -369,11 +359,9 @@ module [<RequireQualifiedAccess>] Version =
       }
     | _ -> None
 
-  let inline parse str = tryParse str |> Option.get
-
 
 module App =
   // Major = new schema -> convert data
   // Minor = potentially new crops, fertilizers, or items on crops -> adapt settings
   // Patch = compatible data -> no action needed
-  let version = Version.parse "0.0.1"
+  let version = Version.tryParse "0.0.1" |> Option.get

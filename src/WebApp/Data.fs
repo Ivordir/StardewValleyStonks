@@ -33,6 +33,9 @@ do
 // fertilizers
 // products
 // crops
+// if regrow: extraItem amount >= 1.0 if extraItem = seed
+// if forage: no items = seed
+// seedItem.Category = Seed
 #endif
 
 
@@ -59,10 +62,8 @@ module private Shorthand =
         |> Seq.filter (fun column ->
           match columnSelections |> Table.tryFind column with
           | None -> true
-          | Some select ->
-            match select with
-            | SelectAllKeys b -> b
-            | SelectKeys (select, keys) -> select = keys.Contains key)
+          | Some (SelectAllKeys b) -> b
+          | Some (SelectKeys (select, keys)) -> select = keys.Contains key)
         |> Set.ofSeq)
       |> Map.ofSeq
 
@@ -272,11 +273,11 @@ let private encodeCropFilters filters = Encode.object [
   nameof filters.Seasons, Encode.seasons filters.Seasons
   nameof filters.InSeason, Encode.bool filters.InSeason
   if filters.Giant.IsSome then
-    nameof filters.Giant, Encode.bool (Option.get filters.Giant)
+    nameof filters.Giant, Encode.bool filters.Giant.Value
   if filters.Regrows.IsSome then
-    nameof filters.Giant, Encode.bool (Option.get filters.Regrows)
+    nameof filters.Giant, Encode.bool filters.Regrows.Value
   if filters.Forage.IsSome then
-    nameof filters.Giant, Encode.bool (Option.get filters.Forage)
+    nameof filters.Giant, Encode.bool filters.Forage.Value
 ]
 
 let private decodeCropFilters =
@@ -307,7 +308,9 @@ let private decodeNestedOption =
       (Decode.option Decode.seedId)
       (Decode.oneOf [
         Decode.nil None
-        Decode.string |> Decode.map (function | "" -> Some None | fert -> Some (Some fert))
+        Decode.string |> Decode.map (function
+          | "" -> Some None
+          | fert -> Some (Some fert))
       ] ))
 
 let private ui =
@@ -349,7 +352,12 @@ module [<RequireQualifiedAccess>] Decode =
 
 
 
-let defaultSavedSettings = lazy (load settingsData (Decode.keyValuePairs (Shorthand.Decode.shorthandSettings |> Decode.map Shorthand.toSettings)))
+let defaultSavedSettings = lazy (
+  Shorthand.Decode.shorthandSettings
+  |> Decode.map Shorthand.toSettings
+  |> Decode.keyValuePairs
+  |> load settingsData
+)
 
 #if DEBUG
 // validate: at least one saved settings in default
@@ -361,21 +369,21 @@ let defaultSavedSettings = lazy (load settingsData (Decode.keyValuePairs (Shorth
 // cropamount
 #endif
 
-let defaultApp = lazy ({
+let defaultApp = lazy {
   Data = gameData
   State = {
     Settings = snd defaultSavedSettings.Value[0]
     UI = UIState.initial
   }
   SavedSettings = defaultSavedSettings.Value
-})
+}
 
 module LocalStorage =
   let [<Literal>] VersionKey = "Version"
   let [<Literal>] StateKey = "State"
   let [<Literal>] SavedSettingsKey = "SavedSettings"
 
-  let inline private getItem key = !!Browser.WebStorage.localStorage.getItem key : string option
+  let inline private getItem key = Browser.WebStorage.localStorage.getItem key |> unbox<string option>
   let inline private setItem key data = Browser.WebStorage.localStorage.setItem (key, data)
 
   // update version on load, in case other tabs are open
@@ -455,11 +463,14 @@ module LocalStorage =
         reload ()
 
       | VersionKey ->
-        let ver = Version.parse e.newValue // assume parsing does not fail
-        if ver.Major <> App.version.Major || ver.Minor <> App.version.Minor then
-          // a new version was pushed between two tab opens (this is probably rare).
-          // just force reload this out-of-date tab
-          reload ()
+        // A new version was pushed between two tab opens (this is probably rare)?
+        // Just force reload this out-of-date tab if necessary.
+        match Version.tryParse e.newValue with
+        | None -> reload () // version format/parsing changed, reload?
+        | Some ver ->
+          if ver.Major <> App.version.Major || ver.Minor <> App.version.Minor then
+            // need to load updated scripts, etc.
+            reload ()
 
       | SavedSettingsKey when isNullOrUndefined e.newValue ->
         // user manually deleted key?
@@ -491,7 +502,7 @@ module private XML =
   let [<Emit "XPathResult.UNORDERED_NODE_ITERATOR_TYPE">] nodeIter: obj = jsNative
   let [<Emit "XPathResult.FIRST_ORDERED_NODE_TYPE">] firstNode: obj = jsNative
 
-  let private getString (doc: Browser.Types.XMLDocument) (node: obj) path : string =
+  let private getString (doc: Browser.Types.XMLDocument) (node: obj) (path: string): string =
     doc?evaluate(path, node, null, stringType, null)?stringValue
 
   let stringValue doc node path =
@@ -513,14 +524,9 @@ module private XML =
 
     let mutable finished = false
     while not finished do
-      let elm: Browser.Types.Element option = iter?iterateNext()
-      match elm with
-      | Some e ->
-        match parser e.textContent with
-        | None -> ()
-        | Some value -> arr.Add value
-      | None ->
-        finished <- true
+      match iter?iterateNext() with
+      | Some (e: Browser.Types.Element) -> parser e.textContent |> Option.iter arr.Add
+      | None -> finished <- true
 
     resizeToArray arr
 
@@ -556,26 +562,34 @@ let loadSaveGame (xml: string) =
         missing.Add name
         defaultValue
 
-    let specialCharm = tryGet "Special Charm" boolValue "hasSpecialCharm" false
-    let farmingLevel = tryGet "Farming Level" natValue "farmingLevel" 0u |> min Skill.maxLevel
-    let foragingLevel = tryGet "Foraging Level" natValue "foragingLevel" 0u |> min Skill.maxLevel
+    let specialCharm = tryGet "Special Charm" boolValue "hasSpecialCharm" CropAmountSettings.common.SpecialCharm
+    let farmingLevel = tryGet "Farming Level" natValue "farmingLevel" Skill.zero.Level |> min Skill.maxLevel
+    let foragingLevel = tryGet "Foraging Level" natValue "foragingLevel" Skill.zero.Level |> min Skill.maxLevel
     let day = tryGet "Day" natValue "dayOfMonthForSaveGame" Date.firstDay |> max Date.firstDay |> min Date.lastDay
     let season = tryGet "Season" natValue "seasonForSaveGame" (uint Season.Spring) |> int |> enum
-    let profitMargin = tryGet "Difficulty Modifier" floatValue "difficultyModifier" 1.0
+    let profitMargin = tryGet "Difficulty Modifier" floatValue "difficultyModifier" Multipliers.common.ProfitMargin
     let farmerName = tryGet "Farmer Name" stringValue "name" "Imported Save"
+    let professions =
+      [|
+        Tiller, 1u
+        Artisan, 4u
+        Agriculturist, 5u
+        Gatherer, 13u
+        Botanist, 16u
+      |]
+      |> Array.choose (fun (profession, number) ->
+        if professions |> Array.contains number
+        then Some profession
+        else None)
+      |> Set.ofArray
+
     let settings = {
       GameVariables.common with
         Skills = {
           Skills.zero with
             Farming = { Skill.zero with Level = farmingLevel }
             Foraging = { Skill.zero with Level = foragingLevel }
-            Professions = Set.ofList [
-              if professions |> Array.contains 1u then Tiller
-              if professions |> Array.contains 4u then Artisan
-              if professions |> Array.contains 5u then Agriculturist
-              if professions |> Array.contains 13u then Gatherer
-              if professions |> Array.contains 16u then Botanist
-            ]
+            Professions = professions
         }
         Multipliers = {
           Multipliers.common with

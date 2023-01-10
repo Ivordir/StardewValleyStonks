@@ -263,8 +263,6 @@ let parseCrop farmCropOverrides forageCropData seedId (data: string) =
   | _ -> failwith $"Unexpected crop data format for crop {seedId}: {data}"
 
 
-
-
 let getSubTexture graphics x y width height (texture: Texture2D) =
   let data: Color array = Array.zeroCreate (texture.Width * texture.Height)
   texture.GetData data
@@ -290,8 +288,9 @@ let saveStageImages graphics outputPath cropSpriteSheet crop (spriteSheetRow: ui
     use file = Path.Combine (path, name + ".png") |> File.OpenWrite
     subTexture.SaveAsPng (file, cropImageWidth, cropImageHeight)
 
-  save (string 0) 0
   let stages = Crop.stages crop
+
+  save (string 0) 0
   for i = 1 to stages.Length - 1 do
     save (string i) (i + 1)
 
@@ -309,7 +308,6 @@ let saveItemImage graphics outputPath (itemSpriteSheet: Texture2D) item =
       itemSpriteSheet
   use file = Path.Combine (outputPath, string id + ".png") |> File.OpenWrite
   subTexture.SaveAsPng (file, itemImageWidth, itemImageHeight)
-
 
 
 let [<EntryPoint>] main args =

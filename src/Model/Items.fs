@@ -71,7 +71,7 @@ module [<RequireQualifiedAccess>] Item =
     * multipliers.ProfitMargin
     * if multipliers.BearsKnowledge && item.Id = blackberry then Multiplier.bearsKnowledge else 1.0
 
-  let private finalPrice qualityMultiplier multiplier basePrice =
+  let private sellPriceAfterMultipliers qualityMultiplier multiplier basePrice =
     basePrice
     |> withMultiplier qualityMultiplier
     |> withMultiplier multiplier
@@ -79,15 +79,15 @@ module [<RequireQualifiedAccess>] Item =
 
   let internal priceCalc multiplier basePrice (quality: Quality) =
     if basePrice = 0u then 0u else
-    basePrice |> finalPrice Qualities.multipliers[quality] multiplier
+    basePrice |> sellPriceAfterMultipliers Qualities.multipliers[quality] multiplier
 
   let price skills multipliers forage item quality =
     priceCalc (multiplier skills multipliers forage item) item.SellPrice quality
 
   let internal priceByQualityCalc multiplier basePrice =
-    if basePrice = 0u then Qualities.zero else
+    if basePrice = 0u then Qualities.create 0u else
     Qualities.multipliers |> Qualities.map (fun quality ->
-      basePrice |> finalPrice quality multiplier)
+      basePrice |> sellPriceAfterMultipliers quality multiplier)
 
   let priceByQuality skills multipliers forage item =
     priceByQualityCalc (multiplier skills multipliers forage item) item.SellPrice

@@ -273,7 +273,7 @@ module CropAmount =
     // Only the first harvested crop can be of higher quality
     if cropAmount.FarmingQualities
     then farmingQualities |> Qualities.updateQuality Normal (amount - 1.0 + farmingQualities[Normal])
-    else Qualities.zerof |> Qualities.updateQuality Normal amount
+    else Qualities.zero |> Qualities.updateQuality Normal amount
 
   let expectedGiantCropsFromShaving (shavingToolLevel: ToolLevel) =
     let damage = (int shavingToolLevel) / 2 + 1 |> float
@@ -300,7 +300,7 @@ type SeedPrice =
   | FixedPrice of Vendor * nat
   | ScalingPrice of Vendor * nat option
 
-module [<RequireQualifiedAccess>]SeedPrice =
+module [<RequireQualifiedAccess>] SeedPrice =
   let vendor = function
     | FixedPrice (v, _)
     | ScalingPrice (v, _) -> v
@@ -334,7 +334,7 @@ module Growth =
   //  = 6.99999988079071    = 7.0
   //  |> ceil |> int        |> ceil |> int
   //  = 7                   = 7 (wouldn't be equal if floor was used instead of ceil)
-  let inline fround (x: float) =
+  let inline private fround (x: float) =
     #if FABLE_COMPILER
     Fable.Core.JS.Math.fround x
     #else
@@ -414,8 +414,8 @@ module [<RequireQualifiedAccess>] FarmCrop =
   let growsInSeasons seasons crop = crop.Seasons |> Seasons.overlap seasons
 
   let xpPerItem item crop =
-    let price = item crop.Item |> Item.sellPrice
-    (16.0 * log(0.018 * float price + 1.0)) |> round |> nat
+    let price = item crop.Item |> Item.sellPrice |> float
+    (16.0 * log (0.018 * price + 1.0)) |> round |> nat
 
   let xpItemsPerHarvest giantCropProb crop =
     if crop.Giant then 1.0 - giantCropProb else 1.0

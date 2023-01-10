@@ -111,9 +111,9 @@ module [<RequireQualifiedAccess>] Encode =
     if crop.Amount <> CropAmount.singleAmount then
       nameof crop.Amount, cropAmount crop.Amount
     if crop.ExtraItem.IsSome then
-      nameof crop.ExtraItem, Encode.tuple2 itemId Encode.float (Option.get crop.ExtraItem)
+      nameof crop.ExtraItem, Encode.tuple2 itemId Encode.float crop.ExtraItem.Value
     if crop.RegrowTime.IsSome then
-      nameof crop.RegrowTime, Encode.uint32 (Option.get crop.RegrowTime)
+      nameof crop.RegrowTime, Encode.uint32 crop.RegrowTime.Value
     nameof crop.Item, itemId crop.Item
   ]
 
@@ -145,7 +145,7 @@ module [<RequireQualifiedAccess>] Decode =
 
   let private natMeasure<[<Measure>] 'u> =
     #if FABLE_COMPILER
-    Fable.Core.JsInterop.(!!)Decode.uint32 : uint<'u> Decoder
+    unbox<uint<'u> Decoder> Decode.uint32
     #else
     Decode.uint32 |> Decode.map LanguagePrimitives.UInt32WithMeasure<'u>
     #endif
@@ -154,7 +154,7 @@ module [<RequireQualifiedAccess>] Decode =
 
   let private wrapKeys mapping (keyWrap: string -> 'k) (decodeValue: 'v Decoder) =
     #if FABLE_COMPILER
-    (Fable.Core.JsInterop.(!!)Decode.keyValuePairs decodeValue: ('k * 'v) list Decoder) |> Decode.map mapping
+    Decode.keyValuePairs decodeValue |> unbox<('k * 'v) list Decoder> |> Decode.map mapping
     #else
     Decode.keyValuePairs decodeValue |> Decode.map (List.map (fun (k, v) -> keyWrap k, v) >> mapping)
     #endif

@@ -3,7 +3,7 @@ namespace StardewValleyStonks
 type nat = uint
 
 module [<AutoOpen>] Prelude =
-  let inline nat x = uint x
+  let inline nat value = uint value
 
   let inline withMultiplier multiplier (value: nat) =
     multiplier * float value |> nat
@@ -30,7 +30,7 @@ type [<Erase>] Table<'a, 'b> = ReadOnlyDictionary of Dictionary<'a, 'b>
 
 module [<RequireQualifiedAccess>] Table =
   #if FABLE_COMPILER
-  let inline unwrap (table: Table<'a, 'b>) = JsInterop.(!!)table: Dictionary<'a, 'b>
+  let inline unwrap (table: Table<'a, 'b>) = unbox<Dictionary<'a, 'b>> table
   #else
   let inline unwrap (ReadOnlyDictionary dict) = dict
   #endif
@@ -38,7 +38,7 @@ module [<RequireQualifiedAccess>] Table =
   let inline empty () = Dictionary () |> ReadOnlyDictionary
 
   #if FABLE_COMPILER
-  let addAll (dict: Dictionary<_, _>) seq =
+  let addAll (dict: Dictionary<_,_>) seq =
     for key, value in seq do
       dict[key] <- value
     dict
@@ -57,7 +57,7 @@ module [<RequireQualifiedAccess>] Table =
 
   let inline toSeq (table: Table<'k, 'v>) =
     #if FABLE_COMPILER
-    JsInterop.(!!)table: ('k * 'v) seq
+    unbox<('k * 'v) seq> table
     #else
     table |> unwrap |> Seq.map (fun (KeyValue kv) -> kv)
     #endif

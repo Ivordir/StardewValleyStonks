@@ -220,7 +220,7 @@ module Game =
   let farmCropItemAmountsByQuality vars fertilizer (crop: FarmCrop) =
     let amounts = farmCropMainItemAmountByQuality vars fertilizer crop
     match crop.ExtraItem with
-    | Some (_, amount) -> [| amounts; Qualities.zerof |> Qualities.updateQuality Quality.Normal amount |]
+    | Some (_, amount) -> [| amounts; Qualities.zero |> Qualities.updateQuality Quality.Normal amount |]
     | None -> [| amounts |]
 
   let forageCropItemAmountByQuality vars (crop: ForageCrop) =

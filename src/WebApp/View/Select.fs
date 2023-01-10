@@ -65,10 +65,9 @@ let [<ReactComponent>] private Select (props: {|
   let inputRef = useInputRef ()
   let listRef = useElementRef ()
 
-  useEffect (
-    (fun () -> setState {| initialState with Options = props.Options |}),
-    [| box props.Options |]
-  )
+  useEffect ((fun () ->
+    setState {| initialState with Options = props.Options |}
+  ), [| box props.Options |])
 
   useLayoutEffect (fun () ->
     match prev.Hover, state.Hover, inputRef.current with
@@ -96,20 +95,20 @@ let [<ReactComponent>] private Select (props: {|
 
   div [
     className "select-container"
+
     onMouseDown (fun e ->
       if e.button = 0 then
         match state.Hover with
         | Some _ -> clearHover e
         | None -> setHover e (selectedIndex |> Option.defaultValue 0))
+
     onKeyDown (fun e ->
       match e.key, state.Hover with
       | "Escape", Some _ -> clearHover e
 
       | "Enter", Some hover
       | " ", Some hover when props.ToString.IsNone || e.key = "Enter" ->
-        match state.Options |> Array.tryItem hover with
-        | None -> ()
-        | Some opt -> props.Dispatch opt
+        state.Options |> Array.tryItem hover |> Option.iter props.Dispatch
         clearHover e
 
       | "Enter", None
@@ -137,6 +136,7 @@ let [<ReactComponent>] private Select (props: {|
       | "End", Some _ -> setHover e (state.Options.Length - 1)
 
       | _ -> ())
+
     children [
       div [
         className "select"
@@ -196,6 +196,7 @@ let [<ReactComponent>] private Select (props: {|
                           if e.button = 0 then
                             props.Dispatch opt
                             clearHover e)
+
                         onMouseMove (fun _ ->
                           if state.Hover <> Some i then
                             setState {|
@@ -204,6 +205,7 @@ let [<ReactComponent>] private Select (props: {|
                                 Hover = Some i
                                 Scroll = false
                             |})
+
                         if hover = i then className "hover"
                         children (props.Display opt)
                       ]

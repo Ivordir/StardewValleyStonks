@@ -538,8 +538,8 @@ module Crops =
         td [
           viewCustom settings.Selected.CustomSellPrices (fun (price, q) ->
             fragment [
-              Input.nat (length.rem 2) price (flip tuple2 q >> curry SetCustom (seed, item) >> SetCustomSellPrice >> selectDispatch)
-              opacityCheckbox q (tuple2 price >> curry SetCustom (seed, item) >> SetCustomSellPrice >> selectDispatch)
+              Input.nat (length.rem 2) price (fun price -> (price, q) |> curry SetCustom (seed, item) |> SetCustomSellPrice |> selectDispatch)
+              opacityCheckbox q (fun q -> (price, q) |> curry SetCustom (seed, item) |> SetCustomSellPrice |> selectDispatch)
             ] )
             (seed, item)
             (SetCustomSellPrice >> selectDispatch)
@@ -573,7 +573,7 @@ module Crops =
                 (data.Crops
                   |> Table.toSeq
                   |> Seq.collect (fun (seed, crop) ->
-                    Crop.items crop |> Array.map (tuple2 seed))
+                    Crop.items crop |> Array.map (fun item -> seed, item))
                   |> Seq.forall settings.Selected.SellRaw.Contains)
                 (selectMany (konst true) >> SelectSellRaw >> selectDispatch)
             ofStr "Raw Crop"
@@ -615,7 +615,7 @@ module Crops =
               ]
             ]
           Width = productWidth
-          Sort = Some <| compareByRev (fun crop -> if Crop.isForage crop then Some <| Game.itemPrice settings.Game true data.Items[item' <| Crop.seed crop] Quality.Normal else None)
+          Sort = Some <| compareByRev (fun crop -> if Crop.isForage crop then Some <| Game.itemPrice settings.Game true data.Items[Crop.seed crop * 1u<_>] Quality.Normal else None)
         }
         { Header = fragment [
             if settings.Selected.CustomSellPrices.Values.IsEmpty then
@@ -649,7 +649,7 @@ module Crops =
                   if not <| ForageCrop.seedsRecipeUnlocked settings.Game.Skills c then Class.disabled
                   children [
                     checkbox (settings.Selected.SellForageSeeds.Contains seed) (curry SetSelected seed >> SelectSellForageSeeds >> selectDispatch)
-                    ofNat <| Game.itemPrice settings.Game true data.Items[item' seed] Quality.Normal
+                    ofNat <| Game.itemPrice settings.Game true data.Items[seed * 1u<_>] Quality.Normal
                   ]
                 ]
                 td []
@@ -704,7 +704,7 @@ module Crops =
                   (data.Crops |> Table.forall (fun seed crop ->
                     settings.Selected.UseSeedMaker.Contains seed
                     || not <| GameData.cropCanGetOwnSeedsFromSeedMaker crop data))
-                  (selectMany (flip GameData.cropCanGetOwnSeedsFromSeedMaker data) >> SelectUseSeedMaker >> selectDispatch)
+                  (selectMany (fun crop -> GameData.cropCanGetOwnSeedsFromSeedMaker crop data) >> SelectUseSeedMaker >> selectDispatch)
                 Image.Icon.processor Processor.seedMaker
               ]
             ]
@@ -805,7 +805,7 @@ module Crops =
     let optionFilter projection filterValue = filterValue |> Option.map (fun value -> projection >> (=) value) |> Option.toList
     let filters = [
       if filters.InSeason then Game.cropIsInSeason settings.Game else Crop.growsInSeasons filters.Seasons
-      yield! filters.Regrows |> optionFilter (Crop.regrowTime >> Option.isSome)
+      yield! filters.Regrows |> optionFilter Crop.regrows
       yield! filters.Giant |> optionFilter Crop.giant
       yield! filters.Forage |> optionFilter Crop.isForage
     ]
@@ -1343,7 +1343,7 @@ let chartTooltip (data: GameData) (pairs: (SeedId * string option) array) props 
       div (ofStr (Crop.name data.Items.Find data.Crops[crop] + fertDesc fert))
       match result with
       | Ok profit -> div (ofFloat profit)
-      | Error e -> none
+      | Error _ -> none
     ]
   | _ -> none
 
@@ -1435,7 +1435,7 @@ let graph ranker model pairs (data: _ array) dispatch =
           yAxis.width 60
         ]
         Recharts.tooltip [
-          !!Interop.mkAttr "content" (chartTooltip model pairs)
+          tooltip.content (chartTooltip model pairs)
         ]
         Recharts.bar [
           bar.dataKey (snd >> (function Ok y -> y | Error _ -> 0.0))
@@ -1445,8 +1445,8 @@ let graph ranker model pairs (data: _ array) dispatch =
           Interop.mkBarAttr "onClick" (fun props -> fst props?payload |> selectPair)
         ]
         Recharts.brush [
-          brush.startIndex (min (data.Length - 1) (ranker.BrushSpan |> fst |> int) |> max 0)
-          brush.endIndex (min (data.Length - 1) (ranker.BrushSpan |> snd |> int) |> max 0)
+          brush.startIndex (ranker.BrushSpan |> fst |> int |> min (data.Length - 1) |> max 0)
+          brush.endIndex (ranker.BrushSpan |> snd |> int |> min (data.Length - 1) |> max 0)
           brush.height 30
           Interop.mkBrushAttr "onChange" (fun i -> dispatch <| SetBrushSpan (i?startIndex, i?endIndex))
         ]
