@@ -780,7 +780,7 @@ let cropProfitDataStockpileSeeds data settings timeNormalization crop fertilizer
       sellAs |> Array.map (function
         | Some sellAs ->
           Qualities.init (fun q -> snd sellAs[q])
-        | None -> Qualities.zerof)
+        | None -> Qualities.zero)
     let amounts = Game.cropItemAmountsByQuality settings.Game fertilizer crop
     let fertCost' =
       if settings.Profit.PayForFertilizer
