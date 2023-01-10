@@ -186,26 +186,29 @@ let goldFixedRound = sprintf "%.2fg"
 let opacityCheckbox checked' dispatch =
   label [
     className "qualities-checkbox"
-    children (
+    children [
       input [
         prop.type'.checkbox
         isChecked checked'
         onCheckedChange dispatch
       ]
-    )
+      img []
+    ]
   ]
 
-let checkboxCustom props children' checked' dispatch =
-  label [ yield! props; children [
+let checkboxWith props children' checked' dispatch =
+  label [
+    className "checkbox-label"
+    yield! props
+    children [
     input [
       prop.type'.checkbox
       isChecked checked'
       onCheckedChange dispatch
     ]
+      img []
     children'
   ] ]
-
-let checkboxWith rest = checkboxCustom (className "checkbox-label" :: rest)
 
 let checkbox = checkboxWith [] none
 let inline checkboxText str checked' msg = checkboxWith [] (ofStr str) checked' msg
@@ -959,7 +962,7 @@ module Fertilizers =
       (ofStr "Prices")
       [
         checkboxText "Pay for Fertilizer" settings.Profit.PayForFertilizer (SetPayForFertilizer >> SetProfit >> dispatch)
-        checkboxCustom [
+        checkboxWith [
           classes [
             "checkbox-label"
             if not settings.Profit.PayForFertilizer then "disabled"

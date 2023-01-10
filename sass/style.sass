@@ -238,52 +238,46 @@ img
   cursor: pointer
 
 
-
-@mixin checkbox-img($img, $width, $height)
-  -moz-appearance: none
-  -webkit-appearance: none
-  width: $width
-  height: $height
-  @extend .pixel
-  background-image: $img
-  background-repeat: no-repeat
-  background-size: contain
-  margin: 0
+%checkbox
   cursor: pointer
 
-  &:hover
+  & > input
+    transform: scale(0)
+    opacity: 0
+    position: absolute
+
+  & > input:focus + img
+      outline: 2px solid cyan
+
+  &:hover > input + img
     transform: scale(1.1)
 
 
 .checkbox-label
-  cursor: pointer
+  @extend %checkbox
 
-  & > input
-    @include checkbox-img(url("../public/img/Checkbox.png"), 1rem, 1rem)
+  & > input + img
+    @extend .pixel
+    content: url("../public/img/Checkbox.png")
+    width: 1rem
+    height: 1rem
 
-    &:checked
-      background-image: url("../public/img/Checkedbox.png")
-
-    &:focus
-      outline: 2px solid cyan
-
-
-@mixin opacity-checkbox($img, $width, $height)
-  cursor: pointer
-
-  & > input
-    @include checkbox-img($img, $width, $height)
-    @extend .disabled
-
-    &:checked
-      opacity: 1
-
-    // &:focus
+  & > input:checked + img
+    content: url("../public/img/Checkedbox.png")
 
 
 .qualities-checkbox
-  @include opacity-checkbox(url("../public/static/img/Qualities/All.png"), 2rem, 1rem)
+  @extend %checkbox
 
+  & > input + img
+    @extend .pixel
+    content: url("../public/static/img/Qualities/All.png")
+    width: 2rem
+    height: 1rem
+    @extend .disabled
+
+  & > input:checked + img
+    opacity: 1
 
 
 .right-arrow
@@ -429,6 +423,7 @@ img
 .calendar
   &-season
     padding: 0.5rem 1rem 0.5rem 1rem
+    min-width: min-content
 
   &-header
     display: flex
@@ -506,6 +501,8 @@ img
 
 
 .select
+  $border-color: #5b2b2a
+
   position: relative
 
   &-container
@@ -521,6 +518,7 @@ img
     position: relative
     display: inline-flex
     height: var(--height)
+    background-color: $border-color
 
     &::after
       content: ""
@@ -534,7 +532,7 @@ img
     position: relative
     height: 100%
     box-sizing: border-box
-    border: #5b2b2a solid var(--sixth-border)
+    border: $border-color solid var(--sixth-border)
     background: #f9ba66
     padding: 0 var(--padding)
 
@@ -579,7 +577,7 @@ img
     top: 100%
     width: 100%
     z-index: 1
-    border: #5b2b2a solid var(--sixth-border)
+    border: $border-color solid var(--sixth-border)
     border-top: none
     background: #f9ba66
     box-sizing: border-box
