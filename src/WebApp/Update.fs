@@ -110,6 +110,7 @@ type UIMessage =
   | SetShowNormalizedProductPrices of bool
   | SetCropFilters of CropFiltersMessage
   | SetRanker of RankerMessage
+  | SetSolverMode of SolverMode
 
 type SavedSettingsMessage =
   | LoadSaveGame of string * GameVariables
@@ -298,6 +299,7 @@ let ui msg ui =
   | SetShowNormalizedProductPrices value -> { ui with ShowNormalizedProductPrices = value }
   | SetCropFilters msg -> { ui with CropFilters = cropFilters msg ui.CropFilters }
   | SetRanker msg -> { ui with Ranker = ranker msg ui.Ranker }
+  | SetSolverMode mode -> { ui with SolverMode = mode }
 
 let state msg data state =
   match msg with

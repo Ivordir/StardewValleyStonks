@@ -1273,7 +1273,7 @@ module LoadSave =
       ] ]
     ]
 
-let settings app dispatch =
+let settingsSection app dispatch =
   let appDispatch = dispatch
   let dispatch = SetState >> dispatch
   let { UI = ui; Settings = settings } = app.State
@@ -2331,7 +2331,7 @@ let ranker app dispatch =
 
 let private workerQueue, private workerSubscribe =
   let queue, subscribe = Solver.createWorker ()
-  debouncer 200 (fun (data, settings) -> queue data settings), subscribe
+  debouncer 200 (fun (data, settings, mode) -> queue data settings mode), subscribe
 
 // The solver typically takes < 50ms, but with
 //   StartSeason = Spring, StopSeason = Fall, Location = Greenhouse, and FarmingLevel in [0..7],
@@ -2341,6 +2341,7 @@ let private workerQueue, private workerSubscribe =
 let [<ReactComponent>] solver (props: {|
   Data: GameData
   Settings: Settings
+  SolverMode: SolverMode
   |})
   =
   let (solution, solving), setState = useState ((None, false))
@@ -2349,8 +2350,8 @@ let [<ReactComponent>] solver (props: {|
 
   useEffect ((fun () ->
     setState (solution, true)
-    workerQueue (props.Data, props.Settings)
-  ), [| box props.Data; box props.Settings |])
+    workerQueue (props.Data, props.Settings, props.SolverMode)
+  ), [| box props.Data; box props.Settings; props.SolverMode |])
 
   match solution with
   | Some (solution, total) ->
@@ -2374,7 +2375,7 @@ let [<ReactComponent>] solver (props: {|
 let view app dispatch =
   let appDispatch = dispatch
   let dispatch = SetState >> dispatch
-  let ui = app.State.UI
+  let { UI = ui; Settings = settings } = app.State
   let rankerChart = ui.Mode = Ranker && ui.Ranker.SelectedCropAndFertilizer.IsNone
   fragment [
     section [
@@ -2383,9 +2384,15 @@ let view app dispatch =
         viewTabsCss [ Class.tabs ] SetAppMode unitUnionCases<AppMode> ui.Mode (SetUI >> dispatch)
         match ui.Mode with
         | Ranker -> ranker app (SetUI >> dispatch)
-        | Solver -> solver {| Data = app.Data; Settings = app.State.Settings |}
+        | Solver ->
+          labeled "Maximize: " <| Select.unitUnion (length.rem 5) ui.SolverMode (SetSolverMode >> SetUI >> dispatch)
+          solver {|
+            Data = app.Data
+            Settings = settings
+            SolverMode = ui.SolverMode
+          |}
       ]
     ]
 
-    settings app appDispatch
+    settingsSection app appDispatch
   ]

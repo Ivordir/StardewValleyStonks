@@ -232,6 +232,10 @@ module [<RequireQualifiedAccess>] RankMetric =
     | XP -> "Experience Points"
 
 
+type SolverMode =
+  | [<CompiledName ("Gold")>] MaximizeGold
+  | [<CompiledName ("XP")>] MaximizeXP
+
 type AppMode =
   | Ranker
   | Solver
@@ -301,6 +305,7 @@ type UIState = {
 
   CropFilters: CropFilters
   Ranker: Ranker
+  SolverMode: SolverMode
 }
 
 module [<RequireQualifiedAccess>] UIState =
@@ -322,6 +327,7 @@ module [<RequireQualifiedAccess>] UIState =
     ShowNormalizedProductPrices = false
     CropFilters = CropFilters.empty
     Ranker = Ranker.initial
+    SolverMode = MaximizeGold
   }
 
 type State = {
