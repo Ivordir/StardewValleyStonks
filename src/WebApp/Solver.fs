@@ -144,13 +144,13 @@ let private fertilizerSpans data settings mode =
     | MaximizeGold ->
       removeStrictlyWorseFertilizers,
       (fun crop fertCost -> Query.replacedFertilizerPerHarvest settings crop * float fertCost),
-      Query.Profit.cropNonRegrowProfitPerHarvest data settings,
-      Query.Profit.cropRegrowProfitData data settings
+      Query.Profit.nonRegrowCropProfitPerHarvest data settings,
+      Query.Profit.regrowCropProfitData data settings
     | MaximizeXP ->
       groupFertilizersBySpeed,
       (fun _ _ -> 0.0),
-      Query.XP.cropNonRegrowXpPerHarvest data settings >> Option.map konst,
-      Query.XP.cropRegrowXpData data settings >> Option.map konst
+      Query.XP.nonRegrowCropXpPerHarvest data settings >> Option.map konst,
+      Query.XP.regrowCropXpData data settings >> Option.map konst
 
   let seasons, days =
     let seasons, days = Date.seasonsAndDays settings.Game.StartDate settings.Game.EndDate
@@ -285,7 +285,7 @@ let private fertilizerSpans data settings mode =
             constraints, vars)
 
         let noFertilizerVars =
-          if mode <> MaximizeGold || not settings.Selected.NoFertilizer then [| |] else
+          if mode <> MaximizeGold || not settings.Selected.NoFertilizer then [||] else
           regularCropVars |> Array.choose (fun (seed, crop, profit) ->
             if Query.replacedFertilizerPerHarvest settings crop = 0.0 then None else
             let profit = profit None

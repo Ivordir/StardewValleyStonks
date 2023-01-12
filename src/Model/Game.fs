@@ -102,7 +102,7 @@ module GameData =
           match items[item].Category with
           | Vegetable -> [| Pickles; Juice |]
           | Fruit -> [| Jam; Wine |]
-          | _ -> [| |]
+          | _ -> [||]
 
         [|
           extracted.Products.TryFind item |> Option.defaultOrMap Array.empty (Array.map Processed)
@@ -197,7 +197,7 @@ module Game =
     then CropAmount.giantCropProb vars.CropAmount
     else 0.0
 
-  let farmCropFertilizerLossProb vars (crop: FarmCrop) =
+  let farmCropFertilizerLossProb vars crop =
     if crop.Giant && giantCropsPossible vars.Location
     then Fertilizer.lossProbability * CropAmount.giantCropProb vars.CropAmount
     else 0.0
@@ -211,28 +211,39 @@ module Game =
     | FarmCrop c -> farmCropFertilizerLossProb vars c
     | ForageCrop _ -> forageCropFertilizerLossProb vars.Location
 
-  let farmCropMainItemAmountByQuality vars fertilizer (crop: FarmCrop) =
+  let farmCropMainItemAmount vars crop =
+    if crop.Giant && giantCropsPossible vars.Location
+    then CropAmount.expectedGiantAmount vars.Skills vars.CropAmount crop.Amount
+    else CropAmount.expectedAmount vars.Skills vars.CropAmount crop.Amount
+
+  let farmCropMainItemAmountByQuality vars fertilizer crop =
     let qualities = Skills.farmCropQualitiesWith fertilizer vars.Skills
     if crop.Giant && giantCropsPossible vars.Location
-    then CropAmount.expectedFarmingGiantAmountByQuality vars.Skills vars.CropAmount crop.Amount qualities
-    else CropAmount.expectedFarmingAmountByQuality vars.Skills vars.CropAmount crop.Amount qualities
+    then CropAmount.expectedGiantAmountByQuality vars.Skills vars.CropAmount crop.Amount qualities
+    else CropAmount.expectedAmountByQuality vars.Skills vars.CropAmount crop.Amount qualities
 
-  let farmCropItemAmountsByQuality vars fertilizer (crop: FarmCrop) =
+  let forageCropItemAmountByQuality vars (crop: ForageCrop) =
+    Skills.forageCropHarvestAmounts vars.Skills |> Qualities.map (fun a -> a / float crop.Items.Length)
+
+  let farmCropItemAmountsByQuality vars fertilizer crop =
     let amounts = farmCropMainItemAmountByQuality vars fertilizer crop
     match crop.ExtraItem with
     | Some (_, amount) -> [| amounts; Qualities.zero |> Qualities.updateQuality Quality.Normal amount |]
     | None -> [| amounts |]
 
-  let forageCropItemAmountByQuality vars (crop: ForageCrop) =
-    Skills.forageCropHarvestAmounts vars.Skills |> Qualities.map (fun a -> a / float crop.Items.Length)
+  let forageCropMainItemAmount vars (crop: ForageCrop) = ForageCrop.xpItemsPerHarvest vars.Skills / float crop.Items.Length
 
-  let cropItemAmountsByQuality vars fertilizer = function
-    | FarmCrop c -> farmCropItemAmountsByQuality vars fertilizer c
-    | ForageCrop c -> forageCropItemAmountByQuality vars c |> Array.create c.Items.Length
+  let cropMainItemAmount vars = function
+    | FarmCrop crop -> farmCropMainItemAmount vars crop
+    | ForageCrop crop -> forageCropMainItemAmount vars crop
 
   let cropMainItemAmountByQuality vars fertilizer = function
-    | FarmCrop c -> farmCropMainItemAmountByQuality vars fertilizer c
-    | ForageCrop c -> forageCropItemAmountByQuality vars c
+    | FarmCrop crop -> farmCropMainItemAmountByQuality vars fertilizer crop
+    | ForageCrop crop -> forageCropItemAmountByQuality vars crop
+
+  let cropItemAmountsByQuality vars fertilizer = function
+    | FarmCrop crop -> farmCropItemAmountsByQuality vars fertilizer crop
+    | ForageCrop crop -> forageCropItemAmountByQuality vars crop |> Array.create crop.Items.Length
 
   let processorUnlocked data skills processor =
     skills.IgnoreSkillLevelRequirements

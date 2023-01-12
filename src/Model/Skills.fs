@@ -189,7 +189,7 @@ module Skills =
       let prob = runningProb * min 1.0 rawProb
       dist[int quality] <- prob
       runningProb <- runningProb - prob // = runningProb * (1.0 - rawProb)
-    assert (Array.sum dist = 1.0)
+    assert (abs (Array.sum dist - 1.0) < 1e-10)
     Qualities.wrap dist
 
   let private farmCropQualitiesCalc fertQuality skills =

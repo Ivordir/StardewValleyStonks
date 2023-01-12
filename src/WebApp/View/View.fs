@@ -1207,7 +1207,7 @@ module LoadSave =
       ] ]
 
       match save with
-      | None | Some (Some (_, [| |])) -> none
+      | None | Some (Some (_, [||])) -> none
       | Some (Some (_, missing)) ->
         reactModal {|
           onClose = (fun () ->
@@ -1491,9 +1491,9 @@ let allPairData metric timeNorm data settings =
 
   let metric =
     match metric with
-    | RankMetric.Gold -> Query.cropProfit
-    | RankMetric.ROI -> Query.cropROI
-    | RankMetric.XP -> Query.cropXP
+    | Gold -> Query.cropProfit
+    | ROI -> Query.cropROI
+    | XP -> Query.cropXP
 
   let data =
     crops |> Array.collect (fun crop ->
@@ -1694,10 +1694,11 @@ let profitBreakdownTable roi timeNorm (data: GameData) settings seed fertName =
   if not <| Game.cropIsInSeason settings.Game crop then ofStr "Crop not in season!" else
 
   let fert = fertName |> Option.map data.Fertilizers.Find
-  match Query.cropProfitData data settings timeNorm crop fert with
+  match Query.cropProfitAndFertilizerData data settings timeNorm crop fert with
   | None -> ofStr "No harvests possible!"
   | Some profitData ->
     let items = Crop.items crop
+    let itemData = profitData.SoldAndSeedData
 
     let fertilizerBoughtRow replacement amount =
       match profitData.FertilizerPrice with
@@ -1840,7 +1841,7 @@ let profitBreakdownTable roi timeNorm (data: GameData) settings seed fertName =
           if profitData.FertilizerBought > 1.0 then
             fertilizerBoughtRow true (profitData.FertilizerBought - 1.0)
 
-          if profitData.SeedsBought > 0.0 then
+          if itemData.SeedsBought > 0.0 then
             tr [
               td [ colSpan 4; children [
                 Image.Icon.item' data (seed * 1u<_>)
@@ -1859,20 +1860,20 @@ let profitBreakdownTable roi timeNorm (data: GameData) settings seed fertName =
               ]
               td [
                 ofStr " x "
-                ofStr <| floatFixedRound profitData.SeedsBought
+                ofStr <| floatFixedRound itemData.SeedsBought
               ]
               td [
                 match profitData.SeedPrice with
-                | Some (_, cost) -> ofStr (goldFixedRound <| profitData.SeedsBought * -float cost)
+                | Some (_, cost) -> ofStr (goldFixedRound <| itemData.SeedsBought * -float cost)
                 | None -> ofStr "???"
               ]
               td [
-                ofStr <| floatFixedRound profitData.SeedsBought
+                ofStr <| floatFixedRound itemData.SeedsBought
               ]
             ]
         ]
 
-        tbody (profitData.IntoSeedAmounts |> Array.map (fun (item, amounts) ->
+        tbody (itemData.SeedAmounts |> Array.map (fun (item, amounts) ->
           if nat item = nat seed then
             fragment [
               for i = Quality.highest downto 0 do
@@ -1930,8 +1931,8 @@ let profitBreakdownTable roi timeNorm (data: GameData) settings seed fertName =
             assert false
             none))
 
-        if profitData.ForageSeedsSold > 0.0 || profitData.ForageSeedsUsed > 0.0 then
-          let totalMade = profitData.ForageSeedsSold + profitData.ForageSeedsUsed
+        if itemData.ForageSeedsSold > 0.0 || itemData.ForageSeedsUsed > 0.0 then
+          let totalMade = itemData.ForageSeedsSold + itemData.ForageSeedsUsed
           tbody (items |> Array.mapi (fun i item ->
             tr [
               td [
@@ -1951,13 +1952,13 @@ let profitBreakdownTable roi timeNorm (data: GameData) settings seed fertName =
                   ofStr " x "
                   ofStr <| floatFixedRound totalMade
                 ] ]
-                if profitData.ForageSeedsSold > 0.0 then
+                if itemData.ForageSeedsSold > 0.0 then
                   td [ rowSpan items.Length; children [
-                    ofStr <| goldFixedRound (profitData.ForageSeedsSold * float (Game.seedItemSellPrice data settings.Game seed))
+                    ofStr <| goldFixedRound (itemData.ForageSeedsSold * float (Game.seedItemSellPrice data settings.Game seed))
                   ] ]
-                if profitData.ForageSeedsUsed > 0.0 then
+                if itemData.ForageSeedsUsed > 0.0 then
                   td [ rowSpan items.Length; children [
-                    ofStr <| floatFixedRound profitData.ForageSeedsUsed
+                    ofStr <| floatFixedRound itemData.ForageSeedsUsed
                   ] ]
               ]
             ))
@@ -1967,17 +1968,17 @@ let profitBreakdownTable roi timeNorm (data: GameData) settings seed fertName =
             tr [
               td [
                 colSpan 6
-                text $"{profitData.GrowthSpan.Harvests} Harvests"
+                text $"{profitData.Harvests} Harvests"
               ]
               td []
-              td [ ofStr <| floatFixedRound (if Crop.regrows crop then -1.0 else -float profitData.GrowthSpan.Harvests) ]
+              td [ ofStr <| floatFixedRound (if Crop.regrows crop then -1.0 else -float profitData.Harvests) ]
             ]
         ]
 
         tbody [
           for i = 0 to items.Length - 1 do
             let item = items[i]
-            let soldAmounts = profitData.SoldAmounts[i]
+            let soldAmounts = itemData.SoldAmounts[i]
             let sellAs = profitData.SellAs[i]
 
             for i = Quality.highest downto 0 do
@@ -2102,7 +2103,7 @@ let profitBreakdownTable roi timeNorm (data: GameData) settings seed fertName =
 let xpBreakdownTable timeNorm (data: GameData) settings seed fertName =
   let crop = data.Crops[seed]
   let fert = fertName |> Option.map data.Fertilizers.Find
-  match Query.cropXpData data settings timeNorm crop fert with
+  match Query.cropXpAndFertilizerData data settings timeNorm crop fert with
   | Error e ->
     div [
       if e.HasFlag Query.InvalidReasons.NotEnoughDays then

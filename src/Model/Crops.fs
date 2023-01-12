@@ -255,7 +255,7 @@ module CropAmount =
     // sum_(n=1)^inf (min(0.9, extraChance)^n)
     (1.0 / (1.0 - min extraChance 0.9)) - 1.0
 
-  let expectedCropAmount skills settings amount =
+  let expectedAmount skills settings amount =
     let maxYieldIncrease =
       if amount.FarmLevelsPerYieldIncrease <> 0u && (amount.MinCropYield > 1u || amount.MaxCropYield > 1u)
       then skills.Farming.Level / amount.FarmLevelsPerYieldIncrease
@@ -268,8 +268,8 @@ module CropAmount =
 
   open type Quality
 
-  let expectedFarmingAmountByQuality skills settings cropAmount farmingQualities =
-    let amount = expectedCropAmount skills settings cropAmount
+  let expectedAmountByQuality skills settings cropAmount farmingQualities =
+    let amount = expectedAmount skills settings cropAmount
     // Only the first harvested crop can be of higher quality
     if cropAmount.FarmingQualities
     then farmingQualities |> Qualities.updateQuality Normal (amount - 1.0 + farmingQualities[Normal])
@@ -289,10 +289,16 @@ module CropAmount =
 
   let inline giantCropProb settings = 1.0 - noGiantCropProb settings
 
-  let expectedFarmingGiantAmountByQuality skills settings amount farmingQualities =
+  let expectedGiantAmount skills settings amount =
+    let nonGiantAmount = expectedAmount skills settings amount
+    let giantAmount = expectedGiantCropYield settings
+    let noGiantProb = noGiantCropProb settings
+    noGiantProb * nonGiantAmount + (1.0 - noGiantProb) * giantAmount
+
+  let expectedGiantAmountByQuality skills settings amount farmingQualities =
     let noGiantProb = noGiantCropProb settings
     let expectedGiant = (1.0 - noGiantProb) * expectedGiantCropYield settings
-    let farmingAmounts = expectedFarmingAmountByQuality skills settings amount farmingQualities |> Qualities.mult noGiantProb
+    let farmingAmounts = expectedAmountByQuality skills settings amount farmingQualities |> Qualities.mult noGiantProb
     farmingAmounts |> Qualities.updateQuality Normal (expectedGiant + farmingAmounts[Normal])
 
 
