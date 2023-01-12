@@ -429,25 +429,24 @@ module LocalStorage =
       | None ->
         console.error "Invalid version. Ignoring existing data in local storage..."
         defaultApp.Value
+      | Some ver when ver.Major <> App.version.Major ->
+        // convert data
+        console.error "Incompatable major version. Ignoring existing data in local storage..."
+        defaultApp.Value
       | Some ver ->
-        if ver.Major <> App.version.Major then
-          // convert data
-          console.error "Incompatable major version. Ignoring existing data in local storage..."
-          defaultApp.Value
-        else
-          let state = tryLoad "app state" StateKey Decode.state |> Option.defaultWith (fun () -> defaultApp.Value.State)
-          let savedSettings = tryLoad "saved settings" SavedSettingsKey Decode.savedSettings |> Option.defaultValue []
-          let state, savedSettings =
-            if ver.Minor = App.version.Minor then state, savedSettings else
-            let adaptSettings (settings: Settings) = { settings with Selected = Selections.adapt gameData settings.Selected }
-            { state with Settings = adaptSettings state.Settings },
-            savedSettings |> List.map (fun (name, settings) -> name, adaptSettings settings)
+        let state = tryLoad "app state" StateKey Decode.state |> Option.defaultWith (fun () -> defaultApp.Value.State)
+        let savedSettings = tryLoad "saved settings" SavedSettingsKey Decode.savedSettings |> Option.defaultValue []
+        let state, savedSettings =
+          if ver.Minor = App.version.Minor then state, savedSettings else
+          let adaptSettings (settings: Settings) = { settings with Selected = Selections.adapt gameData settings.Selected }
+          { state with Settings = adaptSettings state.Settings },
+          savedSettings |> List.map (fun (name, settings) -> name, adaptSettings settings)
 
-          {
-            Data = gameData
-            State = state
-            SavedSettings = savedSettings
-          }
+        {
+          Data = gameData
+          State = state
+          SavedSettings = savedSettings
+        }
 
   let inline private reload () = Browser.Dom.window.location.reload ()
 

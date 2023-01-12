@@ -380,10 +380,8 @@ module Growth =
   let harvestsWith regrowTime growthTime days =
     let days = days - 1u
     match regrowTime with
-    | Some time ->
-      if growthTime > days
-      then 0u
-      else 1u + (days - growthTime) / time
+    | Some _ when growthTime > days -> 0u
+    | Some time -> 1u + (days - growthTime) / time
     | None -> days / growthTime
 
   let daysNeededFor regrowTime growthTime harvests =

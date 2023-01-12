@@ -22,10 +22,8 @@ let sortTable columns displayItem setSort sortCols items =
       sortData[col] <- Some (i, asc)
       i + 1,
       match columns[col].Sort with
-      | Some sort ->
-        if asc
-        then Seq.sortWith sort items
-        else Seq.sortWith (fun x y -> sort y x) items
+      | Some sort when asc -> Seq.sortWith sort items
+      | Some sort -> Seq.sortWith (fun x y -> sort y x) items
       | None -> items)
       (0, items)
 

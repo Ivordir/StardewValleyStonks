@@ -27,24 +27,22 @@ let [<ReactComponent>] private Select (props: {|
     Dispatch: 'a -> unit
   |})
   =
-  let selectedIndex = props.Options |> Array.tryFindIndex ((=) props.Selected)
+  let selectedIndex =
+    props.Options
+    |> Array.tryFindIndex ((=) props.Selected)
+    |> Option.defaultValue 0
 
   let selectOffset e offset =
     let index =
-      match selectedIndex with
-      | Some selectedIndex ->
-        let index = selectedIndex + offset
-        if index < 0 then
-          if selectedIndex = 0 then None else Some 0
-        elif index >= props.Options.Length then
-          let last = props.Options.Length - 1
-          if selectedIndex = last then None else Some last
-        else
-          Some index
-      | None ->
-        if props.Options.Length > 0
-        then Some 0
-        else None
+      if props.Options.Length = 0 then None else
+      let index = selectedIndex + offset
+      if index < 0 then
+        if selectedIndex = 0 then None else Some 0
+      elif index >= props.Options.Length then
+        let last = props.Options.Length - 1
+        if selectedIndex = last then None else Some last
+      else
+        Some index
 
     match index with
     | None -> ()
@@ -75,7 +73,7 @@ let [<ReactComponent>] private Select (props: {|
     | _ -> ()
 
     match prev.Hover, state.Hover, listRef.current with
-    | None, Some _, Some list -> tryScroll list (selectedIndex |> Option.defaultValue 0) "center"
+    | None, Some _, Some list -> tryScroll list selectedIndex "center"
     | Some _, Some i, Some list when state.Scroll -> tryScroll list i "nearest"
     | _ -> ())
 
@@ -100,7 +98,7 @@ let [<ReactComponent>] private Select (props: {|
       if e.button = 0 then
         match state.Hover with
         | Some _ -> clearHover e
-        | None -> setHover e (selectedIndex |> Option.defaultValue 0))
+        | None -> setHover e selectedIndex)
 
     onKeyDown (fun e ->
       match e.key, state.Hover with
@@ -113,7 +111,7 @@ let [<ReactComponent>] private Select (props: {|
 
       | "Enter", None
       | " ", None when props.ToString.IsNone || e.key = "Enter" ->
-        setHover e (selectedIndex |> Option.defaultValue 0)
+        setHover e selectedIndex
 
       | "ArrowRight", None
       | "ArrowDown", None -> selectOffset e 1
