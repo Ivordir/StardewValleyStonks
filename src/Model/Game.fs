@@ -29,7 +29,7 @@ type GameData = {
   Products: Table<ItemId, Table<Processor, Product>>
   ProcessorUnlockLevel: Table<Processor, nat>
 }
-// Assume for now that SeedMaker is the only processor which converts items into seeds.
+// Assume that the seedMaker is the only processor which converts items into seeds.
 
 module GameData =
   let seedItemPairs data =
@@ -40,9 +40,7 @@ module GameData =
     |> Array.concat
 
   let cropCanGetOwnSeedsFromSeedMaker crop data =
-    match data.Products[Crop.mainItem crop].TryFind Processor.seedMaker with
-    | Some (SeedsFromSeedMaker item) when item = Crop.seedItem crop -> true
-    | _ -> false
+    crop |> Crop.canGetOwnSeedsFromSeedMaker data.Items.Find
 
   let missingItemIds data =
     let crops =

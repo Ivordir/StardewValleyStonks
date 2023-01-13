@@ -103,18 +103,18 @@ module [<RequireQualifiedAccess>] Array =
 
   let map2Reduce reduction mapping (array1: _ array) (array2: _ array) =
     let len = array1.Length
+    if len <> array2.Length then invalidArg (nameof array1) "The given arrays had different lengths."
     if len = 0 then invalidArg (nameof array1) "The given arrays cannot be empty."
-    elif len <> array2.Length then invalidArg (nameof array1) "The given arrays had different lengths."
+
     let mutable current = mapping array1[0] array2[0]
     for i = 1 to len - 1 do
       current <- reduction current (mapping array1[i] array2[i])
     current
 
 
-type TimeNormalization =
-  | [<CompiledName ("Total")>] TotalPeriod
-  | [<CompiledName ("Per Day")>] PerDay
-  | [<CompiledName ("Per Season")>] PerSeason
+type CustomChoice<'a, 'b> =
+  | NonCustom of 'a
+  | Custom of 'b
 
 
 type Selection<'a, 'b when 'a: comparison> = {
@@ -159,8 +159,10 @@ type Selections = {
 }
 
 module Selections =
-  let private ensureEntries keys (oldMap: Map<_,_>) =
-    keys |> Map.ofKeys (oldMap.TryFind >> Option.defaultValue Set.empty)
+  let private ensureEntries keys (map: Map<_,_>) =
+    keys
+    |> Seq.map (fun key -> key, map.TryFind key |> Option.defaultValue Set.empty)
+    |> Map.ofSeq
 
   let adapt (data: GameData) (selected: Selections) = {
     selected with
@@ -187,19 +189,6 @@ type Settings = {
   Profit: ProfitSettings
 }
 
-type CustomChoice<'a, 'b> =
-  | NonCustom of 'a
-  | Custom of 'b
-
-type GrowthSpan = {
-  Span: DateSpan
-  Stages: nat array
-  GrowthTime: nat
-  Harvests: nat
-}
-
-
-type TableSort = (int * bool) list
 
 type SettingsTab =
   | Skills
@@ -208,12 +197,10 @@ type SettingsTab =
   | Misc
   | [<CompiledName ("Load / Save")>] LoadSettings
 
-
 type RankItem =
   | [<CompiledName ("All Pairs")>] RankCropsAndFertilizers
   | [<CompiledName ("Crops")>] RankCrops
   | [<CompiledName ("Fertilizers")>] RankFertilizers
-
 
 type RankMetric =
   | Gold
@@ -231,6 +218,10 @@ module [<RequireQualifiedAccess>] RankMetric =
     | ROI -> "Return on Investment"
     | XP -> "Experience Points"
 
+type TimeNormalization =
+  | [<CompiledName ("Total")>] TotalPeriod
+  | [<CompiledName ("Per Day")>] PerDay
+  | [<CompiledName ("Per Season")>] PerSeason
 
 type SolverMode =
   | [<CompiledName ("Gold")>] MaximizeGold
@@ -270,7 +261,6 @@ module [<RequireQualifiedAccess>] CropFilters =
     Forage = None
   }
 
-
 type Ranker = {
   RankItem: RankItem
   RankMetric: RankMetric
@@ -289,6 +279,8 @@ module [<RequireQualifiedAccess>] Ranker =
     SelectedCropAndFertilizer = None
     ShowInvalid = false
   }
+
+type TableSort = (int * bool) list
 
 type UIState = {
   Mode: AppMode
@@ -336,7 +328,7 @@ type State = {
 }
 
 type App = {
-  Data: GameData // refetched on every tab load, do not save
+  Data: GameData // refetched on every tab load, not saved
   SavedSettings: (string * Settings) list // save separately to coordinate between multiple tabs
   State: State // race, last edited tab gets its state saved
 }

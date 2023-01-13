@@ -17,11 +17,6 @@ module [<RequireQualifiedAccess>] Option =
     | None -> defaultValue
 
 
-module [<RequireQualifiedAccess>] Map =
-  let ofValues (key: 'value -> 'key) values = values |> Seq.map (fun v -> key v, v) |> Map.ofSeq
-  let ofKeys (value: 'key -> 'value) keys = keys |> Seq.map (fun k -> k, value k) |> Map.ofSeq
-
-
 open Fable.Core
 
 type Dictionary<'a, 'b> = System.Collections.Generic.Dictionary<'a, 'b>
@@ -62,8 +57,8 @@ module [<RequireQualifiedAccess>] Table =
     table |> unwrap |> Seq.map (fun (KeyValue kv) -> kv)
     #endif
 
-  let inline toArray table = toSeq table |> Array.ofSeq
-  let inline toList table = toSeq table |> List.ofSeq
+  let inline toArray table = table |> toSeq |> Array.ofSeq
+  let inline toList table = table |> toSeq |> List.ofSeq
 
   let inline keys table = (unwrap table).Keys
   let inline values table = (unwrap table).Values

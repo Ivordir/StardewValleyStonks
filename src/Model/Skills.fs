@@ -80,14 +80,14 @@ module [<RequireQualifiedAccess>] Qualities =
   let inline private itemi index qualities = (unwrap qualities)[index]
 
   let inline updateQuality (quality: Quality) value qualities =
-    unwrap qualities |> Array.updateAt (int quality) value |> ByQuality
+    qualities |> unwrap |> Array.updateAt (int quality) value |> ByQuality
 
-  let inline map mapping qualities = unwrap qualities |> Array.map mapping |> ByQuality
+  let inline map mapping qualities = qualities |> unwrap |> Array.map mapping |> ByQuality
   let inline map2 mapping a b = Array.map2 mapping (unwrap a) (unwrap b) |> ByQuality
 
-  let inline toArray qualities = unwrap qualities |> Array.copy
+  let inline toArray qualities = qualities |> unwrap |> Array.copy
 
-  let inline sum qualities = unwrap qualities |> Array.sum
+  let inline sum qualities = qualities |> unwrap |> Array.sum
 
   let mult (scalar: float) qualities =
     let arr = toArray qualities
@@ -155,7 +155,7 @@ module Skills =
     | Botanist -> skills.Foraging.Level >= 10u
 
   let professionActive profession skills =
-    skills.Professions.Contains profession && professionUnlocked profession skills
+    professionUnlocked profession skills && skills.Professions.Contains profession
 
   open type Quality
 
@@ -207,7 +207,7 @@ module Skills =
       |]
     ifElseDistribution probabilities
 
-  let farmCropQualitiesWith fert skills = farmCropQualitiesCalc (Fertilizer.Opt.quality fert) skills
+  let farmCropQualitiesWith fertilizer skills = farmCropQualitiesCalc (Fertilizer.Opt.quality fertilizer) skills
 
   let inline farmCropQualities skills = farmCropQualitiesWith None skills
 

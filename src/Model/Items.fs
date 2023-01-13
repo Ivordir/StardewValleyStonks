@@ -67,6 +67,7 @@ module [<RequireQualifiedAccess>] Item =
       if forage && item.Category = Fruit && not <| foragedFruitTillerActive multipliers item
       then 1.0
       else Category.multiplier skills item.Category
+
     categoryMultiplier
     * multipliers.ProfitMargin
     * if multipliers.BearsKnowledge && item.Id = blackberry then Multiplier.bearsKnowledge else 1.0
@@ -155,12 +156,12 @@ module [<RequireQualifiedAccess>] Product =
     | Processed p -> Some p.Item
 
   let name getItem item = function
-    | Jam -> (getItem item |> Item.name) + " " + nameof Jam
-    | Pickles -> "Pickled " + (getItem item |> Item.name)
-    | Wine -> (getItem item |> Item.name) + " " + nameof Wine
-    | Juice -> (getItem item |> Item.name) + " " + nameof Juice
-    | SeedsFromSeedMaker seed -> getItem seed |> Item.name
-    | Processed p -> getItem p.Item |> Item.name
+    | Jam -> (item |> getItem |> Item.name) + " " + nameof Jam
+    | Pickles -> "Pickled " + (item |> getItem |> Item.name)
+    | Wine -> (item |> getItem |> Item.name) + " " + nameof Wine
+    | Juice -> (item |> getItem |> Item.name) + " " + nameof Juice
+    | SeedsFromSeedMaker seed -> seed |> getItem |> Item.name
+    | Processed p -> p.Item |> getItem |> Item.name
 
   let processor = function
     | Jam | Pickles -> Processor.preservesJar
@@ -168,7 +169,7 @@ module [<RequireQualifiedAccess>] Product =
     | SeedsFromSeedMaker _ -> Processor.seedMaker
     | Processed p -> p.Processor
 
-  let outputQuality modData quality product = processor product |> Processor.outputQuality modData quality
+  let outputQuality modData quality product = product |> processor |> Processor.outputQuality modData quality
 
   let private artisanMultiplier skills multipliers =
     Category.multiplier skills ArtisanGood * multipliers.ProfitMargin

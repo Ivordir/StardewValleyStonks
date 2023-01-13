@@ -1,7 +1,5 @@
 module StardewValleyStonks.Json
 
-#nowarn "25"
-
 #if FABLE_COMPILER
 open Thoth.Json
 #else
@@ -134,14 +132,14 @@ module [<RequireQualifiedAccess>] Encode =
 
 
 module [<RequireQualifiedAccess>] Decode =
-  let inline private tryParseInt<[<Measure>] ^u> (str: string): uint<'u> option =
+  let inline private tryParseNat<[<Measure>] ^u> (str: string): uint<'u> option =
     match System.UInt32.TryParse str with
     | true, value -> Some (value * 1u<_>)
     | _ -> None
 
-  let parseItemId = tryParseInt<ItemNum>
+  let parseItemId = tryParseNat<ItemNum>
 
-  let parseSeedId = tryParseInt<SeedNum>
+  let parseSeedId = tryParseNat<SeedNum>
 
   let private natMeasure<[<Measure>] 'u> =
     #if FABLE_COMPILER
@@ -171,7 +169,7 @@ module [<RequireQualifiedAccess>] Decode =
             parseKeys rest
           | None -> false
       if parseKeys kvps
-      then mapping acc |> Decode.succeed
+      then acc |> mapping |> Decode.succeed
       else fun path value -> Error (path, BadPrimitive ("a valid key", value)))
 
   let table keyWrap decodeValue = wrapKeys Table.ofSeq keyWrap decodeValue
@@ -188,7 +186,7 @@ module [<RequireQualifiedAccess>] Decode =
       Speed = get.Optional.Field (nameof u.Speed) Decode.float |> Option.defaultValue 0.0
     } )
 
-  let vendor: Vendor Decoder = Decode.string |> Decode.map VendorName
+  let vendor = Decode.string |> Decode.map VendorName
 
   let processor = decodeProcessor
 
@@ -214,7 +212,7 @@ module [<RequireQualifiedAccess>] Decode =
 
   let seedPrice: SeedPrice Decoder =
     Decode.map3 (fun a b c -> a, b, c)
-      (Decode.field SeedPriceVendorField (Decode.Auto.generateDecoder ()))
+      (Decode.field SeedPriceVendorField vendor)
       (Decode.optional SeedPricePriceField Decode.uint32)
       (Decode.field SeedPriceTypeField Decode.string)
     |> Decode.andThen (fun (vendor, price, kind) -> fun path value ->
@@ -228,15 +226,14 @@ module [<RequireQualifiedAccess>] Decode =
   let cropAmount =
     let u = Unchecked.defaultof<CropAmount>
     Decode.object (fun get ->
-      let field name decoder defVal = get.Optional.Field name decoder |> Option.defaultValue defVal
-      let single = CropAmount.singleAmount
+      let field name decoder defaultValue = get.Optional.Field name decoder |> Option.defaultValue defaultValue
       {
-        MinCropYield = field (nameof u.MinCropYield) Decode.uint32 single.MinCropYield
-        MaxCropYield = field (nameof u.MaxCropYield) Decode.uint32 single.MaxCropYield
-        FarmLevelsPerYieldIncrease = field (nameof u.FarmLevelsPerYieldIncrease) Decode.uint32 single.FarmLevelsPerYieldIncrease
-        ExtraCropChance = field (nameof u.ExtraCropChance) Decode.float single.ExtraCropChance
-        CanDouble = field (nameof u.CanDouble) Decode.bool single.CanDouble
-        FarmingQualities = field (nameof u.FarmingQualities) Decode.bool single.FarmingQualities
+        MinCropYield = field (nameof u.MinCropYield) Decode.uint32 CropAmount.singleAmount.MinCropYield
+        MaxCropYield = field (nameof u.MaxCropYield) Decode.uint32 CropAmount.singleAmount.MaxCropYield
+        FarmLevelsPerYieldIncrease = field (nameof u.FarmLevelsPerYieldIncrease) Decode.uint32 CropAmount.singleAmount.FarmLevelsPerYieldIncrease
+        ExtraCropChance = field (nameof u.ExtraCropChance) Decode.float CropAmount.singleAmount.ExtraCropChance
+        CanDouble = field (nameof u.CanDouble) Decode.bool CropAmount.singleAmount.CanDouble
+        FarmingQualities = field (nameof u.FarmingQualities) Decode.bool CropAmount.singleAmount.FarmingQualities
       }
     )
 
@@ -273,7 +270,7 @@ module [<RequireQualifiedAccess>] Decode =
       let field name decode = get.Required.Field name decode
       {
         Items = field (nameof u.Items) (Decode.Auto.generateDecoder ())
-        Products = field (nameof u.Products) (tableParse parseItemId (Decode.array (Decode.Auto.generateDecoder (extra=(Extra.empty |> Extra.withCustom Encode.processor processor)))))
+        Products = field (nameof u.Products) (tableParse parseItemId (Decode.array processedItem))
         FarmCrops = field (nameof u.FarmCrops) (Decode.array farmCrop)
         ForageCrops = field (nameof u.ForageCrops) (Decode.array forageCrop)
       }

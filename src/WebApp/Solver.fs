@@ -233,8 +233,8 @@ let private fertilizerSpans data settings mode =
             let regrowVars, constraints = (constraints, regrowCropVars) ||> Array.mapFold (fun constraints (seed, crop, (data: Query.RegrowCropProfitData array)) ->
               let data = data[fertIndex]
               let growthTime = Game.growthTime settings.Game fert (FarmCrop crop)
-              let minHarvests = Growth.harvestsWith crop.RegrowTime growthTime prevDays
-              let maxHarvests = Growth.harvestsWith crop.RegrowTime growthTime totalDays
+              let minHarvests = Growth.maxHarvests crop.RegrowTime growthTime prevDays
+              let maxHarvests = Growth.maxHarvests crop.RegrowTime growthTime totalDays
               let fixedVars = [
                 for h in (max minHarvests 1u)..(min maxHarvests (data.HarvestsForMinCost - 1u)) do
                   let cost = data.Cost h

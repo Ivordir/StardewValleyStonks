@@ -48,7 +48,7 @@ module [<RequireQualifiedAccess>] Seasons =
 module [<RequireQualifiedAccess>] Season =
   let name (season: Season) = enumName season
 
-  let inline private ofInt (i: int) = i |> enum<Season>
+  let inline private ofInt (i: int) = enum<Season> i
 
   let next = function
     | Season.Winter -> Season.Spring
@@ -58,10 +58,10 @@ module [<RequireQualifiedAccess>] Season =
     | Season.Spring -> Season.Winter
     | season -> ofInt (int season - 1)
 
-  let ofSeasons season =
-    match Seasons.tryExactlyOne season with
+  let ofSeasons seasons =
+    match Seasons.tryExactlyOne seasons with
     | Some season -> season
-    | None -> invalidArg (nameof season) $"The given season: '{season}' was not a single season."
+    | None -> invalidArg (nameof seasons) $"The given seasons: '{seasons}' was not a single season."
 
   let seasonsBetween start finish =
     let mutable seasons = Seasons.None
@@ -80,9 +80,9 @@ module [<RequireQualifiedAccess>] Season =
 
   let span start finish =
     let dist = int (distance start finish)
-    let seasons = Array.create (dist + 1) finish
+    let seasons = Array.zeroCreate (dist + 1)
     let mutable season = start
-    for i = 0 to dist - 1 do
+    for i = 0 to dist do
       seasons[i] <- season
       season <- next season
     seasons
@@ -116,7 +116,7 @@ module Date =
   let inline seasonSpan start finish = Season.span start.Season finish.Season
 
   let seasonsAndDays start finish =
-    let seasons = Season.span start.Season finish.Season
+    let seasons = seasonSpan start finish
     let days = Array.create seasons.Length daysInSeason
     days[0] <- daysInSeason - start.Day + firstDay
     days[days.Length - 1] <- days[days.Length - 1] - (daysInSeason - finish.Day)
@@ -311,35 +311,33 @@ module [<RequireQualifiedAccess>] SeedPrice =
     | FixedPrice (v, _)
     | ScalingPrice (v, _) -> v
 
+
 module Growth =
   // Stardew Valley passes speed around as a float32.
-  // Compared to a float64, this has less precision,
-  // leading to small differences in the representation of numbers.
-  // This small precision error is sometimes enough to give an extra day of reduction,
+  // This is later converted to a float (float64), introducing a small amout of error.
+  // This small error is sometimes enough to give an extra day of reduction,
   // since the value is later passed into the ceiling function.
-  //       Case 1: 0.2f < 0.2
-  //   float32               float
+  //   Case 1: float 0.2f > 0.2
   //   0.200000002980232     0.2
   //   * 10.0 growth days    * 10.0 growth days
   //   = 2.00000002980232    = 2.0
   //   |> ceil |> int        |> ceil |> int
-  //   = 3                   = 2 (not the same!)
+  //   = 3                   = 2
   //   This effect can be seen on crops with a total of 10 growth days (e.g green bean, coffee)
   //   A 0.1 speed reduces the total time to 8 days (instead of 9),
   //   and a 0.2 speed reduces the total time to 7 days (instead of 8).
   //
-  //      Case 2: 0.25f = 0.25 (all numbers 1/(2^n))
-  //  float32         float
+  //  Case 2: float 0.25f = 0.25 (all numbers 1/(2^n))
   //  0.25            0.25
   //  ...    Same    ...
   //
-  //      Case3: 0.35f > 0.35
-  //  float32               float
+  //  Case3 : float 0.35f < 0.35
   //  0.349999994039536     0.35
   //  * 20.0 growth days    * 20.0 growth days
   //  = 6.99999988079071    = 7.0
   //  |> ceil |> int        |> ceil |> int
-  //  = 7                   = 7 (wouldn't be equal if floor was used instead of ceil)
+  //  = 7                   = 7
+  //  These wouldn't be equal if floor was used instead of ceil.
   let inline private fround (x: float) =
     #if FABLE_COMPILER
     Fable.Core.JS.Math.fround x
@@ -377,7 +375,7 @@ module Growth =
 
   let inline time crop speed = stagesAndTime crop speed |> snd
 
-  let harvestsWith regrowTime growthTime days =
+  let maxHarvests regrowTime growthTime days =
     let days = days - 1u
     match regrowTime with
     | Some _ when growthTime > days -> 0u
@@ -447,13 +445,14 @@ module [<RequireQualifiedAccess>] ForageCrop =
   let [<Literal>] forageSeedsPerCraft = 10u
   let [<Literal>] xpPerItem = 7u
   let [<Literal>] minItems = 1u
+  let [<Literal>] maxItems = forageSeedsPerCraft
 
   let seed crop = crop.Seed
   let seedItem crop: ItemId = seed crop * 1u<_>
   let items crop = crop.Items
   let seedRecipeUnlockLevel crop = crop.SeedRecipeUnlockLevel
 
-  let seedsRecipeUnlocked skills crop = skills.Foraging.Level >= crop.SeedRecipeUnlockLevel
+  let seedRecipeUnlocked skills crop = skills.Foraging.Level >= crop.SeedRecipeUnlockLevel
 
   let seasons crop = Seasons.ofSeason crop.Season
   let growsInSeason season crop = crop.Season = season
@@ -490,7 +489,7 @@ module [<RequireQualifiedAccess>] Crop =
     | FarmCrop crop -> crop.Stages
     | ForageCrop crop -> crop.Stages
 
-  let totalDays crop = stages crop |> Array.sum
+  let totalDays crop = crop |> stages |> Array.sum
 
   let paddy = function
     | FarmCrop crop -> crop.Paddy

@@ -607,7 +607,7 @@ module Crops =
         {
           Header =
             div [
-              if not (data.ForageCrops.Values |> Seq.exists (ForageCrop.seedsRecipeUnlocked settings.Game.Skills)) then Class.disabled
+              if not (data.ForageCrops.Values |> Seq.exists (ForageCrop.seedRecipeUnlocked settings.Game.Skills)) then Class.disabled
               children [
                 checkboxWith
                   [ onClick (fun e -> e.stopPropagation ()) ]
@@ -649,7 +649,7 @@ module Crops =
                 td (Image.Icon.crop data crop)
                 yield! Seq.replicate (processors.Length + 1) (td [])
                 td [
-                  if not <| ForageCrop.seedsRecipeUnlocked settings.Game.Skills c then Class.disabled
+                  if not <| ForageCrop.seedRecipeUnlocked settings.Game.Skills c then Class.disabled
                   children [
                     checkbox (settings.Selected.SellForageSeeds.Contains seed) (curry SetSelected seed >> SelectSellForageSeeds >> selectDispatch)
                     ofNat <| Game.itemPrice settings.Game true data.Items[seed * 1u<_>] Quality.Normal
@@ -727,7 +727,7 @@ module Crops =
         {
           Header =
             div [
-              if not (data.ForageCrops.Values |> Seq.exists (ForageCrop.seedsRecipeUnlocked settings.Game.Skills)) then Class.disabled
+              if not (data.ForageCrops.Values |> Seq.exists (ForageCrop.seedRecipeUnlocked settings.Game.Skills)) then Class.disabled
               children [
                 checkbox
                   (data.Crops.Values
@@ -784,7 +784,7 @@ module Crops =
               match crop with
               | FarmCrop _ -> []
               | ForageCrop c -> [
-                if not <| ForageCrop.seedsRecipeUnlocked settings.Game.Skills c then Class.disabled
+                if not <| ForageCrop.seedRecipeUnlocked settings.Game.Skills c then Class.disabled
                 children (checkbox (settings.Selected.UseForageSeeds.Contains seed) (curry SetSelected seed >> SelectUseForageSeeds >> selectDispatch))
               ]
             )
