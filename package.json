@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "preact": "^10.11.3",
-    "react-pure-modal": "^2.2.0",
     "recharts": "^2.2.0",
     "yalps": "^0.3.0"
   },

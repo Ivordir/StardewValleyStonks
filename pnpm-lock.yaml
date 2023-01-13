@@ -8,13 +8,11 @@ specifiers:
   parcel-reporter-static-files-copy: ^1.5.0
   preact: ^10.11.3
   process: ^0.11.10
-  react-pure-modal: ^2.2.0
   recharts: ^2.2.0
   yalps: ^0.3.0
 
 dependencies:
   preact: 10.11.3
-  react-pure-modal: 2.2.0
   recharts: 2.2.0
   yalps: 0.3.0
 
@@ -1763,8 +1761,6 @@ packages:
     engines: {parcel: ^2.0.0-beta.1}
     dependencies:
       '@parcel/plugin': 2.8.2
-    transitivePeerDependencies:
-      - '@parcel/core'
     dev: true
 
   /parcel/2.8.2:
@@ -1894,13 +1890,6 @@ packages:
 
   /react-lifecycles-compat/3.0.4:
     resolution: {integrity: sha512-fBASbA6LnOU9dOU2eW7aQ8xmYBSXUIWr+UmF9b1efZBazGNO+rcXT/icdKnYm2pTwcRylVUYwW7H1PHfLekVzA==}
-    dev: false
-
-  /react-pure-modal/2.2.0:
-    resolution: {integrity: sha512-YIXEPMnPnCaNDgVH2jwHabMUPEpeyKsSsH5j2UEV+ZPLRPFcmeLMS85M1iA08wfwps26kHCwVZmZQXg4laCZRw==}
-    peerDependencies:
-      react: ^15.3.0 || ^16.0 || ^17.0 || ^18.0
-      react-dom: ^15.3.0 || ^16.0 || ^17.0 || ^18.0
     dev: false
 
   /react-refresh/0.9.0:

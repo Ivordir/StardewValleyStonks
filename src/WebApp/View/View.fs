@@ -1150,12 +1150,13 @@ module Misc =
     ] ]
 
 module LoadSave =
-  importDefault "react-pure-modal/dist/react-pure-modal.min.css"
-
-  let [<ReactComponent(import="default", from="react-pure-modal")>] private reactModal _ = imported ()
-
   let [<ReactComponent>] saveCurrentSettings (props: {| dispatch: _ |}) =
     let name, setName = useState None
+
+    let modalRef = useElementRef () // Browser.Types.HTMLDialogElement
+
+    useLayoutEffect (fun () ->
+      modalRef.current |> Option.iter (fun e -> e?showModal()))
 
     fragment [
       button [
@@ -1166,29 +1167,36 @@ module LoadSave =
       match name with
       | None -> none
       | Some name ->
-        reactModal {|
-          onClose = (fun () -> setName None; true)
-          isOpen = true
-          header = ofStr "Save Current Settings As"
-          children = [| Input.text name (Some >> setName) |]
-          footer = [|
-            button [
-              onClick (fun _ ->
-                if name <> "" then
-                  props.dispatch (SaveSettings name)
-                  setName None)
-              text "Ok"
+        dialog [
+          Interop.mkAttr "onClose" (fun _ -> setName None)
+          prop.ref modalRef
+          children [
+            h1 "Save Current Settings As"
+            Input.text name (Some >> setName)
+            div [
+              button [
+                onClick (fun _ ->
+                  if name <> "" then
+                    props.dispatch (SaveSettings name)
+                    setName None)
+                text "Ok"
+              ]
+              button [
+                onClick (fun _ -> setName None)
+                text "Cancel"
+              ]
             ]
-            button [
-              onClick (fun _ -> setName None)
-              text "Cancel"
-            ]
-          |]
-        |}
+          ]
+        ]
     ]
 
   let [<ReactComponent>] importSave (props: {| dispatch: _ |}) =
     let save, setSave = useState None
+
+    let modalRef = useElementRef () // Browser.Types.HTMLDialogElement
+
+    useLayoutEffect (fun () ->
+      modalRef.current |> Option.iter (fun e -> e?showModal()))
 
     fragment [
       label [ Class.fileInput; children [
@@ -1208,26 +1216,12 @@ module LoadSave =
 
       match save with
       | None | Some (Some (_, [||])) -> none
-      | Some (Some (_, missing)) ->
-        reactModal {|
-          onClose = (fun () ->
-            setSave None
-            true
-          )
-          isOpen = true
-          children = missing
-        |}
-      | Some None ->
-        reactModal {|
-          onClose = (fun () ->
-            setSave None
-            true
-          )
-          isOpen = true
-          children = [|
-            ofStr "Broken save."
-          |]
-        |}
+      | Some save ->
+        dialog [
+          Interop.mkAttr "onClose" (fun _ -> setSave None)
+          prop.ref modalRef
+          children (save |> Option.defaultOrMap [| ofStr "Broken save." |] (snd >> Array.map ofStr))
+        ]
     ]
 
   let tab app dispatch =
