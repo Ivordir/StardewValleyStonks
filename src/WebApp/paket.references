@@ -4,7 +4,6 @@ Thoth.Json.Net
 Fable.Core
 Fable.Browser.Worker
 Fable.Elmish.React
-Fable.Elmish.Browser
 Feliz
 Feliz.Recharts
 Fable.YALPS
