@@ -10,6 +10,7 @@ open Fable.Core
 open Fable.Core.JsInterop
 open Elmish.React
 open Feliz
+open Feliz.Recharts
 
 open type Html
 open type prop
@@ -1281,9 +1282,6 @@ let settingsSection app dispatch =
     | SettingsTab.LoadSettings -> LoadSave.tab app appDispatch
   ] ]
 
-
-open Feliz.Recharts
-
 let selectFromGraph rankItem (pairs: _ array) dispatch i =
   let crop, fert = pairs[i]
   (match rankItem with
@@ -2136,8 +2134,7 @@ let xpBreakdownTable timeNorm (data: GameData) settings seed fertName =
     ]
 
 // what to show if current crop and/or fertilizer is not selected?
-let selectedCropAndFertilizer =
-  Fable.React.FunctionComponent.Of (fun (props: {| app: _; seed: _; fert: _; dispatch: _ |}) ->
+let [<ReactComponent>] selectedCropAndFertilizer = fun (props: {| app: _; seed: _; fert: _; dispatch: _ |}) ->
     let app = props.app
     let seed = props.seed
     let fert' = props.fert
@@ -2310,7 +2307,7 @@ let selectedCropAndFertilizer =
       | Some _, None -> ofStr "Please select a fertilizer."
       | None, Some _ -> ofStr "Please select a crop."
       | None, None -> ofStr "Please select a crop and fertilizer."
-    ] ] )
+    ] ]
 
 
 let ranker app dispatch =

@@ -58,6 +58,10 @@ let view app dispatch =
       // hardResetButton
     ]
 
+let localStorageSub dispatch =
+  Data.LocalStorage.subscribe (SyncSavedSettings >> dispatch)
+  { new System.IDisposable with member _.Dispose () = () }
+
 do
   let pxToFloat (px: string) = float (px.Substring(0, px.Length - 2))
   let borderWidth fontPx divisor = $"{fontPx / float divisor |> ceil}px"
@@ -71,6 +75,6 @@ do
 
 Program.mkProgram init update view
 |> Program.withErrorHandler (fun (msg, e) -> console.error (msg, e))
-|> Program.withSubscription (fun _ -> Cmd.ofSub (fun dispatch -> Data.LocalStorage.subscribe (SyncSavedSettings >> dispatch)))
+|> Program.withSubscription (fun _ -> [ [ "localStorage" ], localStorageSub ])
 |> Program.withReactBatched "app"
 |> Program.run
