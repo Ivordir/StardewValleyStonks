@@ -30,24 +30,41 @@
       "type": "shell",
       "group": "build",
       "isBackground": true,
-      "problemMatcher": {
-        "fileLocation": "absolute",
-        "background": {
-          "beginsPattern": "Started Fable compilation...",
-          "endsPattern": "Fable compilation finished in (.*)",
-          "activeOnStart": true
+      "problemMatcher": [
+        {
+          "fileLocation": "relative",
+          "background": {
+            "beginsPattern": "Started Fable compilation...",
+            "endsPattern": "Fable compilation finished in (.*)",
+            "activeOnStart": true
+          },
+          "pattern": {
+            "regexp": "^(.*)\\((\\d+,\\d+)\\): (warning|error) FABLE: (.*)$",
+            "file": 1,
+            "location": 2,
+            "severity": 3,
+            "message": 4
+          }
         },
-        "pattern": {
-          "regexp": "^(.*)\\((\\d+),(\\d+)\\): \\((\\d+),(\\d+)\\) (warning|error) FABLE: (.*)$",
-          "file": 1,
-          "line": 2,
-          "column": 3,
-          "endLine": 4,
-          "endColumn": 5,
-          "severity": 6,
-          "message": 7
+        {
+          "fileLocation": "relative",
+          "background": {
+            "beginsPattern": "Started Fable compilation...",
+            "endsPattern": "Fable compilation finished in (.*)",
+            "activeOnStart": true
+          },
+          "pattern": {
+            "regexp": "^(.*)\\((\\d+),(\\d+)\\): \\((\\d+),(\\d+)\\) (warning|error) FABLE: (.*)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "endLine": 4,
+            "endColumn": 5,
+            "severity": 6,
+            "message": 7
+          }
         }
-      }
+      ]
     },
     {
       "label": "Build Extractor",
