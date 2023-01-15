@@ -13,11 +13,11 @@
   },
   "scripts": {
     "postinstall": "dotnet tool restore && dotnet paket install",
-    "watch": "dotnet fable watch src/WebApp -s -o fable",
+    "watch": "dotnet fable watch src/WebApp --noCache -s -o fable",
     "start": "parcel",
-    "build": "dotnet fable src/WebApp -s -o fable --run parcel build --public-url \"./\"",
-    "build-fable": "dotnet fable src/WebApp -s -o fable",
-    "bundle-report": "parcel build --public-url \"./\" --reporter @parcel/reporter-bundle-analyzer"
+    "build:fable": "dotnet fable src/WebApp -s -o fable",
+    "build": "pnpm build:fable && parcel build --public-url './'",
+    "bundle-report": "pnpm build:fable && parcel build --public-url './' --reporter @parcel/reporter-bundle-analyzer"
   },
   "dependencies": {
     "preact": "^10.11.3",
