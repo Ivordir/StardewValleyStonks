@@ -16,7 +16,7 @@ let timeNormalizationDivisor growthSpan crop = function
 
 /// Returns the GrowthSpan for this crop that has the most harvests,
 /// and, in the case of a tie, the date span with the least days.
-let bestGrowthSpan vars fert crop =
+let bestGrowthSpan vars fertilizer crop =
   let spans =
     if vars.Location = Farm
     then Crop.seasons crop
@@ -25,7 +25,7 @@ let bestGrowthSpan vars fert crop =
 
   if spans.Length = 0 then None else
 
-  let stages, time = Game.growthTimeAndStages vars fert crop
+  let stages, time = Game.growthTimeAndStages vars fertilizer crop
 
   spans |> Array.sortInPlaceBy (fun span -> span.TotalDays)
   let span, harvests =

@@ -99,7 +99,7 @@ module [<RequireQualifiedAccess>] Image =
   let regrowStage seed =
     at <| cropRoot $"{seed}/Regrow"
 
-  let fertilizer' (fert: FertilizerName) = fert |> fertilizerRoot |> at //(FertName fertilizer) = fertilizer |> fertilizerRoot |> at
+  let fertilizer' (fertilizer: FertilizerName) = fertilizer |> fertilizerRoot |> at
   let fertilizer = Fertilizer.name >> fertilizer'
   let skill = skillRoot >> at
   let profession (profession: Profession) = string profession |> skill

@@ -24,20 +24,33 @@ let private gameData =
     (load extractedData Decode.extractedData)
     (load supplementalData Decode.supplementalData)
 
-#if DEBUG
-do
-  let missingItems = GameData.missingItemIds gameData |> Seq.map string |> Array.ofSeq
-  if missingItems.Length > 0 then
-    failwith ("The following items ids were referenced, but no items with the ids were provided: " + String.concat ", " missingItems)
-// validate:
-// fertilizers
-// products
-// crops
-// if regrow: extraItem amount >= 1.0 if extraItem = seed
-// if forage: no items = seed
-// seedItem.Category = Seed
-#endif
+assert (GameData.missingItemIds gameData |> Array.isEmpty)
+assert (gameData.Fertilizers.Values |> Seq.forall (fun fertilizer -> Fertilizer.speed fertilizer >= Fertilizer.minSpeed))
+assert (gameData.Crops.Values |> Seq.forall (Crop.seedItem >> gameData.Items.Find >> Item.category >> (=) Seeds))
+assert (gameData.Crops.Values |> Seq.forall (Crop.stages >> Array.contains 0u >> not))
 
+assert (gameData.FarmCrops.Values |> Seq.forall (fun crop ->
+  match crop.RegrowTime, crop.ExtraItem with
+  | Some time, Some (item, amount) -> time > 0u && (nat item <> nat crop.Seed || amount >= 1.0)
+  | Some time, None -> time > 0u
+  | None, Some (_, amount) -> amount >= FarmCrop.minExtraItemAmount
+  | None, None -> true))
+
+assert (gameData.FarmCrops.Values |> Seq.forall (fun crop ->
+  let amount = crop.Amount
+  CropAmount.minExtraCropChance <= amount.ExtraCropChance && amount.ExtraCropChance <= CropAmount.maxExtraCropChance
+  && CropAmount.minYield <= amount.MinCropYield && amount.MinCropYield <= amount.MaxCropYield))
+
+assert (gameData.ForageCrops.Values |> Seq.forall (fun crop ->
+  let len = nat crop.Items.Length
+  ForageCrop.minItems <= len && len <= ForageCrop.maxItems))
+
+assert
+  gameData.Products.Values
+  |> Seq.collect Table.values
+  |> Seq.forall (function
+    | Processed { Ratio = Some (i, o) } -> i > 0u && o > 0u
+    | _ -> true)
 
 
 module private Shorthand =
@@ -354,14 +367,50 @@ let defaultSavedSettings = lazy (
   |> load settingsData
 )
 
-#if DEBUG
-// validate: at least one saved settings in default
+assert (not defaultSavedSettings.Value.IsEmpty)
 
-// validate for all settings:
-// skills
-// multipliers
-// date
-// cropamount
+#if DEBUG
+let private skillValid skill = skill.Level <= Skill.maxLevel
+let private dateValid date = Date.firstDay <= date.Day && date.Day <= Date.lastDay
+
+let private assertSettings predicate =
+  assert (defaultSavedSettings.Value |> List.forall (fun (_, settings) -> predicate settings))
+
+let private seedItemPairs = GameData.seedItemPairs gameData |> Set.ofArray
+
+let private isKeySubset table keys = keys |> Seq.forall (fun key -> table |> Table.containsKey key)
+let private isFertilizerNameSubset keys = keys |> isKeySubset gameData.Fertilizers
+let private isSeedIdSubset keys = keys |> isKeySubset gameData.Crops
+
+let private isNestedKeySubset tables key keys =
+  tables
+  |> Table.tryFind key
+  |> Option.exists (fun table -> keys |> isKeySubset table)
+
+assertSettings (fun settings -> skillValid settings.Game.Skills.Farming && skillValid settings.Game.Skills.Foraging)
+assertSettings (fun settings -> dateValid settings.Game.StartDate && dateValid settings.Game.EndDate)
+assertSettings (fun settings -> [| 0.0..0.25..1.0 |] |> Array.contains settings.Game.Multipliers.ProfitMargin)
+assertSettings (fun settings ->
+  settings.Game.CropAmount.LuckBuff <= CropAmount.maxLuckBuff
+  && CropAmount.minGiantCropChecks <= settings.Game.CropAmount.GiantChecksPerTile && settings.Game.CropAmount.GiantChecksPerTile <= CropAmount.maxGiantCropChecks)
+
+assertSettings (fun settings -> isFertilizerNameSubset settings.Selected.Fertilizers)
+assertSettings (fun settings -> settings.Selected.FertilizerPrices |> Map.forall (isNestedKeySubset gameData.FertilizerPrices))
+
+assertSettings (fun settings -> isSeedIdSubset settings.Selected.Crops)
+assertSettings (fun settings -> settings.Selected.SeedPrices |> Map.forall (isNestedKeySubset gameData.SeedPrices))
+
+assertSettings (fun settings -> Set.isSubset settings.Selected.SellRaw seedItemPairs)
+assertSettings (fun settings -> settings.Selected.Products |> Map.forall (fun (_, item) processors -> isNestedKeySubset gameData.Products item processors))
+assertSettings (fun settings -> isSeedIdSubset settings.Selected.SellForageSeeds)
+
+assertSettings (fun settings -> isSeedIdSubset settings.Selected.UseSeedMaker)
+assertSettings (fun settings -> isSeedIdSubset settings.Selected.UseHarvestedSeeds)
+assertSettings (fun settings -> isSeedIdSubset settings.Selected.UseForageSeeds)
+
+assertSettings (fun settings -> isFertilizerNameSubset settings.Selected.CustomFertilizerPrices.Values.Keys)
+assertSettings (fun settings -> isSeedIdSubset settings.Selected.CustomSeedPrices.Values.Keys)
+assertSettings (fun settings -> settings.Selected.CustomSellPrices.Values.Keys |> Seq.forall seedItemPairs.Contains)
 #endif
 
 let defaultApp = lazy {
