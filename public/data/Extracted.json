@@ -4,25 +4,25 @@
       "Id": 16,
       "Name": "Wild Horseradish",
       "SellPrice": 50,
-      "Category": "Other"
+      "Category": "Forage"
     },
     {
       "Id": 18,
       "Name": "Daffodil",
       "SellPrice": 30,
-      "Category": "Other"
+      "Category": "Forage"
     },
     {
       "Id": 20,
       "Name": "Leek",
       "SellPrice": 60,
-      "Category": "Other"
+      "Category": "Forage"
     },
     {
       "Id": 22,
       "Name": "Dandelion",
       "SellPrice": 40,
-      "Category": "Other"
+      "Category": "Forage"
     },
     {
       "Id": 24,
@@ -292,7 +292,7 @@
       "Id": 404,
       "Name": "Common Mushroom",
       "SellPrice": 40,
-      "Category": "Other"
+      "Category": "Forage"
     },
     {
       "Id": 406,
@@ -304,7 +304,7 @@
       "Id": 408,
       "Name": "Hazelnut",
       "SellPrice": 90,
-      "Category": "Other"
+      "Category": "Forage"
     },
     {
       "Id": 410,
@@ -316,7 +316,7 @@
       "Id": 412,
       "Name": "Winter Root",
       "SellPrice": 70,
-      "Category": "Other"
+      "Category": "Forage"
     },
     {
       "Id": 414,
@@ -328,7 +328,7 @@
       "Id": 416,
       "Name": "Snow Yam",
       "SellPrice": 100,
-      "Category": "Other"
+      "Category": "Forage"
     },
     {
       "Id": 417,
@@ -713,41 +713,42 @@
   },
   "FarmCrops": [
     {
+      "Seed": 273,
+      "Item": 271,
+      "Amount": {
+        "ExtraCropChance": 0.1,
+        "FarmLevelsPerYieldIncrease": 10
+      },
       "Seasons": [
         "Spring"
       ],
-      "Seed": 273,
       "Stages": [
         1,
         2,
         2,
         3
       ],
-      "Paddy": true,
-      "Amount": {
-        "ExtraCropChance": 0.1,
-        "FarmLevelsPerYieldIncrease": 10
-      },
-      "Item": 271
+      "Paddy": true
     },
     {
+      "Seed": 299,
+      "Item": 300,
       "Seasons": [
         "Fall"
       ],
-      "Seed": 299,
       "Stages": [
         1,
         2,
         2,
         2
-      ],
-      "Item": 300
+      ]
     },
     {
+      "Seed": 301,
+      "Item": 398,
       "Seasons": [
         "Fall"
       ],
-      "Seed": 301,
       "Stages": [
         1,
         1,
@@ -755,14 +756,14 @@
         3,
         3
       ],
-      "RegrowTime": 3,
-      "Item": 398
+      "RegrowTime": 3
     },
     {
+      "Seed": 302,
+      "Item": 304,
       "Seasons": [
         "Summer"
       ],
-      "Seed": 302,
       "Stages": [
         1,
         1,
@@ -770,74 +771,64 @@
         3,
         4
       ],
-      "RegrowTime": 1,
-      "Item": 304
+      "RegrowTime": 1
     },
     {
+      "Seed": 347,
+      "Item": 417,
       "Seasons": [
         "Fall"
       ],
-      "Seed": 347,
       "Stages": [
         2,
         4,
         6,
         6,
         6
-      ],
-      "Item": 417
+      ]
     },
     {
+      "Seed": 425,
+      "Item": 595,
       "Seasons": [
         "Fall"
       ],
-      "Seed": 425,
       "Stages": [
         1,
         4,
         4,
         3
-      ],
-      "Item": 595
+      ]
     },
     {
-      "Seasons": [
-        "Spring"
-      ],
       "Seed": 427,
-      "Stages": [
-        1,
-        1,
-        2,
-        2
-      ],
-      "Item": 591
-    },
-    {
+      "Item": 591,
       "Seasons": [
         "Spring"
       ],
-      "Seed": 429,
       "Stages": [
         1,
-        2,
+        1,
         2,
         2
-      ],
-      "Item": 597
+      ]
     },
     {
+      "Seed": 429,
+      "Item": 597,
       "Seasons": [
-        "Summer",
-        "Fall"
+        "Spring"
       ],
-      "Seed": 431,
       "Stages": [
         1,
         2,
-        3,
+        2,
         2
-      ],
+      ]
+    },
+    {
+      "Seed": 431,
+      "Item": 421,
       "Amount": {
         "CanDouble": false
       },
@@ -845,74 +836,84 @@
         431,
         1.0
       ],
-      "Item": 421
-    },
-    {
       "Seasons": [
-        "Spring",
-        "Summer"
+        "Summer",
+        "Fall"
       ],
-      "Seed": 433,
       "Stages": [
         1,
         2,
-        2,
         3,
         2
-      ],
+      ]
+    },
+    {
+      "Seed": 433,
+      "Item": 433,
       "Amount": {
         "MinCropYield": 4,
         "MaxCropYield": 4,
         "ExtraCropChance": 0.02,
         "CanDouble": false
       },
-      "RegrowTime": 2,
-      "Item": 433
+      "Seasons": [
+        "Spring",
+        "Summer"
+      ],
+      "Stages": [
+        1,
+        2,
+        2,
+        3,
+        2
+      ],
+      "RegrowTime": 2
     },
     {
+      "Seed": 453,
+      "Item": 376,
       "Seasons": [
         "Summer"
       ],
-      "Seed": 453,
       "Stages": [
         1,
         2,
         2,
         2
-      ],
-      "Item": 376
+      ]
     },
     {
+      "Seed": 455,
+      "Item": 593,
       "Seasons": [
         "Summer"
       ],
-      "Seed": 455,
       "Stages": [
         1,
         2,
         3,
         2
-      ],
-      "Item": 593
+      ]
     },
     {
+      "Seed": 472,
+      "Item": 24,
       "Seasons": [
         "Spring"
       ],
-      "Seed": 472,
       "Stages": [
         1,
         1,
         1,
         1
-      ],
-      "Item": 24
+      ]
     },
     {
+      "Seed": 473,
+      "Item": 188,
       "Seasons": [
         "Spring"
       ],
-      "Seed": 473,
       "Stages": [
         1,
         1,
@@ -920,221 +921,221 @@
         3,
         4
       ],
-      "RegrowTime": 3,
-      "Item": 188
+      "RegrowTime": 3
     },
     {
-      "Seasons": [
-        "Spring"
-      ],
       "Seed": 474,
-      "Stages": [
-        1,
-        2,
-        4,
-        4,
-        1
-      ],
+      "Item": 190,
       "Giant": true,
-      "Item": 190
-    },
-    {
       "Seasons": [
         "Spring"
       ],
-      "Seed": 475,
       "Stages": [
         1,
-        1,
-        1,
         2,
+        4,
+        4,
         1
-      ],
+      ]
+    },
+    {
+      "Seed": 475,
+      "Item": 192,
       "Amount": {
         "ExtraCropChance": 0.2,
         "CanDouble": false
       },
-      "Item": 192
-    },
-    {
       "Seasons": [
         "Spring"
       ],
+      "Stages": [
+        1,
+        1,
+        1,
+        2,
+        1
+      ]
+    },
+    {
       "Seed": 476,
+      "Item": 248,
+      "Seasons": [
+        "Spring"
+      ],
       "Stages": [
         1,
         1,
         1,
         1
-      ],
-      "Item": 248
+      ]
     },
     {
-      "Seasons": [
-        "Spring"
-      ],
       "Seed": 477,
+      "Item": 250,
+      "Seasons": [
+        "Spring"
+      ],
       "Stages": [
         1,
         2,
         2,
         1
-      ],
-      "Item": 250
+      ]
     },
     {
+      "Seed": 478,
+      "Item": 252,
       "Seasons": [
         "Spring"
       ],
-      "Seed": 478,
       "Stages": [
         2,
         2,
         2,
         3,
         4
-      ],
-      "Item": 252
+      ]
     },
     {
+      "Seed": 479,
+      "Item": 254,
+      "Giant": true,
       "Seasons": [
         "Summer"
       ],
-      "Seed": 479,
       "Stages": [
         1,
         2,
         3,
         3,
         3
-      ],
-      "Giant": true,
-      "Item": 254
+      ]
     },
     {
-      "Seasons": [
-        "Summer"
-      ],
       "Seed": 480,
-      "Stages": [
-        2,
-        2,
-        2,
-        2,
-        3
-      ],
+      "Item": 256,
       "Amount": {
         "ExtraCropChance": 0.05,
         "CanDouble": false
       },
-      "RegrowTime": 4,
-      "Item": 256
-    },
-    {
       "Seasons": [
         "Summer"
       ],
-      "Seed": 481,
       "Stages": [
-        1,
-        3,
-        3,
-        4,
-        2
+        2,
+        2,
+        2,
+        2,
+        3
       ],
+      "RegrowTime": 4
+    },
+    {
+      "Seed": 481,
+      "Item": 258,
       "Amount": {
         "MinCropYield": 3,
         "MaxCropYield": 3,
         "ExtraCropChance": 0.02,
         "CanDouble": false
       },
-      "RegrowTime": 4,
-      "Item": 258
-    },
-    {
       "Seasons": [
         "Summer"
       ],
-      "Seed": 482,
       "Stages": [
         1,
-        1,
-        1,
-        1,
-        1
+        3,
+        3,
+        4,
+        2
       ],
+      "RegrowTime": 4
+    },
+    {
+      "Seed": 482,
+      "Item": 260,
       "Amount": {
         "ExtraCropChance": 0.03,
         "CanDouble": false
       },
-      "RegrowTime": 3,
-      "Item": 260
-    },
-    {
       "Seasons": [
-        "Summer",
-        "Fall"
+        "Summer"
       ],
-      "Seed": 483,
       "Stages": [
+        1,
         1,
         1,
         1,
         1
       ],
+      "RegrowTime": 3
+    },
+    {
+      "Seed": 483,
+      "Item": 262,
       "ExtraItem": [
         178,
         0.4
       ],
-      "Item": 262
+      "Seasons": [
+        "Summer",
+        "Fall"
+      ],
+      "Stages": [
+        1,
+        1,
+        1,
+        1
+      ]
     },
     {
+      "Seed": 484,
+      "Item": 264,
       "Seasons": [
         "Summer"
       ],
-      "Seed": 484,
       "Stages": [
         2,
         1,
         2,
         1
-      ],
-      "Item": 264
+      ]
     },
     {
+      "Seed": 485,
+      "Item": 266,
       "Seasons": [
         "Summer"
       ],
-      "Seed": 485,
       "Stages": [
         2,
         1,
         2,
         2,
         2
-      ],
-      "Item": 266
+      ]
     },
     {
+      "Seed": 486,
+      "Item": 268,
       "Seasons": [
         "Summer"
       ],
-      "Seed": 486,
       "Stages": [
         2,
         3,
         2,
         3,
         3
-      ],
-      "Item": 268
+      ]
     },
     {
+      "Seed": 487,
+      "Item": 270,
       "Seasons": [
         "Summer",
         "Fall"
       ],
-      "Seed": 487,
       "Stages": [
         2,
         3,
@@ -1142,124 +1143,124 @@
         3,
         3
       ],
-      "RegrowTime": 4,
-      "Item": 270
+      "RegrowTime": 4
     },
     {
-      "Seasons": [
-        "Fall"
-      ],
       "Seed": 488,
-      "Stages": [
-        1,
-        1,
-        1,
-        1,
-        1
-      ],
+      "Item": 272,
       "Amount": {
         "ExtraCropChance": 0.002,
         "CanDouble": false
       },
-      "RegrowTime": 5,
-      "Item": 272
-    },
-    {
       "Seasons": [
         "Fall"
       ],
+      "Stages": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "RegrowTime": 5
+    },
+    {
       "Seed": 489,
+      "Item": 274,
+      "Seasons": [
+        "Fall"
+      ],
       "Stages": [
         2,
         2,
         1,
         2,
         1
-      ],
-      "Item": 274
+      ]
     },
     {
+      "Seed": 490,
+      "Item": 276,
+      "Giant": true,
       "Seasons": [
         "Fall"
       ],
-      "Seed": 490,
       "Stages": [
         1,
         2,
         3,
         4,
         3
-      ],
-      "Giant": true,
-      "Item": 276
+      ]
     },
     {
+      "Seed": 491,
+      "Item": 278,
       "Seasons": [
         "Fall"
       ],
-      "Seed": 491,
       "Stages": [
         1,
         1,
         1,
         1
-      ],
-      "Item": 278
+      ]
     },
     {
+      "Seed": 492,
+      "Item": 280,
       "Seasons": [
         "Fall"
       ],
-      "Seed": 492,
       "Stages": [
         1,
         3,
         3,
         3
-      ],
-      "Item": 280
+      ]
     },
     {
-      "Seasons": [
-        "Fall"
-      ],
       "Seed": 493,
-      "Stages": [
-        1,
-        2,
-        1,
-        1,
-        2
-      ],
+      "Item": 282,
       "Amount": {
         "MinCropYield": 2,
         "MaxCropYield": 2,
         "ExtraCropChance": 0.1,
         "CanDouble": false
       },
-      "RegrowTime": 5,
-      "Item": 282
-    },
-    {
       "Seasons": [
         "Fall"
       ],
+      "Stages": [
+        1,
+        2,
+        1,
+        1,
+        2
+      ],
+      "RegrowTime": 5
+    },
+    {
       "Seed": 494,
+      "Item": 284,
+      "Seasons": [
+        "Fall"
+      ],
       "Stages": [
         1,
         1,
         2,
         2
-      ],
-      "Item": 284
+      ]
     },
     {
+      "Seed": 499,
+      "Item": 454,
       "Seasons": [
         "Spring",
         "Summer",
         "Fall"
       ],
-      "Seed": 499,
       "Stages": [
         2,
         7,
@@ -1267,14 +1268,18 @@
         7,
         5
       ],
-      "RegrowTime": 7,
-      "Item": 454
+      "RegrowTime": 7
     },
     {
+      "Seed": 745,
+      "Item": 400,
+      "Amount": {
+        "ExtraCropChance": 0.02,
+        "CanDouble": false
+      },
       "Seasons": [
         "Spring"
       ],
-      "Seed": 745,
       "Stages": [
         1,
         1,
@@ -1282,16 +1287,12 @@
         2,
         2
       ],
-      "Amount": {
-        "ExtraCropChance": 0.02,
-        "CanDouble": false
-      },
-      "RegrowTime": 4,
-      "Item": 400
+      "RegrowTime": 4
     },
     {
-      "Seasons": [],
       "Seed": 802,
+      "Item": 90,
+      "Seasons": [],
       "Stages": [
         2,
         2,
@@ -1299,28 +1300,28 @@
         3,
         3
       ],
-      "RegrowTime": 3,
-      "Item": 90
+      "RegrowTime": 3
     },
     {
+      "Seed": 831,
+      "Item": 830,
       "Seasons": [
         "Summer"
       ],
-      "Seed": 831,
       "Stages": [
         1,
         2,
         3,
         4
       ],
-      "Paddy": true,
-      "Item": 830
+      "Paddy": true
     },
     {
+      "Seed": 833,
+      "Item": 832,
       "Seasons": [
         "Summer"
       ],
-      "Seed": 833,
       "Stages": [
         1,
         3,
@@ -1328,23 +1329,11 @@
         4,
         3
       ],
-      "RegrowTime": 7,
-      "Item": 832
+      "RegrowTime": 7
     },
     {
-      "Seasons": [
-        "Spring",
-        "Summer",
-        "Fall",
-        "Winter"
-      ],
       "Seed": 885,
-      "Stages": [
-        1,
-        2,
-        2,
-        2
-      ],
+      "Item": 771,
       "Amount": {
         "MinCropYield": 4,
         "MaxCropYield": 7,
@@ -1355,68 +1344,79 @@
         770,
         0.1
       ],
-      "Item": 771
+      "Seasons": [
+        "Spring",
+        "Summer",
+        "Fall",
+        "Winter"
+      ],
+      "Stages": [
+        1,
+        2,
+        2,
+        2
+      ]
     }
   ],
   "ForageCrops": [
     {
-      "Season": "Spring",
       "Seed": 495,
-      "Stages": [
-        3,
-        4
-      ],
       "Items": [
         16,
         18,
         20,
         22
       ],
-      "SeedRecipeUnlockLevel": 1
-    },
-    {
-      "Season": "Summer",
-      "Seed": 496,
+      "SeedRecipeUnlockLevel": 1,
+      "Season": "Spring",
       "Stages": [
         3,
         4
-      ],
+      ]
+    },
+    {
+      "Seed": 496,
       "Items": [
         396,
         398,
         402
       ],
-      "SeedRecipeUnlockLevel": 4
-    },
-    {
-      "Season": "Fall",
-      "Seed": 497,
+      "SeedRecipeUnlockLevel": 4,
+      "Season": "Summer",
       "Stages": [
         3,
         4
-      ],
+      ]
+    },
+    {
+      "Seed": 497,
       "Items": [
         404,
         406,
         408,
         410
       ],
-      "SeedRecipeUnlockLevel": 6
-    },
-    {
-      "Season": "Winter",
-      "Seed": 498,
+      "SeedRecipeUnlockLevel": 6,
+      "Season": "Fall",
       "Stages": [
         3,
         4
-      ],
+      ]
+    },
+    {
+      "Seed": 498,
       "Items": [
         412,
         414,
         416,
         418
       ],
-      "SeedRecipeUnlockLevel": 7
+      "SeedRecipeUnlockLevel": 7,
+      "Season": "Winter",
+      "Stages": [
+        3,
+        4
+      ]
     }
   ]
 }
