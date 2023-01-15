@@ -212,33 +212,35 @@ module CropAmount =
   }
 
   let doubleHarvestProb settings =
-    // RolledDailyLuck ~ U{-100, 100}
-    // That is, a discrete uniform variable whose probability mass function for x in {-100...100} is:
-    // f(x) = 1 / (100 - -100 + 1) = 1 / 201
-    // This is the daily luck rolled every day by the game.
+    (*
+    RolledDailyLuck ~ U{-100, 100}
+    That is, a discrete uniform variable whose probability mass function for x in {-100...100} is:
+    f(x) = 1 / (100 - -100 + 1) = 1 / 201
+    This is the daily luck rolled every day by the game.
 
-    // specialCharm = 0.025 if hasSpecialCharm otherwise 0
-    // doubleHarvestCutoff(rolledDailyLuck) = (rolledDailyLuck / 1000 + specialCharm) / 1200 + luckBuff / 1500 + 0.0001
-    // assume 0 <= luckBuff <= 1499.69375 such that 0 <= doubleHarvestCutoff <= 1
-    // The below random value must be less than doubleHarvestCutoff for a double harvest to happen.
+    specialCharm = 0.025 if hasSpecialCharm otherwise 0
+    doubleHarvestCutoff(rolledDailyLuck) = (rolledDailyLuck / 1000 + specialCharm) / 1200 + luckBuff / 1500 + 0.0001
+    assume 0 <= luckBuff <= 1499.69375 such that 0 <= doubleHarvestCutoff <= 1
+    The below random value must be less than doubleHarvestCutoff for a double harvest to happen.
 
-    // Rand ~ U_[0, 1)
-    // That is, a continuous uniform variable whose cummulative distribution function is:
-    //        { 0                     for x < 0
-    // F(x) = { (x - 0) / (1 - 0) = x for x in [0, 1)
-    //        { 1                     for x >= 1
-    // This is the random value generated every harvest to determine if a double harvest happens.
+    Rand ~ U_[0, 1)
+    That is, a continuous uniform variable whose cummulative distribution function is:
+           { 0                     for x < 0
+    F(x) = { (x - 0) / (1 - 0) = x for x in [0, 1)
+           { 1                     for x >= 1
+    This is the random value generated every harvest to determine if a double harvest happens.
 
-    // P(DoubleHarvest)
-    // = P(Rand < DoubleHarvestCutoff)
-    // = sum_(l=-100)^100 P(RolledDailyLuck = l, Rand <= doubleHarvestCutoff(l))      // for all possible l, what is the probability that Rand <= doubleHarvestCutoff(l)?
-    // = sum_(l=-100)^100 P(RolledDailyLuck = l) * P(Rand <= doubleHarvestCutoff(l))  => RolledDailyLuck and Rand are independent
-    // = sum_(l=-100)^100 f_RolledDailyLuck(l) * F_Rand(doubleHarvestCutoff(l))       => definition of probability mass function and cummulative distribution function
-    // = sum_(l=-100)^100 (1 / 201) * doubleHarvestCutoff(l)                          => substitution, l is in {-100...100} and 0 <= doubleHarvestCutoff(l) <= 1
-    // = (1 / 201) * 201 * (doubleHarvestCutoff(100) + doubleHarvestCutoff(-100)) / 2 => doubleHarvestCutoff is linear
-    // = (doubleHarvestCutoff(100) + doubleHarvestCutoff(-100)) / 2
-    // = ((100 / 1000) + (-100 / 1000)) / 1200 / 2 + specialCharm / 1200 + luckBuff / 1500 + 0.0001
-    // = specialCharm / 1200 + luckBuff / 1500 + 0.0001
+    P(DoubleHarvest)
+    = P(Rand < DoubleHarvestCutoff)
+    = sum_(l=-100)^100 P(RolledDailyLuck = l, Rand <= doubleHarvestCutoff(l))      // for all possible l, what is the probability that Rand <= doubleHarvestCutoff(l)?
+    = sum_(l=-100)^100 P(RolledDailyLuck = l) * P(Rand <= doubleHarvestCutoff(l))  => RolledDailyLuck and Rand are independent
+    = sum_(l=-100)^100 f_RolledDailyLuck(l) * F_Rand(doubleHarvestCutoff(l))       => definition of probability mass function and cummulative distribution function
+    = sum_(l=-100)^100 (1 / 201) * doubleHarvestCutoff(l)                          => substitution, l is in {-100...100} and 0 <= doubleHarvestCutoff(l) <= 1
+    = (1 / 201) * 201 * (doubleHarvestCutoff(100) + doubleHarvestCutoff(-100)) / 2 => doubleHarvestCutoff is linear
+    = (doubleHarvestCutoff(100) + doubleHarvestCutoff(-100)) / 2
+    = ((100 / 1000) + (-100 / 1000)) / 1200 / 2 + specialCharm / 1200 + luckBuff / 1500 + 0.0001
+    = specialCharm / 1200 + luckBuff / 1500 + 0.0001
+    *)
 
     (if settings.SpecialCharm then 0.025 else 0.0) / 1200.0
     + float settings.LuckBuff / 1500.0
@@ -313,31 +315,34 @@ module [<RequireQualifiedAccess>] SeedPrice =
 
 
 module Growth =
-  // Stardew Valley passes speed around as a float32.
-  // This is later converted to a float (float64), introducing a small amout of error.
-  // This small error is sometimes enough to give an extra day of reduction,
-  // since the value is later passed into the ceiling function.
-  //   Case 1: float 0.2f > 0.2
-  //   0.200000002980232     0.2
-  //   * 10.0 growth days    * 10.0 growth days
-  //   = 2.00000002980232    = 2.0
-  //   |> ceil |> int        |> ceil |> int
-  //   = 3                   = 2
-  //   This effect can be seen on crops with a total of 10 growth days (e.g green bean, coffee)
-  //   A 0.1 speed reduces the total time to 8 days (instead of 9),
-  //   and a 0.2 speed reduces the total time to 7 days (instead of 8).
-  //
-  //  Case 2: float 0.25f = 0.25 (all numbers 1/(2^n))
-  //  0.25            0.25
-  //  ...    Same    ...
-  //
-  //  Case3 : float 0.35f < 0.35
-  //  0.349999994039536     0.35
-  //  * 20.0 growth days    * 20.0 growth days
-  //  = 6.99999988079071    = 7.0
-  //  |> ceil |> int        |> ceil |> int
-  //  = 7                   = 7
-  //  These wouldn't be equal if floor was used instead of ceil.
+  (*
+  Stardew Valley passes speed around as a float32.
+  This is later converted to a float (float64), introducing a small amout of error.
+  This small error is sometimes enough to give an extra day of reduction,
+  since the value is later passed into the ceiling function.
+
+  Case 1: float 0.2f > 0.2
+    0.200000002980232     0.2
+    * 10.0 growth days    * 10.0 growth days
+    = 2.00000002980232    = 2.0
+    |> ceil |> int        |> ceil |> int
+    = 3                   = 2
+  This effect can be seen on crops with a total of 10 growth days (e.g green bean, coffee)
+  A 0.1 speed reduces the total time to 8 days (instead of 9),
+  and a 0.2 speed reduces the total time to 7 days (instead of 8).
+
+  Case 2: float 0.25f = 0.25 (all numbers 1/(2^n))
+    0.25            0.25
+    ...    Same    ...
+
+  Case 3: float 0.35f < 0.35
+    0.349999994039536     0.35
+    * 20.0 growth days    * 20.0 growth days
+    = 6.99999988079071    = 7.0
+    |> ceil |> int        |> ceil |> int
+    = 7                   = 7
+  These wouldn't be equal if floor was used instead of ceil.
+  *)
   let inline private fround (x: float) =
     #if FABLE_COMPILER
     Fable.Core.JS.Math.fround x

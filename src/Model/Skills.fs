@@ -159,29 +159,31 @@ module Skills =
 
   open type Quality
 
-  // Models the probabilities that result from a chain of if-else statements.
-  // E.g. given that p(x) is the raw probability of the check on x succeeding:
-  // if p(x1) then
-  //   x1
-  // elif p(x2) then
-  //   x2
-  // elif p(x3) then
-  //   x3
-  // else // p(x4) = 1
-  //   x4
-  //
-  // The actual probability of x_n, P(x_n), depends on all previous branches not happening:
-  // P(x_n) = p(x_n) * (1 - p(x_(n-1))) * (1 - p(x_(n-2))) * ... * (1 - p(x1)):
-  //
-  // P(x1) = p(x1)
-  //
-  // P(x2) = p(x2) * (1 - p(x1))
-  //
-  // P(x3) = p(x3) * (1 - p(x2)) * (1 - p(x1))
-  //
-  // P(x4) = 1 * (1 - p(x3)) * (1 - p(x2)) * (1 - p(x1))
-  //
-  // Assumes each quality only appears once in `probabilities`.
+  (*
+  Calculates the probabilities that result from a chain of if-else statements.
+  E.g. given that p(x) is the raw probability of the check on x succeeding:
+  if p(x1) then
+    x1
+  elif p(x2) then
+    x2
+  elif p(x3) then
+    x3
+  else // p(x4) = 1
+    x4
+
+  The actual probability of x_n, P(x_n), depends on all previous branches not happening:
+  P(x_n) = p(x_n) * (1 - p(x_(n-1))) * (1 - p(x_(n-2))) * ... * (1 - p(x1)):
+
+  P(x1) = p(x1)
+
+  P(x2) = p(x2) * (1 - p(x1))
+
+  P(x3) = p(x3) * (1 - p(x2)) * (1 - p(x1))
+
+  P(x4) = 1 * (1 - p(x3)) * (1 - p(x2)) * (1 - p(x1))
+
+  Assumes each quality only appears once in `probabilities`.
+  *)
   let private ifElseDistribution (probabilities: (Quality * float) array) =
     let dist = Array.zeroCreate Quality.count
     let mutable runningProb = 1.0
