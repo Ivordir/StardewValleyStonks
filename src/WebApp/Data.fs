@@ -382,8 +382,7 @@ module LocalStorage =
   let inline private getItem key = Browser.WebStorage.localStorage.getItem key |> unbox<string option>
   let inline private setItem key data = Browser.WebStorage.localStorage.setItem (key, data)
 
-  // update version on load, in case other tabs are open
-  let updateVersion () = setItem VersionKey App.version.String
+  let private saveVersion () = setItem VersionKey App.version.String
 
   let private trySave name key encoder value =
     try
@@ -398,6 +397,11 @@ module LocalStorage =
   let saveState state = trySave "app state" StateKey Encode.state state
   let saveSettings settings = trySave "settings" SavedSettingsKey Encode.savedSettings settings
 
+  let private saveAll app =
+    saveVersion ()
+    saveState app.State
+    saveSettings app.SavedSettings
+
   let private tryLoad name key decoder =
     match getItem key with
     | None ->
@@ -410,46 +414,58 @@ module LocalStorage =
         console.error $"Failed to load {name} from local storage: {e}"
         None
 
+  let private loadState () =
+     tryLoad "app state" StateKey Decode.state
+     |> Option.defaultWith (fun () -> defaultApp.Value.State)
+
+  let private loadSavedSettings () =
+    tryLoad "saved settings" SavedSettingsKey Decode.savedSettings
+    |> Option.defaultValue []
+
   let loadApp () =
-    match getItem VersionKey with
+    match getItem VersionKey |> Option.map Version.tryParse with
     | None ->
       // assume first time loading
       console.info "No version key found in local storage, loading default app..."
       let app = defaultApp.Value
-      updateVersion ()
-      saveState app.State
-      saveSettings app.SavedSettings
+      saveAll app
       app
-    | Some ver ->
-      match Version.tryParse ver with
-      | None ->
-        console.error "Invalid version. Ignoring existing data in local storage..."
-        defaultApp.Value
-      | Some ver when ver.Major <> App.version.Major ->
-        // convert data
-        console.error "Incompatable major version. Ignoring existing data in local storage..."
-        defaultApp.Value
-      | Some ver ->
-        let state = tryLoad "app state" StateKey Decode.state |> Option.defaultWith (fun () -> defaultApp.Value.State)
-        let savedSettings = tryLoad "saved settings" SavedSettingsKey Decode.savedSettings |> Option.defaultValue []
-        let state, savedSettings =
-          if ver.Minor = App.version.Minor then state, savedSettings else
-          let adaptSettings (settings: Settings) = { settings with Selected = Selections.adapt gameData settings.Selected }
-          { state with Settings = adaptSettings state.Settings },
-          savedSettings |> List.map (fun (name, settings) -> name, adaptSettings settings)
 
-        {
-          Data = gameData
-          State = state
-          SavedSettings = savedSettings
-        }
+    | Some None ->
+      // something's really wrong if this is the case
+      failwith $"Invalid version: {getItem VersionKey}"
+
+    | Some (Some ver) when ver.Major <> App.version.Major ->
+      failwith $"Unexpected major version: {ver.Major}"
+      // load and convert data here (once next version comes out)
+      // parse json -> edit object -> stringify -> decode?
+      // console.info $"Upgrading to version {ver.Major}..."
+
+    | Some (Some ver) when ver.Minor <> App.version.Minor ->
+      let adaptSettings (settings: Settings) = { settings with Selected = Selections.adapt gameData settings.Selected }
+      let state = loadState ()
+      let state = { state with Settings = adaptSettings state.Settings }
+      let savedSettings = loadSavedSettings () |> List.map (fun (name, settings) -> name, adaptSettings settings)
+      let app = {
+        Data = gameData
+        State = state
+        SavedSettings = savedSettings
+      }
+      saveAll app
+      app
+
+    | Some (Some _) -> {
+      Data = gameData
+      State = loadState ()
+      SavedSettings = loadSavedSettings ()
+    }
 
   let inline private reload () = Browser.Dom.window.location.reload ()
 
   let subscribe dispatch =
     Browser.Dom.window.onstorage <- fun e ->
       match e.key with
-      | key when isNullOrUndefined key ->
+      | null ->
         // local storage was cleared (hard reset triggered)
         reload ()
 
@@ -461,11 +477,8 @@ module LocalStorage =
         // A new version was pushed between two tab opens (this is probably rare)?
         // Just force reload this out-of-date tab if necessary.
         match Version.tryParse e.newValue with
-        | None -> reload () // version format/parsing changed, reload?
-        | Some ver ->
-          if ver.Major <> App.version.Major || ver.Minor <> App.version.Minor then
-            // need to load updated scripts, etc.
-            reload ()
+        | Some ver when ver = App.version -> ()
+        | _ -> reload () // out of date -> fetch updated scripts, etc.
 
       | SavedSettingsKey when isNullOrUndefined e.newValue ->
         // user manually deleted key?
