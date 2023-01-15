@@ -102,8 +102,8 @@ module private Shorthand =
 
     Skills: Skills option
     Multipliers: Multipliers option
-    CropAmount: CropAmountSettings option
     ModData: ModData option
+    CropAmount: CropAmountSettings option
     JojaMembership: bool option
     Irrigated: bool option
 
@@ -163,8 +163,8 @@ module private Shorthand =
 
           Skills = field (nameof u.Skills) (Decode.Auto.generateDecoder ())
           Multipliers = field (nameof u.Multipliers) (Decode.Auto.generateDecoder ())
-          CropAmount = field (nameof u.CropAmount) (Decode.Auto.generateDecoder ())
           ModData = field (nameof u.ModData) (Decode.Auto.generateDecoder ())
+          CropAmount = field (nameof u.CropAmount) (Decode.Auto.generateDecoder ())
           JojaMembership = field (nameof u.JojaMembership) Decode.bool
           Irrigated = field (nameof u.Irrigated) Decode.bool
 
@@ -198,8 +198,8 @@ module private Shorthand =
       Game = {
         Skills = short.Skills |> Option.defaultValue Skills.zero
         Multipliers = short.Multipliers |> Option.defaultValue Multipliers.common
-        CropAmount = short.CropAmount |> Option.defaultValue CropAmountSettings.common
         ModData = short.ModData |> Option.defaultValue ModData.common
+        CropAmount = short.CropAmount |> Option.defaultValue CropAmountSettings.common
         JojaMembership = short.Irrigated |> Option.defaultValue false
         Irrigated = short.Irrigated |> Option.defaultValue false
 

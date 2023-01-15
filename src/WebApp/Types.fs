@@ -185,17 +185,15 @@ type ProfitSettings = {
 
 type Settings = {
   Game: GameVariables
-  Selected: Selections
   Profit: ProfitSettings
+  Selected: Selections
 }
 
 
-type SettingsTab =
-  | Skills
-  | Crops
-  | Fertilizers
-  | Misc
-  | [<CompiledName ("Load / Save")>] LoadSettings
+
+type AppMode =
+  | Ranker
+  | Solver
 
 type RankItem =
   | [<CompiledName ("All Pairs")>] RankCropsAndFertilizers
@@ -223,13 +221,35 @@ type TimeNormalization =
   | [<CompiledName ("Per Day")>] PerDay
   | [<CompiledName ("Per Season")>] PerSeason
 
+type Ranker = {
+  RankItem: RankItem
+  RankMetric: RankMetric
+  TimeNormalization: TimeNormalization
+  ShowInvalid: bool
+  BrushSpan: nat * nat
+  SelectedCropAndFertilizer: (SeedId option * FertilizerName option option) option
+}
+
+module [<RequireQualifiedAccess>] Ranker =
+  let initial = {
+    RankItem = RankCrops
+    RankMetric = Gold
+    TimeNormalization = PerSeason
+    ShowInvalid = false
+    BrushSpan = 0u, 24u
+    SelectedCropAndFertilizer = None
+  }
+
 type SolverMode =
   | [<CompiledName ("Gold")>] MaximizeGold
   | [<CompiledName ("XP")>] MaximizeXP
 
-type AppMode =
-  | Ranker
-  | Solver
+type SettingsTab =
+  | Skills
+  | Crops
+  | Fertilizers
+  | Misc
+  | [<CompiledName ("Load / Save")>] LoadSettings
 
 type [<RequireQualifiedAccess>] OpenDetails =
   | Fertilizers
@@ -261,31 +281,16 @@ module [<RequireQualifiedAccess>] CropFilters =
     Forage = None
   }
 
-type Ranker = {
-  RankItem: RankItem
-  RankMetric: RankMetric
-  TimeNormalization: TimeNormalization
-  BrushSpan: nat * nat
-  SelectedCropAndFertilizer: (SeedId option * FertilizerName option option) option
-  ShowInvalid: bool
-}
-
-module [<RequireQualifiedAccess>] Ranker =
-  let initial = {
-    RankItem = RankCrops
-    RankMetric = Gold
-    TimeNormalization = PerSeason
-    BrushSpan = 0u, 24u
-    SelectedCropAndFertilizer = None
-    ShowInvalid = false
-  }
-
 type TableSort = (int * bool) list
 
 type UIState = {
   Mode: AppMode
+  Ranker: Ranker
+  SolverMode: SolverMode
+
   SettingsTab: SettingsTab
   OpenDetails: OpenDetails Set
+  CropFilters: CropFilters
 
   FertilizerSort: TableSort
   FertilizerPriceSort: TableSort
@@ -294,15 +299,13 @@ type UIState = {
   SeedSort: TableSort
   ProductQuality: Quality
   ShowNormalizedProductPrices: bool
-
-  CropFilters: CropFilters
-  Ranker: Ranker
-  SolverMode: SolverMode
 }
 
 module [<RequireQualifiedAccess>] UIState =
   let initial = {
     Mode = Ranker
+    Ranker = Ranker.initial
+    SolverMode = MaximizeGold
     SettingsTab = Skills
     OpenDetails = Set.ofArray [|
       OpenDetails.Crops
@@ -310,6 +313,7 @@ module [<RequireQualifiedAccess>] UIState =
       OpenDetails.RankerProfitBreakdown
       OpenDetails.RankerGrowthCalendar
     |]
+    CropFilters = CropFilters.empty
     FertilizerSort = [ 4, true; 3, true ]
     FertilizerPriceSort = [ 0, true ]
     CropSort = [ 1, true; 5, true ]
@@ -317,9 +321,6 @@ module [<RequireQualifiedAccess>] UIState =
     SeedSort = [ 0, true ]
     ProductQuality = Quality.Normal
     ShowNormalizedProductPrices = false
-    CropFilters = CropFilters.empty
-    Ranker = Ranker.initial
-    SolverMode = MaximizeGold
   }
 
 type State = {

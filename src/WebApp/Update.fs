@@ -14,10 +14,10 @@ type SkillsMessage =
   | SetIgnoreProfessionConflicts of bool
 
 type CropAmountMessage =
-  | SetGiantChecksPerTile of float
-  | SetShavingToolLevel of ToolLevel option
   | SetSpecialCharm of bool
   | SetLuckBuff of nat
+  | SetGiantChecksPerTile of float
+  | SetShavingToolLevel of ToolLevel option
 
 type MultipliersMessage =
   | SetProfitMargin of float
@@ -31,10 +31,10 @@ type ModDataMessage =
 type GameVariablesMessage =
   | SetSkills of SkillsMessage
   | SetMultipliers of MultipliersMessage
-  | SetCropAmount of CropAmountMessage
   | SetModData of ModDataMessage
-  | SetIrrigated of bool
+  | SetCropAmount of CropAmountMessage
   | SetJojaMembership of bool
+  | SetIrrigated of bool
   | SetStartDate of Date
   | SetEndDate of Date
   | SetLocation of Location
@@ -53,15 +53,15 @@ type SelectionsMessage =
   | SelectCrops of SeedId SelectionMessage
   | SelectSeedPrices of Vendor * SeedId SelectionMessage
 
-  | SelectFertilizers of FertilizerName SelectionMessage
   | SelectNoFertilizer of bool
+  | SelectFertilizers of FertilizerName SelectionMessage
   | SelectFertilizerPrices of Vendor * FertilizerName SelectionMessage
 
   | SelectSellRaw of (SeedId * ItemId) SelectionMessage
   | SelectProducts of Processor * (SeedId * ItemId) SelectionMessage
   | SelectSellForageSeeds of SeedId SelectionMessage
 
-  | SelectUseRawSeeds of SeedId SelectionMessage
+  | SelectUseHarvestedSeeds of SeedId SelectionMessage
   | SelectUseSeedMaker of SeedId SelectionMessage
   | SelectUseForageSeeds of SeedId SelectionMessage
 
@@ -76,8 +76,8 @@ type ProfitMessage =
 
 type SettingsMessage =
   | SetGameVariables of GameVariablesMessage
-  | SetSelections of SelectionsMessage
   | SetProfit of ProfitMessage
+  | SetSelections of SelectionsMessage
 
 type CropFiltersMessage =
   | SetInSeason of bool
@@ -91,16 +91,19 @@ type RankerMessage =
   | SetRankItem of RankItem
   | SetRankMetric of RankMetric
   | SetTimeNormalization of TimeNormalization
+  | SetShowInvalid of bool
   | SetBrushSpan of nat * nat
   | SetSelectedCropAndFertilizer of (SeedId option * FertilizerName option option) option
-  | SetShowInvalid of bool
 
 type SortMessage = bool * (int * bool)
 
 type UIMessage =
   | SetAppMode of AppMode
+  | SetRanker of RankerMessage
+  | SetSolverMode of SolverMode
   | SetSettingsTab of SettingsTab
   | SetDetailsOpen of OpenDetails * bool
+  | SetCropFilters of CropFiltersMessage
   | SetFertilizerSort of SortMessage
   | SetFertilizerPriceSort of SortMessage
   | SetCropSort of SortMessage
@@ -108,9 +111,6 @@ type UIMessage =
   | SetSeedSort of SortMessage
   | SetProductQuality of Quality
   | SetShowNormalizedProductPrices of bool
-  | SetCropFilters of CropFiltersMessage
-  | SetRanker of RankerMessage
-  | SetSolverMode of SolverMode
 
 type SavedSettingsMessage =
   | LoadSaveGame of string * GameVariables
@@ -161,10 +161,10 @@ let skills msg skills =
 
 let cropAmount msg amount =
   match msg with
-  | SetGiantChecksPerTile value -> { amount with GiantChecksPerTile = value }
-  | SetShavingToolLevel value -> { amount with ShavingToolLevel = value }
   | SetSpecialCharm value -> { amount with SpecialCharm = value }
   | SetLuckBuff value -> { amount with LuckBuff = value }
+  | SetGiantChecksPerTile value -> { amount with GiantChecksPerTile = value }
+  | SetShavingToolLevel value -> { amount with ShavingToolLevel = value }
 
 let multipliers msg multipliers =
   match msg with
@@ -175,16 +175,17 @@ let multipliers msg multipliers =
 let modData msg modData =
   match msg with
   | SetQualityProducts value -> { modData with QualityProducts = value }
-  | SetQualityProcessors (processor, selected) -> { modData with QualityProcessors = modData.QualityProcessors |> setSelected selected processor }
+  | SetQualityProcessors (processor, selected) ->
+    { modData with QualityProcessors = modData.QualityProcessors |> setSelected selected processor }
 
 let gameVariables msg vars =
   match msg with
   | SetSkills msg -> { vars with Skills = skills msg vars.Skills }
   | SetMultipliers msg -> { vars with Multipliers = multipliers msg vars.Multipliers }
-  | SetCropAmount msg -> { vars with CropAmount = cropAmount msg vars.CropAmount }
   | SetModData msg -> { vars with ModData = modData msg vars.ModData }
-  | SetIrrigated value -> { vars with Irrigated = value }
+  | SetCropAmount msg -> { vars with CropAmount = cropAmount msg vars.CropAmount }
   | SetJojaMembership value -> { vars with JojaMembership = value }
+  | SetIrrigated value -> { vars with Irrigated = value }
   | SetStartDate date -> { vars with StartDate = date }
   | SetEndDate date -> { vars with EndDate = date }
   | SetLocation location -> { vars with Location = location }
@@ -223,17 +224,20 @@ let custom defaultValue msg selection =
 let selections data msg (selection: Selections) =
   match msg with
   | SelectCrops msg -> { selection with Crops = selection.Crops |> select msg }
-  | SelectSeedPrices (vendor, msg) -> { selection with SeedPrices = selection.SeedPrices |> mapSelect data.SeedPrices vendor msg }
+  | SelectSeedPrices (vendor, msg) ->
+    { selection with SeedPrices = selection.SeedPrices |> mapSelect data.SeedPrices vendor msg }
 
   | SelectNoFertilizer selected -> { selection with NoFertilizer = selected }
   | SelectFertilizers msg -> { selection with Fertilizers = selection.Fertilizers |> select msg }
-  | SelectFertilizerPrices (vendor, msg) -> { selection with FertilizerPrices = selection.FertilizerPrices |> mapSelect data.FertilizerPrices vendor msg }
+  | SelectFertilizerPrices (vendor, msg) ->
+    { selection with FertilizerPrices = selection.FertilizerPrices |> mapSelect data.FertilizerPrices vendor msg }
 
   | SelectSellRaw msg -> { selection with SellRaw = selection.SellRaw |> select msg }
-  | SelectProducts (processor, msg) -> { selection with Products = selection.Products |> mapSelectWith (snd >> data.Products.Find) processor msg }
+  | SelectProducts (processor, msg) ->
+    { selection with Products = selection.Products |> mapSelectWith (snd >> data.Products.Find) processor msg }
   | SelectSellForageSeeds msg -> { selection with SellForageSeeds = selection.SellForageSeeds |> select msg }
 
-  | SelectUseRawSeeds msg -> { selection with UseHarvestedSeeds = selection.UseHarvestedSeeds |> select msg }
+  | SelectUseHarvestedSeeds msg -> { selection with UseHarvestedSeeds = selection.UseHarvestedSeeds |> select msg }
   | SelectUseSeedMaker msg -> { selection with UseSeedMaker = selection.UseSeedMaker |> select msg }
   | SelectUseForageSeeds msg -> { selection with UseForageSeeds = selection.UseForageSeeds |> select msg }
 
@@ -257,8 +261,8 @@ let tableSort multi ((col, asc) as s) sort =
 let settings data msg (settings: Settings) =
   match msg with
   | SetGameVariables msg -> { settings with Game = settings.Game |> gameVariables msg }
-  | SetSelections msg -> { settings with Selected = settings.Selected |> selections data msg }
   | SetProfit msg -> { settings with Profit = settings.Profit |> profit msg }
+  | SetSelections msg -> { settings with Selected = settings.Selected |> selections data msg }
 
 let cropFilters msg filters =
   match msg with
@@ -274,9 +278,9 @@ let ranker msg ranker =
   | SetRankItem item -> { ranker with RankItem = item }
   | SetRankMetric metric -> { ranker with RankMetric = metric }
   | SetTimeNormalization norm -> { ranker with TimeNormalization = norm }
+  | SetShowInvalid value -> { ranker with ShowInvalid = value }
   | SetBrushSpan (start, finish) -> { ranker with BrushSpan = start, finish }
   | SetSelectedCropAndFertilizer pair -> { ranker with SelectedCropAndFertilizer = pair }
-  | SetShowInvalid value -> { ranker with ShowInvalid = value }
 
 let savedSettings msg settings saved =
   match msg with
@@ -288,8 +292,11 @@ let savedSettings msg settings saved =
 let ui msg ui =
   match msg with
   | SetAppMode mode -> { ui with Mode = mode }
+  | SetRanker msg -> { ui with Ranker = ranker msg ui.Ranker }
+  | SetSolverMode mode -> { ui with SolverMode = mode }
   | SetSettingsTab tab -> { ui with SettingsTab = tab }
   | SetDetailsOpen (details, selected) -> { ui with OpenDetails = ui.OpenDetails |> setSelected selected details }
+  | SetCropFilters msg -> { ui with CropFilters = cropFilters msg ui.CropFilters }
   | SetFertilizerSort (multi, sort) -> { ui with FertilizerSort = tableSort multi sort ui.FertilizerSort }
   | SetFertilizerPriceSort (multi, sort) -> { ui with FertilizerPriceSort = tableSort multi sort ui.FertilizerPriceSort }
   | SetCropSort (multi, sort) -> { ui with CropSort = tableSort multi sort ui.CropSort }
@@ -297,9 +304,6 @@ let ui msg ui =
   | SetSeedSort (multi, sort) -> { ui with SeedSort = tableSort multi sort ui.SeedSort }
   | SetProductQuality quality -> { ui with ProductQuality = quality }
   | SetShowNormalizedProductPrices value -> { ui with ShowNormalizedProductPrices = value }
-  | SetCropFilters msg -> { ui with CropFilters = cropFilters msg ui.CropFilters }
-  | SetRanker msg -> { ui with Ranker = ranker msg ui.Ranker }
-  | SetSolverMode mode -> { ui with SolverMode = mode }
 
 let state msg data state =
   match msg with

@@ -11,10 +11,10 @@ type ExtractedData = {
 // Data found / inputted manually by digging through game code.
 type SupplementalData = {
   Fertilizers: Fertilizer array
-  ProcessorUnlockLevel: Table<Processor, nat>
   FertilizerPrices: Table<FertilizerName, Table<Vendor, nat>>
-  SeedPrices: Table<SeedId, SeedPrice array>
   GenerateSeedPrices: Table<Vendor, SeedId array>
+  SeedPrices: Table<SeedId, SeedPrice array>
+  ProcessorUnlockLevel: Table<Processor, nat>
 }
 
 // The model type for all of Stardew Valley's relevant game data/content. (I.e., this does not include save game data.)
@@ -139,8 +139,8 @@ type Location =
 type GameVariables = {
   Skills: Skills
   Multipliers: Multipliers
-  CropAmount: CropAmountSettings
   ModData: ModData
+  CropAmount: CropAmountSettings
   JojaMembership: bool
   Irrigated: bool
   StartDate: Date
@@ -152,8 +152,8 @@ module [<RequireQualifiedAccess>] GameVariables =
   let common = {
     Skills = Skills.zero
     Multipliers = Multipliers.common
-    CropAmount = CropAmountSettings.common
     ModData = ModData.common
+    CropAmount = CropAmountSettings.common
     JojaMembership = false
     Irrigated = false
     StartDate = { Season = Season.Spring; Day = Date.firstDay }

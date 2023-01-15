@@ -131,7 +131,11 @@ module Processor =
 module [<RequireQualifiedAccess>] ModData =
   let common = {
     QualityProducts = false
-    QualityProcessors = Set.ofArray [| Processor.preservesJar; Processor.keg; ProcessorName "Oil Maker" |]
+    QualityProcessors = Set.ofArray [|
+      Processor.preservesJar
+      Processor.keg
+      ProcessorName "Oil Maker"
+    |]
   }
 
 

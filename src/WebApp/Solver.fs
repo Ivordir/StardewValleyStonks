@@ -68,6 +68,9 @@ yields the final optimal solution for the given game data and settings.
 
 open StardewValleyStonks
 
+open YALPS
+open YALPS.Operators
+
 let inline private sndOf3 (_, y, _) = y
 
 // assume no two fertilizers have same (quality, speed)
@@ -86,9 +89,6 @@ let private groupFertilizersBySpeed fertilizersAndCost =
   |> Array.groupBy (sndOf3 >> Fertilizer.Opt.speed)
   |> Array.map (snd >> Array.minBy (fun (_, _, cost) -> cost))
   |> Array.map (fun (name, fert, _) -> name, fert, 0u)
-
-open YALPS
-open YALPS.Operators
 
 type Variable =
   | PlantCrop of SeedId

@@ -394,15 +394,16 @@ module Growth =
 
 
 type FarmCrop = {
-  Seasons: Seasons
-  Stages: nat array
-  RegrowTime: nat option
-  Paddy: bool
-  Giant: bool
   Seed: SeedId
   Item: ItemId
   Amount: CropAmount
   ExtraItem: (ItemId * float) option
+  Giant: bool
+
+  Seasons: Seasons
+  Stages: nat array
+  RegrowTime: nat option
+  Paddy: bool
 }
 
 module [<RequireQualifiedAccess>] FarmCrop =
@@ -439,11 +440,11 @@ module [<RequireQualifiedAccess>] FarmCrop =
 
 
 type ForageCrop = {
-  Season: Season
-  Stages: nat array
   Seed: SeedId
   Items: ItemId array
   SeedRecipeUnlockLevel: nat
+  Season: Season
+  Stages: nat array
 }
 
 module [<RequireQualifiedAccess>] ForageCrop =

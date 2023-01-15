@@ -65,20 +65,20 @@ module [<RequireQualifiedAccess>] Encode =
   let seedPrice = function
     | FixedPrice (v, p) ->
       Encode.object [
+        SeedPriceTypeField, Encode.string FixedSeedPrice
         SeedPriceVendorField, vendor v
         SeedPricePriceField, Encode.uint32 p
-        SeedPriceTypeField, Encode.string FixedSeedPrice
       ]
     | ScalingPrice (v, None) ->
       Encode.object [
-        SeedPriceVendorField, vendor v
         SeedPriceTypeField, Encode.string ScalingSeedPrice
+        SeedPriceVendorField, vendor v
       ]
     | ScalingPrice (v, Some p) ->
       Encode.object [
+        SeedPriceTypeField, Encode.string ScalingSeedPrice
         SeedPriceVendorField, vendor v
         SeedPricePriceField, Encode.uint32 p
-        SeedPriceTypeField, Encode.string ScalingSeedPrice
       ]
 
   let cropAmount (amount: CropAmount) =
@@ -98,29 +98,30 @@ module [<RequireQualifiedAccess>] Encode =
         nameof amount.FarmingQualities, Encode.bool amount.FarmingQualities
     ]
 
-  let farmCrop crop = Encode.object [
-    nameof crop.Seasons, seasons crop.Seasons
+  let farmCrop (crop: FarmCrop) = Encode.object [
     nameof crop.Seed, seedId crop.Seed
-    nameof crop.Stages, crop.Stages |> mapSeq Encode.uint32
-    if crop.Paddy then
-      nameof crop.Paddy, Encode.bool crop.Paddy
-    if crop.Giant then
-      nameof crop.Giant, Encode.bool crop.Giant
+    nameof crop.Item, itemId crop.Item
     if crop.Amount <> CropAmount.singleAmount then
       nameof crop.Amount, cropAmount crop.Amount
     if crop.ExtraItem.IsSome then
       nameof crop.ExtraItem, Encode.tuple2 itemId Encode.float crop.ExtraItem.Value
+    if crop.Giant then
+      nameof crop.Giant, Encode.bool crop.Giant
+
+    nameof crop.Seasons, seasons crop.Seasons
+    nameof crop.Stages, crop.Stages |> mapSeq Encode.uint32
     if crop.RegrowTime.IsSome then
       nameof crop.RegrowTime, Encode.uint32 crop.RegrowTime.Value
-    nameof crop.Item, itemId crop.Item
+    if crop.Paddy then
+      nameof crop.Paddy, Encode.bool crop.Paddy
   ]
 
   let forageCrop crop = Encode.object [
-    nameof crop.Season, season crop.Season
     nameof crop.Seed, seedId crop.Seed
-    nameof crop.Stages, crop.Stages |> mapSeq Encode.uint32
     nameof crop.Items, crop.Items |> mapSeq itemId
     nameof crop.SeedRecipeUnlockLevel, Encode.uint32 crop.SeedRecipeUnlockLevel
+    nameof crop.Season, season crop.Season
+    nameof crop.Stages, crop.Stages |> mapSeq Encode.uint32
   ]
 
   let extractedData (data: ExtractedData) = Encode.object [
@@ -212,10 +213,10 @@ module [<RequireQualifiedAccess>] Decode =
 
   let seedPrice: SeedPrice Decoder =
     Decode.map3 (fun a b c -> a, b, c)
+      (Decode.field SeedPriceTypeField Decode.string)
       (Decode.field SeedPriceVendorField vendor)
       (Decode.optional SeedPricePriceField Decode.uint32)
-      (Decode.field SeedPriceTypeField Decode.string)
-    |> Decode.andThen (fun (vendor, price, kind) -> fun path value ->
+    |> Decode.andThen (fun (kind, vendor, price) -> fun path value ->
       match kind, price with
       | FixedSeedPrice, Some price -> Ok (FixedPrice (vendor, price))
       | FixedSeedPrice, None -> Error (path, BadField ($"an object with a field named '{SeedPricePriceField}'", value))
@@ -240,15 +241,16 @@ module [<RequireQualifiedAccess>] Decode =
   let farmCrop =
     let u = Unchecked.defaultof<FarmCrop>
     Decode.object (fun get -> {
-      Seasons = get.Required.Field (nameof u.Seasons) seasons
       Seed = get.Required.Field (nameof u.Seed) seedId
-      Stages = get.Required.Field (nameof u.Stages) (Decode.array Decode.uint32)
-      RegrowTime = get.Optional.Field (nameof u.RegrowTime) Decode.uint32
-      Paddy = get.Optional.Field (nameof u.Paddy) Decode.bool |> Option.defaultValue false
-      Giant = get.Optional.Field (nameof u.Giant) Decode.bool |> Option.defaultValue false
       Item = get.Required.Field (nameof u.Item) itemId
       Amount = get.Optional.Field (nameof u.Amount) cropAmount |> Option.defaultValue CropAmount.singleAmount
       ExtraItem = get.Optional.Field (nameof u.ExtraItem) (Decode.tuple2 itemId Decode.float)
+      Giant = get.Optional.Field (nameof u.Giant) Decode.bool |> Option.defaultValue false
+
+      Seasons = get.Required.Field (nameof u.Seasons) seasons
+      Stages = get.Required.Field (nameof u.Stages) (Decode.array Decode.uint32)
+      RegrowTime = get.Optional.Field (nameof u.RegrowTime) Decode.uint32
+      Paddy = get.Optional.Field (nameof u.Paddy) Decode.bool |> Option.defaultValue false
     } )
 
   let forageCrop =
@@ -256,11 +258,11 @@ module [<RequireQualifiedAccess>] Decode =
     Decode.object (fun get ->
       let field name decoder = get.Required.Field name decoder
       {
-        Season = field (nameof u.Season) season
-        Stages = field (nameof u.Stages) (Decode.array Decode.uint32)
         Seed = field (nameof u.Seed) seedId
         Items = field (nameof u.Items) (Decode.array itemId)
         SeedRecipeUnlockLevel = field (nameof u.SeedRecipeUnlockLevel) Decode.uint32
+        Season = field (nameof u.Season) season
+        Stages = field (nameof u.Stages) (Decode.array Decode.uint32)
       }
     )
 
@@ -282,9 +284,9 @@ module [<RequireQualifiedAccess>] Decode =
       let field name decode = get.Required.Field name decode
       {
         Fertilizers = field (nameof u.Fertilizers) (Decode.array fertilizer)
-        ProcessorUnlockLevel = field (nameof u.ProcessorUnlockLevel) (table ProcessorName Decode.uint32)
         FertilizerPrices = field (nameof u.FertilizerPrices) (table id (table VendorName Decode.uint32))
-        SeedPrices = field (nameof u.SeedPrices) (tableParse parseSeedId (Decode.array seedPrice))
         GenerateSeedPrices = field (nameof u.GenerateSeedPrices) (table VendorName (Decode.array seedId))
+        SeedPrices = field (nameof u.SeedPrices) (tableParse parseSeedId (Decode.array seedPrice))
+        ProcessorUnlockLevel = field (nameof u.ProcessorUnlockLevel) (table ProcessorName Decode.uint32)
       }
     )
