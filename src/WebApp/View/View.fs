@@ -1143,10 +1143,10 @@ module LoadSave =
   let [<ReactComponent>] saveCurrentSettings (props: {| dispatch: _ |}) =
     let name, setName = useState None
 
-    let modalRef = useElementRef () // Browser.Types.HTMLDialogElement
+    let modalRef = useRef<Browser.Types.HTMLDialogElement option> None
 
     useLayoutEffect (fun () ->
-      modalRef.current |> Option.iter (fun e -> e?showModal()))
+      modalRef.current |> Option.iter (fun e -> e.showModal ()))
 
     fragment [
       button [
@@ -1183,10 +1183,10 @@ module LoadSave =
   let [<ReactComponent>] importSave (props: {| dispatch: _ |}) =
     let save, setSave = useState None
 
-    let modalRef = useElementRef () // Browser.Types.HTMLDialogElement
+    let modalRef = useRef<Browser.Types.HTMLDialogElement option> None
 
     useLayoutEffect (fun () ->
-      modalRef.current |> Option.iter (fun e -> e?showModal()))
+      modalRef.current |> Option.iter (fun e -> e.showModal ()))
 
     fragment [
       label [ Class.fileInput; children [
