@@ -409,6 +409,11 @@ module Crops =
   let processors = refMemo (fun (data: GameData) ->
     data.Products.Values
     |> Seq.collect Table.keys
+    |> Seq.append [|
+      Processor.keg
+      Processor.preservesJar
+      Processor.seedMaker
+    |]
     |> Seq.distinct
     |> Seq.sortWith (Option.noneMaxCompareBy data.ProcessorUnlockLevel.TryFind)
     |> Array.ofSeq)
@@ -582,8 +587,8 @@ module Crops =
                   checkboxWith
                     [ onClick (fun e -> e.stopPropagation ()) ]
                     none
-                    (settings.Selected.Products |> Map.forall (fun (_, item) selected -> selected.Contains processor || not <| data.Products[item].ContainsKey processor))
-                    (selectMany (snd >> data.Products.Find >> Table.containsKey processor) >> curry SelectProducts processor >> selectDispatch)
+                    (settings.Selected.Products |> Map.forall (fun (_, item) selected -> selected.Contains processor || GameData.product data item processor |> Option.isNone))
+                    (selectMany (fun (_, item) -> GameData.product data item processor |> Option.isSome) >> curry SelectProducts processor >> selectDispatch)
                   Image.Icon.processor processor
                 ]
               ]

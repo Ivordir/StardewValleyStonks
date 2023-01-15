@@ -198,16 +198,16 @@ let private select msg set =
     then set + keys
     else set - keys
 
-let private mapSelectWith table key msg map =
+let private mapSelectWith containsKey key msg map =
   match msg with
   | SetSelected (id', selected) -> map |> Map.change id' (Option.map <| setSelected selected key)
   | SetManySelected (keys, selected) ->
     map |> Map.map (fun id' selection ->
-      if table id' |> Table.containsKey key && keys.Contains id'
+      if containsKey id' key && keys.Contains id'
       then selection |> setSelected selected key
       else selection)
 
-let private mapSelect (data: Table<_,_>) key msg map = mapSelectWith data.Find key msg map
+let private mapSelect (data: Table<_, Table<_,_>>) key msg map = mapSelectWith (fun id' key -> data[id'].ContainsKey key) key msg map
 
 let custom defaultValue msg selection =
   match msg with
@@ -234,7 +234,7 @@ let selections data msg (selection: Selections) =
 
   | SelectSellRaw msg -> { selection with SellRaw = selection.SellRaw |> select msg }
   | SelectProducts (processor, msg) ->
-    { selection with Products = selection.Products |> mapSelectWith (snd >> data.Products.Find) processor msg }
+    { selection with Products = selection.Products |> mapSelectWith (fun (_, item) processor -> GameData.product data item processor |> Option.isSome) processor msg }
   | SelectSellForageSeeds msg -> { selection with SellForageSeeds = selection.SellForageSeeds |> select msg }
 
   | SelectUseHarvestedSeeds msg -> { selection with UseHarvestedSeeds = selection.UseHarvestedSeeds |> select msg }
