@@ -26,11 +26,11 @@ let bestGrowthSpan vars fert crop =
   if spans.Length = 0 then None else
 
   let stages, time = Game.growthTimeAndStages vars fert crop
+
+  spans |> Array.sortInPlaceBy (fun span -> span.TotalDays)
   let span, harvests =
-    spans
-    |> Array.map (fun span -> span, Growth.maxHarvests (Crop.regrowTime crop) time span.TotalDays)
-    |> Array.sortBy (fun (span, _) -> span.TotalDays)
-    |> Array.maxBy snd
+    spans |> Array.mapReduce (maxBy snd) (fun span ->
+      span, Growth.maxHarvests (Crop.regrowTime crop) time span.TotalDays)
 
   if harvests = 0u then None else Some {
     Span = span
