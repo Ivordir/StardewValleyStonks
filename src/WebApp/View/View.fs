@@ -99,7 +99,7 @@ module [<RequireQualifiedAccess>] Image =
   let regrowStage seed =
     at <| cropRoot $"{seed}/Regrow"
 
-  let fertilizer' (fert: string) = fert |> fertilizerRoot |> at //(FertName fertilizer) = fertilizer |> fertilizerRoot |> at
+  let fertilizer' (fert: FertilizerName) = fert |> fertilizerRoot |> at //(FertName fertilizer) = fertilizer |> fertilizerRoot |> at
   let fertilizer = Fertilizer.name >> fertilizer'
   let skill = skillRoot >> at
   let profession (profession: Profession) = string profession |> skill
@@ -370,17 +370,6 @@ let viewPrice price =
       Image.vendor vendor
     | Some (Custom (), price) -> ofNat price
     | None -> ofStr "???"
-    // if prices.Length = 0 then ofStr "???" else
-    // let lowest = prices |> Array.mapReduce min snd
-
-    // let vendors =
-    //   prices |> Array.choose (fun (vendor, price) ->
-    //     if price = lowest
-    //     then Some ()
-    //     else None)
-    // match vendors with
-    // | [| best |] -> best
-    // | multiple -> ul (multiple |> Seq.map li)
   ]
 
 
@@ -665,7 +654,7 @@ module Crops =
         crops
     ]
 
-  let seeds (data: GameData) settings seedSort crops dispatch =
+  let seeds data settings seedSort crops dispatch =
     let uiDispatch = SetUI >> dispatch
     let settingsDispatch = SetSettings >> dispatch
     let selectDispatch = SetSelections >> settingsDispatch
@@ -719,7 +708,7 @@ module Crops =
           Header = fragment [
             checkbox
               (data.Crops |> Table.forall (fun seed crop -> not <| Crop.makesOwnSeeds crop || settings.Selected.UseHarvestedSeeds.Contains seed))
-              (selectMany Crop.makesOwnSeeds >> SelectUseRawSeeds >> selectDispatch)
+              (selectMany Crop.makesOwnSeeds >> SelectUseHarvestedSeeds >> selectDispatch)
             ofStr "Raw Seeds"
           ]
           Width = 0
@@ -779,7 +768,7 @@ module Crops =
             ]
             td [
               if Crop.makesOwnSeeds crop then
-                checkbox (settings.Selected.UseHarvestedSeeds.Contains seed) (curry SetSelected seed >> SelectUseRawSeeds >> selectDispatch)
+                checkbox (settings.Selected.UseHarvestedSeeds.Contains seed) (curry SetSelected seed >> SelectUseHarvestedSeeds >> selectDispatch)
             ]
             td (
               match crop with
@@ -1944,10 +1933,10 @@ let profitBreakdownTable roi timeNorm (data: GameData) settings seed fertName =
                   ofStr " x "
                   ofStr <| floatFixedRound totalMade
                 ] ]
-                if itemData.ForageSeedsSold > 0.0 then
-                  td [ rowSpan items.Length; children [
+                td [ rowSpan items.Length; children [
+                  if itemData.ForageSeedsSold > 0.0 then
                     ofStr <| goldFixedRound (itemData.ForageSeedsSold * float (Game.seedItemSellPrice data settings.Game seed))
-                  ] ]
+                ] ]
                 if itemData.ForageSeedsUsed > 0.0 then
                   td [ rowSpan items.Length; children [
                     ofStr <| floatFixedRound itemData.ForageSeedsUsed

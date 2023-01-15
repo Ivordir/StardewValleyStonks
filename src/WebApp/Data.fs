@@ -10,9 +10,9 @@ open Thoth.Json
 open Thoth.Json.Net
 #endif
 
-let private extractedData: JsonValue = importAll "../../public/data/Extracted.json"
-let private supplementalData: JsonValue = importAll "../../public/data/Supplemental.json5"
-let private settingsData: JsonValue = importAll "../../public/data/Settings.json5"
+let private extractedData: JsonValue = importDefault "../../public/data/Extracted.json"
+let private supplementalData: JsonValue = importDefault "../../public/data/Supplemental.json5"
+let private settingsData: JsonValue = importDefault "../../public/data/Settings.json5"
 
 let private load json decoder =
   json
@@ -191,7 +191,7 @@ module private Shorthand =
 
   let private keySelection selection = selection |> Option.defaultOrMap Selection.empty KeySelection.toSelection
 
-  let toSettings (short: ShorthandSettings) : Settings =
+  let toSettings (short: ShorthandSettings) =
     let seedItemPairs = GameData.seedItemPairs gameData
 
     {
@@ -256,9 +256,6 @@ module private Shorthand =
     }
 
 
-
-
-
 let private settings =
   Extra.empty
   |> Extra.withCustom Encode.date Decode.date
@@ -290,8 +287,8 @@ let private decodeCropFilters =
     Forage = get.Optional.Field (nameof u.Forage) Decode.bool
   } )
 
-let private encodeSettings = Encode.Auto.generateEncoder<Settings>(extra=settings)
-let private decodeSettings = Decode.Auto.generateDecoder<Settings>(extra=settings)
+let private encodeSettings = Encode.Auto.generateEncoder<Settings> (extra = settings)
+let private decodeSettings = Decode.Auto.generateDecoder<Settings> (extra = settings)
 
 let private encodeNestedOption =
   Encode.option
@@ -318,9 +315,8 @@ let private ui =
   |> Extra.withCustom encodeCropFilters decodeCropFilters
   |> Extra.withCustom encodeNestedOption decodeNestedOption
 
-let private encodeUI = Encode.Auto.generateEncoder<UIState> (extra=ui)
-let private decodeUI = Decode.Auto.generateDecoder<UIState> (extra=ui)
-
+let private encodeUI = Encode.Auto.generateEncoder<UIState> (extra = ui)
+let private decodeUI = Decode.Auto.generateDecoder<UIState> (extra = ui)
 
 
 module [<RequireQualifiedAccess>] Encode =
@@ -351,7 +347,6 @@ module [<RequireQualifiedAccess>] Decode =
   let savedSettings = Decode.list (Decode.tuple2 Decode.string settings)
 
 
-
 let defaultSavedSettings = lazy (
   Shorthand.Decode.shorthandSettings
   |> Decode.map Shorthand.toSettings
@@ -377,6 +372,7 @@ let defaultApp = lazy {
   }
   SavedSettings = defaultSavedSettings.Value
 }
+
 
 module LocalStorage =
   let [<Literal>] VersionKey = "Version"
@@ -490,7 +486,6 @@ module LocalStorage =
   let inline clear () = Browser.WebStorage.localStorage.clear ()
 
 
-
 // Rather than depending on an xml parsing library, we use the browser's built-in (native) xml parsing.
 // Stardew valley saves games are simple enough and/or we extract so little data from them
 // such that the following manual code is workable...
@@ -540,13 +535,10 @@ module private XML =
   let private xmlParser = domParser ()
 
   let parse (xml: string): Browser.Types.XMLDocument = xmlParser?parseFromString(xml, "text/xml")
-  // if doc.tagName = "parsererror"
-  // then None
-  // else Some doc
 
 open XML
 
-let loadSaveGame (xml: string) =
+let loadSaveGame xml =
   let doc = parse xml
   doc?evaluate("Farmer", doc, null, firstNode, null)?singleNodeValue |> Option.map (fun (farmer: obj) ->
     let professions = natArray doc farmer "professions"

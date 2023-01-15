@@ -13,7 +13,7 @@ type prop with
         && not <| System.Double.IsNaN value
         && value >= 0.0
       then
-        round value |> unbox<nat> |> handler)
+        round value |> unbox |> handler)
 
   static member inline onToggle (handler: bool -> unit) =
     Interop.mkAttr "onToggle" (fun (e: Browser.Types.Event) -> handler e.target?``open``)

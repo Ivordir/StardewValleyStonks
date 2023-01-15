@@ -102,7 +102,7 @@ type ModData = {
 }
 
 module Processor =
-  let [<Literal>] seedMakerSeedAmount = 2u
+  let [<Literal>] seedMakerExpectedSeedOutput = 2.0
   let [<Literal>] seedMakerSeedProb = 0.975
   let [<Literal>] seedMakerAncientSeedProb = 0.005
 
@@ -121,7 +121,7 @@ module Processor =
     else Quality.Normal
 
   let seedMakerExpectedAmount (seed: SeedId) =
-    seedMakerSeedProb * float seedMakerSeedAmount
+    seedMakerSeedProb * seedMakerExpectedSeedOutput
     + if nat seed = nat Item.ancientSeeds then seedMakerAncientSeedProb else 0.0
 
   let seedMakerInputNeededForOneSeed (seed: SeedId) =
@@ -173,7 +173,8 @@ module [<RequireQualifiedAccess>] Product =
     | SeedsFromSeedMaker _ -> Processor.seedMaker
     | Processed p -> p.Processor
 
-  let outputQuality modData quality product = product |> processor |> Processor.outputQuality modData quality
+  let outputQuality modData quality product =
+    product |> processor |> Processor.outputQuality modData quality
 
   let private artisanMultiplier skills multipliers =
     Category.multiplier skills ArtisanGood * multipliers.ProfitMargin

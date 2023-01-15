@@ -9,11 +9,6 @@ importDefault "preact/debug"
 open Feliz
 open Elmish
 open Elmish.React
-#if FABLE_COMPILER
-open Thoth.Json
-#else
-open Thoth.Json.Net
-#endif
 
 open type Html
 
