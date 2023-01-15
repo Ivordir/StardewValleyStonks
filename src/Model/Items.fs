@@ -1,12 +1,12 @@
 namespace StardewValleyStonks
 
 type Category =
-  | Fruit
-  | Vegetable
-  | Flower
-  | ArtisanGood
-  | Forage
   | Seeds
+  | Vegetable
+  | Fruit
+  | Flower
+  | Forage
+  | ArtisanGood
   | Other
 
 module [<RequireQualifiedAccess>] Category =
@@ -48,7 +48,6 @@ type Item = {
 
 module [<RequireQualifiedAccess>] Item =
   let [<Literal>] ancientSeeds = 499u<ItemNum>
-  let [<Literal>] sweetGemBerry = 417u<ItemNum>
   let [<Literal>] blackberry = 410u<ItemNum>
   let [<Literal>] grape = 398u<ItemNum>
 

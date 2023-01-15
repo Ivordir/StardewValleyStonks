@@ -139,17 +139,16 @@ let parseItem overrrides itemData itemId =
       | Some category -> category
       | None ->
         match splitted[3] with
-        | "Basic" // sugar, flour, etc
-        | "Basic -16" // buildingResources (fiber)
-        | "Basic -17" // sweet gem berry
-        | "Basic -81" // forage
-        | "Crafting" // (coffee bean)
-          -> Other
         | "Seeds -74" -> Seeds
         | "Basic -75" -> Vegetable
         | "Basic -79" -> Fruit
         | "Basic -80" -> Flower
+        | "Basic -81" -> Forage
         | "Basic -26" -> ArtisanGood
+        | "Basic" // sugar, flour, etc
+        | "Basic -16" // building resources (fiber)
+        | "Basic -17" // sweet gem berry
+          -> Other
         | str -> failwith $"Unexpected item category for item {itemId}: {str}"
 
     {
