@@ -144,6 +144,12 @@ type ProcessedItem = {
   Ratio: (nat * nat) option
 }
 
+module ProcessedItem =
+  let item processsed = processsed.Item
+  let processor processsed = processsed.Processor
+  let ratio processsed = processsed.Ratio
+
+
 type Product =
   | Jam
   | Pickles

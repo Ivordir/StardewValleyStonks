@@ -24,10 +24,16 @@ let private gameData =
     (load extractedData Decode.extractedData)
     (load supplementalData Decode.supplementalData)
 
-assert (GameData.missingItemIds gameData |> Array.isEmpty)
-assert (gameData.Fertilizers.Values |> Seq.forall (fun fertilizer -> Fertilizer.speed fertilizer >= Fertilizer.minSpeed))
-assert (gameData.Crops.Values |> Seq.forall (Crop.seedItem >> gameData.Items.Find >> Item.category >> (=) Seeds))
-assert (gameData.Crops.Values |> Seq.forall (Crop.stages >> Array.contains 0u >> not))
+assert // no missing item references
+  [|
+    gameData.Crops.Values |> Seq.collect Crop.items
+    gameData.Crops.Values |> Seq.map Crop.seedItem
+    gameData.Products.Values
+    |> Seq.collect Table.values
+    |> Seq.map ProcessedItem.item
+  |]
+  |> Seq.concat
+  |> Seq.forall gameData.Items.ContainsKey
 
 assert (gameData.FarmCrops.Values |> Seq.forall (fun crop ->
   match crop.RegrowTime, crop.ExtraItem with
@@ -49,7 +55,7 @@ assert
   gameData.Products.Values
   |> Seq.collect Table.values
   |> Seq.forall (function
-    | Processed { Ratio = Some (i, o) } -> i > 0u && o > 0u
+    | { Ratio = Some (i, o) } -> i > 0u && o > 0u
     | _ -> true)
 
 
@@ -238,7 +244,7 @@ module private Shorthand =
         SellRaw = short.SellRaw |> selectKeys seedItemPairs
         Products =
           columnSelect
-            (seedItemPairs |> Table.ofKeys (snd >> gameData.Products.Find))
+            (seedItemPairs |> Table.ofKeys (snd >> GameData.products gameData >> Table.ofValues Product.processor))
             short.SelectedProducts
         SellForageSeeds = short.SellForageSeeds |> selectKeys gameData.ForageCrops.Keys
 

@@ -502,7 +502,6 @@ module Crops =
 
     let viewItemRow mainCrop forage seed item =
       let theItem = data.Items[item]
-      let products = data.Products[item]
       let selected = settings.Selected.Products[seed, item]
       tr [
         td [
@@ -515,7 +514,7 @@ module Crops =
           ofNat <| Game.itemPrice settings.Game forage theItem productQuality
         ]
         yield! processors |> Array.mapi (fun i processor ->
-          match products.TryFind processor with
+          match GameData.product data item processor with
           | Some product ->
             td [
               if not processorUnlocked[i] then Class.disabled

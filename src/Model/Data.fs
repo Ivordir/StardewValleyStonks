@@ -116,7 +116,7 @@ module [<RequireQualifiedAccess>] Encode =
       nameof crop.Paddy, Encode.bool crop.Paddy
   ]
 
-  let forageCrop crop = Encode.object [
+  let forageCrop (crop: ForageCrop) = Encode.object [
     nameof crop.Seed, seedId crop.Seed
     nameof crop.Items, crop.Items |> mapSeq itemId
     nameof crop.SeedRecipeUnlockLevel, Encode.uint32 crop.SeedRecipeUnlockLevel

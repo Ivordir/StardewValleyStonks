@@ -25,8 +25,9 @@ type GameData = {
   FarmCrops: Table<SeedId, FarmCrop>
   ForageCrops: Table<SeedId, ForageCrop>
   SeedPrices: Table<SeedId, Table<Vendor, SeedPrice>>
+  Seed: Table<ItemId, SeedId>
   Items: Table<ItemId, Item>
-  Products: Table<ItemId, Table<Processor, Product>>
+  Products: Table<ItemId, Table<Processor, ProcessedItem>>
   ProcessorUnlockLevel: Table<Processor, nat>
 }
 // Assume that the seedMaker is the only processor which converts items into seeds.
@@ -39,23 +40,44 @@ module GameData =
       Crop.items crop |> Array.map (fun item -> seed, item))
     |> Array.concat
 
-  let missingItemIds data =
-    let crops =
-      data.FarmCrops.Values
-      |> Seq.map FarmCrop
-      |> Seq.append (data.ForageCrops.Values |> Seq.map ForageCrop)
-      |> Array.ofSeq
+  let private implicitProduct data item processor =
+    match Item.category item, processor with
+    | Fruit, ProcessorName "Preserves Jar" -> Some Jam
+    | Fruit, ProcessorName "Keg" -> Some Wine
+    | Vegetable, ProcessorName "Preserves Jar" -> Some Pickles
+    | Vegetable, ProcessorName "Keg" -> Some Juice
+    | _, ProcessorName "Seed Maker" ->
+      match data.Seed.TryFind item.Id with
+      | Some seed -> Some (SeedsFromSeedMaker (seed * 1u<_>))
+      | None -> None
+    | _ -> None
 
-    [|
-      crops |> Array.collect Crop.items
-      crops |> Array.map Crop.seedItem
-      data.Products.Values
-      |> Seq.collect Table.values
-      |> Seq.choose Product.item
+  let product data item processor =
+    match data.Products.TryFind item |> Option.bind (Table.tryFind processor) with
+    | Some product -> Some (Processed product)
+    | None -> implicitProduct data data.Items[item] processor
+
+  let products data item =
+    let products = data.Products.TryFind item
+    let item = data.Items[item]
+    let implicit =
+      [|
+        Processor.preservesJar
+        Processor.keg
+        Processor.seedMaker
+      |]
+      |> Array.choose (fun processor ->
+        if products |> Option.exists (Table.containsKey processor)
+        then None
+        else implicitProduct data item processor)
+
+    match products with
+    | Some products ->
+      products.Values
+      |> Seq.map Processed
       |> Array.ofSeq
-    |]
-    |> Array.concat
-    |> Array.filter (data.Items.ContainsKey >> not)
+      |> Array.append implicit
+    | None -> implicit
 
   let fromExtractedAndSupplementalData (extracted: ExtractedData) (supplemental: SupplementalData) =
     let items = extracted.Items |> Table.ofValues Item.id
@@ -83,29 +105,19 @@ module GameData =
         |> Seq.append (generatedPrices.TryFind seed |> Option.defaultValue Seq.empty)
         |> Table.ofValues SeedPrice.vendor)
 
+    let seeds =
+      crops
+      |> Array.choose (fun crop ->
+        if Crop.canGetOwnSeedsFromSeedMaker crop
+        then Some (Crop.mainItem crop, Crop.seed crop)
+        else None)
+      |> Table.ofSeq
+
     let products =
-      let seedMakerItems =
-        crops
-        |> Seq.choose (fun crop ->
-          if Crop.canGetOwnSeedsFromSeedMaker items.Find crop
-          then Some (Crop.mainItem crop, SeedsFromSeedMaker (Crop.seedItem crop))
-          else None)
-        |> Table.ofSeq
-
-      items.Keys |> Table.ofKeys (fun item ->
-        let generate =
-          match items[item].Category with
-          | Vegetable -> [| Pickles; Juice |]
-          | Fruit -> [| Jam; Wine |]
-          | _ -> [||]
-
-        [|
-          extracted.Products.TryFind item |> Option.defaultOrMap Array.empty (Array.map Processed)
-          seedMakerItems.TryFind item |> Option.toArray
-          generate
-        |]
-        |> Array.concat
-        |> Table.ofValues Product.processor)
+      extracted.Products
+      |> Table.toSeq
+      |> Seq.map (fun (item, products) -> item, products |> Table.ofValues ProcessedItem.processor)
+      |> Table.ofSeq
 
     {
       Fertilizers = supplemental.Fertilizers |> Table.ofValues Fertilizer.name
@@ -119,11 +131,11 @@ module GameData =
       ForageCrops = extracted.ForageCrops |> Table.ofValues ForageCrop.seed
       SeedPrices = seedPrices
 
+      Seed = seeds
       Items = items
       Products = products
       ProcessorUnlockLevel = supplemental.ProcessorUnlockLevel
     }
-
 
 
 type Location =

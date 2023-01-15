@@ -71,11 +71,11 @@ let cropItemsHighestRawPrice (data: GameData) vars crop quality =
 
 let cropItemsHighestProductPriceFrom data vars crop quality processor =
   crop |> itemsHighest (fun item ->
-    data.Products[item].TryFind processor |> Option.map (Game.productPrice data vars item quality))
+    GameData.product data item processor |> Option.map (Game.productPrice data vars item quality))
 
 let cropItemsHighestProductNormalizedPriceFrom data vars crop quality processor =
   crop |> itemsHighest (fun item ->
-    data.Products[item].TryFind processor |> Option.map (Game.productNormalizedPrice data vars item quality))
+    GameData.product data item processor |> Option.map (Game.productNormalizedPrice data vars item quality))
 
 let cropItemsHighestCustomPrice model crop quality =
   crop |> itemsHighest (fun item ->
@@ -123,11 +123,11 @@ module Selected =
   let seedPriceValues data settings seed =
     seedPrices data settings seed |> Seq.map (Game.seedPrice data settings.Game seed)
 
-  let products data settings seed item =
-    settings.Selected.Products[seed, item] |> mapSelected data.Products[item]
-
   let unlockedProducts data settings seed item =
-    products data settings seed item |> Seq.filter (Game.productUnlocked data settings.Game.Skills)
+    let selected = settings.Selected.Products[seed, item]
+    GameData.products data item |> Array.filter (fun product ->
+      product |> Game.productUnlocked data settings.Game.Skills
+      && selected.Contains (Product.processor product))
 
   let unlockedUseSeedsFromSeedMaker data settings crop =
     Processor.seedMaker |> Game.processorUnlocked data settings.Game.Skills
@@ -184,7 +184,7 @@ module Price =
     minPrice Selected.seedPriceValues data settings settings.Selected.CustomSeedPrices seed
 
   let private itemMaxProductPriceBy projection data settings seed item (quality: Quality) =
-    let products = Selected.unlockedProducts data settings seed item |> Array.ofSeq
+    let products = Selected.unlockedProducts data settings seed item
     if products.Length = 0 then None else
     products |> Array.mapReduce max (projection data settings.Game item quality) |> Some
 
@@ -192,11 +192,7 @@ module Price =
   let itemMaxProductPriceNormalized data settings seed item quality = itemMaxProductPriceBy Game.productNormalizedPrice data settings seed item quality
 
   let private itemMaxProductPriceByQualityBy projection data settings seed item =
-    let prices =
-      Selected.unlockedProducts data settings seed item
-      |> Seq.map (projection data settings.Game item)
-      |> Array.ofSeq
-
+    let prices = Selected.unlockedProducts data settings seed item |> Array.map (projection data settings.Game item)
     if prices.Length = 0 then None else
     Qualities.init (fun quality -> prices |> Array.mapReduce max (Qualities.item quality)) |> Some
 
@@ -236,10 +232,8 @@ module Price =
     |> Option.merge (Qualities.map2 max) (selectedCustomSellPriceValueByQuality settings.Selected seed item |> Option.map (Qualities.map float))
 
   let private itemMaxProductAndPriceByQualityBy projection data settings seed item =
-    let products =
-      Selected.unlockedProducts data settings seed item
-      |> Seq.map (fun product -> product, projection data settings.Game item product)
-      |> Array.ofSeq
+    let products = Selected.unlockedProducts data settings seed item |> Array.map (fun product ->
+      product, projection data settings.Game item product)
 
     if products.Length = 0 then None else
     Qualities.init (fun quality ->
