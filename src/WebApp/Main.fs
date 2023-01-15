@@ -16,11 +16,6 @@ open StardewValleyStonks.WebApp
 open type StardewValleyStonks.WebApp.Update.AppMessage
 open StardewValleyStonks.WebApp.View
 
-let init () =
-  let app = Data.LocalStorage.loadApp ()
-  Data.LocalStorage.updateVersion ()
-  app, []
-
 let saveState = debouncer 100 Data.LocalStorage.saveState
 let saveSettings = debouncer 100 Data.LocalStorage.saveSettings
 
@@ -29,16 +24,16 @@ let update msg app =
   | SetState msg ->
     let state = app.State |> Update.state msg app.Data
     saveState state
-    { app with State = state }, []
+    { app with State = state }
   | SetSavedSettings msg ->
     let saved = app.SavedSettings |> Update.savedSettings msg app.State.Settings
     saveSettings saved
-    { app with SavedSettings = saved }, []
-  | SyncSavedSettings saved -> { app with SavedSettings = saved }, []
+    { app with SavedSettings = saved }
+  | SyncSavedSettings saved -> { app with SavedSettings = saved }
   | HardReset ->
     Data.LocalStorage.clear ()
     Browser.Dom.window.location.reload ()
-    app, []
+    app
 
 let view app dispatch =
   try view app dispatch
@@ -68,7 +63,7 @@ do
   root?style?setProperty("--eighth-border", borderWidth fontPx 8)
   root?style?setProperty("--sixth-border", borderWidth fontPx 6)
 
-Program.mkProgram init update view
+Program.mkSimple Data.LocalStorage.loadApp update view
 |> Program.withErrorHandler (fun (msg, e) -> console.error (msg, e))
 |> Program.withSubscription (fun _ -> [ [ "localStorage" ], localStorageSub ])
 |> Program.withReactBatched "app"
