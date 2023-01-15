@@ -39,9 +39,6 @@ module GameData =
       Crop.items crop |> Array.map (fun item -> seed, item))
     |> Array.concat
 
-  let cropCanGetOwnSeedsFromSeedMaker crop data =
-    crop |> Crop.canGetOwnSeedsFromSeedMaker data.Items.Find
-
   let missingItemIds data =
     let crops =
       data.FarmCrops.Values

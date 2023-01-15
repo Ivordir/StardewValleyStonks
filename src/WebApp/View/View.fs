@@ -696,8 +696,8 @@ module Crops =
                 checkbox
                   (data.Crops |> Table.forall (fun seed crop ->
                     settings.Selected.UseSeedMaker.Contains seed
-                    || not <| GameData.cropCanGetOwnSeedsFromSeedMaker crop data))
-                  (selectMany (fun crop -> GameData.cropCanGetOwnSeedsFromSeedMaker crop data) >> SelectUseSeedMaker >> selectDispatch)
+                    || not <| Crop.canGetOwnSeedsFromSeedMaker crop))
+                  (selectMany (fun crop -> Crop.canGetOwnSeedsFromSeedMaker crop) >> SelectUseSeedMaker >> selectDispatch)
                 Image.Icon.processor Processor.seedMaker
               ]
             ]
@@ -762,7 +762,7 @@ module Crops =
             td [
               if not <| Game.processorUnlocked data settings.Game.Skills Processor.seedMaker then Class.disabled
               children [
-                if GameData.cropCanGetOwnSeedsFromSeedMaker crop data then
+                if Crop.canGetOwnSeedsFromSeedMaker crop then
                   checkbox (settings.Selected.UseSeedMaker.Contains seed) (curry SetSelected seed >> SelectUseSeedMaker >> selectDispatch)
               ]
             ]

@@ -255,7 +255,7 @@ module private Shorthand =
             (gameData.Crops
               |> Table.toSeq
               |> Seq.choose (fun (seed, crop) ->
-                if gameData |> GameData.cropCanGetOwnSeedsFromSeedMaker crop
+                if Crop.canGetOwnSeedsFromSeedMaker crop
                 then Some seed
                 else None))
             short.UseSeedMaker

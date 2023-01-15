@@ -551,14 +551,6 @@ module [<RequireQualifiedAccess>] Crop =
     | FarmCrop _ -> false
     | ForageCrop _ -> true
 
-  let canGetOwnSeedsFromSeedMaker items = function
-    | FarmCrop crop ->
-      // assume that if mainItem = seed, then mainItem.Category = Seeds
-      match items crop.Item |> Item.category with
-      | Fruit | Vegetable | Flower -> true
-      | _ -> crop.Item = Item.sweetGemBerry
-    | ForageCrop _ -> true
+  let canGetOwnSeedsFromSeedMaker crop = seedItem crop <> mainItem crop
 
-  let makesOwnSeeds crop =
-    let seed = seed crop
-    items crop |> Array.exists (fun item -> nat item = nat seed)
+  let makesOwnSeeds crop = crop |> items |> Array.contains (seedItem crop)
