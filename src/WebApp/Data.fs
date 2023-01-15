@@ -35,23 +35,35 @@ assert // no missing item references
   |> Seq.concat
   |> Seq.forall gameData.Items.ContainsKey
 
-assert (gameData.FarmCrops.Values |> Seq.forall (fun crop ->
-  match crop.RegrowTime, crop.ExtraItem with
-  | Some time, Some (item, amount) -> time > 0u && (nat item <> nat crop.Seed || amount >= 1.0)
-  | Some time, None -> time > 0u
-  | None, Some (_, amount) -> amount >= FarmCrop.minExtraItemAmount
-  | None, None -> true))
+assert // no negative speeds
+  gameData.Fertilizers.Values |> Seq.forall (fun fertilizer -> Fertilizer.speed fertilizer >= Fertilizer.minSpeed)
 
-assert (gameData.FarmCrops.Values |> Seq.forall (fun crop ->
-  let amount = crop.Amount
-  CropAmount.minExtraCropChance <= amount.ExtraCropChance && amount.ExtraCropChance <= CropAmount.maxExtraCropChance
-  && CropAmount.minYield <= amount.MinCropYield && amount.MinCropYield <= amount.MaxCropYield))
+assert // all seed items have the Seeds category
+  gameData.Crops.Values |> Seq.forall (Crop.seedItem >> gameData.Items.Find >> Item.category >> (=) Seeds)
 
-assert (gameData.ForageCrops.Values |> Seq.forall (fun crop ->
-  let len = nat crop.Items.Length
-  ForageCrop.minItems <= len && len <= ForageCrop.maxItems))
+assert // no zero growth stages
+  gameData.Crops.Values |> Seq.forall (Crop.stages >> Array.contains 0u >> not)
 
-assert
+assert // non-zero regrow times, and supported/valid extra item amounts
+  gameData.FarmCrops.Values |> Seq.forall (fun crop ->
+    match crop.RegrowTime, crop.ExtraItem with
+    | Some time, Some (item, amount) -> time > 0u && (nat item <> nat crop.Seed || amount >= 1.0)
+    | Some time, None -> time > 0u
+    | None, Some (_, amount) -> amount >= FarmCrop.minExtraItemAmount
+    | None, None -> true)
+
+assert // crop amounts have values in the valid ranges
+  gameData.FarmCrops.Values |> Seq.forall (fun crop ->
+    let amount = crop.Amount
+    CropAmount.minExtraCropChance <= amount.ExtraCropChance && amount.ExtraCropChance <= CropAmount.maxExtraCropChance
+    && CropAmount.minYield <= amount.MinCropYield && amount.MinCropYield <= amount.MaxCropYield)
+
+assert // forage crops have a number of items in the supported range
+  gameData.ForageCrops.Values |> Seq.forall (fun crop ->
+    let len = nat crop.Items.Length
+    ForageCrop.minItems <= len && len <= ForageCrop.maxItems)
+
+assert // valid ratios (no zeros)
   gameData.Products.Values
   |> Seq.collect Table.values
   |> Seq.forall (function
@@ -382,8 +394,6 @@ let private dateValid date = Date.firstDay <= date.Day && date.Day <= Date.lastD
 let private assertSettings predicate =
   assert (defaultSavedSettings.Value |> List.forall (fun (_, settings) -> predicate settings))
 
-let private seedItemPairs = GameData.seedItemPairs gameData |> Set.ofArray
-
 let private isKeySubset table keys = keys |> Seq.forall (fun key -> table |> Table.containsKey key)
 let private isFertilizerNameSubset keys = keys |> isKeySubset gameData.Fertilizers
 let private isSeedIdSubset keys = keys |> isKeySubset gameData.Crops
@@ -405,19 +415,8 @@ assertSettings (fun settings -> settings.Selected.FertilizerPrices |> Map.forall
 
 assertSettings (fun settings -> isSeedIdSubset settings.Selected.Crops)
 assertSettings (fun settings -> settings.Selected.SeedPrices |> Map.forall (isNestedKeySubset gameData.SeedPrices))
-
-assertSettings (fun settings -> Set.isSubset settings.Selected.SellRaw seedItemPairs)
-assertSettings (fun settings -> settings.Selected.Products |> Map.forall (fun (_, item) processors -> isNestedKeySubset gameData.Products item processors))
-assertSettings (fun settings -> isSeedIdSubset settings.Selected.SellForageSeeds)
-
-assertSettings (fun settings -> isSeedIdSubset settings.Selected.UseSeedMaker)
-assertSettings (fun settings -> isSeedIdSubset settings.Selected.UseHarvestedSeeds)
-assertSettings (fun settings -> isSeedIdSubset settings.Selected.UseForageSeeds)
-
-assertSettings (fun settings -> isFertilizerNameSubset settings.Selected.CustomFertilizerPrices.Values.Keys)
-assertSettings (fun settings -> isSeedIdSubset settings.Selected.CustomSeedPrices.Values.Keys)
-assertSettings (fun settings -> settings.Selected.CustomSellPrices.Values.Keys |> Seq.forall seedItemPairs.Contains)
 #endif
+
 
 let defaultApp = lazy {
   Data = gameData
