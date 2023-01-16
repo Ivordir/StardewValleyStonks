@@ -1144,13 +1144,15 @@ module Misc =
     ] ]
 
 module LoadSave =
-  let [<ReactComponent>] saveCurrentSettings (props: {| dispatch: _ |}) =
+  let [<ReactComponent>] SaveCurrentSettings (props: {| dispatch: _ |}) =
     let name, setName = useState None
 
     let modalRef = useRef<Browser.Types.HTMLDialogElement option> None
 
     useLayoutEffect (fun () ->
-      modalRef.current |> Option.iter (fun e -> e.showModal ()))
+      match modalRef.current with
+      | Some m when not m.``open`` -> m.showModal ()
+      | _ -> ())
 
     fragment [
       button [
@@ -1184,13 +1186,15 @@ module LoadSave =
         ]
     ]
 
-  let [<ReactComponent>] importSave (props: {| dispatch: _ |}) =
+  let [<ReactComponent>] ImportSave (props: {| dispatch: _ |}) =
     let save, setSave = useState None
 
     let modalRef = useRef<Browser.Types.HTMLDialogElement option> None
 
     useLayoutEffect (fun () ->
-      modalRef.current |> Option.iter (fun e -> e.showModal ()))
+      match modalRef.current with
+      | Some m when not m.``open`` -> m.showModal ()
+      | _ -> ())
 
     fragment [
       label [ Class.fileInput; children [
@@ -1214,7 +1218,63 @@ module LoadSave =
         dialog [
           Interop.mkAttr "onClose" (fun _ -> setSave None)
           prop.ref modalRef
-          children (save |> Option.defaultOrMap [| ofStr "Broken save." |] (snd >> Array.map ofStr))
+          children [
+            match save with
+            | None ->
+              h1 "Invalid Save"
+              ofStr "Failed to laod the save game. Did you pick the right file?"
+            | Some (_, missing) ->
+              h1 "Warning"
+              ofStr "Failed to load the following data from the save game:"
+              ul (missing |> Array.map (ofStr >> li))
+            div [
+                button [
+                onClick (fun _ -> setSave None)
+                text "Ok"
+              ]
+            ]
+          ]
+        ]
+    ]
+
+  let [<ReactComponent>] RenamePreset (props: {| i: int; name: string; dispatch: _ |}) =
+    let name, setName = useState None
+
+    let modalRef = useRef<Browser.Types.HTMLDialogElement option> None
+
+    useLayoutEffect (fun () ->
+      match modalRef.current with
+      | Some m when not m.``open`` -> m.showModal ()
+      | _ -> ())
+
+    fragment [
+      button [
+        onClick (fun _ -> setName (Some props.name))
+        text "Edit"
+      ]
+      match name with
+      | None -> none
+      | Some name ->
+        dialog [
+          Interop.mkAttr "onClose" (fun _ -> setName None)
+          prop.ref modalRef
+          children [
+            h1 "Rename"
+            Input.text name (Some >> setName)
+            div [
+              button [
+                onClick (fun _ ->
+                  if name <> "" then
+                    props.dispatch (RenameSettings (props.i, name))
+                    setName None)
+                text "Ok"
+              ]
+              button [
+                onClick (fun _ -> setName None)
+                text "Cancel"
+              ]
+            ]
+          ]
         ]
     ]
 
@@ -1222,31 +1282,25 @@ module LoadSave =
     let saveDispatch = SetSavedSettings >> dispatch
     let loadDispatch = LoadSettings >> SetState >> dispatch
     div [
-      // | LoadSavedModel i -> { app with Model = snd app.SavedModels[i] }, []
-      // | SaveCurrentModel name -> { app with SavedModels = (name, app.Model) :: app.SavedModels }, []
-      // | RenameSavedModel (i, name) -> { app with SavedModels = app.SavedModels |> List.updateAt i (name, app.SavedModels |> List.item i |> snd) }, []
-      // | DeleteSavedModel i -> { app with SavedModels = app.SavedModels |> List.removeAt i }, []
-
-      ul [
-        yield! app.SavedSettings |> List.mapi (fun i (name, settings) ->
-          li [
-            ofStr name
-            button [
-              onClick (fun _ -> loadDispatch settings)
-              text "Load"
-            ]
-            button [
-              onClick (fun _ -> saveDispatch (DeleteSettings i))
-              text "x"
-            ]
+      ul (app.SavedSettings |> List.mapi (fun i (name, settings) ->
+        li [
+          ofStr name
+          button [
+            onClick (fun _ -> loadDispatch settings)
+            text "Load"
           ]
-        )
-      ]
+          RenamePreset {| i = i; name = name; dispatch = saveDispatch |}
+          button [
+            onClick (fun _ -> saveDispatch (DeleteSettings i))
+            text "x"
+          ]
+        ]
+      ))
 
       div [ style [ style.display.flex; style.flexDirection.column; style.width.maxContent ]; children [
-        saveCurrentSettings {| dispatch = saveDispatch |}
+        SaveCurrentSettings {| dispatch = saveDispatch |}
 
-        importSave {| dispatch = saveDispatch |}
+        ImportSave {| dispatch = saveDispatch |}
 
         button [
           onClick (fun _ -> loadDispatch (snd Data.defaultSavedSettings.Value[0]))
