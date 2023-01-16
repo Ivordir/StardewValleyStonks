@@ -13,10 +13,5 @@ let [<Global>] mutable private onmessage: Browser.Types.MessageEvent -> unit = j
 
 onmessage <- fun message ->
   match message.data with
-  | :? Input as data ->
-    postMessage (data |> Array.map (fun model ->
-      let solution = Solver.solve model
-      // The nature of the problem should prevent infeasible or unbounded solutions.
-      assert (solution.status = Optimal)
-      solution))
+  | :? Input as data -> postMessage (data |> Array.map Solver.solve)
   | _ -> assert false
