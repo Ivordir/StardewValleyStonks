@@ -57,9 +57,6 @@ module [<RequireQualifiedAccess>] Table =
     table |> unwrap |> Seq.map (fun (KeyValue kv) -> kv)
     #endif
 
-  let inline toArray table = table |> toSeq |> Array.ofSeq
-  let inline toList table = table |> toSeq |> List.ofSeq
-
   let inline keys table = (unwrap table).Keys
   let inline values table = (unwrap table).Values
   let inline count table = (unwrap table).Count
