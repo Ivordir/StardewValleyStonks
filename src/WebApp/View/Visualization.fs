@@ -17,179 +17,6 @@ open type React
 open Core.Operators
 open Core.ExtraTopLevelOperators
 
-let selectFromGraph rankItem (pairs: _ array) dispatch i =
-  let crop, fert = pairs[i]
-  (match rankItem with
-  | RankCropsAndFertilizers -> (Some crop, Some fert)
-  | RankCrops -> (Some crop, None)
-  | RankFertilizers -> (None, Some fert))
-  |> Some
-  |> SetSelectedCropAndFertilizer
-  |> dispatch
-
-let pairImage (data: GameData) (pairs: (SeedId * string option) array) selectPair props =
-  let index: int = props?payload?value
-  let crop, fert = pairs.[index]
-  Svg.svg [
-    svg.className "pairSelect"
-    svg.onClick (fun _ -> selectPair index)
-    svg.x (props?x - 10)
-    svg.y (props?y: int)
-    svg.width 20
-    svg.height 40
-    svg.children [
-      Svg.image [
-        svg.href <| Image.itemRoot (Crop.mainItem data.Crops[crop] |> string)
-        svg.width 20
-        svg.height 20
-      ]
-      match fert with
-      | Some f ->
-        Svg.image [
-          svg.href <| Image.fertilizerRoot (string f)
-          svg.width 20
-          svg.height 20
-          svg.y 20
-        ]
-      | None -> yield! []
-    ]
-  ]
-
-let chartTooltip (data: GameData) (pairs: (SeedId * string option) array) props =
-  // number of harvests
-  // item qualities / amounts per harvest
-  // products sold + amount + price
-  // fertilizer bought, replaced
-  // seeds bought, made
-  // profit / roi
-  // days used / total season days
-  // normalized profit /oi
-  match props?payload with
-  | Some (payload: _ array) when payload.Length > 0 && props?active ->
-    let (index: int, result: Result<float, Query.InvalidReasons>) = payload[0]?payload
-    let crop, fert = pairs[index]
-    let fertDesc = Option.defaultOrMap "" (fun f -> " with " + string f)
-    div [
-      div (ofStr (Crop.name data.Items.Find data.Crops[crop] + fertDesc fert))
-      match result with
-      | Ok profit -> div (ofFloat profit)
-      | Error _ -> none
-    ]
-  | _ -> none
-
-let private getPath x y width height =
-  $"M {x},{y} h {width} v {height} h -{width} Z"
-
-let barBackground gap selectPair props =
-  let x: float = props?x - gap / 2.0
-  let y: float = props?y
-  let width: float = props?width + gap
-  let height: float = props?height
-  let i: int = fst props?payload
-  Svg.path [
-    svg.classes [ "recharts-rectangle"; "pairSelect" ]
-    svg.fill "#00000000"
-    svg.onClick (fun _ -> selectPair i)
-    svg.radius 0
-    svg.x x
-    svg.y y
-    svg.width width
-    svg.height height
-    svg.d (getPath x y width height)
-  ]
-
-let errorBar (pairs: (SeedId * string option) array) props =
-  let x: float = props?x
-  let y: float = props?y
-  let width: float = props?width
-  let height: float = props?height
-  match snd props?payload with
-  | Ok _ ->
-    Svg.path [
-      svg.className "recharts-rectangle"
-      svg.fill "blue"
-      svg.radius 0
-      svg.x x
-      svg.y y
-      svg.width width
-      svg.height height
-      svg.d (getPath x y width height)
-    ]
-  | Error (flags: Query.InvalidReasons) ->
-    let crop, fert = pairs[fst props?payload]
-    let mutable height = 0
-    let maxHeight = width * 3.0
-    let y: float = props?background?height - maxHeight
-    Svg.svg [
-      svg.x x
-      svg.y y
-      svg.width width
-      svg.height maxHeight
-      svg.children [
-        if flags.HasFlag Query.InvalidReasons.NoFertilizerPrice then
-          Svg.image [
-            svg.className "pixel"
-            svg.href <| Image.fertilizerRoot (string fert)
-            svg.height width
-          ]
-        if flags.HasFlag Query.InvalidReasons.NotEnoughSeeds then
-          Svg.image [
-            svg.className "pixel"
-            svg.href <| Image.itemRoot (string crop)
-            svg.height width
-            svg.y width
-          ]
-        if flags.HasFlag Query.InvalidReasons.NotEnoughDays then
-          Svg.image [
-            svg.className "pixel"
-            svg.href <| Image.uiRoot "Time"
-            svg.width width
-            svg.height width
-            svg.y (width * 2.0)
-          ]
-      ]
-    ]
-
-let graph ranker model pairs (data: _ array) dispatch =
-  let barGap = 4.0
-  let selectPair = selectFromGraph ranker.RankItem pairs dispatch
-  Recharts.responsiveContainer [
-    responsiveContainer.width (length.percent 100)
-    responsiveContainer.chart (Recharts.barChart [
-      barChart.data data
-      barChart.barSize 40
-      barChart.barGap barGap
-      barChart.children [
-        Recharts.yAxis [
-          yAxis.unit (RankMetric.unit ranker.RankMetric)
-          yAxis.width 60
-        ]
-        Recharts.tooltip [
-          tooltip.content (chartTooltip model pairs)
-        ]
-        Recharts.bar [
-          bar.dataKey (snd >> (function Ok y -> y | Error _ -> 0.0))
-          bar.fill "blue"
-          Interop.mkBarAttr "background" (barBackground barGap selectPair)
-          Interop.mkBarAttr "shape" (errorBar pairs)
-          Interop.mkBarAttr "onClick" (fun props -> fst props?payload |> selectPair)
-        ]
-        Recharts.brush [
-          brush.startIndex (ranker.BrushSpan |> fst |> int |> min (data.Length - 1) |> max 0)
-          brush.endIndex (ranker.BrushSpan |> snd |> int |> min (data.Length - 1) |> max 0)
-          brush.height 30
-          Interop.mkBrushAttr "onChange" (fun i -> dispatch <| SetBrushSpan (i?startIndex, i?endIndex))
-        ]
-        Recharts.xAxis [
-          xAxis.dataKey (fst: _ -> int)
-          xAxis.tick (pairImage model pairs selectPair)
-          xAxis.interval 0
-          xAxis.height 50
-        ]
-      ]
-    ] )
-  ]
-
 let allPairData metric timeNorm data settings =
   let crops =
     Query.Selected.inSeasonCrops data settings |> sortByMany [|
@@ -222,11 +49,10 @@ let allPairData metric timeNorm data settings =
     | ROI -> Query.cropROI
     | XP -> Query.cropXP
 
-  let data =
-    crops |> Array.collect (fun crop ->
-      let profit = metric data settings timeNorm crop
-      fertilizers |> Array.map (fun fert ->
-        (Crop.seed crop, Fertilizer.Opt.name fert), profit fert))
+  let data = crops |> Array.collect (fun crop ->
+    let profit = metric data settings timeNorm crop
+    fertilizers |> Array.map (fun fert ->
+      (Crop.seed crop, Fertilizer.Opt.name fert), profit fert))
 
   {|
     Crops = crops |> Array.map Crop.seed
@@ -234,101 +60,272 @@ let allPairData metric timeNorm data settings =
     Pairs = data
   |}
 
-let rankBy labelText ranker dispatch =
-  fragment [
-    ofStr labelText
-    Select.options (length.rem 4) (fun metric ->
-      div [
-        text (string metric)
-        title (RankMetric.fullName metric)
-      ])
-      unitUnionCases<RankMetric>
-      ranker.RankMetric
-      (SetRankMetric >> dispatch)
-    Select.unitUnion (length.rem 7) ranker.TimeNormalization (SetTimeNormalization >> dispatch)
-  ]
 
-let graphView ranker (data, settings) dispatch =
-  let pairData = allPairData ranker.RankMetric ranker.TimeNormalization data settings
-  if pairData.Pairs.Length = 0 then
-    div [
-      if pairData.Crops.Length = 0 then ofStr "No Crops Selected"
-      if pairData.Fertilizers.Length = 0 then ofStr "No Fertilizers Selected"
-    ]
-  else
-    let pairs =
-      match ranker.RankItem with
-      | RankCropsAndFertilizers -> pairData.Pairs
-      | RankCrops -> pairData.Pairs |> Array.groupBy (fst >> fst) |> Array.map (snd >> Array.maxBy (snd >> Option.ofResult))
-      | RankFertilizers -> pairData.Pairs |> Array.groupBy (fst >> snd) |> Array.map (snd >> Array.maxBy (snd >> Option.ofResult))
+module Ranker =
+  let selectFromGraph rankItem (pairs: _ array) dispatch i =
+    let crop, fert = pairs[i]
+    (match rankItem with
+    | RankCropsAndFertilizers -> (Some crop, Some fert)
+    | RankCrops -> (Some crop, None)
+    | RankFertilizers -> (None, Some fert))
+    |> Some
+    |> SetSelectedCropAndFertilizer
+    |> dispatch
 
-    let pairs =
-      if ranker.ShowInvalid then pairs else
-      pairs |> Array.filter (snd >> Result.isOk)
-
-    if pairs.Length = 0 then
-      div [
-        ofStr "No valid items found"
-      ]
-    else
-      let pairData =
-        pairs
-        |> Array.indexed
-        |> Array.map (fun (i, (_, profit)) -> i, profit)
-
-      let pairs = pairs |> Array.map fst
-
-      let setOrder a b =
-        let rec next a b =
-          if int a = 0 || int b = 0 then
-            compare a b
-          else
-            let c = compare (int b &&& 1) (int a &&& 1)
-            if c = 0
-            then next (a >>> 1) (b >>> 1)
-            else c
-        next a b
-
-      pairData |> Array.sortInPlaceWith (fun a b ->
-        match snd a, snd b with
-        | Ok a, Ok b -> compare b a
-        | Ok _, Error _ -> -1
-        | Error _, Ok _ -> 1
-        | Error a, Error b -> setOrder a b)
-
-      fragment [
-        div [ Class.graphControls; children [
-          ofStr "Rank"
-          Select.options (length.rem 6) (fun rankby ->
-            div [
-              prop.text (string rankby)
-              title (
-                match rankby with
-                | RankCropsAndFertilizers -> "All pairs of crops and fertilizers."
-                | RankCrops -> "Pick the best fertilizer for each crop."
-                | RankFertilizers -> "Pick the best crop for each fertilizer."
-              )
-            ])
-            unitUnionCases<RankItem>
-            ranker.RankItem
-            (SetRankItem >> dispatch)
-
-          rankBy "By" ranker dispatch
-
-          checkboxText "Show Invalid" ranker.ShowInvalid (SetShowInvalid >> dispatch)
-        ] ]
-        div [
-          Class.graph
-          children [
-            lazyView3With
-              (fun (data1, _) (data2, _) -> data1 = data2)
-              (fun (pairs, pairData) (ranker, data) -> graph ranker data pairs pairData)
-              (pairs, pairData)
-              (ranker, data)
-              dispatch
+  let pairImage (data: GameData) (pairs: (SeedId * string option) array) selectPair props =
+    let index: int = props?payload?value
+    let crop, fert = pairs[index]
+    Svg.svg [
+      svg.className "pairSelect"
+      svg.onClick (fun _ -> selectPair index)
+      svg.x (props?x - 10)
+      svg.y (props?y: int)
+      svg.width 20
+      svg.height 40
+      svg.children [
+        Svg.image [
+          svg.href <| Image.itemRoot (Crop.mainItem data.Crops[crop] |> string)
+          svg.width 20
+          svg.height 20
+        ]
+        match fert with
+        | Some f ->
+          Svg.image [
+            svg.href <| Image.fertilizerRoot (string f)
+            svg.width 20
+            svg.height 20
+            svg.y 20
           ]
+        | None -> yield! []
+      ]
+    ]
+
+  let chartTooltip (data: GameData) (pairs: (SeedId * string option) array) props =
+    // number of harvests
+    // item qualities / amounts per harvest
+    // products sold + amount + price
+    // fertilizer bought, replaced
+    // seeds bought, made
+    // profit / roi
+    // days used / total season days
+    // normalized profit /oi
+    match props?payload with
+    | Some (payload: _ array) when payload.Length > 0 && props?active ->
+      let (index: int, result: Result<float, Query.InvalidReasons>) = payload[0]?payload
+      let crop, fert = pairs[index]
+      let fertDesc = Option.defaultOrMap "" (fun f -> " with " + string f)
+      div [
+        div (ofStr (Crop.name data.Items.Find data.Crops[crop] + fertDesc fert))
+        match result with
+        | Ok profit -> div (ofFloat profit)
+        | Error _ -> none
+      ]
+    | _ -> none
+
+  let private getPath x y width height =
+    $"M {x},{y} h {width} v {height} h -{width} Z"
+
+  let barBackground gap selectPair props =
+    let x: float = props?x - gap / 2.0
+    let y: float = props?y
+    let width: float = props?width + gap
+    let height: float = props?height
+    let i: int = fst props?payload
+    Svg.path [
+      svg.classes [ "recharts-rectangle"; "pairSelect" ]
+      svg.fill "#00000000"
+      svg.onClick (fun _ -> selectPair i)
+      svg.radius 0
+      svg.x x
+      svg.y y
+      svg.width width
+      svg.height height
+      svg.d (getPath x y width height)
+    ]
+
+  let errorBar (pairs: (SeedId * string option) array) props =
+    let x: float = props?x
+    let y: float = props?y
+    let width: float = props?width
+    let height: float = props?height
+    match snd props?payload with
+    | Ok _ ->
+      Svg.path [
+        svg.className "recharts-rectangle"
+        svg.fill "blue"
+        svg.radius 0
+        svg.x x
+        svg.y y
+        svg.width width
+        svg.height height
+        svg.d (getPath x y width height)
+      ]
+    | Error (flags: Query.InvalidReasons) ->
+      let crop, fert = pairs[fst props?payload]
+      let maxHeight = width * 3.0
+      let y: float = props?background?height - maxHeight
+      Svg.svg [
+        svg.x x
+        svg.y y
+        svg.width width
+        svg.height maxHeight
+        svg.children [
+          if flags.HasFlag Query.InvalidReasons.NoFertilizerPrice then
+            Svg.image [
+              svg.href <| Image.fertilizerRoot (string fert)
+              svg.height width
+            ]
+          if flags.HasFlag Query.InvalidReasons.NotEnoughSeeds then
+            Svg.image [
+              svg.href <| Image.itemRoot (string crop)
+              svg.height width
+              svg.y width
+            ]
+          if flags.HasFlag Query.InvalidReasons.NotEnoughDays then
+            Svg.image [
+              svg.href <| Image.uiRoot "Time"
+              svg.width width
+              svg.height width
+              svg.y (width * 2.0)
+            ]
         ]
       ]
+
+  let graph ranker model pairs (data: _ array) dispatch =
+    let barGap = 4.0
+    let selectPair = selectFromGraph ranker.RankItem pairs dispatch
+    Recharts.responsiveContainer [
+      responsiveContainer.width (length.percent 100)
+      responsiveContainer.chart (Recharts.barChart [
+        barChart.data data
+        barChart.barSize 40
+        barChart.barGap barGap
+        barChart.children [
+          Recharts.yAxis [
+            yAxis.unit (RankMetric.unit ranker.RankMetric)
+            yAxis.width 60
+          ]
+          Recharts.tooltip [
+            tooltip.content (chartTooltip model pairs)
+          ]
+          Recharts.bar [
+            bar.dataKey (snd >> (function Ok y -> y | Error _ -> 0.0))
+            bar.fill "blue"
+            bar.onClick (fun props -> fst props?payload |> selectPair)
+            Interop.mkBarAttr "background" (barBackground barGap selectPair)
+            Interop.mkBarAttr "shape" (errorBar pairs)
+          ]
+          Recharts.brush [
+            brush.startIndex (ranker.BrushSpan |> fst |> int |> min (data.Length - 1) |> max 0)
+            brush.endIndex (ranker.BrushSpan |> snd |> int |> min (data.Length - 1) |> max 0)
+            brush.height 30
+            Interop.mkBrushAttr "onChange" (fun i -> dispatch <| SetBrushSpan (i?startIndex, i?endIndex))
+          ]
+          Recharts.xAxis [
+            xAxis.dataKey (fst: _ -> int)
+            xAxis.tick (pairImage model pairs selectPair)
+            xAxis.interval 0
+            xAxis.height 50
+          ]
+        ]
+      ] )
+    ]
+
+  let rankBy labelText ranker dispatch =
+    fragment [
+      ofStr labelText
+      Select.options (length.rem 4) (fun metric ->
+        div [
+          text (string metric)
+          title (RankMetric.fullName metric)
+        ])
+        unitUnionCases<RankMetric>
+        ranker.RankMetric
+        (SetRankMetric >> dispatch)
+      Select.unitUnion (length.rem 7) ranker.TimeNormalization (SetTimeNormalization >> dispatch)
+    ]
+
+  let ranker ranker (data, settings) dispatch =
+    let pairData = allPairData ranker.RankMetric ranker.TimeNormalization data settings
+    if pairData.Pairs.Length = 0 then
+      div [
+        if pairData.Crops.Length = 0 then ofStr "No Crops Selected"
+        if pairData.Fertilizers.Length = 0 then ofStr "No Fertilizers Selected"
+      ]
+    else
+      let pairs =
+        match ranker.RankItem with
+        | RankCropsAndFertilizers -> pairData.Pairs
+        | RankCrops -> pairData.Pairs |> Array.groupBy (fst >> fst) |> Array.map (snd >> Array.maxBy (snd >> Option.ofResult))
+        | RankFertilizers -> pairData.Pairs |> Array.groupBy (fst >> snd) |> Array.map (snd >> Array.maxBy (snd >> Option.ofResult))
+
+      let pairs =
+        if ranker.ShowInvalid then pairs else
+        pairs |> Array.filter (snd >> Result.isOk)
+
+      if pairs.Length = 0 then
+        div [
+          ofStr "No valid items found"
+        ]
+      else
+        let pairData =
+          pairs
+          |> Array.indexed
+          |> Array.map (fun (i, (_, profit)) -> i, profit)
+
+        let pairs = pairs |> Array.map fst
+
+        let setOrder a b =
+          let rec next a b =
+            if int a = 0 || int b = 0 then
+              compare a b
+            else
+              let c = compare (int b &&& 1) (int a &&& 1)
+              if c = 0
+              then next (a >>> 1) (b >>> 1)
+              else c
+          next a b
+
+        pairData |> Array.sortInPlaceWith (fun a b ->
+          match snd a, snd b with
+          | Ok a, Ok b -> compare b a
+          | Ok _, Error _ -> -1
+          | Error _, Ok _ -> 1
+          | Error a, Error b -> setOrder a b)
+
+        fragment [
+          div [ Class.graphControls; children [
+            ofStr "Rank"
+            Select.options (length.rem 6) (fun rankby ->
+              div [
+                prop.text (string rankby)
+                title (
+                  match rankby with
+                  | RankCropsAndFertilizers -> "All pairs of crops and fertilizers."
+                  | RankCrops -> "Pick the best fertilizer for each crop."
+                  | RankFertilizers -> "Pick the best crop for each fertilizer."
+                )
+              ])
+              unitUnionCases<RankItem>
+              ranker.RankItem
+              (SetRankItem >> dispatch)
+
+            rankBy "By" ranker dispatch
+
+            checkboxText "Show Invalid" ranker.ShowInvalid (SetShowInvalid >> dispatch)
+          ] ]
+          div [
+            Class.graph
+            children [
+              lazyView3With
+                (fun (data1, _) (data2, _) -> data1 = data2)
+                (fun (pairs, pairData) (ranker, data) -> graph ranker data pairs pairData)
+                (pairs, pairData)
+                (ranker, data)
+                dispatch
+            ]
+          ]
+        ]
 
 let growthCalender app seed fertilizer =
   let data = app.Data
@@ -1045,14 +1042,14 @@ let [<ReactComponent>] selectedCropAndFertilizer = fun (props: {| app: _; seed: 
     ] ]
 
 
-let ranker app dispatch =
+let rankerOrAudit app dispatch =
   let appDispatch = dispatch
   let dispatch = SetRanker >> dispatch
   let { UI = ui; Settings = settings } = app.State
   let ranker = ui.Ranker
   match ranker.SelectedCropAndFertilizer with
   | Some (crop, fert) -> selectedCropAndFertilizer {| app = app; seed = crop; fert = fert; dispatch = appDispatch |}
-  | None -> lazyView3 graphView ranker (app.Data, settings) dispatch
+  | None -> lazyView3 Ranker.ranker ranker (app.Data, settings) dispatch
 
 
 
@@ -1107,7 +1104,7 @@ let section app dispatch =
     children [
       viewTabs SetAppMode unitUnionCases<AppMode> ui.Mode (SetUI >> dispatch)
       match ui.Mode with
-      | Ranker -> ranker app (SetUI >> dispatch)
+      | Ranker -> rankerOrAudit app (SetUI >> dispatch)
       | Solver ->
         labeled "Maximize: " <| Select.unitUnion (length.rem 5) ui.SolverMode (SetSolverMode >> SetUI >> dispatch)
         solver {|
