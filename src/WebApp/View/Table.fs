@@ -14,6 +14,10 @@ type 'item Column = {
   Sort: ('item -> 'item -> int) option
 }
 
+let private colWidths widths =
+  colgroup (widths |> Seq.map (fun (width: float) ->
+    col [ style [ style.width (length.percent width) ] ] ))
+
 let sortTable columns displayItem setSort sortCols items =
   let columns = Array.ofSeq columns
   let sortData = Array.create columns.Length None

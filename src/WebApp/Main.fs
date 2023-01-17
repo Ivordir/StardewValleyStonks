@@ -36,7 +36,11 @@ let update msg app =
     app
 
 let view app dispatch =
-  try view app dispatch
+  try
+    React.fragment [
+      Visualization.section app (SetState >> dispatch)
+      Settings.section app dispatch
+    ]
   with e ->
     console.error e
     div [

@@ -639,29 +639,17 @@ footer
   height: 100%
   transition: flex-grow 0.75s
 
-@mixin quality($color)
-  &-bar
-    @extend %crop-qualities-inline
-    background-color: $color
-
-  &-text
-    @extend %crop-qualities-inline
-    color: $color
-    width: min-content
-    flex-basis: 0
-    text-align: center
-
 .iridium
-  @include quality(purple)
+  --quality-color: purple
 
 .gold
-  @include quality(gold)
+  --quality-color: gold
 
 .silver
-  @include quality(silver)
+  --quality-color: silver
 
 .normal
-  @include quality(white)
+  --quality-color: white
 
 .crop-qualities
   width: 100%
@@ -670,7 +658,17 @@ footer
     height: 1rem
     display: flex
 
+    & > div
+      @extend %crop-qualities-inline
+      background-color: var(--quality-color)
+
   &-probs
     height: 1rem
     display: flex
 
+    & > div
+      @extend %crop-qualities-inline
+      width: min-content
+      flex-basis: 0
+      text-align: center
+      color: var(--quality-color)
