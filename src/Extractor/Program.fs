@@ -291,7 +291,7 @@ let saveStageImages graphics outputPath cropSpriteSheet crop (spriteSheetRow: ui
   let stages = Crop.stages crop
 
   save (string 0) 0
-  for i = 1 to stages.Length - 1 do
+  for i = 1 to stages.Length do
     save (string i) (i + 1)
 
   if Crop.regrows crop then save "Regrow" (stages.Length + 2)
