@@ -18,26 +18,13 @@ open Core.Operators
 open Core.ExtraTopLevelOperators
 
 let allPairData metric timeNorm data settings =
-  let crops =
-    Query.Selected.inSeasonCrops data settings |> sortByMany [|
-      (fun c1 c2 ->
-        match Crop.seasons c1, Crop.seasons c2 with
-        | Seasons.None, Seasons.None -> 0
-        | Seasons.None, _ -> 1
-        | _, Seasons.None -> -1
-        | s1, s2 -> Seasons.setOrder s1 s2)
-
-      compareBy (Crop.name data.Items.Find)
-    |]
+  let crops = Query.Selected.inSeasonCrops data settings |> cropOrder data |> Array.ofSeq
 
   let fertilizers =
     Query.Selected.fertilizers data settings
-    |> sortByMany [|
-      compareBy Fertilizer.speed
-      compareBy Fertilizer.quality
-      compareBy Fertilizer.name
-    |]
-    |> Array.map Some
+    |> fertilizerOrder
+    |> Seq.map Some
+    |> Array.ofSeq
   let fertilizers =
     if settings.Selected.NoFertilizer
     then Array.append [| None |] fertilizers
@@ -865,181 +852,185 @@ let xpBreakdownTable timeNorm (data: GameData) settings seed fertName =
         ]
     ]
 
-// what to show if current crop and/or fertilizer is not selected?
-let [<ReactComponent>] selectedCropAndFertilizer = fun (props: {| app: _; seed: _; fert: _; dispatch: _ |}) ->
-    let app = props.app
-    let seed = props.seed
-    let fert' = props.fert
-    let dispatch = props.dispatch
+let private selectSpecificOrBest name toString (viewItem: _ -> ReactElement) items selected dispatch =
+  Select.search
+    (length.rem 15)
+    (function
+      | Choice1Of2 item
+      | Choice2Of2 (Some item) -> toString item
+      | Choice2Of2 None -> "???"
+    )
+    (fun opt -> fragment [
+      match opt with
+      | Choice1Of2 item -> viewItem item
+      | Choice2Of2 bestItem ->
+        ofStr $"Best {name}: "
+        bestItem |> Option.defaultOrMap (ofStr "???") viewItem
+    ])
+    items
+    selected
+    dispatch
 
-    let appDispatch = dispatch
-    let dispatch = SetRanker >> dispatch
-    let data = app.Data
-    let { UI = ui; Settings = settings } = app.State
-    let ranker = ui.Ranker
 
-    let (metric, timeNorm), setState = useState ((ranker.RankMetric, ranker.TimeNormalization))
+let [<ReactComponent>] SelectedCropAndFertilizer (props: {|
+    App: _
+    Seed: _
+    Fertilizer: _
+    Dispatch: _
+  |}) =
+  let app = props.App
+  let seed = props.Seed
+  let fertName = props.Fertilizer
+  let dispatch = props.Dispatch
 
-    let pairData = allPairData metric timeNorm data settings
+  let appDispatch = dispatch
+  let dispatch = SetRanker >> dispatch
+  let data = app.Data
+  let { UI = ui; Settings = settings } = app.State
+  let ranker = ui.Ranker
+
+  let (metric, timeNorm), setState = useState ((ranker.RankMetric, ranker.TimeNormalization))
+
+  let crops = Query.Selected.inSeasonCrops data settings |> cropOrder data |> Array.ofSeq
+
+  let fertilizers =
+    Query.Selected.fertilizers data settings
+    |> fertilizerOrder
+    |> Seq.map Some
+    |> Array.ofSeq
+  let fertilizers =
+    if settings.Selected.NoFertilizer
+    then Array.append [| None |] fertilizers
+    else fertilizers
+
+  let metricValue =
+    match metric with
+    | Gold -> Query.cropProfit
+    | ROI -> Query.cropROI
+    | XP -> Query.cropXP
+
+  let bestCrop, bestFert =
+    let pairs = crops |> Array.collect (fun crop ->
+      let profit = metricValue data settings timeNorm crop
+      fertilizers |> Array.map (fun fert ->
+        (Crop.seed crop, Fertilizer.Opt.name fert), profit fert))
 
     let bestCrop, bestFert =
-      if pairData.Pairs.Length = 0 then None, None else
-      let bestCrop, bestFert = pairData.Pairs |> Array.maxBy (snd >> Option.ofResult) |> fst
+      if pairs.Length = 0 then None, None else
+      let crop, fert = pairs |> Array.maxBy (snd >> Option.ofResult) |> fst
+      Some data.Crops[crop], Some (Option.map data.Fertilizers.Find fert)
 
-      let bestCrop =
-        match fert' with
-        | Some fert' ->
-          let filtered = pairData.Pairs |> Array.filter (fst >> snd >> (=) fert')
-          if filtered.Length = 0 then None else
-          filtered
-          |> Array.maxBy (snd >> Option.ofResult)
-          |> fst
-          |> fst
-          |> Some
-        | None -> Some bestCrop
+    let bestCrop =
+      match fertName with
+      | Some fert' ->
+        let fert = Option.map data.Fertilizers.Find fert'
+        if crops.Length = 0 then None else
+        crops |> Array.maxBy (fun crop -> metricValue data settings timeNorm crop fert |> Option.ofResult) |> Some
+      | None -> bestCrop
 
-      let bestFert =
-        match seed with
-        | Some seed ->
-          let filtered = pairData.Pairs |> Array.filter (fst >> fst >> (=) seed)
-          if filtered.Length = 0 then None else
-          filtered
-          |> Array.maxBy (snd >> Option.ofResult)
-          |> fst
-          |> snd
-          |> Some
-        | None -> Some bestFert
+    let bestFert =
+      match seed with
+      | Some seed ->
+        let crop = data.Crops[seed]
+        if fertilizers.Length = 0 then None else
+        let profit = metricValue data settings timeNorm crop
+        fertilizers |> Array.maxBy (profit >> Option.ofResult) |> Some
+      | None -> bestFert
 
-      bestCrop, bestFert
+    bestCrop, bestFert
 
-    let cropDisplayName crop = Crop.name data.Items.Find crop
+  let cropOptions =
+    crops
+    |> Array.map Choice1Of2
+    |> Array.append [| Choice2Of2 bestCrop |]
 
-    let cropOption seed = Choice1Of2 data.Crops[seed]
+  let fertilizerOptions =
+    fertilizers
+    |> Array.map Choice1Of2
+    |> Array.append [| Choice2Of2 bestFert |]
 
-    let bestCropOption = Choice2Of2 (bestCrop |> Option.map data.Crops.Find)
+  let crop = seed |> Option.defaultOrMap (Choice2Of2 bestCrop) (data.Crops.Find >> Choice1Of2)
+  let fert = fertName |> Option.defaultOrMap (Choice2Of2 bestFert) (Option.map data.Fertilizers.Find >> Choice1Of2)
 
-    let cropOptions =
-      pairData.Crops
-      |> Array.map cropOption
-      |> Array.append [| bestCropOption |]
+  div [ Class.auditGraph; children [
+    button [
+      onClick (fun _ -> SetSelectedCropAndFertilizer None |> dispatch)
+      text "Back"
+    ]
 
-    let fertilizerDisplayName fert = fert |> Option.defaultOrMap "No Fertilizer" Fertilizer.name
+    div [ Class.auditGraphSelect; children [
+      div [
+        selectSpecificOrBest
+          "Crop"
+          (Crop.name data.Items.Find)
+          (Image.Icon.crop data)
+          cropOptions
+          crop
+          (fun opt ->
+            let seed =
+              match opt with
+              | Choice1Of2 crop -> Some (Crop.seed crop)
+              | Choice2Of2 _ -> None
+            dispatch (SetSelectedCropAndFertilizer (Some (seed, fertName))))
 
-    let bestFertilizerOption = Choice2Of2 (bestFert |> Option.map (Option.map data.Fertilizers.Find))
+        ofStr " with "
 
-    let fertilizerOption fert = Choice1Of2 fert
-
-    let fertilizerOptions =
-      pairData.Fertilizers
-      |> Array.map (Option.map data.Fertilizers.Find >> fertilizerOption)
-      |> Array.append [| bestFertilizerOption |]
-
-    div [ Class.auditGraph; children [
-      button [
-        onClick (fun _ -> SetSelectedCropAndFertilizer None |> dispatch)
-        text "Back"
+        selectSpecificOrBest
+          "Fertilizer"
+          Fertilizer.Opt.displayName
+          (Option.defaultOrMap (ofStr "No Fertilizer") Image.Icon.fertilizer)
+          fertilizerOptions
+          fert
+          (fun opt ->
+            let fert =
+              match opt with
+              | Choice1Of2 fert -> Some (Fertilizer.Opt.name fert)
+              | Choice2Of2 _ -> None
+            dispatch (SetSelectedCropAndFertilizer (Some (seed, fert))))
       ]
 
-      div [ Class.auditGraphSelect; children [
-        div [
-          Select.search
-            (length.rem 15)
-            (function
-              | Choice1Of2 crop
-              | Choice2Of2 (Some crop) -> Crop.name data.Items.Find crop
-              | Choice2Of2 None -> "???"
-            )
-            (fun opt -> fragment [
-              match opt with
-              | Choice1Of2 crop -> Image.Icon.crop data crop
-              | Choice2Of2 bestCrop ->
-                ofStr "Best Crop: "
-                bestCrop |> Option.defaultOrMap none (Image.Icon.crop data)
-            ])
-            cropOptions
-            (seed |> Option.defaultOrMap bestCropOption (fun seed ->
-                cropOptions
-                |> Array.tryFind (function
-                  | Choice1Of2 crop when Crop.seed crop = seed -> true
-                  | _ -> false)
-                |> Option.defaultValue (cropOption seed)))
-            (fun opt ->
-              let seed =
-                match opt with
-                | Choice1Of2 crop -> Some (Crop.seed crop)
-                | Choice2Of2 _ -> None
-              dispatch (SetSelectedCropAndFertilizer (Some (seed, fert'))))
-
-          ofStr " with "
-
-          Select.search
-            (length.rem 15)
-            (function
-              | Choice1Of2 fert -> fertilizerDisplayName fert
-              | Choice2Of2 fert -> fert |> Option.defaultOrMap "???" fertilizerDisplayName)
-            (fun opt -> fragment [
-              match opt with
-              | Choice1Of2 (Some fert) ->
-                Image.Icon.fertilizer fert
-              | Choice1Of2 None ->
-                ofStr "No Fertilizer"
-              | Choice2Of2 bestFertilizer ->
-                ofStr "Best Fertilizer: "
-                match bestFertilizer with
-                | Some (Some fert) -> Image.fertilizer fert
-                | _ -> none
-                ofStr (bestFertilizer |> Option.defaultOrMap "???" fertilizerDisplayName)
-            ])
-            fertilizerOptions
-            (fert' |> Option.defaultOrMap bestFertilizerOption (fun fert ->
-                fertilizerOptions
-                |> Array.tryFind (function
-                  | Choice1Of2 f when (Option.map Fertilizer.name f) = fert -> true
-                  | _ -> false)
-                |> Option.defaultValue (fertilizerOption (Option.map data.Fertilizers.Find fert))))
-            (fun opt ->
-              let fert =
-                match opt with
-                | Choice1Of2 fert -> Some (Option.map Fertilizer.name fert)
-                | Choice2Of2 _ -> None
-              SetSelectedCropAndFertilizer (Some (seed, fert)) |> dispatch)
-        ]
-
-        div [
-          ofStr "Show "
-          Select.options (length.rem 4) (fun metric ->
-            div [
-              text (string metric)
-              title (RankMetric.fullName metric)
-            ])
-            unitUnionCases<RankMetric>
-            metric
-            (fun metric -> setState (metric, timeNorm))
-          Select.unitUnion (length.rem 7) timeNorm (fun timeNorm -> setState (metric, timeNorm))
-        ]
-      ] ]
-
-      match seed |> Option.orElse bestCrop, fert' |> Option.orElse bestFert with
-      | Some crop, Some fert ->
-        animatedDetails
-          (ui.OpenDetails.Contains OpenDetails.RankerProfitBreakdown)
-          (ofStr "Profit Breakdown")
-          [
-            match metric with
-            | Gold -> profitBreakdownTable false timeNorm data settings crop fert
-            | XP -> xpBreakdownTable timeNorm data settings crop fert
-            | ROI -> profitBreakdownTable true timeNorm data settings crop fert
-          ]
-          (curry SetDetailsOpen OpenDetails.RankerProfitBreakdown >> appDispatch)
-        animatedDetails
-          (ui.OpenDetails.Contains OpenDetails.RankerGrowthCalendar)
-          (ofStr "Growth Calendar")
-          [ growthCalender app crop fert ]
-          (curry SetDetailsOpen OpenDetails.RankerGrowthCalendar >> appDispatch)
-      | Some _, None -> ofStr "Please select a fertilizer."
-      | None, Some _ -> ofStr "Please select a crop."
-      | None, None -> ofStr "Please select a crop and fertilizer."
+      div [
+        ofStr "Show "
+        Select.options (length.rem 4) (fun metric ->
+          div [
+            text (string metric)
+            title (RankMetric.fullName metric)
+          ])
+          unitUnionCases<RankMetric>
+          metric
+          (fun metric -> setState (metric, timeNorm))
+        Select.unitUnion (length.rem 7) timeNorm (fun timeNorm -> setState (metric, timeNorm))
+      ]
     ] ]
+
+    match crop, fert with
+    | (Choice1Of2 crop | Choice2Of2 (Some crop)), (Choice1Of2 fert | Choice2Of2 (Some fert)) ->
+      let crop = Crop.seed crop
+      let fert = Fertilizer.Opt.name fert
+
+      animatedDetails
+        (ui.OpenDetails.Contains OpenDetails.RankerProfitBreakdown)
+        (ofStr "Profit Breakdown")
+        [
+          match metric with
+          | Gold -> profitBreakdownTable false timeNorm data settings crop fert
+          | XP -> xpBreakdownTable timeNorm data settings crop fert
+          | ROI -> profitBreakdownTable true timeNorm data settings crop fert
+        ]
+        (curry SetDetailsOpen OpenDetails.RankerProfitBreakdown >> appDispatch)
+
+      animatedDetails
+        (ui.OpenDetails.Contains OpenDetails.RankerGrowthCalendar)
+        (ofStr "Growth Calendar")
+        [ growthCalender app crop fert ]
+        (curry SetDetailsOpen OpenDetails.RankerGrowthCalendar >> appDispatch)
+
+    | _ ->
+      div [
+        if fertilizers.Length = 0 then ofStr "No fertilizers selected!"
+        if crops.Length = 0 then ofStr "No crops selected!"
+      ]
+  ] ]
 
 
 let rankerOrAudit app dispatch =
@@ -1048,7 +1039,7 @@ let rankerOrAudit app dispatch =
   let { UI = ui; Settings = settings } = app.State
   let ranker = ui.Ranker
   match ranker.SelectedCropAndFertilizer with
-  | Some (crop, fert) -> selectedCropAndFertilizer {| app = app; seed = crop; fert = fert; dispatch = appDispatch |}
+  | Some (crop, fert) -> SelectedCropAndFertilizer {| App = app; Seed = crop; Fertilizer = fert; Dispatch = appDispatch |}
   | None -> lazyView3 Ranker.ranker ranker (app.Data, settings) dispatch
 
 

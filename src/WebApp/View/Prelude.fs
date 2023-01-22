@@ -136,7 +136,7 @@ module [<RequireQualifiedAccess>] Image =
     | ForageCrop c -> at (c.Seed |> string |> itemRoot)
   let growthStage (i: int) (seed: SeedId) =
     at <| cropRoot $"{seed}/{i}"
-  let regrowStage seed =
+  let regrowStage (seed: SeedId) =
     at <| cropRoot $"{seed}/Regrow"
 
   let fertilizer' (fertilizer: FertilizerName) = fertilizer |> fertilizerRoot |> at

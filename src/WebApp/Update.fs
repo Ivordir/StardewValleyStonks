@@ -95,7 +95,7 @@ type RankerMessage =
   | SetBrushSpan of nat * nat
   | SetSelectedCropAndFertilizer of (SeedId option * FertilizerName option option) option
 
-type SortMessage = bool * (int * bool)
+type SortMessage = int * bool
 
 type UIMessage =
   | SetAppMode of AppMode
@@ -297,11 +297,11 @@ let ui msg ui =
   | SetSettingsTab tab -> { ui with SettingsTab = tab }
   | SetDetailsOpen (details, selected) -> { ui with OpenDetails = ui.OpenDetails |> setSelected selected details }
   | SetCropFilters msg -> { ui with CropFilters = cropFilters msg ui.CropFilters }
-  | SetFertilizerSort (multi, sort) -> { ui with FertilizerSort = tableSort multi sort ui.FertilizerSort }
-  | SetFertilizerPriceSort (multi, sort) -> { ui with FertilizerPriceSort = tableSort multi sort ui.FertilizerPriceSort }
-  | SetCropSort (multi, sort) -> { ui with CropSort = tableSort multi sort ui.CropSort }
-  | SetProductSort (multi, sort) -> { ui with ProductSort = tableSort multi sort ui.ProductSort }
-  | SetSeedSort (multi, sort) -> { ui with SeedSort = tableSort multi sort ui.SeedSort }
+  | SetFertilizerSort (col, asc) -> { ui with FertilizerSort = col, asc }
+  | SetFertilizerPriceSort (col, asc) -> { ui with FertilizerPriceSort = col, asc }
+  | SetCropSort (col, asc) -> { ui with CropSort = col, asc }
+  | SetProductSort (col, asc) -> { ui with ProductSort = col, asc }
+  | SetSeedSort (col, asc) -> { ui with SeedSort = col, asc }
   | SetProductQuality quality -> { ui with ProductQuality = quality }
   | SetShowNormalizedProductPrices value -> { ui with ShowNormalizedProductPrices = value }
 

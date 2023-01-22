@@ -14,34 +14,17 @@ module [<AutoOpen>] internal Util =
   let minBy projection a b = if projection a <= projection b then a else b
   let maxBy projection a b = if projection a >= projection b then a else b
 
-  let inline resizeToArray (r: 'a ResizeArray) = unbox<'a array> r
+  let inline resizeToArray (resize: 'a ResizeArray) = unbox<'a array> resize
 
   let compareBy projection a b = compare (projection a) (projection b)
-  let compareByRev projection a b = compare (projection b) (projection a)
+
+  let fertilizerOrder seq = seq |> Seq.sortBy Fertilizer.name
+  let cropOrder (data: GameData) seq = seq |> Seq.sortBy (Crop.name data.Items.Find)
 
   let inline unitUnionCases<'a> =
     typeof<'a>
     |> Reflection.FSharpType.GetUnionCases
     |> Array.map (fun x -> Reflection.FSharpValue.MakeUnion (x, [||]) |> unbox<'a>)
-
-  let sortByMany comparers seq =
-    let comparers = Array.ofSeq comparers
-    seq
-    |> Seq.sortWith (fun x y ->
-      let mutable comparison = 0
-      let mutable i = 0
-      while comparison = 0 && i < comparers.Length do
-        comparison <- comparers[i] x y
-        i <- i + 1
-      comparison)
-    |> Array.ofSeq
-    // comparers
-    // |> Array.tryPick (fun comparer ->
-    //   match comparer x y with
-    //   | 0 -> None
-    //   | x -> Some x)
-    // |> Option.defaultValue 0)
-  // sorted
 
   let refMemo f =
     let mutable prevInput = Unchecked.defaultof<_>
@@ -110,6 +93,11 @@ module [<RequireQualifiedAccess>] Array =
     for i = 1 to len - 1 do
       current <- reduction current (mapping array1[i] array2[i])
     current
+
+
+module Fertilizer =
+  module Opt =
+    let displayName = Option.defaultOrMap "No Fertilizer" Fertilizer.name
 
 
 type CustomChoice<'a, 'b> =
@@ -188,7 +176,6 @@ type Settings = {
   Profit: ProfitSettings
   Selected: Selections
 }
-
 
 
 type AppMode =
@@ -281,7 +268,7 @@ module [<RequireQualifiedAccess>] CropFilters =
     Forage = None
   }
 
-type TableSort = (int * bool) list
+type TableSort = (int * bool)
 
 type UIState = {
   Mode: AppMode
@@ -314,11 +301,11 @@ module [<RequireQualifiedAccess>] UIState =
       OpenDetails.RankerGrowthCalendar
     |]
     CropFilters = CropFilters.empty
-    FertilizerSort = [ 4, true; 3, true ]
-    FertilizerPriceSort = [ 0, true ]
-    CropSort = [ 1, true; 5, true ]
-    ProductSort = [ 0, true ]
-    SeedSort = [ 0, true ]
+    FertilizerSort = 4, true
+    FertilizerPriceSort = 0, true
+    CropSort = 5, true
+    ProductSort = 0, true
+    SeedSort = 0, true
     ProductQuality = Quality.Normal
     ShowNormalizedProductPrices = false
   }
