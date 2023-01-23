@@ -565,16 +565,17 @@ module private XML =
   let floatValue = parseWith System.Double.TryParse
 
   let private array typePath parser (doc: Browser.Types.XMLDocument) (node: obj) path =
-    let arr = ResizeArray ()
-    let iter = doc?evaluate(path + "/" + typePath, node, null, nodeIter, null)
+    doc?evaluate(path, node, null, firstNode, null)?singleNodeValue |> Option.map (fun arrNode ->
+      let arr = ResizeArray ()
+      let iter = doc?evaluate(typePath, arrNode, null, nodeIter, null)
 
-    let mutable finished = false
-    while not finished do
-      match iter?iterateNext() with
-      | Some (e: Browser.Types.Element) -> parser e.textContent |> Option.iter arr.Add
-      | None -> finished <- true
+      let mutable finished = false
+      while not finished do
+        match iter?iterateNext() with
+        | Some (e: Browser.Types.Element) -> parser e.textContent |> Option.iter arr.Add
+        | None -> finished <- true
 
-    resizeToArray arr
+      resizeToArray arr)
 
   let natArray = array "int" (fun str ->
     match System.UInt32.TryParse str with
@@ -593,10 +594,6 @@ open XML
 let loadSaveGame xml =
   let doc = parse xml
   doc?evaluate("Farmer", doc, null, firstNode, null)?singleNodeValue |> Option.map (fun (farmer: obj) ->
-    let professions = natArray doc farmer "professions"
-    let eventsSeen = natArray doc farmer "eventsSeen"
-    let mailReceived = stringArray doc farmer "mailReceived"
-
     let missing = ResizeArray ()
     let tryGet name parser path defaultValue =
       match parser doc farmer path with
@@ -605,6 +602,9 @@ let loadSaveGame xml =
         missing.Add name
         defaultValue
 
+    let professions = tryGet "Professions" natArray "professions" [||]
+    let eventsSeen = tryGet "Seen Events" natArray "eventsSeen" [||]
+    let mailReceived = tryGet "Received Mail" stringArray "mailReceived" [||]
     let specialCharm = tryGet "Special Charm" boolValue "hasSpecialCharm" CropAmountSettings.common.SpecialCharm
     let farmingLevel = tryGet "Farming Level" natValue "farmingLevel" Skill.zero.Level |> min Skill.maxLevel
     let foragingLevel = tryGet "Foraging Level" natValue "foragingLevel" Skill.zero.Level |> min Skill.maxLevel
