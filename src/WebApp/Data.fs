@@ -298,6 +298,7 @@ let private settings =
     (Decode.mapObjParse Decode.parseSeedId Decode.uint32)
 
 let private encodeCropFilters filters = Encode.object [
+  nameof filters.NameSearch, Encode.string filters.NameSearch
   nameof filters.Seasons, Encode.seasons filters.Seasons
   nameof filters.InSeason, Encode.bool filters.InSeason
   if filters.Giant.IsSome then
@@ -311,6 +312,7 @@ let private encodeCropFilters filters = Encode.object [
 let private decodeCropFilters =
   let u = Unchecked.defaultof<CropFilters>
   Decode.object (fun get -> {
+    NameSearch = get.Required.Field (nameof u.NameSearch) Decode.string
     Seasons = get.Required.Field (nameof u.Seasons) Decode.seasons
     InSeason = get.Required.Field (nameof u.InSeason) Decode.bool
     Regrows = get.Optional.Field (nameof u.Regrows) Decode.bool

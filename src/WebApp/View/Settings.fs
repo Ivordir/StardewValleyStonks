@@ -220,7 +220,6 @@ let private sortKeysByHighestCount table =
   |> Array.ofSeq
 
 
-// default crop sort
 module Crops =
   let seedVendors = refMemo (fun (data: GameData) -> sortKeysByHighestCount data.SeedPrices)
 
@@ -334,9 +333,6 @@ module Crops =
             (SetCustomSellPrice >> selectDispatch)
         ]
       ]
-
-    let keyColWidth = 0.4
-    let productWidth = 100.0 * (1.0 - keyColWidth) / float (processors.Length + 2)
 
     [
       labeled "View with quality: " <| Select.options
@@ -534,6 +530,7 @@ module Crops =
     let data = app.Data
     let optionFilter projection filterValue = filterValue |> Option.map (fun value -> projection >> (=) value) |> Option.toList
     let filters = [
+      (fun crop -> (Crop.name data.Items.Find crop).ToLower().Contains (filters.NameSearch.ToLower()))
       if filters.InSeason then Game.cropIsInSeason settings.Game else Crop.growsInSeasons filters.Seasons
       yield! filters.Regrows |> optionFilter Crop.regrows
       yield! filters.Giant |> optionFilter Crop.giant
@@ -562,6 +559,14 @@ module Crops =
       then filters.Seasons |> Seasons.add season
       else filters.Seasons |> Seasons.remove season
     div [
+      input [
+        className "input-box"
+        placeholder "Search..."
+        prop.type'.text
+        prop.value filters.NameSearch
+        onChange (SetNameSearch >> dispatch)
+      ]
+
       div [
         checkboxText "In Season" filters.InSeason (SetInSeason >> dispatch)
         Html.span [

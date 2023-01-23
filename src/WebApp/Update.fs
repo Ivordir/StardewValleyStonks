@@ -80,6 +80,7 @@ type SettingsMessage =
   | SetSelections of SelectionsMessage
 
 type CropFiltersMessage =
+  | SetNameSearch of string
   | SetInSeason of bool
   | SetSeasons of Seasons
   | SetRegrows of bool option
@@ -266,6 +267,7 @@ let settings data msg (settings: Settings) =
 
 let cropFilters msg filters =
   match msg with
+  | SetNameSearch value -> { filters with NameSearch = value }
   | SetInSeason value -> { filters with InSeason = value }
   | SetSeasons value -> { filters with Seasons = value }
   | SetRegrows value -> { filters with Regrows = value }

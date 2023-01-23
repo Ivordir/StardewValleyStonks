@@ -241,16 +241,17 @@ type [<RequireQualifiedAccess>] OpenDetails =
   | SolverProfitBreakdown
 
 type CropFilters = {
+  NameSearch: string
   InSeason: bool
   Seasons: Seasons
   Regrows: bool option
   Giant: bool option
   Forage: bool option
-  // name
 }
 
 module [<RequireQualifiedAccess>] CropFilters =
   let empty = {
+    NameSearch = ""
     InSeason = true
     Seasons = Seasons.All
     Regrows = None
