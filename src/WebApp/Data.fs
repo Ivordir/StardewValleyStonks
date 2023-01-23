@@ -406,9 +406,39 @@ assertSettings (fun settings -> settings.Selected.SeedPrices |> Map.forall (isNe
 #endif
 
 
+let defaultRanker = {
+  RankItem = RankCrops
+  RankMetric = Gold
+  TimeNormalization = PerSeason
+  ShowInvalid = false
+  BrushSpan = 0u, 24u
+  SelectedCropAndFertilizer = None
+}
+
+let defaultUI = {
+  Mode = Ranker
+  Ranker = defaultRanker
+  SolverMode = MaximizeGold
+  SettingsTab = Skills
+  OpenDetails = Set.ofArray [|
+    OpenDetails.Crops
+    OpenDetails.Fertilizers
+    OpenDetails.RankerProfitBreakdown
+    OpenDetails.RankerGrowthCalendar
+  |]
+  CropFilters = CropFilters.empty
+  FertilizerSort = 4, true
+  FertilizerPriceSort = 0, true
+  CropSort = 5, true
+  ProductSort = 0, true
+  SeedSort = 0, true
+  ProductQuality = Quality.Normal
+  ShowNormalizedProductPrices = false
+}
+
 let defaultApp = lazy {
   Data = gameData
-  State = snd defaultSavedSettings.Value[0], UIState.initial
+  State = snd defaultSavedSettings.Value[0], defaultUI
   SavedSettings = defaultSavedSettings.Value
 }
 

@@ -217,16 +217,6 @@ type Ranker = {
   SelectedCropAndFertilizer: (SeedId option * FertilizerName option option) option
 }
 
-module [<RequireQualifiedAccess>] Ranker =
-  let initial = {
-    RankItem = RankCrops
-    RankMetric = Gold
-    TimeNormalization = PerSeason
-    ShowInvalid = false
-    BrushSpan = 0u, 24u
-    SelectedCropAndFertilizer = None
-  }
-
 type SolverMode =
   | [<CompiledName ("Gold")>] MaximizeGold
   | [<CompiledName ("XP")>] MaximizeXP
@@ -287,28 +277,6 @@ type UIState = {
   ProductQuality: Quality
   ShowNormalizedProductPrices: bool
 }
-
-module [<RequireQualifiedAccess>] UIState =
-  let initial = {
-    Mode = Ranker
-    Ranker = Ranker.initial
-    SolverMode = MaximizeGold
-    SettingsTab = Skills
-    OpenDetails = Set.ofArray [|
-      OpenDetails.Crops
-      OpenDetails.Fertilizers
-      OpenDetails.RankerProfitBreakdown
-      OpenDetails.RankerGrowthCalendar
-    |]
-    CropFilters = CropFilters.empty
-    FertilizerSort = 4, true
-    FertilizerPriceSort = 0, true
-    CropSort = 5, true
-    ProductSort = 0, true
-    SeedSort = 0, true
-    ProductQuality = Quality.Normal
-    ShowNormalizedProductPrices = false
-  }
 
 type App = {
   Data: GameData // refetched on every tab load, not saved
