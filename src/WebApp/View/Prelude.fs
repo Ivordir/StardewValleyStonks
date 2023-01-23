@@ -237,10 +237,10 @@ let opacityCheckbox checked' dispatch =
     ]
   ]
 
-let checkboxWith props children' checked' dispatch =
+let checkboxWith children' checked' dispatch =
   label [
     className "checkbox-label"
-    yield! props
+    onClick (fun e -> e.stopPropagation ())
     children [
       input [
         prop.type'.checkbox
@@ -251,8 +251,8 @@ let checkboxWith props children' checked' dispatch =
       children'
   ] ]
 
-let checkbox = checkboxWith [] none
-let inline checkboxText str checked' msg = checkboxWith [] (ofStr str) checked' msg
+let checkbox = checkboxWith none
+let inline checkboxText str checked' msg = checkboxWith (ofStr str) checked' msg
 
 
 let labeled label element =
