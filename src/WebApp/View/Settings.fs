@@ -238,7 +238,7 @@ module Crops =
 
   let table app cropSort crops dispatch =
     let data = app.Data
-    let settings = app.State.Settings
+    let settings, _ = app.State
     let uiDispatch = SetUI >> dispatch
     let selectDispatch = SelectCrops >> SetSelections >> SetSettings >> dispatch
     [
@@ -609,9 +609,9 @@ module Crops =
     ]
 
   let filteredCrops app =
-    let filters = app.State.UI.CropFilters
+    let settings, ui = app.State
+    let filters = ui.CropFilters
     let data = app.Data
-    let settings = app.State.Settings
     let optionFilter projection filterValue = filterValue |> Option.map (fun value -> projection >> (=) value) |> Option.toList
     let filters = [
       if filters.InSeason then Game.cropIsInSeason settings.Game else Crop.growsInSeasons filters.Seasons
@@ -666,7 +666,7 @@ module Crops =
     ]
 
   let tab app dispatch =
-    let { UI = ui; Settings = settings } = app.State
+    let settings, ui = app.State
     let crops = filteredCrops app
 
     let uiDispatch = SetUI >> dispatch
@@ -838,7 +838,7 @@ module Fertilizers =
       (curry SetDetailsOpen OpenDetails.FertilizerPrices >> uiDispatch)
 
   let tab app dispatch =
-    let { UI = ui; Settings = settings } = app.State
+    let settings, ui = app.State
     div [ prop.id "fertilizer-tab"; children [
       table app.Data settings ui.FertilizerSort (ui.OpenDetails.Contains OpenDetails.Fertilizers) dispatch
       prices app.Data settings ui.FertilizerPriceSort (ui.OpenDetails.Contains OpenDetails.FertilizerPrices) dispatch
@@ -1127,7 +1127,7 @@ module LoadSave =
 let section app dispatch =
   let appDispatch = dispatch
   let dispatch = SetState >> dispatch
-  let { UI = ui; Settings = settings } = app.State
+  let settings, ui = app.State
   section [ prop.id "settings"; children [
     viewTabs SetSettingsTab unitUnionCases<SettingsTab> ui.SettingsTab (SetUI >> dispatch)
     match ui.SettingsTab with

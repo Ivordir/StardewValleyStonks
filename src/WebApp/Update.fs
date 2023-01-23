@@ -305,8 +305,8 @@ let ui msg ui =
   | SetProductQuality quality -> { ui with ProductQuality = quality }
   | SetShowNormalizedProductPrices value -> { ui with ShowNormalizedProductPrices = value }
 
-let state msg data state =
+let state msg data (oldSettings, oldUI)=
   match msg with
-  | SetSettings msg -> { state with Settings = state.Settings |> settings data msg }
-  | SetUI msg -> { state with UI = state.UI |> ui msg }
-  | LoadSettings settings -> { state with Settings = settings }
+  | SetSettings msg -> oldSettings |> settings data msg, oldUI
+  | SetUI msg -> oldSettings, oldUI |> ui msg
+  | LoadSettings settings -> settings, oldUI

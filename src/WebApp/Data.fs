@@ -354,12 +354,7 @@ module [<RequireQualifiedAccess>] Encode =
   let settings = encodeSettings
   let cropFilters = encodeCropFilters
   let ui = encodeUI
-
-  let state state = Encode.object [
-    nameof state.Settings, settings state.Settings
-    nameof state.UI, ui state.UI
-  ]
-
+  let state = Encode.tuple2 settings ui
   let savedSettings (saved: _ list) = saved |> Encode.mapSeq (Encode.tuple2 Encode.string settings)
 
 
@@ -367,14 +362,7 @@ module [<RequireQualifiedAccess>] Decode =
   let settings = decodeSettings
   let cropFilters = decodeCropFilters
   let ui = decodeUI
-
-  let state =
-    let u = Unchecked.defaultof<State>
-    Decode.object (fun get -> {
-      Settings = get.Required.Field (nameof u.Settings) settings
-      UI = get.Required.Field (nameof u.UI) ui
-    } )
-
+  let state = Decode.tuple2 settings ui
   let savedSettings = Decode.list (Decode.tuple2 Decode.string settings)
 
 
@@ -420,10 +408,7 @@ assertSettings (fun settings -> settings.Selected.SeedPrices |> Map.forall (isNe
 
 let defaultApp = lazy {
   Data = gameData
-  State = {
-    Settings = snd defaultSavedSettings.Value[0]
-    UI = UIState.initial
-  }
+  State = snd defaultSavedSettings.Value[0], UIState.initial
   SavedSettings = defaultSavedSettings.Value
 }
 
@@ -497,12 +482,12 @@ module LocalStorage =
 
     | Some (Some ver) when ver.Minor <> App.version.Minor ->
       let adaptSettings (settings: Settings) = { settings with Selected = Selections.adapt gameData settings.Selected }
-      let state = loadState ()
-      let state = { state with Settings = adaptSettings state.Settings }
+      let settings, ui = loadState ()
+      let settings = adaptSettings settings
       let savedSettings = loadSavedSettings () |> List.map (fun (name, settings) -> name, adaptSettings settings)
       let app = {
         Data = gameData
-        State = state
+        State = settings, ui
         SavedSettings = savedSettings
       }
       saveAll app

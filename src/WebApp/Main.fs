@@ -26,7 +26,7 @@ let update msg app =
     saveState state
     { app with State = state }
   | SetSavedSettings msg ->
-    let saved = app.SavedSettings |> Update.savedSettings msg app.State.Settings
+    let saved = app.SavedSettings |> Update.savedSettings msg (fst app.State)
     saveSettings saved
     { app with SavedSettings = saved }
   | SyncSavedSettings saved -> { app with SavedSettings = saved }

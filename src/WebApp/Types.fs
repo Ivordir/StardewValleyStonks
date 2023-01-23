@@ -310,15 +310,10 @@ module [<RequireQualifiedAccess>] UIState =
     ShowNormalizedProductPrices = false
   }
 
-type State = {
-  Settings: Settings
-  UI: UIState
-}
-
 type App = {
   Data: GameData // refetched on every tab load, not saved
   SavedSettings: (string * Settings) list // save separately to coordinate between multiple tabs
-  State: State // race, last edited tab gets its state saved
+  State: Settings * UIState // race, last edited tab gets its state saved
 }
 
 type Version = {

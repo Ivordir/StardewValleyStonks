@@ -316,7 +316,7 @@ module Ranker =
 
 let growthCalender app seed fertilizer =
   let data = app.Data
-  let settings = app.State.Settings
+  let settings, _ = app.State
   let crop = data.Crops[seed]
   let fert = fertilizer |> Option.map data.Fertilizers.Find
   match Query.bestGrowthSpan settings.Game fert crop with
@@ -886,7 +886,7 @@ let [<ReactComponent>] SelectedCropAndFertilizer (props: {|
   let appDispatch = dispatch
   let dispatch = SetRanker >> dispatch
   let data = app.Data
-  let { UI = ui; Settings = settings } = app.State
+  let settings, ui = app.State
   let ranker = ui.Ranker
 
   let (metric, timeNorm), setState = useState ((ranker.RankMetric, ranker.TimeNormalization))
@@ -1036,7 +1036,7 @@ let [<ReactComponent>] SelectedCropAndFertilizer (props: {|
 let rankerOrAudit app dispatch =
   let appDispatch = dispatch
   let dispatch = SetRanker >> dispatch
-  let { UI = ui; Settings = settings } = app.State
+  let settings, ui = app.State
   let ranker = ui.Ranker
   match ranker.SelectedCropAndFertilizer with
   | Some (crop, fert) -> SelectedCropAndFertilizer {| App = app; Seed = crop; Fertilizer = fert; Dispatch = appDispatch |}
@@ -1088,7 +1088,7 @@ let [<ReactComponent>] solver (props: {|
     ]
 
 let section app dispatch =
-  let { UI = ui; Settings = settings } = app.State
+  let settings, ui = app.State
   let rankerChart = ui.Mode = Ranker && ui.Ranker.SelectedCropAndFertilizer.IsNone
   section [
     prop.id (if rankerChart then "visualization-graph" else "visualization")
