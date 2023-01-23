@@ -767,13 +767,6 @@ module Misc =
         Input.floatWith (length.rem 4) 10e4 (Some CropAmount.minGiantCropChecks) (Some CropAmount.maxGiantCropChecks) settings.GiantChecksPerTile (SetGiantChecksPerTile >> dispatch)
         Input.floatRange 10e4 CropAmount.minGiantCropChecks CropAmount.maxGiantCropChecks settings.GiantChecksPerTile (SetGiantChecksPerTile >> dispatch)
       ]
-      // giant crop prob
-        // P(not Giant) = (1.0 - baseGiantProb) ^ giantCropsPerTile
-        // P(Giant) = 1.0 - P(not Giant)
-      // avg yield from giant crop / tile
-        // (minYield, maxYield) -> avg yield
-        // + crops from shaving
-        // / 9 tiles
 
       Select.options
         (length.rem 5)
@@ -788,7 +781,6 @@ module Misc =
         ofStr "Luck Buff:"
         Input.natWith (length.rem 2) None (Some CropAmount.maxLuckBuff) settings.LuckBuff (SetLuckBuff >> dispatch)
       ]
-      // doubleCrop Chance
     ]
 
   let mods data open' modData dispatch =
