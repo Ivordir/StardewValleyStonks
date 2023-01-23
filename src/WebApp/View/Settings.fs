@@ -726,8 +726,7 @@ module Fertilizers =
     ] ]
 
 module Misc =
-  let date message (date: Date) dispatch =
-    let dispatch = message >> dispatch
+  let private date min max (date: Date) dispatch =
     div [ Class.date; children [
       Select.options
         (length.rem 6)
@@ -735,8 +734,15 @@ module Misc =
         Season.all
         date.Season
         (fun season -> dispatch { date with Season = season })
-      Input.natWith (length.rem 2) (Some Date.firstDay) (Some Date.lastDay) date.Day (fun day -> dispatch { date with Day = day })
+      Input.natWith (length.rem 2) (Some min) (Some max) date.Day (fun day -> dispatch { date with Day = day })
     ] ]
+
+  let dates (startDate: Date) (endDate: Date) dispatch =
+    let sameSeason = startDate.Season = endDate.Season
+    fragment [
+      date Date.firstDay (if sameSeason then endDate.Day else Date.lastDay) startDate (SetStartDate >> dispatch)
+      date (if sameSeason then startDate.Day else Date.firstDay) Date.lastDay endDate (SetEndDate >> dispatch)
+    ]
 
   let multipliers multipliers dispatch =
     div [
@@ -811,15 +817,9 @@ module Misc =
     let dispatch = SetGameVariables >> SetSettings >> dispatch
     div [ prop.id "misc"; children [
       div [ Class.date; children [
-        // labeled "Location: " <| Select.unitUnion settings.Location (SetLocation >> dispatch)
-        labeled "Location: " <| Select.unitUnion
-          (length.rem 7.5)
-          settings.Location
-          (SetLocation >> dispatch)
+        labeled "Location: " <| Select.unitUnion (length.rem 7.5) settings.Location (SetLocation >> dispatch)
 
-        // check that not: (startSeason = endSeason and endDay < startday)
-        date SetStartDate settings.StartDate dispatch
-        date SetEndDate settings.EndDate dispatch
+        dates settings.StartDate settings.EndDate dispatch
       ] ]
 
       multipliers settings.Multipliers (SetMultipliers >> dispatch)
