@@ -813,7 +813,7 @@ module internal CropAndFertilizerData =
     let usedForageSeeds = (solution |> getVariableAmount UsedForageSeeds harvests) * float ForageCrop.forageSeedsPerCraft
 
     assert
-      let profit' = profitPerHarvestCalc prices soldAmounts + soldForageSeeds * float (ForageCrop.forageSeedsPerCraft * Game.seedItemSellPrice data settings.Game crop.Seed)
+      let profit' = profitPerHarvestCalc prices soldAmounts + soldForageSeeds * float (Game.seedItemSellPrice data settings.Game crop.Seed)
       abs (profit - profit') < 1e-6
 
     assert
