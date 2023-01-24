@@ -103,6 +103,7 @@ type UIMessage =
   | SetRanker of RankerMessage
   | SetSolverMode of SolverMode
   | SetSettingsTab of SettingsTab
+  | SetCropTab of CropTab
   | SetDetailsOpen of OpenDetails * bool
   | SetCropFilters of CropFiltersMessage
   | SetFertilizerSort of SortMessage
@@ -297,6 +298,7 @@ let ui msg ui =
   | SetRanker msg -> { ui with Ranker = ranker msg ui.Ranker }
   | SetSolverMode mode -> { ui with SolverMode = mode }
   | SetSettingsTab tab -> { ui with SettingsTab = tab }
+  | SetCropTab tab -> { ui with CropTab = tab }
   | SetDetailsOpen (details, selected) -> { ui with OpenDetails = ui.OpenDetails |> setSelected selected details }
   | SetCropFilters msg -> { ui with CropFilters = cropFilters msg ui.CropFilters }
   | SetFertilizerSort (col, asc) -> { ui with FertilizerSort = col, asc }

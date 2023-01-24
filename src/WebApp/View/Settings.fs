@@ -240,46 +240,44 @@ module Crops =
     let settings, _ = app.State
     let uiDispatch = SetUI >> dispatch
     let selectDispatch = SelectCrops >> SetSelections >> SetSettings >> dispatch
-    [
-      sortTable [
-        Column.header (columnCheckbox (crops |> Seq.map Crop.seed |> Set.ofSeq) settings.Selected.Crops selectDispatch)
-        ofStr "Crop" |> Column.withSort (compareBy (Crop.name data.Items.Find))
-        ofStr "Lowest Seed Price" |> Column.withSort (Option.noneMaxCompareBy (Crop.seed >> Query.Price.seedMinPrice data settings))
-        ofStr "Growth Time" |> Column.withSort (compareBy (Game.growthTime settings.Game None))
-        ofStr "Regrow Time" |> Column.withSort (Option.noneMaxCompareBy Crop.regrowTime)
-        ofStr "Seasons" |> Column.withSort (fun c1 c2 ->
-          match Crop.seasons c1, Crop.seasons c2 with
-          | Seasons.None, Seasons.None -> 0
-          | Seasons.None, _ -> 1
-          | _, Seasons.None -> -1
-          | s1, s2 -> Seasons.setOrder s1 s2)
-      ]
-        (fun crop ->
-          let seed = Crop.seed crop
-          let price = Query.Price.seedMinVendorAndPrice data settings seed
-          let enoughSeeds = Query.canMakeEnoughSeeds data settings crop
-
-          tr [
-            key (string seed)
-            if not enoughSeeds || not <| Game.cropIsInSeason settings.Game crop then Class.disabled
-            children [
-              td (checkbox (settings.Selected.Crops.Contains seed) (curry SetSelected seed >> selectDispatch))
-              td (Image.Icon.crop data crop)
-              td (viewPrice price)
-              td (Game.growthTime settings.Game None crop |> ofNat)
-              td (Crop.regrowTime crop |> Option.defaultOrMap none ofNat)
-              td (Season.all |> Array.map (fun season ->
-                Html.span [ Class.seasonSlot; children [
-                  if Crop.growsInSeason season crop then
-                    Image.season season
-                ] ]
-              ))
-            ]
-          ])
-        (SetCropSort >> uiDispatch)
-        cropSort
-        (cropOrder data crops)
+    sortTable [
+      Column.header (columnCheckbox (crops |> Seq.map Crop.seed |> Set.ofSeq) settings.Selected.Crops selectDispatch)
+      ofStr "Crop" |> Column.withSort (compareBy (Crop.name data.Items.Find))
+      ofStr "Lowest Seed Price" |> Column.withSort (Option.noneMaxCompareBy (Crop.seed >> Query.Price.seedMinPrice data settings))
+      ofStr "Growth Time" |> Column.withSort (compareBy (Game.growthTime settings.Game None))
+      ofStr "Regrow Time" |> Column.withSort (Option.noneMaxCompareBy Crop.regrowTime)
+      ofStr "Seasons" |> Column.withSort (fun c1 c2 ->
+        match Crop.seasons c1, Crop.seasons c2 with
+        | Seasons.None, Seasons.None -> 0
+        | Seasons.None, _ -> 1
+        | _, Seasons.None -> -1
+        | s1, s2 -> Seasons.setOrder s1 s2)
     ]
+      (fun crop ->
+        let seed = Crop.seed crop
+        let price = Query.Price.seedMinVendorAndPrice data settings seed
+        let enoughSeeds = Query.canMakeEnoughSeeds data settings crop
+
+        tr [
+          key (string seed)
+          if not enoughSeeds || not <| Game.cropIsInSeason settings.Game crop then Class.disabled
+          children [
+            td (checkbox (settings.Selected.Crops.Contains seed) (curry SetSelected seed >> selectDispatch))
+            td (Image.Icon.crop data crop)
+            td (viewPrice price)
+            td (Game.growthTime settings.Game None crop |> ofNat)
+            td (Crop.regrowTime crop |> Option.defaultOrMap none ofNat)
+            td (Season.all |> Array.map (fun season ->
+              Html.span [ Class.seasonSlot; children [
+                if Crop.growsInSeason season crop then
+                  Image.season season
+              ] ]
+            ))
+          ]
+        ])
+      (SetCropSort >> uiDispatch)
+      cropSort
+      (cropOrder data crops)
 
   let products data settings productSort productQuality showNormalizedPrices crops dispatch =
     let uiDispatch = SetUI >> dispatch
@@ -325,7 +323,7 @@ module Crops =
         ]
       ]
 
-    [
+    fragment [
       labeled "View with quality: " <| Select.options
         (length.rem 5)
         (Quality.name >> ofStr)
@@ -421,7 +419,7 @@ module Crops =
     let seedVendors = seedVendors data
     let seeds = crops |> Seq.map Crop.seed |> Set.ofSeq
 
-    [
+    fragment [
       checkboxText "Joja Membership" settings.Game.JojaMembership (SetJojaMembership >> SetGameVariables >> settingsDispatch)
       labeled "Seed Strategy:" <| Select.unitUnion (length.rem 8) settings.Profit.SeedStrategy (SetSeedStrategy >> SetProfit >> settingsDispatch)
 
@@ -585,23 +583,12 @@ module Crops =
     div [
       cropFilter ui.CropFilters (SetCropFilters >> uiDispatch)
 
-      animatedDetails
-        (ui.OpenDetails.Contains OpenDetails.Crops)
-        (ofStr "Crops")
-        (table app ui.CropSort crops dispatch)
-        (curry SetDetailsOpen OpenDetails.Crops >> uiDispatch)
+      viewTabs SetCropTab unitUnionCases<CropTab> ui.CropTab uiDispatch
 
-      animatedDetails
-        (ui.OpenDetails.Contains OpenDetails.Products)
-        (ofStr "Products")
-        (products app.Data settings ui.ProductSort ui.ProductQuality ui.ShowNormalizedProductPrices crops dispatch)
-        (curry SetDetailsOpen OpenDetails.Products >> uiDispatch)
-
-      animatedDetails
-        (ui.OpenDetails.Contains OpenDetails.SeedSources)
-        (ofStr "Seeds")
-        (seeds app.Data settings ui.SeedSort crops dispatch)
-        (curry SetDetailsOpen OpenDetails.SeedSources >> uiDispatch)
+      match ui.CropTab with
+      | CropsTable -> table app ui.CropSort crops dispatch
+      | ProductsTable -> products app.Data settings ui.ProductSort ui.ProductQuality ui.ShowNormalizedProductPrices crops dispatch
+      | SeedsTable -> seeds app.Data settings ui.SeedSort crops dispatch
     ]
 
 

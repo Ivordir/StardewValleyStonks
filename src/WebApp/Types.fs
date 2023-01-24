@@ -228,12 +228,14 @@ type SettingsTab =
   | Misc
   | [<CompiledName ("Load / Save")>] LoadSettings
 
+type CropTab =
+  | [<CompiledName ("Crops")>] CropsTable
+  | [<CompiledName ("Products")>] ProductsTable
+  | [<CompiledName ("Seeds")>] SeedsTable
+
 type [<RequireQualifiedAccess>] OpenDetails =
   | Fertilizers
   | FertilizerPrices
-  | Crops
-  | Products
-  | SeedSources
   | Mod
   | RankerGrowthCalendar
   | RankerProfitBreakdown
@@ -267,6 +269,7 @@ type UIState = {
   SolverMode: SolverMode
 
   SettingsTab: SettingsTab
+  CropTab: CropTab
   OpenDetails: OpenDetails Set
   CropFilters: CropFilters
 

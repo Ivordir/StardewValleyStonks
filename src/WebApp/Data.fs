@@ -422,8 +422,8 @@ let defaultUI = {
   Ranker = defaultRanker
   SolverMode = MaximizeGold
   SettingsTab = Skills
+  CropTab = CropsTable
   OpenDetails = Set.ofArray [|
-    OpenDetails.Crops
     OpenDetails.Fertilizers
     OpenDetails.RankerProfitBreakdown
     OpenDetails.RankerGrowthCalendar
