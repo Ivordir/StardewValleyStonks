@@ -12,6 +12,10 @@ module Column =
   let header header = header, None
   let withSort sort header = header, Some sort
 
+let columnCheckbox (keys: _ Set) selected dispatch =
+  checkbox
+    (keys.IsSubsetOf selected)
+    (curry Update.SetManySelected keys >> dispatch)
 
 let sortTable columns displayItem setSort (sortCol, ascending) items =
   let columns = Array.ofSeq columns

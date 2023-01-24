@@ -227,8 +227,8 @@ module Crops =
     data.Products.Values
     |> Seq.collect Table.keys
     |> Seq.append [|
-      Processor.keg
       Processor.preservesJar
+      Processor.keg
       Processor.seedMaker
     |]
     |> Seq.distinct
@@ -242,11 +242,11 @@ module Crops =
     let selectDispatch = SelectCrops >> SetSelections >> SetSettings >> dispatch
     [
       sortTable [
-        Column.header (checkbox (data.Crops.Keys |> Seq.forall settings.Selected.Crops.Contains) (curry SetManySelected (crops |> Seq.map Crop.seed |> set) >> selectDispatch))
-        Column.withSort (compareBy (Crop.name data.Items.Find)) (ofStr "Crop")
-        Column.withSort (Option.noneMaxCompareBy (Crop.seed >> Query.Price.seedMinPrice data settings)) (ofStr "Lowest Seed Price")
-        Column.withSort (compareBy (Game.growthTime settings.Game None)) (ofStr "Growth Time")
-        Column.withSort (Option.noneMaxCompareBy Crop.regrowTime) (ofStr "Regrow Time")
+        Column.header (columnCheckbox (crops |> Seq.map Crop.seed |> Set.ofSeq) settings.Selected.Crops selectDispatch)
+        ofStr "Crop" |> Column.withSort (compareBy (Crop.name data.Items.Find))
+        ofStr "Lowest Seed Price" |> Column.withSort (Option.noneMaxCompareBy (Crop.seed >> Query.Price.seedMinPrice data settings))
+        ofStr "Growth Time" |> Column.withSort (compareBy (Game.growthTime settings.Game None))
+        ofStr "Regrow Time" |> Column.withSort (Option.noneMaxCompareBy Crop.regrowTime)
         ofStr "Seasons" |> Column.withSort (fun c1 c2 ->
           match Crop.seasons c1, Crop.seasons c2 with
           | Seasons.None, Seasons.None -> 0
@@ -275,7 +275,7 @@ module Crops =
                 ] ]
               ))
             ]
-          ] )
+          ])
         (SetCropSort >> uiDispatch)
         cropSort
         (cropOrder data crops)
@@ -285,19 +285,10 @@ module Crops =
     let uiDispatch = SetUI >> dispatch
     let selectDispatch = SetSelections >> SetSettings >> dispatch
 
-    let keys =
-      crops
-      |> Seq.collect (fun crop ->
-        let seed = Crop.seed crop
-        Crop.items crop |> Array.map (fun item -> seed, item))
-      |> set
-
-    let selectMany filter = keys |> Seq.filter filter |> set |> curry SetManySelected
-
+    let seedItemPairs = GameData.seedItemPairsFrom crops |> Set.ofArray
     let processors = processors data
-    let processorUnlocked = processors |> Array.map (Game.processorUnlocked data settings.Game.Skills)
 
-    let viewItemRow mainCrop forage seed item =
+    let itemRow mainCrop forage seed item =
       let theItem = data.Items[item]
       let selected = settings.Selected.Products[seed, item]
       tr [
@@ -310,11 +301,11 @@ module Crops =
           checkbox (settings.Selected.SellRaw.Contains (seed, item)) (curry SetSelected (seed, item) >> SelectSellRaw >> selectDispatch)
           ofNat <| Game.itemPrice settings.Game forage theItem productQuality
         ]
-        yield! processors |> Array.mapi (fun i processor ->
+        yield! processors |> Array.map (fun processor ->
           match GameData.product data item processor with
           | Some product ->
             td [
-              if not processorUnlocked[i] then Class.disabled
+              if not <| Game.processorUnlocked data settings.Game processor then Class.disabled
               children [
                 checkbox (selected.Contains processor) (curry SetSelected (seed, item) >> curry SelectProducts processor >> selectDispatch)
                 if showNormalizedPrices
@@ -322,7 +313,7 @@ module Crops =
                 else ofNat <| Game.productPrice data settings.Game item productQuality product
               ]
             ]
-          | None -> td [] )
+          | None -> td [])
         td []
         td [
           viewCustom
@@ -345,51 +336,51 @@ module Crops =
       checkboxText "Normalize Prices" showNormalizedPrices (SetShowNormalizedProductPrices >> uiDispatch)
 
       sortTable [
-        Column.withSort (compareBy (Crop.name data.Items.Find)) (ofStr "Crop")
-        Column.withSort (compareBy (fun crop -> Query.cropItemsHighestRawPrice data settings.Game crop productQuality)) (fragment [
-          checkbox
-            (data.Crops
-              |> Table.toSeq
-              |> Seq.collect (fun (seed, crop) ->
-                Crop.items crop |> Array.map (fun item -> seed, item))
-              |> Seq.forall settings.Selected.SellRaw.Contains)
-            (selectMany (konst true) >> SelectSellRaw >> selectDispatch)
-          ofStr "Raw Crop"
-        ])
-        yield! processors |> Array.mapi (fun i processor ->
-          Column.withSort
-            (if showNormalizedPrices
-              then compareBy (fun crop -> Query.cropItemsHighestProductNormalizedPriceFrom data settings.Game crop productQuality processor)
-              else compareBy (fun crop -> Query.cropItemsHighestProductPriceFrom data settings.Game crop productQuality processor))
-            (div [
-                if not processorUnlocked[i] then Class.disabled
-                children [
-                  checkbox
-                    (settings.Selected.Products |> Map.forall (fun (_, item) selected -> selected.Contains processor || GameData.product data item processor |> Option.isNone))
-                    (selectMany (fun (_, item) -> GameData.product data item processor |> Option.isSome) >> curry SelectProducts processor >> selectDispatch)
-                  Image.Icon.processor processor
-                ]
-              ]))
+        ofStr "Crop" |> Column.withSort (compareBy (Crop.name data.Items.Find))
+
         Column.withSort
-          (compareBy (fun crop -> if Crop.isForage crop then Some <| Game.itemPrice settings.Game true data.Items[Crop.seed crop * 1u<_>] Quality.Normal else None))
+          (compareBy (fun crop -> Query.cropItemsHighestRawPrice data settings.Game crop productQuality))
+          (fragment [
+            columnCheckbox seedItemPairs settings.Selected.SellRaw (SelectSellRaw >> selectDispatch)
+            ofStr "Raw Crop"
+          ])
+
+        let priceSort processor =
+          if showNormalizedPrices
+          then compareBy (fun crop -> Query.cropItemsHighestProductNormalizedPriceFrom data settings.Game crop productQuality processor)
+          else compareBy (fun crop -> Query.cropItemsHighestProductPriceFrom data settings.Game crop productQuality processor)
+
+        yield! processors |> Array.map (fun processor ->
+          Column.withSort (priceSort processor) <| div [
+            if not <| Game.processorUnlocked data settings.Game processor then Class.disabled
+            let keys = seedItemPairs |> Set.filter (fun (_, item) -> GameData.product data item processor |> Option.isSome)
+            children [
+              checkbox
+                (keys |> Set.forall (fun (seed, item) -> settings.Selected.Products[seed, item].Contains processor))
+                (curry SetManySelected keys >> curry SelectProducts processor >> selectDispatch)
+              Image.Icon.processor processor
+            ]
+          ])
+
+        Column.withSort
+          (compareBy (fun crop ->
+            if Crop.isForage crop
+            then Some (Game.itemPrice settings.Game true data.Items[Crop.seed crop * 1u<_>] Quality.Normal)
+            else None))
           (div [
-              if not (data.ForageCrops.Values |> Seq.exists (ForageCrop.seedRecipeUnlocked settings.Game.Skills)) then Class.disabled
-              children [
-                checkbox
-                  (data.ForageCrops.Keys |> Seq.forall settings.Selected.SellForageSeeds.Contains)
-                  (curry SetManySelected (crops |> Seq.filter Crop.isForage |> Seq.map Crop.seed |> set) >> SelectSellForageSeeds >> selectDispatch)
-                ofStr "Forage Seeds"
-              ]
-            ])
+            if not (data.ForageCrops.Values |> Seq.exists (ForageCrop.seedRecipeUnlocked settings.Game.Skills)) then Class.disabled
+            let keys = seedItemPairs |> Seq.map fst |> Seq.filter data.ForageCrops.ContainsKey |> Set.ofSeq
+            children [
+              columnCheckbox keys settings.Selected.SellForageSeeds (SelectSellForageSeeds >> selectDispatch)
+              ofStr "Forage Seeds"
+            ]
+          ])
+
         Column.withSort
           (compareBy (fun crop -> Query.cropItemsHighestCustomPrice settings.Selected crop productQuality))
           (fragment [
-            if settings.Selected.CustomSellPrices.Values.IsEmpty then
-              none
-            else
-              checkbox
-                (Selection.allSelected settings.Selected.CustomSellPrices)
-                (selectMany settings.Selected.CustomSellPrices.Values.ContainsKey >> SelectCustom >> SetCustomSellPrice >> selectDispatch)
+            let keys = seedItemPairs |> Set.filter settings.Selected.CustomSellPrices.Values.ContainsKey
+            columnCheckbox keys settings.Selected.CustomSellPrices.Selected (SelectCustom >> SetCustomSellPrice >> selectDispatch)
             ofStr "Custom"
           ])
       ]
@@ -398,9 +389,9 @@ module Crops =
           keyedFragment (int seed, [
             match crop with
             | FarmCrop c ->
-              viewItemRow true false seed c.Item
+              itemRow true false seed c.Item
               match c.ExtraItem with
-              | Some (item, _) -> viewItemRow false false seed item
+              | Some (item, _) -> itemRow false false seed item
               | None -> none
             | ForageCrop c ->
               tr [
@@ -415,8 +406,8 @@ module Crops =
                 ]
                 td []
               ]
-              yield! c.Items |> Array.map (viewItemRow false true seed)
-          ] ))
+              yield! c.Items |> Array.map (itemRow false true seed)
+          ]))
         (SetProductSort >> uiDispatch)
         productSort
         (cropOrder data crops)
@@ -427,62 +418,58 @@ module Crops =
     let settingsDispatch = SetSettings >> dispatch
     let selectDispatch = SetSelections >> settingsDispatch
 
-    let selectMany filter = curry SetManySelected (crops |> Seq.filter filter |> Seq.map Crop.seed |> set)
-
     let seedVendors = seedVendors data
+    let seeds = crops |> Seq.map Crop.seed |> Set.ofSeq
 
     [
       checkboxText "Joja Membership" settings.Game.JojaMembership (SetJojaMembership >> SetGameVariables >> settingsDispatch)
       labeled "Seed Strategy:" <| Select.unitUnion (length.rem 8) settings.Profit.SeedStrategy (SetSeedStrategy >> SetProfit >> settingsDispatch)
 
       sortTable [
-        Column.withSort (compareBy (Crop.name data.Items.Find)) (ofStr "Crop")
+        ofStr "Crop" |> Column.withSort (compareBy (Crop.name data.Items.Find))
+
         yield! seedVendors |> Array.map (fun vendor ->
-          Column.withSort (Option.noneMaxCompareBy (Crop.seed >> Query.seedPriceValueFromVendor data settings vendor))
+          Column.withSort
+            (Option.noneMaxCompareBy (Crop.seed >> Query.seedPriceValueFromVendor data settings vendor))
             (fragment [
+              let keys = seeds |> Set.filter (data.SeedPrices.Find >> Table.containsKey vendor)
               checkbox
-                (settings.Selected.SeedPrices |> Map.forall (fun key selected -> selected |> Set.contains vendor || not (data.SeedPrices[key].ContainsKey vendor)))
-                (selectMany (Crop.seed >> data.SeedPrices.Find >> Table.containsKey vendor) >> curry SelectSeedPrices vendor >> selectDispatch)
+                (keys |> Set.forall (fun seed -> settings.Selected.SeedPrices[seed].Contains vendor))
+                (curry SetManySelected keys >> curry SelectSeedPrices vendor >> selectDispatch)
               Image.Icon.vendor vendor
             ]))
+
         Column.header (div [
-          if not <| Game.processorUnlocked data settings.Game.Skills Processor.seedMaker then Class.disabled
+          if not <| Game.processorUnlocked data settings.Game Processor.seedMaker then Class.disabled
           children [
-            checkbox
-              (data.Crops |> Table.forall (fun seed crop ->
-                settings.Selected.UseSeedMaker.Contains seed
-                || not <| Crop.canGetOwnSeedsFromSeedMaker crop))
-              (selectMany (fun crop -> Crop.canGetOwnSeedsFromSeedMaker crop) >> SelectUseSeedMaker >> selectDispatch)
+            let keys = crops |> Seq.choose (fun crop -> if Crop.canGetOwnSeedsFromSeedMaker crop then Some (Crop.seed crop) else None) |> Set.ofSeq
+            columnCheckbox keys settings.Selected.UseSeedMaker (SelectUseSeedMaker >> selectDispatch)
             Image.Icon.processor Processor.seedMaker
           ]
         ])
+
         Column.header (fragment [
-          checkbox
-            (data.Crops |> Table.forall (fun seed crop -> not <| Crop.makesOwnSeeds crop || settings.Selected.UseHarvestedSeeds.Contains seed))
-            (selectMany Crop.makesOwnSeeds >> SelectUseHarvestedSeeds >> selectDispatch)
+          let keys = crops |> Seq.choose (fun crop -> if Crop.makesOwnSeeds crop then Some (Crop.seed crop) else None) |> Set.ofSeq
+          columnCheckbox keys settings.Selected.UseHarvestedSeeds (SelectUseHarvestedSeeds >> selectDispatch)
           ofStr "Raw Seeds"
         ])
+
         Column.header (div [
           if not (data.ForageCrops.Values |> Seq.exists (ForageCrop.seedRecipeUnlocked settings.Game.Skills)) then Class.disabled
           children [
-            checkbox
-              (data.Crops.Values
-                |> Seq.filter Crop.isForage
-                |> Seq.map Crop.seed
-                |> Seq.forall settings.Selected.UseForageSeeds.Contains)
-              (selectMany Crop.isForage >> SelectUseForageSeeds >> selectDispatch)
+            let keys = seeds |> Set.filter data.ForageCrops.ContainsKey
+            columnCheckbox keys settings.Selected.UseForageSeeds (SelectUseForageSeeds >> selectDispatch)
             ofStr "Forage Seeds"
           ]
         ])
-        Column.withSort (Option.noneMaxCompareBy (Crop.seed >> settings.Selected.CustomSeedPrices.Values.TryFind)) (fragment [
-          if settings.Selected.CustomSeedPrices.Values.IsEmpty then
-            none
-          else
-            checkbox
-              (Selection.allSelected settings.Selected.CustomSeedPrices)
-              (selectMany (Crop.seed >> settings.Selected.CustomSeedPrices.Values.ContainsKey) >> SelectCustom >> SetCustomSeedPrice >> selectDispatch)
-          ofStr "Custom"
-        ])
+
+        Column.withSort
+          (Option.noneMaxCompareBy (Crop.seed >> settings.Selected.CustomSeedPrices.Values.TryFind))
+          (fragment [
+            let keys = seeds |> Set.filter settings.Selected.CustomSeedPrices.Values.ContainsKey
+            columnCheckbox keys settings.Selected.CustomSeedPrices.Selected (SelectCustom >> SetCustomSeedPrice >> selectDispatch)
+            ofStr "Custom"
+          ])
       ]
         (fun crop ->
           let seed = Crop.seed crop
@@ -495,9 +482,9 @@ module Crops =
                   yield checkbox (settings.Selected.SeedPrices[seed].Contains vendor) (curry SetSelected seed >> curry SelectSeedPrices vendor >> selectDispatch)
                   yield Game.seedPrice data settings.Game seed price |> ofNat
                 | None -> yield none
-              ] )
+              ])
             td [
-              if not <| Game.processorUnlocked data settings.Game.Skills Processor.seedMaker then Class.disabled
+              if not <| Game.processorUnlocked data settings.Game Processor.seedMaker then Class.disabled
               children [
                 if Crop.canGetOwnSeedsFromSeedMaker crop then
                   checkbox (settings.Selected.UseSeedMaker.Contains seed) (curry SetSelected seed >> SelectUseSeedMaker >> selectDispatch)
@@ -518,13 +505,13 @@ module Crops =
             td [
               viewCustomPrice settings.Selected.CustomSeedPrices seed (SetCustomSeedPrice >> selectDispatch)
             ]
-          ] ] )
+          ]])
         (SetSeedSort >> uiDispatch)
         seedSort
         (cropOrder data crops)
     ]
 
-  let filteredCrops app =
+  let private filteredCrops app =
     let settings, ui = app.State
     let filters = ui.CropFilters
     let data = app.Data
@@ -630,13 +617,11 @@ module Fertilizers =
       [
         checkboxText "Allow No Fertilizer" settings.Selected.NoFertilizer (SelectNoFertilizer >> selectDispatch)
         sortTable [
-          Column.header (checkbox
-            (data.Fertilizers.Keys |> Seq.forall settings.Selected.Fertilizers.Contains)
-            (curry SetManySelected (set data.Fertilizers.Keys) >> SelectFertilizers >> selectDispatch))
-          Column.withSort (compareBy Fertilizer.name) (ofStr "Fertilizer")
-          Column.withSort (Option.noneMaxCompareBy (Fertilizer.name >> Query.Price.fertilizerMinPrice data settings)) (ofStr "Lowest Price")
-          Column.withSort (compareBy Fertilizer.speed) (ofStr "Speed Bonus")
-          Column.withSort (compareBy Fertilizer.quality) (ofStr "Crop Qualities")
+          Column.header (columnCheckbox (Set.ofSeq data.Fertilizers.Keys) settings.Selected.Fertilizers (SelectFertilizers >> selectDispatch))
+          ofStr "Fertilizer" |> Column.withSort (compareBy Fertilizer.name)
+          ofStr "Lowest Price" |> Column.withSort (Option.noneMaxCompareBy (Fertilizer.name >> Query.Price.fertilizerMinPrice data settings))
+          ofStr "Speed Bonus"|> Column.withSort (compareBy Fertilizer.speed)
+          ofStr "Crop Qualities" |> Column.withSort (compareBy Fertilizer.quality)
         ]
           (fun fertilizer ->
             let name = Fertilizer.name fertilizer
@@ -652,7 +637,7 @@ module Fertilizers =
                 td (fertilizer.Speed |> percent |> ofStr)
                 td (Skills.farmCropQualitiesWith (Some fertilizer) settings.Game.Skills |> Skills.cropQualities)
               ]
-            ] )
+            ])
           (SetFertilizerSort >> uiDispatch)
           fertSort
           (fertilizerOrder data.Fertilizers.Values)
@@ -664,8 +649,8 @@ module Fertilizers =
     let dispatch = SetSettings >> dispatch
     let selectDispatch = SetSelections >> dispatch
 
-    let selectMany filter = curry SetManySelected (data.Fertilizers.Keys |> Seq.filter filter |> set)
     let fertilizerVendors = fertilizerVendors data
+    let keys = Set.ofSeq data.Fertilizers.Keys
 
     animatedDetails
       open'
@@ -683,23 +668,26 @@ module Fertilizers =
         ]
 
         sortTable [
-          Column.withSort (compareBy Fertilizer.name) (ofStr "Fertilizer")
+          ofStr "Fertilizer" |> Column.withSort (compareBy Fertilizer.name)
+
           yield! fertilizerVendors |> Array.map (fun vendor ->
-            Column.withSort (Option.noneMaxCompareBy (Fertilizer.name >> data.FertilizerPrices.Find >> Table.tryFind vendor)) (fragment [
-              checkbox
-                (settings.Selected.FertilizerPrices |> Map.forall (fun key selected -> selected |> Set.contains vendor || not (data.FertilizerPrices[key].ContainsKey vendor)))
-                (selectMany (data.FertilizerPrices.Find >> Table.containsKey vendor) >> curry SelectFertilizerPrices vendor >> selectDispatch)
-              Image.Icon.vendor vendor
-            ]))
-          Column.withSort (Option.noneMaxCompareBy (Fertilizer.name >> settings.Selected.CustomFertilizerPrices.Values.TryFind)) (fragment [
-            if settings.Selected.CustomFertilizerPrices.Values.IsEmpty then
-              none
-            else
-              checkbox
-                (Selection.allSelected settings.Selected.CustomFertilizerPrices)
-                (selectMany settings.Selected.CustomFertilizerPrices.Values.ContainsKey >> SelectCustom >> SetCustomFertilizerPrice >> selectDispatch)
-            ofStr "Custom"
-          ])
+            Column.withSort
+              (Option.noneMaxCompareBy (Fertilizer.name >> data.FertilizerPrices.Find >> Table.tryFind vendor))
+              (fragment [
+                let keys = keys |> Set.filter (data.FertilizerPrices.Find >> Table.containsKey vendor)
+                checkbox
+                  (keys |> Set.forall (fun key -> settings.Selected.FertilizerPrices[key].Contains vendor))
+                  (curry SetManySelected keys >> curry SelectFertilizerPrices vendor >> selectDispatch)
+                Image.Icon.vendor vendor
+              ]))
+
+          Column.withSort
+            (Option.noneMaxCompareBy (Fertilizer.name >> settings.Selected.CustomFertilizerPrices.Values.TryFind))
+            (fragment [
+              let keys = keys |> Set.filter settings.Selected.CustomFertilizerPrices.Values.ContainsKey
+              columnCheckbox keys settings.Selected.CustomFertilizerPrices.Selected (SelectCustom >> SetCustomFertilizerPrice >> selectDispatch)
+              ofStr "Custom"
+            ])
         ]
           (fun fert ->
             let name = fert.Name
@@ -712,11 +700,11 @@ module Fertilizers =
                     yield checkbox (settings.Selected.FertilizerPrices[name].Contains vendor) (curry SetSelected name >> curry SelectFertilizerPrices vendor >> selectDispatch)
                     yield ofNat price
                   | None -> yield none
-                ] )
+                ])
               td [
                 viewCustomPrice settings.Selected.CustomFertilizerPrices name (SetCustomFertilizerPrice >> selectDispatch)
               ]
-            ] ] )
+            ]])
           (SetFertilizerPriceSort >> uiDispatch)
           fertPriceSort
           (fertilizerOrder data.Fertilizers.Values)

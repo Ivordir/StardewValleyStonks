@@ -126,11 +126,11 @@ module Selected =
   let unlockedProducts data settings seed item =
     let selected = settings.Selected.Products[seed, item]
     GameData.products data item |> Array.filter (fun product ->
-      product |> Game.productUnlocked data settings.Game.Skills
+      product |> Game.productUnlocked data settings.Game
       && selected.Contains (Product.processor product))
 
   let unlockedUseSeedsFromSeedMaker data settings crop =
-    Processor.seedMaker |> Game.processorUnlocked data settings.Game.Skills
+    Processor.seedMaker |> Game.processorUnlocked data settings.Game
     && settings.Selected.UseSeedMaker.Contains (Crop.seed crop)
     && Crop.canGetOwnSeedsFromSeedMaker crop
 

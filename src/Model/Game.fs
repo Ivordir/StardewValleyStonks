@@ -33,6 +33,13 @@ type GameData = {
 // Assume that the seedMaker is the only processor which converts items into seeds.
 
 module GameData =
+  let seedItemPairsFrom crops =
+    crops
+    |> Seq.map (fun crop ->
+      let seed = Crop.seed crop
+      Crop.items crop |> Array.map (fun item -> seed, item))
+    |> Array.concat
+
   let seedItemPairs data =
     data.Crops
     |> Table.toSeq
@@ -252,9 +259,9 @@ module Game =
     | FarmCrop crop -> farmCropItemAmountsByQuality vars fertilizer crop
     | ForageCrop crop -> forageCropItemAmountByQuality vars crop |> Array.create crop.Items.Length
 
-  let processorUnlocked data skills processor =
-    skills.IgnoreSkillLevelRequirements
-    || data.ProcessorUnlockLevel.TryFind processor |> Option.forall (fun l -> l <= skills.Farming.Level)
+  let processorUnlocked data vars processor =
+    vars.Skills.IgnoreSkillLevelRequirements
+    || data.ProcessorUnlockLevel.TryFind processor |> Option.forall (fun l -> l <= vars.Skills.Farming.Level)
 
   let productUnlocked data vars = Product.processor >> processorUnlocked data vars
 
