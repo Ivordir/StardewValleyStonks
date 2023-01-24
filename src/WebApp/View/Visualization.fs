@@ -1089,15 +1089,16 @@ let [<ReactComponent>] solver (props: {|
 
 let section app dispatch =
   let settings, ui = app.State
+  let uiDispatch = SetUI >> dispatch
   let rankerChart = ui.Mode = Ranker && ui.Ranker.SelectedCropAndFertilizer.IsNone
   section [
     prop.id (if rankerChart then "visualization-graph" else "visualization")
     children [
-      viewTabs SetAppMode unitUnionCases<AppMode> ui.Mode (SetUI >> dispatch)
+      viewTabs ui.Mode (SetAppMode >> uiDispatch)
       match ui.Mode with
-      | Ranker -> rankerOrAudit app (SetUI >> dispatch)
+      | Ranker -> rankerOrAudit app uiDispatch
       | Solver ->
-        labeled "Maximize: " <| Select.unitUnion (length.rem 5) ui.SolverMode (SetSolverMode >> SetUI >> dispatch)
+        labeled "Maximize: " <| Select.unitUnion (length.rem 5) ui.SolverMode (SetSolverMode >> uiDispatch)
         solver {|
           Data = app.Data
           Settings = settings

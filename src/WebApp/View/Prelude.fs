@@ -1,6 +1,7 @@
 module [<AutoOpen>] StardewValleyStonks.WebApp.View.Prelude
 
 open StardewValleyStonks
+open StardewValleyStonks.WebApp
 
 open Fable.Core.JsInterop
 open Feliz
@@ -262,22 +263,22 @@ let labeled label element =
   ]
 
 
-let viewTab toString msg tab currentTab dispatch =
+let viewTab toString tab currentTab dispatch =
   li [
     if currentTab = tab then Class.active
     children (
       button [
-        onClick (fun _ -> dispatch <| msg tab)
+        onClick (fun _ -> dispatch tab)
         text (toString tab: string)
       ] )
   ]
 
-let viewTabsWith toString props msg tabs currentTab dispatch =
-  ul [ Class.tabs; yield! props; children (tabs |> Array.map (fun tab ->
-    viewTab toString msg tab currentTab dispatch))
+let viewTabsWith toString tabs currentTab dispatch =
+  ul [ Class.tabs; children (tabs |> Array.map (fun tab ->
+    viewTab toString tab currentTab dispatch))
   ]
 
-let viewTabs msg = viewTabsWith (box >> Reflection.getCaseName) [] msg
+let inline viewTabs (current: 'tab) dispatch = viewTabsWith Reflection.getCaseName unitUnionCases<'tab> current dispatch
 
 
 // let warningIcon =

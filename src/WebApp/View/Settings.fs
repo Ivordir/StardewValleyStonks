@@ -583,7 +583,7 @@ module Crops =
     div [
       cropFilter ui.CropFilters (SetCropFilters >> uiDispatch)
 
-      viewTabs SetCropTab unitUnionCases<CropTab> ui.CropTab uiDispatch
+      viewTabs ui.CropTab (SetCropTab >> uiDispatch)
 
       match ui.CropTab with
       | CropsTable -> table app ui.CropSort crops dispatch
@@ -982,7 +982,7 @@ let section app dispatch =
   let dispatch = SetState >> dispatch
   let settings, ui = app.State
   section [ prop.id "settings"; children [
-    viewTabs SetSettingsTab unitUnionCases<SettingsTab> ui.SettingsTab (SetUI >> dispatch)
+    viewTabs ui.SettingsTab (SetSettingsTab >> SetUI >> dispatch)
     match ui.SettingsTab with
     | Skills -> Skills.tab settings.Game.Skills (SetSkills >> SetGameVariables >> SetSettings >> dispatch)
     | Crops -> Crops.tab app dispatch
