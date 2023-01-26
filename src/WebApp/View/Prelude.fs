@@ -7,8 +7,6 @@ open Fable.Core.JsInterop
 open Feliz
 
 type prop with
-  // static member inline onClick (action: unit -> unit) = prop.onClick (ignore >> action)
-
   static member inline onToggle (handler: bool -> unit) =
     Interop.mkAttr "onToggle" (fun (e: Browser.Types.Event) -> handler e.target?``open``)
 
