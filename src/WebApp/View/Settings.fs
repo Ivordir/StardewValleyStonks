@@ -119,62 +119,7 @@ let viewPrice price =
     | None -> ofStr "???"
   ]
 
-type 'a EditProps = {|
-  Value: 'a option
-  CloseModal: unit -> unit
-  Dispatch: 'a -> unit
-|}
-
-let [<ReactComponent>] EditCustom (props: {|
-    Existing: 'a option
-    Edit: 'a EditProps -> ReactElement
-    Dispatch: 'a -> unit
-  |}) =
-  let modal, setModal = useState false
-
-  let modalRef = useRef<Browser.Types.HTMLDialogElement option> None
-
-  useLayoutEffect (fun () ->
-    match modalRef.current with
-    | Some m when not m.``open`` -> m.showModal ()
-    | _ -> ())
-
-  fragment [
-    button [
-      onClick (fun _ -> setModal true)
-      text (match props.Existing with | Some _ -> "Edit" | None -> "Add")
-    ]
-
-    if modal then
-      dialog [
-        Interop.mkAttr "onClose" (fun _ -> setModal false)
-        prop.ref modalRef
-        children (props.Edit {|
-          Value = props.Existing
-          CloseModal = fun () -> setModal false
-          Dispatch = props.Dispatch
-        |})
-      ]
-  ]
-
-let [<ReactComponent>] EditCustomPrice (props: nat EditProps) =
-  let price, setPrice = useState (props.Value |> Option.defaultValue 0u)
-  fragment [
-    h1 "Custom Price"
-    Input.nat (length.rem 2) price setPrice
-    div [
-      button [
-        onClick (fun _ -> props.Dispatch price; props.CloseModal ())
-        text "Ok"
-      ]
-      button [
-        onClick (fun _ -> props.CloseModal ())
-        text "Cancel"
-      ]
-    ]
-  ]
-
-let viewCustom (viewValue: _ -> ReactElement) editValue (selection: Selection<_,_>) key dispatch =
+let viewCustom title (viewValue: _ -> ReactElement) (editValue: _ -> _ -> ReactElement) defaultValue (selection: Selection<_,_>) key dispatch =
   fragment [
     let value = selection.Values.TryFind key
     match value with
@@ -182,33 +127,21 @@ let viewCustom (viewValue: _ -> ReactElement) editValue (selection: Selection<_,
       checkbox (selection.Selected.Contains key) (curry SetSelected key >> SelectCustom >> dispatch)
       viewValue value
     | None -> none
-    EditCustom {|
-      Existing = value
-      Edit = editValue
-      Dispatch = (curry SetCustom key >> dispatch)
-    |}
+    Dialog.toggleEdit
+      title
+      (if value.IsSome then "Edit" else "Add")
+      (value |> Option.defaultValue defaultValue)
+      (curry SetCustom key >> dispatch)
+      editValue
   ]
 
-let viewCustomPrice selection key dispatch =
-  viewCustom ofNat EditCustomPrice selection key dispatch
+let editCustomPrice = Input.nat (length.rem 7.5)
 
-let [<ReactComponent>] EditCustomSellPrice (props: (nat * bool) EditProps) =
-  let (price, preserveQuality), setState = useState (props.Value |> Option.defaultValue (0u, false))
-  fragment [
-    h1 "Custom Price"
-    Input.nat (length.rem 2) price (fun price -> setState (price, preserveQuality))
-    checkboxText "Scale with quality" preserveQuality (fun preserveQuality -> setState (price, preserveQuality))
-    div [
-      button [
-        onClick (fun _ -> props.Dispatch (price, preserveQuality); props.CloseModal ())
-        text "Ok"
-      ]
-      button [
-        onClick (fun _ -> props.CloseModal ())
-        text "Cancel"
-      ]
-    ]
-  ]
+let editCustomSellPrice (price, preserveQuality) setState = fragment [
+  Input.nat (length.rem 2) price (fun price -> setState (price, preserveQuality))
+  checkboxText "Scale with quality" preserveQuality (fun preserveQuality -> setState (price, preserveQuality))
+]
+
 
 let private sortKeysByHighestCount table =
   table
@@ -315,8 +248,10 @@ module Crops =
         td []
         td [
           viewCustom
+            "Custom Sell Price"
             (Query.customSellPriceValue productQuality >> ofNat)
-            EditCustomSellPrice
+            editCustomSellPrice
+            (0u, false)
             settings.Selected.CustomSellPrices
             (seed, item)
             (SetCustomSellPrice >> selectDispatch)
@@ -501,7 +436,14 @@ module Crops =
               ]
             )
             td [
-              viewCustomPrice settings.Selected.CustomSeedPrices seed (SetCustomSeedPrice >> selectDispatch)
+              viewCustom
+                "Custom Seed Price"
+                ofNat
+                editCustomPrice
+                0u
+                settings.Selected.CustomSeedPrices
+                seed
+                (SetCustomSeedPrice >> selectDispatch)
             ]
           ]])
         (SetSeedSort >> uiDispatch)
@@ -689,7 +631,14 @@ module Fertilizers =
                   | None -> yield none
                 ])
               td [
-                viewCustomPrice settings.Selected.CustomFertilizerPrices name (SetCustomFertilizerPrice >> selectDispatch)
+                viewCustom
+                  "Custom Fertilizer Price"
+                  ofNat
+                  editCustomPrice
+                  0u
+                  settings.Selected.CustomFertilizerPrices
+                  name
+                  (SetCustomFertilizerPrice >> selectDispatch)
               ]
             ]])
           (SetFertilizerPriceSort >> uiDispatch)
@@ -806,57 +755,8 @@ module Misc =
     ] ]
 
 module LoadSave =
-  let [<ReactComponent>] SaveCurrentSettings (props: {| dispatch: _ |}) =
-    let name, setName = useState None
-
-    let modalRef = useRef<Browser.Types.HTMLDialogElement option> None
-
-    useLayoutEffect (fun () ->
-      match modalRef.current with
-      | Some m when not m.``open`` -> m.showModal ()
-      | _ -> ())
-
-    fragment [
-      button [
-        onClick (fun _ -> setName (Some "Untitled Settings"))
-        text "Save Current Settings"
-      ]
-
-      match name with
-      | None -> none
-      | Some name ->
-        dialog [
-          Interop.mkAttr "onClose" (fun _ -> setName None)
-          prop.ref modalRef
-          children [
-            h1 "Save Current Settings As"
-            Input.text name (Some >> setName)
-            div [
-              button [
-                onClick (fun _ ->
-                  if name <> "" then
-                    props.dispatch (SaveSettings name)
-                    setName None)
-                text "Ok"
-              ]
-              button [
-                onClick (fun _ -> setName None)
-                text "Cancel"
-              ]
-            ]
-          ]
-        ]
-    ]
-
-  let [<ReactComponent>] ImportSave (props: {| dispatch: _ |}) =
+  let [<ReactComponent>] ImportSave (props: {| Dispatch: _ |}) =
     let save, setSave = useState None
-
-    let modalRef = useRef<Browser.Types.HTMLDialogElement option> None
-
-    useLayoutEffect (fun () ->
-      match modalRef.current with
-      | Some m when not m.``open`` -> m.showModal ()
-      | _ -> ())
 
     fragment [
       label [ Class.fileInput; children [
@@ -867,7 +767,7 @@ module LoadSave =
             let text: string JS.Promise = e?text()
             text.``then`` (fun text ->
               let save = Data.loadSaveGame text
-              save |> Option.iter (fst >> LoadSaveGame >> props.dispatch)
+              save |> Option.iter (fst >> LoadSaveGame >> props.Dispatch)
               setSave (Some save))
             |> ignore
           )
@@ -876,68 +776,14 @@ module LoadSave =
 
       match save with
       | None | Some (Some (_, [||])) -> none
-      | Some save ->
-        dialog [
-          Interop.mkAttr "onClose" (fun _ -> setSave None)
-          prop.ref modalRef
-          children [
-            match save with
-            | None ->
-              h1 "Invalid Save"
-              ofStr "Failed to laod the save game. Did you pick the right file?"
-            | Some (_, missing) ->
-              h1 "Warning"
-              ofStr "Failed to load the following data from the save game:"
-              ul (missing |> Array.map (ofStr >> li))
-            div [
-                button [
-                onClick (fun _ -> setSave None)
-                text "Ok"
-              ]
-            ]
-          ]
-        ]
-    ]
-
-  let [<ReactComponent>] RenamePreset (props: {| i: int; name: string; dispatch: _ |}) =
-    let name, setName = useState None
-
-    let modalRef = useRef<Browser.Types.HTMLDialogElement option> None
-
-    useLayoutEffect (fun () ->
-      match modalRef.current with
-      | Some m when not m.``open`` -> m.showModal ()
-      | _ -> ())
-
-    fragment [
-      button [
-        onClick (fun _ -> setName (Some props.name))
-        text "Edit"
-      ]
-      match name with
-      | None -> none
-      | Some name ->
-        dialog [
-          Interop.mkAttr "onClose" (fun _ -> setName None)
-          prop.ref modalRef
-          children [
-            h1 "Rename"
-            Input.text name (Some >> setName)
-            div [
-              button [
-                onClick (fun _ ->
-                  if name <> "" then
-                    props.dispatch (RenameSettings (props.i, name))
-                    setName None)
-                text "Ok"
-              ]
-              button [
-                onClick (fun _ -> setName None)
-                text "Cancel"
-              ]
-            ]
-          ]
-        ]
+      | Some None ->
+        Dialog.create "Invalid Save" (fun () -> setSave None)
+          (ofStr "Failed to laod the save game. Did you pick the right file?")
+      | Some (Some (_, missing)) ->
+        Dialog.create "Warning" (fun () -> setSave None) (fragment [
+          ofStr "Failed to load the following data from the save game:"
+          ul (missing |> Array.map (ofStr >> li))
+        ])
     ]
 
   let tab app dispatch =
@@ -951,7 +797,7 @@ module LoadSave =
             onClick (fun _ -> loadDispatch settings)
             text "Load"
           ]
-          RenamePreset {| i = i; name = name; dispatch = saveDispatch |}
+          Dialog.toggleEdit "Rename" "Edit" name (curry RenameSettings i >> saveDispatch) Input.text
           button [
             onClick (fun _ -> saveDispatch (DeleteSettings i))
             text "x"
@@ -960,9 +806,9 @@ module LoadSave =
       ))
 
       div [ style [ style.display.flex; style.flexDirection.column; style.width.maxContent ]; children [
-        SaveCurrentSettings {| dispatch = saveDispatch |}
+        Dialog.toggleEdit "Save Current Settings As" "Save Current Settings" "Untitled Settings" (SaveSettings >> saveDispatch) Input.text
 
-        ImportSave {| dispatch = saveDispatch |}
+        ImportSave {| Dispatch = saveDispatch |}
 
         button [
           onClick (fun _ -> loadDispatch (snd Data.defaultSavedSettings.Value[0]))
