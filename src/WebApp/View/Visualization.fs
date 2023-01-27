@@ -17,7 +17,7 @@ open type React
 open Core.Operators
 open Core.ExtraTopLevelOperators
 
-let allPairData metric timeNorm data settings =
+let pairData metric timeNorm data settings =
   let crops = Query.Selected.inSeasonCrops data settings |> cropOrder data |> Array.ofSeq
 
   let fertilizers =
@@ -42,8 +42,8 @@ let allPairData metric timeNorm data settings =
       (Crop.seed crop, Fertilizer.Opt.name fert), profit fert))
 
   {|
-    Crops = crops |> Array.map Crop.seed
-    Fertilizers = fertilizers |> Array.map Fertilizer.Opt.name
+    Crops = crops
+    Fertilizers = fertilizers
     Pairs = data
   |}
 
@@ -233,7 +233,7 @@ module Ranker =
     ]
 
   let ranker ranker (data, settings) dispatch =
-    let pairData = allPairData ranker.RankMetric ranker.TimeNormalization data settings
+    let pairData = pairData ranker.RankMetric ranker.TimeNormalization data settings
     if pairData.Pairs.Length = 0 then
       div [
         if pairData.Crops.Length = 0 then ofStr "No Crops Selected"
@@ -871,7 +871,6 @@ let private selectSpecificOrBest name toString (viewItem: _ -> ReactElement) ite
     selected
     dispatch
 
-
 let [<ReactComponent>] SelectedCropAndFertilizer (props: {|
     App: _
     Seed: _
@@ -891,66 +890,53 @@ let [<ReactComponent>] SelectedCropAndFertilizer (props: {|
 
   let (metric, timeNorm), setState = useState ((ranker.RankMetric, ranker.TimeNormalization))
 
-  let crops = Query.Selected.inSeasonCrops data settings |> cropOrder data |> Array.ofSeq
-
-  let fertilizers =
-    Query.Selected.fertilizers data settings
-    |> fertilizerOrder
-    |> Seq.map Some
-    |> Array.ofSeq
-  let fertilizers =
-    if settings.Selected.NoFertilizer
-    then Array.append [| None |] fertilizers
-    else fertilizers
-
-  let metricValue =
-    match metric with
-    | Gold -> Query.cropProfit
-    | ROI -> Query.cropROI
-    | XP -> Query.cropXP
+  let pairData = pairData metric timeNorm data settings
 
   let bestCrop, bestFert =
-    let pairs = crops |> Array.collect (fun crop ->
-      let profit = metricValue data settings timeNorm crop
-      fertilizers |> Array.map (fun fert ->
-        (Crop.seed crop, Fertilizer.Opt.name fert), profit fert))
+    let pairs = pairData.Pairs
 
     let bestCrop, bestFert =
       if pairs.Length = 0 then None, None else
       let crop, fert = pairs |> Array.maxBy (snd >> Option.ofResult) |> fst
       Some data.Crops[crop], Some (Option.map data.Fertilizers.Find fert)
 
+    let metricValue =
+      match metric with
+      | Gold -> Query.cropProfit
+      | ROI -> Query.cropROI
+      | XP -> Query.cropXP
+
     let bestCrop =
       match fertName with
       | Some fert' ->
         let fert = Option.map data.Fertilizers.Find fert'
-        if crops.Length = 0 then None else
-        crops |> Array.maxBy (fun crop -> metricValue data settings timeNorm crop fert |> Option.ofResult) |> Some
+        if pairData.Crops.Length = 0 then None else
+        pairData.Crops |> Array.maxBy (fun crop -> metricValue data settings timeNorm crop fert |> Option.ofResult) |> Some
       | None -> bestCrop
 
     let bestFert =
       match seed with
       | Some seed ->
         let crop = data.Crops[seed]
-        if fertilizers.Length = 0 then None else
+        if pairData.Fertilizers.Length = 0 then None else
         let profit = metricValue data settings timeNorm crop
-        fertilizers |> Array.maxBy (profit >> Option.ofResult) |> Some
+        pairData.Fertilizers |> Array.maxBy (profit >> Option.ofResult) |> Some
       | None -> bestFert
 
-    bestCrop, bestFert
+    Choice2Of2 bestCrop, Choice2Of2 bestFert
 
   let cropOptions =
-    crops
+    pairData.Crops
     |> Array.map Choice1Of2
-    |> Array.append [| Choice2Of2 bestCrop |]
+    |> Array.append [| bestCrop |]
 
   let fertilizerOptions =
-    fertilizers
+    pairData.Fertilizers
     |> Array.map Choice1Of2
-    |> Array.append [| Choice2Of2 bestFert |]
+    |> Array.append [| bestFert |]
 
-  let crop = seed |> Option.defaultOrMap (Choice2Of2 bestCrop) (data.Crops.Find >> Choice1Of2)
-  let fert = fertName |> Option.defaultOrMap (Choice2Of2 bestFert) (Option.map data.Fertilizers.Find >> Choice1Of2)
+  let crop = seed |> Option.defaultOrMap bestCrop (data.Crops.Find >> Choice1Of2)
+  let fert = fertName |> Option.defaultOrMap bestFert (Option.map data.Fertilizers.Find >> Choice1Of2)
 
   div [ Class.auditGraph; children [
     button [
@@ -1027,8 +1013,8 @@ let [<ReactComponent>] SelectedCropAndFertilizer (props: {|
 
     | _ ->
       div [
-        if fertilizers.Length = 0 then ofStr "No fertilizers selected!"
-        if crops.Length = 0 then ofStr "No crops selected!"
+        if pairData.Fertilizers.Length = 0 then ofStr "No fertilizers selected!"
+        if pairData.Crops.Length = 0 then ofStr "No crops selected!"
       ]
   ] ]
 
