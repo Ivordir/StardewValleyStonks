@@ -398,7 +398,7 @@ let private weightedIntervalSchedule (spans: (FertilizerSpanRequest * int Soluti
 
   bestDownTo[0]
 
-let private mapSolution data (vars: GameVariables) (solution: (FertilizerSpanRequest * int Solution) list, totalProfit) =
+let private mapSolution (vars: GameVariables) (solution: (FertilizerSpanRequest * int Solution) list, totalProfit) =
   let seasons = Date.seasonSpan vars.StartDate vars.EndDate
   let solution = solution |> List.map (fun (span, solution) ->
     let variables = solution.variables |> Array.map (fun (i, n) ->
@@ -513,7 +513,7 @@ let createWorker () =
 
   let postWorker data settings mode =
     let spans, models = Array.unzip (fertilizerSpans data settings mode)
-    inProgressRequest <- Some (data, settings, spans)
+    inProgressRequest <- Some (settings, spans)
     worker.postMessage (models: Worker.Input)
 
   let queue data settings mode =
@@ -524,7 +524,7 @@ let createWorker () =
   let subscribe dispatch =
     worker.onmessage <- (fun e ->
       match e.data, inProgressRequest with
-      | :? Worker.Output as solutions, Some (data, settings, spans) ->
+      | :? Worker.Output as solutions, Some (settings, spans) ->
         match nextRequest with
         | Some (data, settings, mode) ->
           // old request finished solving, ignore and send most recent request to worker
@@ -542,7 +542,7 @@ let createWorker () =
             assert (solution.status = Optimal || (solution.status = Infeasible && span.Start <> span.Stop))
             solution.status = Optimal)
           |> weightedIntervalSchedule
-          |> mapSolution data settings.Game
+          |> mapSolution settings.Game
           |> dispatch
 
       | _ -> assert false)
