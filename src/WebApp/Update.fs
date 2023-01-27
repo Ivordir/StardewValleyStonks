@@ -44,8 +44,8 @@ type SelectionMessage<'a when 'a: comparison> =
   | SetManySelected of 'a Set * bool
 
 type CustomMessage<'key, 'price when 'key: comparison> =
-  | AddCustom of 'key
-  | SetCustom of 'key * 'price
+  | AddCustom of 'key * 'price
+  | EditCustom of 'key * 'price
   | RemoveCustom of 'key
   | SelectCustom of 'key SelectionMessage
 
@@ -211,16 +211,19 @@ let private mapSelectWith containsKey key msg map =
 
 let private mapSelect (data: Table<_, Table<_,_>>) key msg map = mapSelectWith (fun id' key -> data[id'].ContainsKey key) key msg map
 
-let custom defaultValue msg selection =
+let custom msg selection =
   match msg with
-  | AddCustom key ->
-    { selection with Values = selection.Values |> Map.add key defaultValue }
+  | AddCustom (key, value) ->
+    { selection with
+        Values = selection.Values |> Map.add key value
+        Selected = selection.Selected |> Set.add key
+    }
   | RemoveCustom key ->
     { selection with
         Selected = selection.Selected |> Set.remove key
         Values = selection.Values |> Map.remove key
     }
-  | SetCustom (key, value) -> { selection with Values = selection.Values |> Map.add key value }
+  | EditCustom (key, value) -> { selection with Values = selection.Values |> Map.add key value }
   | SelectCustom msg -> { selection with Selected = selection.Selected |> select msg }
 
 let selections data msg (selection: Selections) =
@@ -243,9 +246,9 @@ let selections data msg (selection: Selections) =
   | SelectUseSeedMaker msg -> { selection with UseSeedMaker = selection.UseSeedMaker |> select msg }
   | SelectUseForageSeeds msg -> { selection with UseForageSeeds = selection.UseForageSeeds |> select msg }
 
-  | SetCustomFertilizerPrice msg -> { selection with CustomFertilizerPrices = selection.CustomFertilizerPrices |> custom 0u msg }
-  | SetCustomSeedPrice msg -> { selection with CustomSeedPrices = selection.CustomSeedPrices |> custom 0u msg }
-  | SetCustomSellPrice msg -> { selection with CustomSellPrices = selection.CustomSellPrices |> custom (0u, false) msg }
+  | SetCustomFertilizerPrice msg -> { selection with CustomFertilizerPrices = selection.CustomFertilizerPrices |> custom msg }
+  | SetCustomSeedPrice msg -> { selection with CustomSeedPrices = selection.CustomSeedPrices |> custom msg }
+  | SetCustomSellPrice msg -> { selection with CustomSellPrices = selection.CustomSellPrices |> custom msg }
 
 let profit msg profit =
   match msg with

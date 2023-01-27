@@ -131,7 +131,7 @@ let viewCustom title (viewValue: _ -> ReactElement) (editValue: _ -> _ -> ReactE
       title
       (if value.IsSome then "Edit" else "Add")
       (value |> Option.defaultValue defaultValue)
-      (curry SetCustom key >> dispatch)
+      (curry (if value.IsSome then EditCustom else AddCustom) key >> dispatch)
       editValue
   ]
 
