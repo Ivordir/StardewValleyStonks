@@ -1043,28 +1043,27 @@ let rankerOrAudit app dispatch =
   | None -> lazyView3 Ranker.ranker ranker (app.Data, settings) dispatch
 
 
+// The solver typically takes < 50ms, but with
+//   StartSeason = Spring, StopSeason = Fall, Location = Greenhouse, and FarmingLevel in [0..7],
+// it can take around 600ms if all fertilizers and crops are selected.
+// For this reason, the solver is put in a web worker with a debouncer.
 
 let private workerQueue, private workerSubscribe =
   let queue, subscribe = Solver.createWorker ()
   debouncer 200 (fun (data, settings, mode) -> queue data settings mode), subscribe
 
-// The solver typically takes < 50ms, but with
-//   StartSeason = Spring, StopSeason = Fall, Location = Greenhouse, and FarmingLevel in [0..7],
-// it can take around 600ms if all fertilizers and crops are selected.
-// For this reason, the solver is put in a web worker with a debouncer and queue system.
-
-let [<ReactComponent>] solver (props: {|
-  Data: GameData
-  Settings: Settings
-  SolverMode: SolverMode
+let [<ReactComponent>] Solver (props: {|
+    Data: GameData
+    Settings: Settings
+    SolverMode: SolverMode
   |})
   =
-  let (solution, solving), setState = useState ((None, false))
+  let (solution, settings, solving), setState = useState ((None, props.Settings, false))
 
-  workerSubscribe (fun solution -> setState (Some solution, false))
+  workerSubscribe (fun solution -> setState (Some solution, props.Settings, false))
 
   useEffect ((fun () ->
-    setState (solution, true)
+    setState (solution, settings, true)
     workerQueue (props.Data, props.Settings, props.SolverMode)
   ), [| box props.Data; box props.Settings; props.SolverMode |])
 
@@ -1076,10 +1075,14 @@ let [<ReactComponent>] solver (props: {|
         ofStr $"Total: {total}"
         yield!
           solution
-          |> Seq.map (fun res ->
-            res.Variables |> Seq.map (fun ((season, var), i) ->
-              div (ofStr $"{Season.name season} {var} {res.Fertilizer}: {i}")))
+          |> Seq.map (fun span ->
+            span.CropHarvests
+            |> Seq.zip (Date.seasonSpan span.StartDate span.EndDate)
+            |> Seq.map (fun (season, cropHarvests) ->
+              cropHarvests |> Array.map (fun (crop, harvests) ->
+                div (ofStr $"{Season.name season} {Fertilizer.Opt.name span.Fertilizer} {Crop.seed crop}: {harvests}"))))
           |> Seq.concat
+          |> Array.concat
       ]
     ]
   | None ->
@@ -1099,7 +1102,7 @@ let section app dispatch =
       | Ranker -> rankerOrAudit app uiDispatch
       | Solver ->
         labeled "Maximize: " <| Select.unitUnion (length.rem 5) ui.SolverMode (SetSolverMode >> uiDispatch)
-        solver {|
+        Solver {|
           Data = app.Data
           Settings = settings
           SolverMode = ui.SolverMode

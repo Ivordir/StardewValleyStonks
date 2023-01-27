@@ -115,12 +115,14 @@ module Date =
   let inline seasonsBetween start finish = Season.seasonsBetween start.Season finish.Season
   let inline seasonSpan start finish = Season.span start.Season finish.Season
 
-  let seasonsAndDays start finish =
-    let seasons = seasonSpan start finish
-    let days = Array.create seasons.Length daysInSeason
-    days[0] <- daysInSeason - start.Day + firstDay
+  let daySpan start finish =
+    let dist = Season.distance start.Season finish.Season
+    let days = Array.create (int dist + 1) daysInSeason
+    days[0] <- daysInSeason - start.Day + 1u
     days[days.Length - 1] <- days[days.Length - 1] - (daysInSeason - finish.Day)
-    seasons, days
+    days
+
+  let seasonsAndDays start finish = seasonSpan start finish, daySpan start finish
 
   let totalDays start finish =
     (Season.distance start.Season finish.Season) * daysInSeason - start.Day + finish.Day + 1u
