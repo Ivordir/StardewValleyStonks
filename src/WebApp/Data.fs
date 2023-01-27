@@ -493,6 +493,30 @@ module LocalStorage =
     tryLoad "saved settings" SavedSettingsKey Decode.savedSettings
     |> Option.defaultValue []
 
+  let private loadOldApp () = {
+    Data = gameData
+    State = loadState ()
+    SavedSettings = loadSavedSettings ()
+  }
+
+  let private minorPatchFixes = [] // index i -> (vX.i.X -> vX.(i+1).X)
+
+  let private applyMinorPatchFixes ver app =
+    minorPatchFixes
+    |> List.skip (int ver.Minor)
+    |> List.fold (fun app fix -> fix app) app
+
+  let private adaptSettings (settings: Settings) =
+    { settings with Selected = Selections.adapt gameData settings.Selected }
+
+  let private adaptApp app =
+    let settings, ui = app.State
+    {
+      Data = gameData
+      State = adaptSettings settings, ui
+      SavedSettings = app.SavedSettings |> List.map (fun (name, settings) -> name, adaptSettings settings)
+    }
+
   let loadApp () =
     match getItem VersionKey |> Option.map Version.tryParse with
     | None ->
@@ -509,27 +533,17 @@ module LocalStorage =
     | Some (Some ver) when ver.Major <> App.version.Major ->
       failwith $"Unexpected major version: {ver.Major}"
       // load and convert data here (once next version comes out)
-      // parse json -> edit object -> stringify -> decode?
       // console.info $"Upgrading to version {ver.Major}..."
 
-    | Some (Some ver) when ver.Minor <> App.version.Minor ->
-      let adaptSettings (settings: Settings) = { settings with Selected = Selections.adapt gameData settings.Selected }
-      let settings, ui = loadState ()
-      let settings = adaptSettings settings
-      let savedSettings = loadSavedSettings () |> List.map (fun (name, settings) -> name, adaptSettings settings)
-      let app = {
-        Data = gameData
-        State = settings, ui
-        SavedSettings = savedSettings
-      }
+    | Some (Some ver) when ver <> App.version ->
+      let app =
+        loadOldApp ()
+        |> applyMinorPatchFixes ver
+        |> adaptApp
       saveAll app
       app
 
-    | Some (Some _) -> {
-      Data = gameData
-      State = loadState ()
-      SavedSettings = loadSavedSettings ()
-    }
+    | Some (Some _) -> loadOldApp ()
 
   let inline private reload () = Browser.Dom.window.location.reload ()
 
@@ -571,7 +585,7 @@ module LocalStorage =
 
 
 // Rather than depending on an xml parsing library, we use the browser's built-in (native) xml parsing.
-// Stardew valley saves games are simple enough and/or we extract so little data from them
+// Stardew Valley saves games are simple enough and/or we extract so little data from them
 // such that the following manual code is workable...
 module private XML =
   open Fable.Core

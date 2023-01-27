@@ -155,7 +155,7 @@ module Selections =
   let adapt (data: GameData) (selected: Selections) = {
     selected with
       SeedPrices = selected.SeedPrices |> ensureEntries data.Crops.Keys
-      FertilizerPrices =selected.FertilizerPrices |> ensureEntries data.Fertilizers.Keys
+      FertilizerPrices = selected.FertilizerPrices |> ensureEntries data.Fertilizers.Keys
       Products = selected.Products |> ensureEntries (GameData.seedItemPairs data)
   }
 
@@ -314,7 +314,7 @@ module [<RequireQualifiedAccess>] Version =
 
 
 module App =
-  // Major = new schema -> convert data
-  // Minor = potentially new crops, fertilizers, or items on crops -> adapt settings
-  // Patch = compatible data -> no action needed
+  // Major = completely new schema -> convert data
+  // Minor = new fields, other minor schema edits -> edit data
+  // Patch = potentially new crops, fertilizers, or items on crops -> adapt settings
   let version = Version.tryParse "0.0.1" |> Option.get
