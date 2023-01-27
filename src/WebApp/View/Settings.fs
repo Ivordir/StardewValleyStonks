@@ -764,15 +764,14 @@ module LoadSave =
         input [
           prop.type'.file
           onChange (fun (e: Browser.Types.File) ->
-            let text: string JS.Promise = e?text()
-            text.``then`` (fun text ->
+            e.text().``then`` (fun text ->
               let save = Data.loadSaveGame text
               save |> Option.iter (fst >> LoadSaveGame >> props.Dispatch)
               setSave (Some save))
             |> ignore
           )
         ]
-      ] ]
+      ]]
 
       match save with
       | None | Some (Some (_, [||])) -> none
