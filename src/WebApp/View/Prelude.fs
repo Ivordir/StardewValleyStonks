@@ -219,7 +219,7 @@ let gold (g: nat) = string g + "g"
 let percent value = sprintf "%.0f%%" (value * 100.0)
 let percent2 value = sprintf "%.2f%%" (value * 100.0)
 let floatFixedRound = sprintf "%.2f"
-let floatRound (x: float) = System.Math.Round (x, 2) |> string
+let floatRound (x: float) = System.Math.Round (x, 2)
 let goldFixedRound = sprintf "%.2fg"
 
 

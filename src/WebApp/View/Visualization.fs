@@ -5,10 +5,7 @@ open StardewValleyStonks.WebApp
 open StardewValleyStonks.WebApp.Update
 open StardewValleyStonks.WebApp.View
 
-open Fable.Core.JsInterop
-open Elmish.React
 open Feliz
-open Feliz.Recharts
 
 open type Html
 open type prop
@@ -16,6 +13,637 @@ open type React
 
 open Core.Operators
 open Core.ExtraTopLevelOperators
+
+module GrowthCalendar =
+  let rec repeatAppend n items list =
+    if n = 0u
+    then list
+    else repeatAppend (n - 1u) items (items :: list)
+
+  let stageImage stage seed = div (Image.growthStage stage seed)
+
+  let stageImages stages seed =
+    stages
+    |> Array.mapi (fun i stage -> Array.create (int stage) (stageImage i seed))
+    |> Array.concat
+    |> Array.tail
+
+  let private solverRegrowCropCalendarDays settings (days: nat array) fertilizer stageList (season, crop, harvests) =
+    let totalDays = Array.sum days[(season + 1)..]
+    let stages, time = Game.growthTimeAndStages settings.Game fertilizer (FarmCrop crop)
+    let usedDays = Growth.daysNeededFor crop.RegrowTime time harvests
+    let stageImages = stageImages stages crop.Seed
+
+    let harvestItem = div (Image.item' crop.Item)
+    let firstHarvest = Array.append stageImages [| harvestItem |]
+    let regrow = Array.create (int crop.RegrowTime.Value) (div (Image.regrowStage crop.Seed))
+    regrow[regrow.Length - 1] <- harvestItem
+    let filler = int totalDays - int usedDays |> max 0
+    let stageList = Array.create filler (div []) :: stageList
+    let stageList = repeatAppend (harvests - 1u) regrow stageList
+    let stageList = firstHarvest :: stageList
+    season, (totalDays + days[season] - usedDays - nat filler), stageList
+
+  let private appendCropHarvests settings fertilizer (cropHarvests: _ array) remainingDays stageList =
+    let rec loop i remainingDays stageList =
+      if i < 0 then remainingDays, stageList else
+      let crop, harvests = cropHarvests[i]
+      let stages, time = Game.growthTimeAndStages settings.Game fertilizer crop
+      let usedDays = Growth.daysNeededFor None time harvests
+      let stageImages = stageImages stages (Crop.seed crop)
+
+      let harvestItem = div (Image.item' <| Crop.mainItem crop)
+      let stages = Array.append stageImages [| harvestItem |]
+      loop (i - 1) (remainingDays - int usedDays) (repeatAppend harvests stages stageList)
+    loop (Array.length cropHarvests - 1) remainingDays stageList
+
+  let solverGrowthCalendarDays settings single (span: Solver.FertilizerDateSpan) =
+    let stageList = [ Array.create (int (Date.daysInSeason - span.EndDate.Day)) (div [ Class.disabled ]) ]
+    let days =
+      if not single && settings.Game.Location = Farm
+      then Date.daySpan span.StartDate span.EndDate
+      else [| Date.totalDays span.StartDate span.EndDate |]
+
+    let season, remainingDays, stageList =
+      span.RegrowCrop |> Option.defaultOrMap
+        (days.Length - 1, Array.last days, stageList)
+        (solverRegrowCropCalendarDays settings days span.Fertilizer stageList)
+
+    let rec loop season remainingDays stageList =
+      let remainingDays, stageList = appendCropHarvests settings span.Fertilizer span.CropHarvests[season] remainingDays stageList
+
+      if season = 0 then remainingDays, stageList else
+      let season = season - 1
+
+      let crop = span.BridgeCrops[season]
+      let seed = Crop.seed crop
+      let stages, time = Game.growthTimeAndStages settings.Game span.Fertilizer crop
+      let stageImages = stageImages stages seed
+
+      let harvestItem = div (Image.item' <| Crop.mainItem crop)
+      let filler = int remainingDays - int time |> max 0
+      let days = int remainingDays + int days[season] - int time - filler
+      let stageList =
+        stageImages
+        :: Array.create filler (stageImage stages.Length seed)
+        :: [| harvestItem |]
+        :: stageList
+
+      loop season days stageList
+
+    let days, stageList = loop season (int remainingDays) stageList
+
+    let days, stageList = appendCropHarvests settings None span.WithoutFertilizer days stageList
+
+    let firstStage =
+      [|
+        span.WithoutFertilizer |> Array.tryHead |> Option.map fst
+        span.CropHarvests[0] |> Array.tryHead |> Option.map fst
+        Array.tryHead span.BridgeCrops
+        span.RegrowCrop |> Option.map (fun (_, crop, _) -> FarmCrop crop)
+      |]
+      |> Array.tryPick (Option.map Crop.seed)
+      |> Option.map (stageImage 0)
+
+    Array.create (int (settings.Game.StartDate.Day - 1u)) (div [ Class.disabled ])
+    :: Array.create (days - 1) (div [])
+    :: Option.toArray firstStage
+    :: stageList
+    |> Array.concat
+    |> Array.chunkBySize (int Date.daysInSeason)
+    |> Array.zip (Date.seasonSpan span.StartDate span.EndDate)
+    |> Array.map (fun (season, days) -> div [
+      Class.calendarSeason
+      children [
+        div [
+          Class.calendarHeader
+          children (Image.Icon.season season)
+        ]
+        div [
+          Class.calendarDays
+          children days
+        ]
+      ]
+    ])
+
+  let growthCalender app crop fertilizer =
+    let settings, _ = app.State
+    match Query.bestGrowthSpan settings.Game fertilizer crop with
+    | None -> ofStr (if Game.cropIsInSeason settings.Game crop then "No harvests possible!" else "Crop not in season!")
+    | Some (span: Query.GrowthSpan) ->
+      let cropHarvests, regrowCrop =
+        match crop with
+        | FarmCrop crop when crop.RegrowTime.IsSome -> [| |], Some (0, crop, span.Harvests)
+        | _ -> [| crop, span.Harvests |], None
+      let span: Solver.FertilizerDateSpan = {
+        StartDate = { Season = span.StartSeason; Day = if span.StartSeason = settings.Game.StartDate.Season then settings.Game.StartDate.Day else Date.firstDay }
+        EndDate = { Season = span.EndSeason; Day = if span.EndSeason = settings.Game.EndDate.Season then settings.Game.EndDate.Day else Date.lastDay }
+        Fertilizer = fertilizer
+        WithoutFertilizer = [||]
+        CropHarvests = [| cropHarvests |]
+        BridgeCrops = [||]
+        RegrowCrop = regrowCrop
+      }
+      div [
+        Class.calendar
+        children (solverGrowthCalendarDays settings true span)
+      ]
+
+
+module SummaryTable =
+  let pluralize x text = if x = 1.0 then text else (text + "s")
+
+  let harvestsSummaryHeaderRow data settings crop (harvests: nat) =
+    tr [
+        td [ colSpan 6; children [
+          Image.Icon.crop data crop
+          ofStr $" ({harvests} "
+          ofStr (pluralize (float harvests) "harvest")
+          ofStr ")"
+        ]]
+        td []
+        td [
+          if settings.Profit.SeedStrategy <> IgnoreSeeds then
+            ofStr <| floatFixedRound (if Crop.regrows crop then -1.0 else -float harvests)
+        ]
+    ]
+
+  let stockpiledSeedRow settings =
+    if settings.Profit.SeedStrategy <> StockpileSeeds then none else
+    tr [
+      td [
+        colSpan 6
+        text "Stockpiled Seed"
+      ]
+      td []
+      td [ ofStr "1.00" ]
+    ]
+
+  let boughtRow (icon: _ -> ReactElement) (seeds: _ -> ReactElement) item price amount =
+    if amount = 0.0 then none else
+    tr [
+      td [ colSpan 4; children [
+        icon item
+        match price with
+        | Some (NonCustom vendor, _) ->
+          ofStr " from "
+          Image.Icon.vendor vendor
+        | Some (Custom (), _) ->
+          ofStr " (Custom)"
+        | None -> ofStr " from ???"
+      ]]
+      td [
+        match price with
+        | Some (_, cost) -> gold cost |> ofStr
+        | None -> none
+      ]
+      td [
+        ofStr " x "
+        ofStr <| floatFixedRound amount
+      ]
+      td [
+        match price with
+        | Some (_, cost) -> ofStr (goldFixedRound <| amount * -float cost)
+        | None -> ofStr "???"
+      ]
+      td [ seeds amount ]
+    ]
+
+  let fertilizerBoughtRow replacement fertilizer price amount =
+    match fertilizer, price with
+    | Some fertilizer, Some price ->
+      boughtRow
+        (fun fertilizer ->
+          fragment [
+            if replacement then ofStr "Replacement "
+            Image.Icon.fertilizer fertilizer
+          ])
+        (fun _ -> none)
+        fertilizer
+        price
+        amount
+    | _ -> none
+
+  let seedsBoughtRow data (seed: SeedId) seedPrice amount =
+    if amount = 0.0 then none else
+    boughtRow
+      (fun seed -> Image.Icon.item' data (seed * 1u<_>))
+      (fun amount -> ofStr <| floatFixedRound amount)
+      seed
+      seedPrice
+      amount
+
+  let harvestedSeedsRows data item (amounts: _ Qualities) =
+    fragment [
+      for i = Quality.highest downto 0 do
+      let quality = enum i
+      let amount = amounts[quality]
+      if amount = 0.0 then none else
+      tr [
+        td []
+        td []
+        td []
+        td [ Image.Icon.itemQuality' data item quality ]
+        td []
+        td [
+          ofStr " x "
+          ofStr <| floatFixedRound amount
+        ]
+        td []
+        td [ ofStr <| floatFixedRound amount ]
+      ]
+    ]
+
+  let seedMakerRows data crop item (amounts: _ Qualities) =
+    let seed = Crop.seed crop
+    fragment [
+      for i = Quality.highest downto 0 do
+      let quality = enum i
+      let amount = amounts[quality]
+      if amount = 0.0 then none else
+      let seedAmount = amount * Processor.seedMakerExpectedAmount seed
+      tr [
+        td [ Image.Icon.itemQuality' data item quality ]
+        td [
+          ofStr " x "
+          ofStr <| floatFixedRound amount
+        ]
+        td [ Image.rightArrow ]
+        td [ Image.Icon.productQuality data item (SeedsFromSeedMaker (seed * 1u<_>)) Quality.Normal ]
+        td []
+        td [
+          ofStr " x "
+          ofStr <| floatFixedRound seedAmount
+        ]
+        td []
+        td [ ofStr <| floatFixedRound seedAmount ]
+      ]
+    ]
+
+  let forageSeedsRows data settings (items: _ array) (seed: SeedId) amountSold amountUsed =
+    let totalAmount = amountSold + amountUsed
+    if totalAmount = 0.0 then none else
+    fragment (items |> Array.mapi (fun i item ->
+      tr [
+        td [
+          Image.Icon.item' data item
+        ]
+        td [
+          ofStr " x "
+          ofStr <| floatFixedRound (totalAmount / float ForageCrop.forageSeedsPerCraft)
+        ]
+        td [ Image.rightArrow ]
+        if i = 0 then
+          let span = rowSpan items.Length
+          td [ span; children [
+            Image.Icon.item' data (seed * 1u<_>)
+          ]]
+          td [ span; children [
+            ofStr <| gold (Game.seedItemSellPrice data settings.Game seed)
+          ]]
+          td [ span; children [
+            ofStr " x "
+            ofStr <| floatFixedRound totalAmount
+          ]]
+          td [ span; children [
+            if amountSold > 0.0 then
+              ofStr <| goldFixedRound (amountSold * float (Game.seedItemSellPrice data settings.Game seed))
+          ]]
+          td [ span; children [
+            if amountUsed > 0.0 then
+              ofStr <| floatFixedRound amountUsed
+          ]]
+      ]
+    ))
+
+  let seedAmountsRows data crop seedAmounts = fragment (seedAmounts |> Array.map (fun (item, amounts: _ Qualities) ->
+    if item = Crop.seedItem crop then harvestedSeedsRows data item amounts
+    elif item = Crop.mainItem crop then seedMakerRows data crop item amounts
+    else assert false; none))
+
+  let rawItemRow data item quality profit amount =
+    fragment [
+      td []
+      td []
+      td []
+      td [ Image.Icon.itemQuality' data item quality ]
+      td [ ofStr <| gold (nat profit) ]
+      td [
+        ofStr " x "
+        ofStr <| floatFixedRound amount
+      ]
+    ]
+
+  let productRow data settings item quality product profit amount =
+    fragment [
+      let amountPerItem = Product.amountPerItem product
+      td [ Image.Icon.itemQuality' data item quality ]
+      td [
+        ofStr " x "
+        ofStr <| floatFixedRound amount
+      ]
+      td [ Image.rightArrow ]
+      td [ Image.Icon.productQuality data item product (Product.outputQuality settings.Game.ModData quality product) ]
+      td [ ofStr <| gold (nat (profit / amountPerItem)) ]
+      td [
+        ofStr " x "
+        ofStr <| floatFixedRound (amount * amountPerItem)
+      ]
+    ]
+
+  let customSellPriceRow data item quality custom amount =
+    fragment [
+      td []
+      td []
+      td []
+      td [
+        Image.Icon.itemQuality' data item quality
+        ofStr " (Custom)"
+      ]
+      td [ ofStr <| gold (Query.customSellPriceValue quality custom) ]
+      td [
+        ofStr " x "
+        ofStr <| floatFixedRound amount
+      ]
+    ]
+
+  let unknownSellAs data item quality amount =
+    tr [
+      td [ Image.Icon.itemQuality' data item quality ]
+      td [
+        ofStr " x "
+        ofStr <| floatFixedRound amount
+      ]
+      td [ Image.rightArrow ]
+      td [ colSpan 3; text "???" ]
+      td []
+      td []
+    ]
+
+  let soldAmountsRows data settings (items: _ array) (summary: Query.HarvestsSummary) =
+    fragment [
+      for i = 0 to items.Length - 1 do
+        let item = items[i]
+        let sellAs = summary.SellAs[i]
+        let soldAmounts = summary.ItemAndSeedSummary.SoldAmounts[i]
+
+        for i = Quality.highest downto 0 do
+          let quality = enum i
+          let amount = soldAmounts[quality]
+          if amount = 0.0 then none else
+          match sellAs with
+          | Some sellAsData ->
+            let product, profit = sellAsData[quality]
+            tr [
+              match product with
+              | NonCustom None -> rawItemRow data item quality profit amount
+              | NonCustom (Some product) -> productRow data settings item quality product profit amount
+              | Custom (price, preservesQuality) -> customSellPriceRow data item quality (price, preservesQuality) amount
+
+              td [ ofStr <| goldFixedRound (profit * amount) ]
+              td []
+            ]
+          | None -> unknownSellAs data item quality amount
+      ]
+
+  let harvestsSummaryFooterRow settings profit =
+    tr [
+      td [
+        colSpan 6
+        text "Total"
+      ]
+      td [
+        match profit with
+        | Some profit -> ofStr <| goldFixedRound profit
+        | None -> ofStr "???"
+      ]
+      td [
+        match settings.Profit.SeedStrategy with
+        | IgnoreSeeds -> none
+        | StockpileSeeds -> ofStr "1.00"
+        | BuyFirstSeed -> ofStr "0.00"
+      ]
+    ]
+
+  let harvestSummaryTable data settings fertilizer fertilizerPrice profit (summary: Query.HarvestsSummary) =
+    let itemSummary = summary.ItemAndSeedSummary
+    let crop = summary.Crop
+    let seed = Crop.seed crop
+    let items = Crop.items crop
+    tbody [
+      harvestsSummaryHeaderRow data settings crop summary.Harvests
+      stockpiledSeedRow settings
+      seedsBoughtRow data seed summary.SeedPrice itemSummary.SeedsBought
+      seedAmountsRows data crop itemSummary.SeedAmounts
+      forageSeedsRows data settings items seed itemSummary.ForageSeedsSold itemSummary.ForageSeedsUsed
+
+      soldAmountsRows data settings items summary
+      fertilizerBoughtRow true fertilizer fertilizerPrice summary.ReplacedFertilizer
+      harvestsSummaryFooterRow settings profit
+    ]
+
+  let rankerProfitSummaryTableFooter roi timeNorm (profitSummary: Query.Ranker.ProfitSummary) =
+    tfoot [
+      if not roi && timeNorm <> TotalPeriod then
+        tr [
+          td [ colSpan 6 ]
+          td [
+            ofStr "/ "
+            match timeNorm with
+            | PerDay ->
+              ofFloat profitSummary.TimeNormalization
+              ofStr " days"
+            | PerSeason ->
+              let value = floatRound profitSummary.TimeNormalization
+              ofFloat value
+              ofStr " "
+              ofStr (pluralize value "season")
+            | TotalPeriod ->
+              assert false
+              ofFloat profitSummary.TimeNormalization
+          ]
+          td []
+        ]
+        tr [
+          td [
+            colSpan 6
+            text ("Total " + string timeNorm)
+          ]
+          td [
+            match profitSummary.NetProfit with
+            | Some profit ->
+              floatFixedRound (profit / profitSummary.TimeNormalization) |> ofStr
+              match timeNorm with
+              | TotalPeriod -> none
+              | PerDay -> ofStr "g/day"
+              | PerSeason -> ofStr "g/season"
+            | None -> ofStr "??? "
+          ]
+          td []
+        ]
+    ]
+
+  let rankerRoiSummary settings timeNorm (profitSummary: Query.Ranker.ProfitSummary) =
+    let investment = profitSummary.Investment (settings.Profit.SeedStrategy = BuyFirstSeed)
+    let roi = investment |> Option.bind profitSummary.ROI
+    div [
+      div [
+        ofStr "Investment: "
+        ofStr (investment |> Option.defaultOrMap "???" gold)
+      ]
+      div [
+        ofStr "ROI: "
+        ofStr (roi |> Option.defaultOrMap "???" (sprintf "%.2f%%"))
+      ]
+      match roi with
+      | Some roi when timeNorm <> TotalPeriod ->
+        div [
+          ofStr "/ "
+          match timeNorm with
+          | PerDay ->
+            ofFloat profitSummary.TimeNormalization
+            ofStr " days"
+          | PerSeason ->
+            let value = floatRound profitSummary.TimeNormalization
+            ofFloat value
+            ofStr " "
+            ofStr (pluralize value "season")
+          | TotalPeriod -> ofInt 1
+        ]
+        div [
+          floatFixedRound (roi / profitSummary.TimeNormalization) |> ofStr
+          match timeNorm with
+          | TotalPeriod -> none
+          | PerDay -> ofStr "%/day"
+          | PerSeason -> ofStr "%/season"
+        ]
+      | _ -> none
+    ]
+
+  let rankerProfitSummaryTable roi (data: GameData) settings timeNorm crop fertilizer =
+    if not <| Game.cropIsInSeason settings.Game crop then ofStr "Crop not in season!" else
+
+    match Query.Ranker.profitSummary data settings timeNorm crop fertilizer with
+    | None -> ofStr "No harvests possible!"
+    | Some profitSummary ->
+      div [ Class.breakdownTable; children [
+        table [
+          thead [
+            tr [
+              th [ colSpan 6 ]
+              th [ ofStr "Profit" ]
+              th [ if settings.Profit.SeedStrategy <> IgnoreSeeds then ofStr "Seeds" ]
+            ]
+          ]
+          tbody [ fertilizerBoughtRow false fertilizer profitSummary.FertilizerPrice 1.0 ]
+          harvestSummaryTable data settings fertilizer profitSummary.FertilizerPrice profitSummary.NetProfit profitSummary.HarvestSummary
+          rankerProfitSummaryTableFooter roi timeNorm profitSummary
+        ]
+
+        if roi then
+          rankerRoiSummary settings timeNorm profitSummary
+      ]]
+
+  let rankerXpSummary (data: GameData) settings timeNorm crop fertilizer =
+    match Query.Ranker.xpSummary data settings timeNorm crop fertilizer with
+    | Error e ->
+      div [
+        if e.HasFlag Query.InvalidReasons.NotEnoughDays then
+          ofStr (if not <| Game.cropIsInSeason settings.Game crop then "Crop not in season!" else "No harvests possible!")
+        if e.HasFlag Query.InvalidReasons.NoFertilizerPrice then
+          ofStr "No Fertilizer Price!"
+        if e.HasFlag Query.InvalidReasons.NotEnoughSeeds then
+          ofStr "No Seed Source!"
+      ]
+    | Ok data ->
+      div [
+        let total = data.XpPerHarvest * float data.Harvests
+        div [
+          ofStr (sprintf "%.2fxp" data.XpPerHarvest)
+          ofStr " x "
+          ofStr $"{data.Harvests} harvests"
+          ofStr " = "
+          ofStr (sprintf "%.2fxp" total)
+        ]
+        if timeNorm <> TotalPeriod then
+          let unit =
+            match timeNorm with
+            | PerDay -> "day"
+            | PerSeason -> "season"
+            | TotalPeriod -> assert false; ""
+          div [
+            ofStr (sprintf "%.2fxp" total)
+            ofStr " / "
+            let value = floatRound data.TimeNormalization
+            ofFloat value
+            ofStr " "
+            ofStr (pluralize value unit)
+            ofStr " = "
+            ofStr (sprintf "%.2fxp/%s" (total / data.TimeNormalization) unit)
+          ]
+      ]
+
+  let solverProfitSummaryTable data settings total (solutions: Solver.FertilizerDateSpan list) =
+    div [ Class.breakdownTable; children [
+      table [
+        thead [
+          tr [
+            th [ colSpan 6 ]
+            th [ ofStr "Profit" ]
+            th [ if settings.Profit.SeedStrategy <> IgnoreSeeds then ofStr "Seeds" ]
+          ]
+        ]
+
+        let len = List.length solutions
+        yield!
+          solutions
+          |> Seq.mapi (fun i solution ->
+            let fertilizer = solution.Fertilizer
+            let fertilizerPrice =
+              match fertilizer with
+              | None -> None
+              | Some _ when not settings.Profit.PayForFertilizer -> None
+              | Some fertilizer ->
+                fertilizer
+                |> Fertilizer.name
+                |> Query.Price.fertilizerMinVendorAndPrice data settings
+                |> Some
+
+            let cropFertSed = Array.concat [|
+              solution.WithoutFertilizer |> Array.map (fun (crop, harvests) -> crop, None, harvests)
+              solution.CropHarvests[0] |> Array.map (fun (crop, harvests) -> crop, fertilizer, harvests)
+              solution.CropHarvests
+              |> Array.tail
+              |> Array.zip solution.BridgeCrops
+              |> Array.collect (fun (bridgeCrop, cropHarvests) ->
+                cropHarvests
+                |> Array.map (fun (crop, harvests) -> crop, fertilizer, harvests)
+                |> Array.append [| bridgeCrop, fertilizer, 1u |])
+              solution.RegrowCrop |> Option.map (fun (_, crop, harvests) -> FarmCrop crop, fertilizer, harvests) |> Option.toArray
+            |]
+
+            [
+              tbody [ fertilizerBoughtRow false fertilizer fertilizerPrice 1.0 ]
+              yield! cropFertSed |> Array.map (fun args ->
+                let harvestsSummary = args |||> Query.Solver.profitAndHarvestsSummary data settings (i = len - 1)
+                harvestSummaryTable data settings fertilizer fertilizerPrice harvestsSummary.NetProfit harvestsSummary)
+            ])
+          |> Seq.concat
+
+        if len > 1 then
+          tfoot [
+            tr [
+              td [
+                colSpan 6
+                text "Total"
+              ]
+              td [ ofStr <| goldFixedRound total ]
+              td []
+            ]
+          ]
+      ]
+    ]]
+
 
 let pairData metric timeNorm data settings =
   let crops = Query.Selected.inSeasonCrops data settings |> cropOrder data |> Array.ofSeq
@@ -30,14 +658,10 @@ let pairData metric timeNorm data settings =
     then Array.append [| None |] fertilizers
     else fertilizers
 
-  let metric =
-    match metric with
-    | Gold -> Query.cropProfit
-    | ROI -> Query.cropROI
-    | XP -> Query.cropXP
+  let rankValue = Query.rankValue metric
 
   let data = crops |> Array.collect (fun crop ->
-    let profit = metric data settings timeNorm crop
+    let profit = rankValue data settings timeNorm crop
     fertilizers |> Array.map (fun fert ->
       (Crop.seed crop, Fertilizer.Opt.name fert), profit fert))
 
@@ -49,6 +673,9 @@ let pairData metric timeNorm data settings =
 
 
 module Ranker =
+  open Fable.Core.JsInterop
+  open Feliz.Recharts
+
   let selectFromGraph rankItem (pairs: _ array) dispatch i =
     let crop, fert = pairs[i]
     (match rankItem with
@@ -223,7 +850,7 @@ module Ranker =
       ofStr labelText
       Select.options (length.rem 4) (fun metric ->
         div [
-          text (string metric)
+          prop.text (string metric)
           title (RankMetric.fullName metric)
         ])
         unitUnionCases<RankMetric>
@@ -304,7 +931,7 @@ module Ranker =
           div [
             Class.graph
             children [
-              lazyView3With
+              Elmish.React.Common.lazyView3With
                 (fun (data1, _) (data2, _) -> data1 = data2)
                 (fun (pairs, pairData) (ranker, data) -> graph ranker data pairs pairData)
                 (pairs, pairData)
@@ -314,543 +941,6 @@ module Ranker =
           ]
         ]
 
-let growthCalender app seed fertilizer =
-  let data = app.Data
-  let settings, _ = app.State
-  let crop = data.Crops[seed]
-  let fert = fertilizer |> Option.map data.Fertilizers.Find
-  match Query.bestGrowthSpan settings.Game fert crop with
-  | None -> ofStr (if Game.cropIsInSeason settings.Game crop then "No harvests possible!" else "Crop not in season!")
-  | Some span ->
-    let firstStageImages =
-      span.Stages
-      |> Array.mapi (fun i stage ->
-        Array.create (int stage) (div [ Image.growthStage i seed ]))
-      |> Array.concat
-    let last = [| div (Image.item' <| Crop.mainItem crop) |]
-    let stageImages =
-      let first =
-        match Crop.regrowTime crop with
-        | Some time -> Array.create (int time - 1) (div [ Image.regrowStage seed ])
-        | None -> Array.tail firstStageImages
-      Array.append first last
-    let firstStageImages = Array.append firstStageImages last
-
-    let disabledDay = div [ Class.disabled ]
-
-    div [
-      Class.calendar
-      children [
-        let harvests = span.Harvests
-        let span = span.Span
-        let unusedDays = span.TotalDays - nat firstStageImages.Length - (harvests - 1u) * nat stageImages.Length
-        let days =
-          [
-            if settings.Game.StartDate.Season = span.StartSeason then
-              Array.create (int (settings.Game.StartDate.Day - Date.firstDay)) disabledDay
-
-            Array.create (int unusedDays) (div [])
-
-            firstStageImages
-
-            yield! Seq.replicate (int (harvests - 1u)) stageImages
-
-            if settings.Game.EndDate.Season = span.EndSeason then
-              Array.create (int (Date.lastDay - settings.Game.EndDate.Day)) disabledDay
-          ]
-          |> Array.concat
-          |> Array.chunkBySize (int Date.daysInSeason)
-
-        for i, season in Season.span span.StartSeason span.EndSeason |> Seq.indexed do
-          let days = days[i]
-          div [
-            Class.calendarSeason
-            children [
-              div [
-                Class.calendarHeader
-                children (Image.Icon.season season)
-              ]
-
-              div [
-                Class.calendarDays
-                children days
-              ]
-            ]
-          ]
-      ]
-    ]
-
-// Previous Stockpiled Seed                                               1 seed
-// or
-// Initial Bought Seed from vendor                             -> -gold   1 seed
-//                          fertilizer (price) from vendor     -> -gold
-// item quality x amount -> product * quality (price) x amount -> gold
-//                          item * quality (price) x amount    -> gold
-// item quality x amount -> custom * quality (price) x amount  -> gold
-//        itemA x amount ->
-//        itemB x amount -> Forage Seeds (price) x amount      -> gold  +x seed
-//        itemC x amount ->
-// item quality x amount -> seedmaker                          ->       +x seed
-//                                       item quality x amount ->       +x seed
-//         replacement fertilizer (price) from vendor x amount -> -gold
-//                   bought seeds (price) from vendor x amount -> -gold +x seed
-// Seeds Used                                                           -x seed
-//                                                          Total: gold, 1 seed
-
-// (item q) amount -> (item q) price amount : gold seed
-
-let profitBreakdownTable roi timeNorm (data: GameData) settings seed fertName =
-  let crop = data.Crops[seed]
-
-  if not <| Game.cropIsInSeason settings.Game crop then ofStr "Crop not in season!" else
-
-  let fert = fertName |> Option.map data.Fertilizers.Find
-  match Query.cropProfitAndFertilizerData data settings timeNorm crop fert with
-  | None -> ofStr "No harvests possible!"
-  | Some profitData ->
-    let items = Crop.items crop
-    let itemData = profitData.SoldAndSeedData
-
-    let fertilizerBoughtRow replacement amount =
-      match profitData.FertilizerPrice with
-      | None -> none
-      | Some fertCost ->
-        tr [
-          td [ colSpan 4; children [
-            if replacement then ofStr "Replacement "
-            Image.Icon.fertilizer <| Option.get fert
-            match fertCost with
-            | Some (NonCustom vendor, _) ->
-              ofStr " from "
-              Image.Icon.vendor vendor
-            | Some (Custom (), _) ->
-              ofStr " (Custom)"
-            | None -> ofStr " from ???"
-          ] ]
-          td [
-            match fertCost with
-            | Some (_, cost) -> gold cost |> ofStr
-            | None -> ofStr "???"
-          ]
-          td [
-            ofStr " x "
-            ofStr <| floatFixedRound amount
-          ]
-          td [
-            match fertCost with
-            | Some (_, cost) -> ofStr (goldFixedRound <| amount * -float cost)
-            | None -> ofStr "???"
-          ]
-          td []
-        ]
-
-    let totalFooter =
-      tfoot [
-        match profitData.NetProfit with
-        | None ->
-          tr [
-            td [
-              colSpan 6
-              text "Total"
-            ]
-            td [
-              ofStr "???"
-            ]
-            td [
-              match settings.Profit.SeedStrategy with
-              | IgnoreSeeds -> none
-              | StockpileSeeds -> ofStr "1.00"
-              | BuyFirstSeed -> ofStr "0.00"
-            ]
-          ]
-        | Some profit ->
-          tr [
-            td [
-              colSpan 6
-              text "Total"
-            ]
-            td [
-              goldFixedRound profit |> ofStr
-            ]
-            td [
-              match settings.Profit.SeedStrategy with
-              | IgnoreSeeds -> none
-              | StockpileSeeds -> ofStr "1.00"
-              | BuyFirstSeed -> ofStr "0.00"
-            ]
-          ]
-          if not roi && timeNorm <> TotalPeriod then
-            tr [
-              td [
-                colSpan 6
-              ]
-              td [
-                ofStr "/ "
-                match timeNorm with
-                | PerDay ->
-                  profitData.TimeNormalization |> ofFloat
-                  ofStr " days"
-                | PerSeason ->
-                  let value = floatRound profitData.TimeNormalization
-                  ofStr value
-                  ofStr (if value = "1" then " season" else " seasons")
-                | TotalPeriod -> ofInt 1
-              ]
-              td []
-            ]
-            tr [
-              td [
-                colSpan 6
-                text ("Total " + string timeNorm)
-              ]
-              td [
-                floatFixedRound (profit / profitData.TimeNormalization) |> ofStr
-                match timeNorm with
-                | TotalPeriod -> none
-                | PerDay -> ofStr "g/day"
-                | PerSeason -> ofStr "g/season"
-              ]
-              td []
-            ]
-      ]
-
-    div [ Class.breakdownTable; children [
-      // div [
-      //   let span = profitData.GrowthSpan.Span
-      //   Image.Icon.season span.StartSeason
-      //   if span.StartSeason <> span.EndSeason then
-      //     Image.rightArrow
-      //     Image.Icon.season span.EndSeason
-      //   ofStr $" ({profitData.GrowthSpan.Harvests} harvests)"
-      // ]
-
-      table [
-        thead [
-          tr [
-            th [
-              colSpan 6
-              text "Item"
-            ]
-            th [ ofStr "Profit" ]
-            th [ if settings.Profit.SeedStrategy <> IgnoreSeeds then ofStr "Seeds" ]
-          ]
-        ]
-
-        tbody [
-          if settings.Profit.SeedStrategy = StockpileSeeds then
-            tr [
-              td [
-                colSpan 6
-                text "Previous Stockpiled Seed"
-              ]
-              td []
-              td [ ofStr "1.00" ]
-            ]
-
-          fertilizerBoughtRow false 1.0
-
-          if profitData.FertilizerBought > 1.0 then
-            fertilizerBoughtRow true (profitData.FertilizerBought - 1.0)
-
-          if itemData.SeedsBought > 0.0 then
-            tr [
-              td [ colSpan 4; children [
-                Image.Icon.item' data (seed * 1u<_>)
-                match profitData.SeedPrice with
-                | Some (NonCustom vendor, _) ->
-                  ofStr " from "
-                  Image.Icon.vendor vendor
-                | Some (Custom (), _) ->
-                  ofStr " (Custom)"
-                | None -> ofStr " from ???"
-              ] ]
-              td [
-                match profitData.SeedPrice with
-                | Some (_, cost) -> gold cost |> ofStr
-                | None -> none
-              ]
-              td [
-                ofStr " x "
-                ofStr <| floatFixedRound itemData.SeedsBought
-              ]
-              td [
-                match profitData.SeedPrice with
-                | Some (_, cost) -> ofStr (goldFixedRound <| itemData.SeedsBought * -float cost)
-                | None -> ofStr "???"
-              ]
-              td [
-                ofStr <| floatFixedRound itemData.SeedsBought
-              ]
-            ]
-        ]
-
-        tbody (itemData.SeedAmounts |> Array.map (fun (item, amounts) ->
-          if nat item = nat seed then
-            fragment [
-              for i = Quality.highest downto 0 do
-              let quality = enum i
-              let amount = amounts[quality]
-              if amount = 0.0 then none else
-              tr [
-                td []
-                td []
-                td []
-                td [
-                  Image.Icon.itemQuality' data item quality
-                ]
-                td []
-                td [
-                  ofStr " x "
-                  ofStr <| floatFixedRound amount
-                ]
-                td []
-                td [
-                  ofStr <| floatFixedRound amount
-                ]
-              ]
-            ]
-          elif item = Crop.mainItem crop then
-            fragment [
-              for i = Quality.highest downto 0 do
-              let quality = enum i
-              let amount = amounts[quality]
-              if amount = 0.0 then none else
-              tr [
-                td [
-                  Image.Icon.itemQuality' data item quality
-                ]
-                td [
-                  ofStr " x "
-                  ofStr <| floatFixedRound amount
-                ]
-                td [ Image.rightArrow ]
-                td [
-                  Image.Icon.productQuality data item (SeedsFromSeedMaker (seed * 1u<_>)) Quality.Normal
-                ]
-                td []
-                td [
-                  ofStr " x "
-                  ofStr <| floatFixedRound (amount * Processor.seedMakerExpectedAmount seed)
-                ]
-                td []
-                td [
-                  ofStr <| floatFixedRound (amount * Processor.seedMakerExpectedAmount seed)
-                ]
-              ]
-            ]
-          else
-            assert false
-            none))
-
-        if itemData.ForageSeedsSold > 0.0 || itemData.ForageSeedsUsed > 0.0 then
-          let totalMade = itemData.ForageSeedsSold + itemData.ForageSeedsUsed
-          tbody (items |> Array.mapi (fun i item ->
-            tr [
-              td [
-                Image.Icon.item' data item
-              ]
-              td [
-                ofStr " x "
-                ofStr <| floatFixedRound (totalMade / float ForageCrop.forageSeedsPerCraft)
-              ]
-              td [ Image.rightArrow ]
-              if i = 0 then
-                td [ rowSpan items.Length; children [ Image.Icon.item' data (seed * 1u<_>) ] ]
-                td [ rowSpan items.Length; children [
-                  ofStr <| gold (Game.seedItemSellPrice data settings.Game seed)
-                ] ]
-                td [ rowSpan items.Length; children [
-                  ofStr " x "
-                  ofStr <| floatFixedRound totalMade
-                ] ]
-                td [ rowSpan items.Length; children [
-                  if itemData.ForageSeedsSold > 0.0 then
-                    ofStr <| goldFixedRound (itemData.ForageSeedsSold * float (Game.seedItemSellPrice data settings.Game seed))
-                ] ]
-                if itemData.ForageSeedsUsed > 0.0 then
-                  td [ rowSpan items.Length; children [
-                    ofStr <| floatFixedRound itemData.ForageSeedsUsed
-                  ] ]
-              ]
-            ))
-
-        tbody [
-          if settings.Profit.SeedStrategy <> IgnoreSeeds then
-            tr [
-              td [
-                colSpan 6
-                text $"{profitData.Harvests} Harvests"
-              ]
-              td []
-              td [ ofStr <| floatFixedRound (if Crop.regrows crop then -1.0 else -float profitData.Harvests) ]
-            ]
-        ]
-
-        tbody [
-          for i = 0 to items.Length - 1 do
-            let item = items[i]
-            let soldAmounts = itemData.SoldAmounts[i]
-            let sellAs = profitData.SellAs[i]
-
-            for i = Quality.highest downto 0 do
-              let quality = enum i
-              let amount = soldAmounts[quality]
-              if amount = 0.0 then none else
-              match sellAs with
-              | Some sellAsData ->
-                let product, profit = sellAsData[quality]
-                tr [
-                  if product = NonCustom None then
-                    td []
-                    td []
-                    td []
-                  else
-                    td [
-                      Image.Icon.itemQuality' data item quality
-                    ]
-                    td [
-                      ofStr " x "
-                      ofStr <| floatFixedRound amount
-                    ]
-                    td [ Image.rightArrow ]
-
-                  match product with
-                  | NonCustom None ->
-                    td [
-                      Image.Icon.itemQuality' data item quality
-                    ]
-                    td [
-                      ofStr <| gold (nat profit)
-                    ]
-                    td [
-                      ofStr " x "
-                      ofStr <| floatFixedRound amount
-                    ]
-                  | NonCustom (Some product) ->
-                    let amountPerItem = Product.amountPerItem product
-                    td [
-                      Image.Icon.productQuality data item product (Product.outputQuality settings.Game.ModData quality product)
-                    ]
-                    td [
-                      ofStr <| gold (nat (profit / amountPerItem))
-                    ]
-                    td [
-                      ofStr " x "
-                      ofStr <| floatFixedRound (amount * amountPerItem)
-                    ]
-                  | Custom (price, preservesQuality) ->
-                    td [
-                      ofStr "Custom"
-                    ]
-                    td [
-                      ofStr <| gold price
-                    ]
-                    td [
-                      ofStr " x "
-                      ofStr <| floatFixedRound amount
-                    ]
-
-                  td [
-                    ofStr <| goldFixedRound (profit * amount)
-                  ]
-                  td []
-                ]
-              | None ->
-                  tr [
-                    td [
-                      Image.Icon.itemQuality' data item quality
-                    ]
-                    td [
-                      ofStr " x "
-                      ofStr <| floatFixedRound amount
-                    ]
-                    td [ Image.rightArrow ]
-                    td [ colSpan 3; text "???" ]
-                    td []
-                    td []
-                  ]
-        ]
-
-        totalFooter
-      ]
-
-      if roi then
-        let investment = profitData.Investment (settings.Profit.SeedStrategy = BuyFirstSeed)
-        let roi = investment |> Option.bind profitData.ROI
-        div [
-          div [
-            ofStr "Investment: "
-            ofStr (investment |> Option.defaultOrMap "???" gold)
-          ]
-          div [
-            ofStr "ROI: "
-            ofStr (roi |> Option.defaultOrMap "???" (sprintf "%.2f%%"))
-          ]
-          match roi with
-          | Some roi when timeNorm <> TotalPeriod ->
-            div [
-              ofStr "/ "
-              match timeNorm with
-              | PerDay ->
-                profitData.TimeNormalization |> ofFloat
-                ofStr " days"
-              | PerSeason ->
-                let value = floatRound profitData.TimeNormalization
-                ofStr value
-                ofStr (if value = "1" then " season" else " seasons")
-              | TotalPeriod -> ofInt 1
-            ]
-            div [
-              floatFixedRound (roi / profitData.TimeNormalization) |> ofStr
-              match timeNorm with
-              | TotalPeriod -> none
-              | PerDay -> ofStr "%/day"
-              | PerSeason -> ofStr "%/season"
-            ]
-          | _ -> none
-        ]
-    ] ]
-
-let xpBreakdownTable timeNorm (data: GameData) settings seed fertName =
-  let crop = data.Crops[seed]
-  let fert = fertName |> Option.map data.Fertilizers.Find
-  match Query.cropXpAndFertilizerData data settings timeNorm crop fert with
-  | Error e ->
-    div [
-      if e.HasFlag Query.InvalidReasons.NotEnoughDays then
-        ofStr (if not <| Game.cropIsInSeason settings.Game crop then "Crop not in season!" else "No harvests possible!")
-      if e.HasFlag Query.InvalidReasons.NoFertilizerPrice then
-        ofStr "No Fertilizer Price!"
-      if e.HasFlag Query.InvalidReasons.NotEnoughSeeds then
-        ofStr "No Seed Source!"
-    ]
-  | Ok data ->
-    div [
-      let total = data.XpPerHarvest * float data.Harvests
-      div [
-        ofStr (sprintf "%.2fxp" data.XpPerHarvest)
-        ofStr " x "
-        ofStr $"{data.Harvests} harvests"
-        ofStr " = "
-        ofStr (sprintf "%.2fxp" total)
-      ]
-      if timeNorm <> TotalPeriod then
-        let unit =
-          match timeNorm with
-          | PerDay -> "day"
-          | PerSeason -> "season"
-          | TotalPeriod -> ""
-        div [
-          ofStr (sprintf "%.2fxp" total)
-          ofStr " / "
-          let value = floatRound data.TimeNormalization
-          ofStr value
-          ofStr " "
-          ofStr (if value = "1" then unit else (unit + "s"))
-          ofStr " = "
-          ofStr (sprintf "%.2fxp/%s" (total / data.TimeNormalization) unit)
-        ]
-    ]
 
 let private selectSpecificOrBest name toString (viewItem: _ -> ReactElement) items selected dispatch =
   Select.search
@@ -991,24 +1081,21 @@ let [<ReactComponent>] SelectedCropAndFertilizer (props: {|
 
     match crop, fert with
     | (Choice1Of2 crop | Choice2Of2 (Some crop)), (Choice1Of2 fert | Choice2Of2 (Some fert)) ->
-      let crop = Crop.seed crop
-      let fert = Fertilizer.Opt.name fert
-
       animatedDetails
         (ui.OpenDetails.Contains OpenDetails.RankerProfitBreakdown)
         (ofStr "Profit Breakdown")
         [
           match metric with
-          | Gold -> profitBreakdownTable false timeNorm data settings crop fert
-          | XP -> xpBreakdownTable timeNorm data settings crop fert
-          | ROI -> profitBreakdownTable true timeNorm data settings crop fert
+          | Gold -> SummaryTable.rankerProfitSummaryTable false data settings timeNorm crop fert
+          | XP -> SummaryTable.rankerXpSummary data settings timeNorm crop fert
+          | ROI -> SummaryTable.rankerProfitSummaryTable true data settings timeNorm crop fert
         ]
         (curry SetDetailsOpen OpenDetails.RankerProfitBreakdown >> appDispatch)
 
       animatedDetails
         (ui.OpenDetails.Contains OpenDetails.RankerGrowthCalendar)
         (ofStr "Growth Calendar")
-        [ growthCalender app crop fert ]
+        [ GrowthCalendar.growthCalender app crop fert ]
         (curry SetDetailsOpen OpenDetails.RankerGrowthCalendar >> appDispatch)
 
     | _ ->
@@ -1016,7 +1103,7 @@ let [<ReactComponent>] SelectedCropAndFertilizer (props: {|
         if pairData.Fertilizers.Length = 0 then ofStr "No fertilizers selected!"
         if pairData.Crops.Length = 0 then ofStr "No crops selected!"
       ]
-  ] ]
+  ]]
 
 
 let rankerOrAudit app dispatch =
@@ -1026,7 +1113,7 @@ let rankerOrAudit app dispatch =
   let ranker = ui.Ranker
   match ranker.SelectedCropAndFertilizer with
   | Some (crop, fert) -> SelectedCropAndFertilizer {| App = app; Seed = crop; Fertilizer = fert; Dispatch = appDispatch |}
-  | None -> lazyView3 Ranker.ranker ranker (app.Data, settings) dispatch
+  | None -> Elmish.React.Common.lazyView3 Ranker.ranker ranker (app.Data, settings) dispatch
 
 
 // The solver typically takes < 50ms, but with
@@ -1058,17 +1145,13 @@ let [<ReactComponent>] Solver (props: {|
     div [
       if solving then className "disabled"
       children [
-        ofStr $"Total: {total}"
-        yield!
-          solution
-          |> Seq.map (fun span ->
-            span.CropHarvests
-            |> Seq.zip (Date.seasonSpan span.StartDate span.EndDate)
-            |> Seq.map (fun (season, cropHarvests) ->
-              cropHarvests |> Array.map (fun (crop, harvests) ->
-                div (ofStr $"{Season.name season} {Fertilizer.Opt.name span.Fertilizer} {Crop.seed crop}: {harvests}"))))
-          |> Seq.concat
-          |> Array.concat
+        match props.SolverMode with
+        | MaximizeGold -> SummaryTable.solverProfitSummaryTable props.Data settings total solution
+        | MaximizeXP -> ofStr $"{total}xp" // TODO
+        div [
+          Class.calendar
+          children (solution |> Seq.collect (GrowthCalendar.solverGrowthCalendarDays settings false))
+        ]
       ]
     ]
   | None ->

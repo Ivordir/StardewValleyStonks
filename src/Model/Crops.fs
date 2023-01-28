@@ -90,18 +90,6 @@ module [<RequireQualifiedAccess>] Season =
   let all = Array.init Seasons.count enum<Season>
 
 
-type DateSpan = {
-  StartSeason: Season
-  EndSeason: Season
-  TotalDays: nat
-}
-
-module DateSpan =
-  let startSeason span = span.StartSeason
-  let endSeason span = span.EndSeason
-  let totalDays span = span.TotalDays
-
-
 type Date = {
   Season: Season
   Day: nat
@@ -126,33 +114,6 @@ module Date =
 
   let totalDays start finish =
     (Season.distance start.Season finish.Season) * daysInSeason - start.Day + finish.Day + 1u
-
-  let spans startDate endDate seasons =
-    let spans = ResizeArray ()
-    let nthSeason, days = seasonsAndDays startDate endDate
-
-    let mutable i = 0
-    while i < nthSeason.Length && seasons |> Seasons.contains nthSeason[i] |> not do
-      i <- i + 1
-
-    while i < nthSeason.Length do
-      let mutable totalDays = days[i]
-      let mutable j = i + 1
-      while j < nthSeason.Length && seasons |> Seasons.contains nthSeason[j] do
-        totalDays <- totalDays + days[j]
-        j <- j + 1
-
-      spans.Add {
-        StartSeason = nthSeason[i]
-        EndSeason = nthSeason[j - 1]
-        TotalDays = totalDays
-      }
-
-      while j < nthSeason.Length && seasons |> Seasons.contains nthSeason[j] |> not do
-        j <- j + 1
-      i <- j
-
-    spans.ToArray ()
 
 
 type ToolLevel =
