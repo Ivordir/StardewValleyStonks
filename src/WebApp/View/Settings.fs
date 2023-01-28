@@ -6,8 +6,6 @@ open StardewValleyStonks.WebApp.Update
 open StardewValleyStonks.WebApp.View
 open StardewValleyStonks.WebApp.View.Table
 
-open Fable.Core
-open Fable.Core.JsInterop
 open Feliz
 
 open type Html
