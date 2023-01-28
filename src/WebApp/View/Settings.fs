@@ -455,13 +455,13 @@ module Crops =
     let settings, ui = app.State
     let filters = ui.CropFilters
     let data = app.Data
-    let optionFilter projection filterValue = filterValue |> Option.map (fun value -> projection >> (=) value) |> Option.toList
-    let filters = [
-      (fun crop -> (Crop.name data.Items.Find crop).ToLower().Contains (filters.NameSearch.ToLower()))
-      if filters.InSeason then Game.cropIsInSeason settings.Game else Crop.growsInSeasons filters.Seasons
-      yield! filters.Regrows |> optionFilter Crop.regrows
-      yield! filters.Giant |> optionFilter Crop.giant
-      yield! filters.Forage |> optionFilter Crop.isForage
+    let optionFilter projection filterValue = filterValue |> Option.map (fun value -> projection >> (=) value)
+    let filters = List.choose id [
+      Some (fun crop -> (Crop.name data.Items.Find crop).ToLower().Contains (filters.NameSearch.ToLower()))
+      Some (if filters.InSeason then Game.cropIsInSeason settings.Game else Crop.growsInSeasons filters.Seasons)
+      filters.Regrows |> optionFilter Crop.regrows
+      filters.Giant |> optionFilter Crop.giant
+      filters.Forage |> optionFilter Crop.isForage
     ]
     data.Crops.Values
     |> Seq.filter (fun crop -> filters |> Seq.forall (fun predicate -> predicate crop))
@@ -682,7 +682,7 @@ module Misc =
           | 1.0 -> "Normal"
           | margin -> percent margin
           >> ofStr)
-        [| yield! seq { 1.0..(-0.25)..0.25 } |]
+        [| 1.0..(-0.25)..0.25 |]
         multipliers.ProfitMargin
         (SetProfitMargin >> dispatch)
 
@@ -700,7 +700,7 @@ module Misc =
       Select.options
         (length.rem 5)
         (Option.defaultOrMap "None" ToolLevel.name >> ofStr)
-        [| None; yield! ToolLevel.all |> Array.map Some |]
+        (ToolLevel.all |> Array.map Some |> Array.append [| None |])
         settings.ShavingToolLevel
         (SetShavingToolLevel >> dispatch)
       |> labeled "Shaving Enchantment: "
