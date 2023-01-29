@@ -167,11 +167,6 @@ type Product =
 
 [<RequireQualifiedAccess>]
 module Product =
-  let item = function
-    | Jam | Pickles | Wine | Juice -> None
-    | SeedsFromSeedMaker seed -> Some seed
-    | Processed p -> Some p.Item
-
   let name getItem item = function
     | Jam -> (item |> getItem |> Item.name) + " " + nameof Jam
     | Pickles -> "Pickled " + (item |> getItem |> Item.name)
@@ -196,90 +191,35 @@ module Product =
   let winePrice basePrice = basePrice * 3u
   let juicePrice basePrice = basePrice |> withMultiplier 2.25
 
-  let private priceCalc modData multiplier basePrice processor quality =
-    Item.priceCalc multiplier basePrice (processor |> Processor.outputQuality modData quality)
+  let private productPrice = function
+    | Jam | Pickles -> preservesJarPrice
+    | Wine -> winePrice
+    | Juice -> juicePrice
+    | SeedsFromSeedMaker _ | Processed _ -> id
+
+  let private multiplierAndPrice getItem skills multipliers item product =
+    match product with
+    | Jam | Pickles | Wine | Juice ->
+      artisanMultiplier skills multipliers,
+      item |> getItem |> Item.sellPrice |> productPrice product
+
+    | SeedsFromSeedMaker itemId
+    | Processed { Item = itemId } ->
+      let item = getItem itemId
+      Item.multiplier skills multipliers false item,
+      item.SellPrice
 
   let price getItem skills multipliers modData item quality product =
-    match product with
-    | Jam | Pickles ->
-      priceCalc
-        modData
-        (artisanMultiplier skills multipliers)
-        (getItem item |> Item.sellPrice |> preservesJarPrice)
-        Processor.preservesJar
-        quality
-    | Wine ->
-      priceCalc
-        modData
-        (artisanMultiplier skills multipliers)
-        (getItem item |> Item.sellPrice |> winePrice)
-        Processor.keg
-        quality
-    | Juice ->
-      priceCalc
-        modData
-        (artisanMultiplier skills multipliers)
-        (getItem item |> Item.sellPrice |> juicePrice)
-        Processor.keg
-        quality
-    | SeedsFromSeedMaker seedId ->
-      let item = getItem seedId
-      priceCalc
-        modData
-        (Item.multiplier skills multipliers false item)
-        item.SellPrice
-        Processor.seedMaker
-        quality
-    | Processed p ->
-      let item = getItem p.Item
-      priceCalc
-        modData
-        (Item.multiplier skills multipliers false item)
-        item.SellPrice
-        p.Processor
-        quality
+    let multiplier, price = multiplierAndPrice getItem skills multipliers item product
+    product
+    |> outputQuality modData quality
+    |> Item.priceCalc multiplier price
 
-  let private priceByQualityCalc modData multiplier basePrice processor =
-    if processor |> Processor.preservesQuality modData
-    then Item.priceByQualityCalc multiplier basePrice
-    else Item.priceCalc multiplier basePrice Quality.Normal |> Qualities.create
-
-  let priceByQuality getItem skills multipliers modData item = function
-    | Jam | Pickles ->
-      let item = getItem item
-      priceByQualityCalc
-        modData
-        (artisanMultiplier skills multipliers)
-        (preservesJarPrice item.SellPrice)
-        Processor.preservesJar
-    | Wine ->
-      let item = getItem item
-      priceByQualityCalc
-        modData
-        (artisanMultiplier skills multipliers)
-        (winePrice item.SellPrice)
-        Processor.keg
-    | Juice ->
-      let item = getItem item
-      priceByQualityCalc
-        modData
-        (artisanMultiplier skills multipliers)
-        (juicePrice item.SellPrice)
-        Processor.keg
-    | SeedsFromSeedMaker seedId ->
-      let item = getItem seedId
-      priceByQualityCalc
-        modData
-        (Item.multiplier skills multipliers false item)
-        item.SellPrice
-        Processor.seedMaker
-    | Processed p ->
-      let item = getItem p.Item
-      priceByQualityCalc
-        modData
-        (Item.multiplier skills multipliers false item)
-        item.SellPrice
-        p.Processor
+  let priceByQuality getItem skills multipliers modData item product =
+    let multiplier, price = multiplierAndPrice getItem skills multipliers item product
+    if product |> processor |> Processor.preservesQuality modData
+    then Item.priceByQualityCalc multiplier price
+    else Item.priceCalc multiplier price Quality.Normal |> Qualities.create
 
   let amountPerItem product =
     match product with
