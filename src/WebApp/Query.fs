@@ -301,7 +301,8 @@ let fertilizerCostOpt data settings = Option.defaultOrMap (Some 0u) (fertilizerC
 //   | NonCustom (Some product) -> productOutputQuality settings product quality
 //   | Custom (_, preservesQuality) -> if preservesQuality then quality else Normal
 
-type [<System.Flags>] InvalidReasons =
+[<System.Flags>]
+type InvalidReasons =
   | None              = 0b0000
   | NotEnoughDays     = 0b0001
   | NoFertilizerPrice = 0b0010
@@ -696,6 +697,7 @@ type ItemAndSeedSummary = {
   ForageSeedsUsed: float
 }
 
+[<RequireQualifiedAccess>]
 module ItemAndSeedSummary =
   let zero = {
     SoldAmounts = [||]

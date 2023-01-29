@@ -1,7 +1,8 @@
 namespace StardewValleyStonks
 
 // Season bitset, multiple seasons
-type [<System.Flags>] Seasons =
+[<System.Flags>]
+type Seasons =
   | None   = 0b0000
   | Spring = 0b0001
   | Summer = 0b0010
@@ -15,7 +16,8 @@ type Season =
   | Fall = 2
   | Winter = 3
 
-module [<RequireQualifiedAccess>] Seasons =
+[<RequireQualifiedAccess>]
+module Seasons =
   let [<Literal>] count = 4
 
   let inline ofSeason (season: Season) = enum<Seasons> (1 <<< int season)
@@ -45,7 +47,8 @@ module [<RequireQualifiedAccess>] Seasons =
       then setOrder (a >>> 1) (b >>> 1)
       else c
 
-module [<RequireQualifiedAccess>] Season =
+[<RequireQualifiedAccess>]
+module Season =
   let name (season: Season) = enumName season
 
   let inline private ofInt (i: int) = enum<Season> i
@@ -123,7 +126,8 @@ type ToolLevel =
   | Gold = 3
   | Iridium = 4
 
-module [<RequireQualifiedAccess>] ToolLevel =
+[<RequireQualifiedAccess>]
+module ToolLevel =
   let name (toolLevel: ToolLevel) = enumName toolLevel
 
   let all = Array.init 5 enum<ToolLevel>
@@ -136,7 +140,8 @@ type CropAmountSettings = {
   ShavingToolLevel: ToolLevel option
 }
 
-module [<RequireQualifiedAccess>] CropAmountSettings =
+[<RequireQualifiedAccess>]
+module CropAmountSettings =
   let common = {
     SpecialCharm = false
     LuckBuff = 0u
@@ -155,6 +160,7 @@ type CropAmount = {
   FarmingQualities: bool
 }
 
+[<RequireQualifiedAccess>]
 module CropAmount =
   let [<Literal>] minYield = 1u
   let [<Literal>] minExtraCropChance = 0.0
@@ -271,12 +277,14 @@ type SeedPrice =
   | FixedPrice of Vendor * nat
   | ScalingPrice of Vendor * nat option
 
-module [<RequireQualifiedAccess>] SeedPrice =
+[<RequireQualifiedAccess>]
+module SeedPrice =
   let vendor = function
     | FixedPrice (v, _)
     | ScalingPrice (v, _) -> v
 
 
+[<RequireQualifiedAccess>]
 module Growth =
   (*
   Stardew Valley passes speed around as a float32.
@@ -369,7 +377,8 @@ type FarmCrop = {
   Paddy: bool
 }
 
-module [<RequireQualifiedAccess>] FarmCrop =
+[<RequireQualifiedAccess>]
+module FarmCrop =
   let [<Literal>] minRegrowTime = 1u
   let [<Literal>] minExtraItemAmount = 0.0
 
@@ -410,7 +419,8 @@ type ForageCrop = {
   Stages: nat array
 }
 
-module [<RequireQualifiedAccess>] ForageCrop =
+[<RequireQualifiedAccess>]
+module ForageCrop =
   let [<Literal>] forageSeedsPerCraft = 10u
   let [<Literal>] xpPerItem = 7u
   let [<Literal>] minItems = 1u
@@ -437,7 +447,8 @@ type Crop =
   | FarmCrop of FarmCrop
   | ForageCrop of ForageCrop
 
-module [<RequireQualifiedAccess>] Crop =
+[<RequireQualifiedAccess>]
+module Crop =
   let name item = function
     | FarmCrop crop -> FarmCrop.name item crop
     | ForageCrop crop -> ForageCrop.name crop

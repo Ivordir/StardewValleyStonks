@@ -503,8 +503,10 @@ open Browser.Worker
 
 let [<Global>] private import: {| meta: {| url: string |} |} = jsNative
 
-type [<AllowNullLiteral>] private URLType =
-  [<Emit("new $0($1...)")>] abstract Create: url: string * ?``base``: string -> string // Browser.Types.URL
+[<AllowNullLiteral>]
+type private URLType =
+  [<Emit("new $0($1...)")>]
+  abstract Create: url: string * ?``base``: string -> string // Browser.Types.URL
 
 let [<Global>] private URL: URLType = jsNative
 

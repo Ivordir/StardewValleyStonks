@@ -2,7 +2,8 @@ namespace StardewValleyStonks
 
 open Fable.Core
 
-type [<Erase>] Vendor = VendorName of string
+[<Erase>]
+type Vendor = VendorName of string
 
 module Vendor =
   let pierre = VendorName "Pierre"
@@ -18,7 +19,8 @@ type Fertilizer = {
   Speed: float
 }
 
-module [<RequireQualifiedAccess>] Fertilizer =
+[<RequireQualifiedAccess>]
+module Fertilizer =
   let [<Literal>] lossProbability = 0.1
   let [<Literal>] minSpeed = 0.0
 
@@ -49,7 +51,8 @@ type Quality =
   | Gold = 2
   | Iridium = 3
 
-module [<RequireQualifiedAccess>] Quality =
+[<RequireQualifiedAccess>]
+module Quality =
   let [<Literal>] highest = 3
   let [<Literal>] count = 4
 
@@ -58,9 +61,11 @@ module [<RequireQualifiedAccess>] Quality =
   let all = Array.init count enum<Quality>
 
 
-type [<Erase>] 'a Qualities = ByQuality of 'a array
+[<Erase>]
+type 'a Qualities = ByQuality of 'a array
 
-module [<RequireQualifiedAccess>] Qualities =
+[<RequireQualifiedAccess>]
+module Qualities =
   #if FABLE_COMPILER
   let inline unwrap (qualities: 'a Qualities) = unbox<'a array> qualities
   #else
@@ -110,7 +115,8 @@ type Skill = {
   Buff: nat
 }
 
-module [<RequireQualifiedAccess>] Skill =
+[<RequireQualifiedAccess>]
+module Skill =
   let [<Literal>] maxLevel = 10u
 
   let zero = {
@@ -137,6 +143,7 @@ type Skills = {
   IgnoreProfessionConflicts: bool
 }
 
+[<RequireQualifiedAccess>]
 module Skills =
   let zero = {
     Farming = Skill.zero

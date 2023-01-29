@@ -1,4 +1,5 @@
-module [<RequireQualifiedAccess>] StardewValleyStonks.WebApp.View.Dialog
+[<RequireQualifiedAccess>]
+module StardewValleyStonks.WebApp.View.Dialog
 
 open Feliz
 

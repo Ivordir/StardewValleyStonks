@@ -12,7 +12,8 @@ type ItemOverride = {
   Category: Category option
 }
 
-module [<RequireQualifiedAccess>] ItemOverride =
+[<RequireQualifiedAccess>]
+module ItemOverride =
   let none = {
     SellPrice = None
     Category = None
@@ -23,7 +24,8 @@ type CropAmountOverride = {
   FarmingDistribution: bool option
 }
 
-module [<RequireQualifiedAccess>] CropAmountOverride =
+[<RequireQualifiedAccess>]
+module CropAmountOverride =
   let none = {
     CanDouble = None
     FarmingDistribution = None
@@ -37,7 +39,8 @@ type FarmCropOverride = {
   ExtraItem: (ItemId * float) option
 }
 
-module [<RequireQualifiedAccess>] FarmCropOverride =
+[<RequireQualifiedAccess>]
+module FarmCropOverride =
   let none = {
     Seasons = None
     Paddy = None
@@ -62,7 +65,8 @@ type Config = {
   ItemImageOutputPath: string
 }
 
-module [<RequireQualifiedAccess>] Decode =
+[<RequireQualifiedAccess>]
+module Decode =
   let farmCropOverride =
     let u = Unchecked.defaultof<FarmCropOverride>
     Decode.object (fun get ->
@@ -104,8 +108,8 @@ module [<RequireQualifiedAccess>] Decode =
       }
     )
 
-
-module [<AutoOpen>] Constants =
+[<AutoOpen>]
+module Constants =
   let [<Literal>] forageSpriteSheetRow = 23u
   let [<Literal>] cropImageWidth = 16
   let [<Literal>] cropImageHeight = 32
@@ -310,7 +314,8 @@ let saveItemImage graphics outputPath (itemSpriteSheet: Texture2D) item =
   subTexture.SaveAsPng (file, itemImageWidth, itemImageHeight)
 
 
-let [<EntryPoint>] main args =
+[<EntryPoint>]
+let main args =
   let stardewValleyRoot =
     match Array.tryExactlyOne args with
     | Some root -> root

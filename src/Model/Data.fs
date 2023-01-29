@@ -16,7 +16,8 @@ let private encodeProcessor (ProcessorName processor) = Encode.string processor
 let private decodeProcessor = Decode.string |> Decode.map ProcessorName
 let private processorCoders = Extra.empty |> Extra.withCustom encodeProcessor decodeProcessor
 
-module [<RequireQualifiedAccess>] Encode =
+[<RequireQualifiedAccess>]
+module Encode =
   let mapSeq encoder (seq: _ seq) = seq |> Seq.map encoder |> Encode.seq
 
   let keyValues keyString encodeValue seq =
@@ -132,7 +133,8 @@ module [<RequireQualifiedAccess>] Encode =
   ]
 
 
-module [<RequireQualifiedAccess>] Decode =
+[<RequireQualifiedAccess>]
+module Decode =
   let inline private tryParseNat<[<Measure>] ^u> (str: string): uint<'u> option =
     match System.UInt32.TryParse str with
     | true, value -> Some (value * 1u<_>)

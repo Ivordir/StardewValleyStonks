@@ -1,4 +1,5 @@
-module [<RequireQualifiedAccess>] StardewValleyStonks.WebApp.View.Select
+[<RequireQualifiedAccess>]
+module StardewValleyStonks.WebApp.View.Select
 
 open StardewValleyStonks
 open StardewValleyStonks.WebApp

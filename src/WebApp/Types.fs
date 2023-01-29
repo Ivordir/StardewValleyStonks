@@ -3,7 +3,8 @@ namespace StardewValleyStonks.WebApp
 open StardewValleyStonks
 open Fable.Core
 
-module [<AutoOpen>] internal Util =
+[<AutoOpen>]
+module internal Util =
   let console = JS.console
 
   let inline konst x _ = x
@@ -36,7 +37,8 @@ module [<AutoOpen>] internal Util =
       prevOutput
 
 
-module [<RequireQualifiedAccess>] Option =
+[<RequireQualifiedAccess>]
+module Option =
   let merge merger a b =
     match a, b with
     | Some a, Some b -> Some (merger a b)
@@ -62,7 +64,8 @@ module [<RequireQualifiedAccess>] Option =
     | Error _ -> None
 
 
-module [<RequireQualifiedAccess>] Result =
+[<RequireQualifiedAccess>]
+module Result =
   let get = function
     | Ok x -> x
     | Error _ -> invalidArg "result" "The result value was Error."
@@ -76,7 +79,8 @@ module [<RequireQualifiedAccess>] Result =
     | Error _ -> true
 
 
-module [<RequireQualifiedAccess>] Array =
+[<RequireQualifiedAccess>]
+module Array =
   let mapReduce reduction mapping (array: _ array) =
     if array.Length = 0 then invalidArg (nameof array) "The given array cannot be empty."
     let mutable current = mapping array[0]
@@ -95,6 +99,7 @@ module [<RequireQualifiedAccess>] Array =
     current
 
 
+[<RequireQualifiedAccess>]
 module Fertilizer =
   module Opt =
     let displayName = Option.defaultOrMap "No Fertilizer" Fertilizer.name
@@ -110,7 +115,8 @@ type Selection<'a, 'b when 'a: comparison> = {
   Selected: 'a Set
 }
 
-module [<RequireQualifiedAccess>] Selection =
+[<RequireQualifiedAccess>]
+module Selection =
   let empty = {
     Values = Map.empty
     Selected = Set.empty
@@ -146,6 +152,7 @@ type Selections = {
   CustomSellPrices: Selection<SeedId * ItemId, nat * bool>
 }
 
+[<RequireQualifiedAccess>]
 module Selections =
   let private ensureEntries keys (map: Map<_,_>) =
     keys
@@ -192,7 +199,8 @@ type RankMetric =
   | ROI
   | XP
 
-module [<RequireQualifiedAccess>] RankMetric =
+[<RequireQualifiedAccess>]
+module RankMetric =
   let unit = function
     | Gold -> "g"
     | ROI -> "%"
@@ -233,7 +241,8 @@ type CropTab =
   | [<CompiledName ("Products")>] ProductsTable
   | [<CompiledName ("Seeds")>] SeedsTable
 
-type [<RequireQualifiedAccess>] OpenDetails =
+[<RequireQualifiedAccess>]
+type OpenDetails =
   | Fertilizers
   | FertilizerPrices
   | Mod
@@ -251,7 +260,8 @@ type CropFilters = {
   Forage: bool option
 }
 
-module [<RequireQualifiedAccess>] CropFilters =
+[<RequireQualifiedAccess>]
+module CropFilters =
   let empty = {
     NameSearch = ""
     InSeason = true
@@ -295,7 +305,8 @@ type Version = {
   Patch: nat
 }
 
-module [<RequireQualifiedAccess>] Version =
+[<RequireQualifiedAccess>]
+module Version =
   let private (|Nat|_|) (str: string) =
     match System.UInt32.TryParse str with
     | true, value -> Some (Nat value)
@@ -313,6 +324,7 @@ module [<RequireQualifiedAccess>] Version =
     | _ -> None
 
 
+[<RequireQualifiedAccess>]
 module App =
   // Major = completely new schema -> convert data
   // Minor = new fields, other minor schema edits -> edit data

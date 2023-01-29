@@ -32,6 +32,7 @@ type GameData = {
 }
 // Assume that the seedMaker is the only processor which converts items into seeds.
 
+[<RequireQualifiedAccess>]
 module GameData =
   let seedItemPairsFrom crops =
     crops
@@ -164,7 +165,8 @@ type GameVariables = {
   Location: Location
 }
 
-module [<RequireQualifiedAccess>] GameVariables =
+[<RequireQualifiedAccess>]
+module GameVariables =
   let common = {
     Skills = Skills.zero
     Multipliers = Multipliers.common
@@ -178,7 +180,7 @@ module [<RequireQualifiedAccess>] GameVariables =
   }
 
 
-
+[<RequireQualifiedAccess>]
 module Game =
   let seasons vars = Date.seasonsBetween vars.StartDate vars.EndDate
 

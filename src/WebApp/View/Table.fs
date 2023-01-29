@@ -1,6 +1,5 @@
 module StardewValleyStonks.WebApp.View.Table
 
-open StardewValleyStonks
 open StardewValleyStonks.WebApp
 
 open Feliz
@@ -8,6 +7,7 @@ open Feliz
 open type Html
 open type prop
 
+[<RequireQualifiedAccess>]
 module Column =
   let header header = header, None
   let withSort sort header = header, Some sort

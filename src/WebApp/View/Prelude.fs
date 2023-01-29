@@ -1,4 +1,5 @@
-module [<AutoOpen>] StardewValleyStonks.WebApp.View.Prelude
+[<AutoOpen>]
+module StardewValleyStonks.WebApp.View.Prelude
 
 open StardewValleyStonks
 open StardewValleyStonks.WebApp
@@ -58,7 +59,8 @@ open type React
 open Core.Operators
 open Core.ExtraTopLevelOperators
 
-module [<RequireQualifiedAccess>] Class =
+[<RequireQualifiedAccess>]
+module Class =
   let checkboxLabel = className "checkbox-label"
   let checkboxImg = className "checkbox-img"
   let iconProcessor = className "icon-processor"
@@ -103,7 +105,8 @@ module [<RequireQualifiedAccess>] Class =
   let auditGraphSelect = className "audit-graph-select"
 
 
-module [<RequireQualifiedAccess>] Image =
+[<RequireQualifiedAccess>]
+module Image =
   let path = sprintf "img/%s/%s.png"
   let skillRoot = path "Skills"
   let fertilizerRoot = path "Fertilizers"
@@ -160,7 +163,8 @@ module [<RequireQualifiedAccess>] Image =
   //     children (img [ src <| uiRoot "Right Arrow" ])
   //   ]
 
-  module [<RequireQualifiedAccess>] Icon =
+  [<RequireQualifiedAccess>]
+  module Icon =
     let withClass css path name =
       fragment [
         withClass css path

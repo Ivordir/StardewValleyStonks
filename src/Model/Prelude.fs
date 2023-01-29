@@ -2,7 +2,8 @@ namespace StardewValleyStonks
 
 type nat = uint
 
-module [<AutoOpen>] Prelude =
+[<AutoOpen>]
+module Prelude =
   let inline nat value = uint value
 
   let inline withMultiplier multiplier (value: nat) =
@@ -11,7 +12,8 @@ module [<AutoOpen>] Prelude =
   let inline internal enumName (e: 'a) = System.Enum.GetName (typeof<'a>, e)
 
 
-module [<RequireQualifiedAccess>] Option =
+[<RequireQualifiedAccess>]
+module Option =
   let defaultOrMap defaultValue mapping = function
     | Some value -> mapping value
     | None -> defaultValue
@@ -21,9 +23,11 @@ open Fable.Core
 
 type Dictionary<'a, 'b> = System.Collections.Generic.Dictionary<'a, 'b>
 
-type [<Erase>] Table<'a, 'b> = ReadOnlyDictionary of Dictionary<'a, 'b>
+[<Erase>]
+type Table<'a, 'b> = ReadOnlyDictionary of Dictionary<'a, 'b>
 
-module [<RequireQualifiedAccess>] Table =
+[<RequireQualifiedAccess>]
+module Table =
   #if FABLE_COMPILER
   let inline unwrap (table: Table<'a, 'b>) = unbox<Dictionary<'a, 'b>> table
   #else

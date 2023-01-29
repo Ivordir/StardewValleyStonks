@@ -9,7 +9,8 @@ type Category =
   | ArtisanGood
   | Other
 
-module [<RequireQualifiedAccess>] Category =
+[<RequireQualifiedAccess>]
+module Category =
   let multiplier skills = function
     | Fruit | Vegetable | Flower when skills |> Skills.professionActive Tiller -> Multiplier.tiller
     | ArtisanGood when skills |> Skills.professionActive Artisan -> Multiplier.artisan
@@ -31,6 +32,7 @@ type Multipliers = {
   TillerForForagedFruit: bool
 }
 
+[<RequireQualifiedAccess>]
 module Multipliers =
   let common = {
     ProfitMargin = 1.0
@@ -46,7 +48,8 @@ type Item = {
   Category: Category
 }
 
-module [<RequireQualifiedAccess>] Item =
+[<RequireQualifiedAccess>]
+module Item =
   let [<Literal>] ancientSeeds = 499u<ItemNum>
   let [<Literal>] blackberry = 410u<ItemNum>
   let [<Literal>] grape = 398u<ItemNum>
@@ -93,13 +96,15 @@ module [<RequireQualifiedAccess>] Item =
     priceByQualityCalc (multiplier skills multipliers forage item) item.SellPrice
 
 
-type [<Fable.Core.Erase>] Processor = ProcessorName of string
+[<Fable.Core.Erase>]
+type Processor = ProcessorName of string
 
 type ModData = {
   QualityProducts: bool
   QualityProcessors: Processor Set
 }
 
+[<RequireQualifiedAccess>]
 module Processor =
   let [<Literal>] seedMakerExpectedSeedOutput = 2.0
   let [<Literal>] seedMakerSeedProb = 0.975
@@ -127,7 +132,8 @@ module Processor =
     1.0 / seedMakerExpectedAmount seed
 
 
-module [<RequireQualifiedAccess>] ModData =
+[<RequireQualifiedAccess>]
+module ModData =
   let common = {
     QualityProducts = false
     QualityProcessors = Set.ofArray [|
@@ -144,6 +150,7 @@ type ProcessedItem = {
   Ratio: (nat * nat) option
 }
 
+[<RequireQualifiedAccess>]
 module ProcessedItem =
   let item processsed = processsed.Item
   let processor processsed = processsed.Processor
@@ -158,7 +165,8 @@ type Product =
   | SeedsFromSeedMaker of seed: ItemId
   | Processed of ProcessedItem
 
-module [<RequireQualifiedAccess>] Product =
+[<RequireQualifiedAccess>]
+module Product =
   let item = function
     | Jam | Pickles | Wine | Juice -> None
     | SeedsFromSeedMaker seed -> Some seed

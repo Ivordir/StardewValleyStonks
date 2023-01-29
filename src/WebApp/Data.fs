@@ -147,7 +147,8 @@ module private Shorthand =
     ReplaceLostFertilizer: bool option
   }
 
-  module [<RequireQualifiedAccess>] Decode =
+  [<RequireQualifiedAccess>]
+  module Decode =
     let [<Literal>] private SelectField = "Select"
     let [<Literal>] private EntriesField = "Entries"
 
@@ -352,7 +353,8 @@ let private encodeUI = Encode.Auto.generateEncoder<UIState> (extra = ui)
 let private decodeUI = Decode.Auto.generateDecoder<UIState> (extra = ui)
 
 
-module [<RequireQualifiedAccess>] Encode =
+[<RequireQualifiedAccess>]
+module Encode =
   let settings = encodeSettings
   let cropFilters = encodeCropFilters
   let ui = encodeUI
@@ -360,7 +362,8 @@ module [<RequireQualifiedAccess>] Encode =
   let savedSettings (saved: _ list) = saved |> Encode.mapSeq (Encode.tuple2 Encode.string settings)
 
 
-module [<RequireQualifiedAccess>] Decode =
+[<RequireQualifiedAccess>]
+module Decode =
   let settings = decodeSettings
   let cropFilters = decodeCropFilters
   let ui = decodeUI
@@ -445,6 +448,7 @@ let defaultApp = lazy {
 }
 
 
+[<RequireQualifiedAccess>]
 module LocalStorage =
   let [<Literal>] VersionKey = "Version"
   let [<Literal>] StateKey = "State"
