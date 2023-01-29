@@ -583,6 +583,21 @@ module SummaryTable =
           ]
       ]
 
+  let private cropFertTimeline (solution: Solver.FertilizerDateSpan) =
+    let fertilizer = solution.Fertilizer
+    Array.concat [|
+      solution.WithoutFertilizer |> Array.map (fun (crop, harvests) -> crop, None, harvests)
+      solution.CropHarvests[0] |> Array.map (fun (crop, harvests) -> crop, fertilizer, harvests)
+      solution.CropHarvests
+      |> Array.tail
+      |> Array.zip solution.BridgeCrops
+      |> Array.collect (fun (bridgeCrop, cropHarvests) ->
+        cropHarvests
+        |> Array.map (fun (crop, harvests) -> crop, fertilizer, harvests)
+        |> Array.append [| bridgeCrop, fertilizer, 1u |])
+      solution.RegrowCrop |> Option.map (fun (_, crop, harvests) -> FarmCrop crop, fertilizer, harvests) |> Option.toArray
+    |]
+
   let solverProfitSummaryTable data settings total (solutions: Solver.FertilizerDateSpan list) =
     div [ Class.breakdownTable; children [
       table [
@@ -609,22 +624,9 @@ module SummaryTable =
                 |> Query.Price.fertilizerMinVendorAndPrice data settings
                 |> Some
 
-            let cropFertSed = Array.concat [|
-              solution.WithoutFertilizer |> Array.map (fun (crop, harvests) -> crop, None, harvests)
-              solution.CropHarvests[0] |> Array.map (fun (crop, harvests) -> crop, fertilizer, harvests)
-              solution.CropHarvests
-              |> Array.tail
-              |> Array.zip solution.BridgeCrops
-              |> Array.collect (fun (bridgeCrop, cropHarvests) ->
-                cropHarvests
-                |> Array.map (fun (crop, harvests) -> crop, fertilizer, harvests)
-                |> Array.append [| bridgeCrop, fertilizer, 1u |])
-              solution.RegrowCrop |> Option.map (fun (_, crop, harvests) -> FarmCrop crop, fertilizer, harvests) |> Option.toArray
-            |]
-
             [
               tbody [ fertilizerBoughtRow false fertilizer fertilizerPrice 1.0 ]
-              yield! cropFertSed |> Array.map (fun args ->
+              yield! cropFertTimeline solution |> Array.map (fun args ->
                 let harvestsSummary = args |||> Query.Solver.profitAndHarvestsSummary data settings (i = len - 1)
                 harvestSummaryTable data settings fertilizer fertilizerPrice harvestsSummary.NetProfit harvestsSummary)
             ])
@@ -643,6 +645,42 @@ module SummaryTable =
           ]
       ]
     ]]
+
+  let solverXpSummaryTable data settings total (solutions: Solver.FertilizerDateSpan list) =
+    table [
+      thead [
+        tr [
+          th [
+            colSpan 2
+            text "Crop"
+          ]
+          th [ ofStr "Harvests" ]
+          th [ ofStr "XP" ]
+        ]
+      ]
+      tbody (solutions |> Seq.map (fun solution ->
+        cropFertTimeline solution |> Array.map (fun (crop, _, harvests) ->
+          let xpPerHarvest = Game.xpPerHarvest data settings.Game crop
+          tr [
+            td [ Image.Icon.crop data crop ]
+            td [ ofStr (sprintf "%.2fxp" xpPerHarvest) ]
+            td [ ofStr $" x {harvests}" ]
+            td [ ofStr (sprintf "%.2fxp" (xpPerHarvest * float harvests)) ]
+          ]))
+        |> Array.concat)
+      tfoot [
+        tr [
+          td [
+            colSpan 3
+            text "Total"
+          ]
+          td [
+            ofStr (sprintf "%.2fxp" total)
+          ]
+        ]
+      ]
+    ]
+
 
 
 let pairData metric timeNorm data settings =
@@ -1147,7 +1185,7 @@ let [<ReactComponent>] Solver (props: {|
       children [
         match props.SolverMode with
         | MaximizeGold -> SummaryTable.solverProfitSummaryTable props.Data settings total solution
-        | MaximizeXP -> ofStr $"{total}xp" // TODO
+        | MaximizeXP -> SummaryTable.solverXpSummaryTable props.Data settings total solution
         div [
           Class.calendar
           children (solution |> Seq.collect (GrowthCalendar.solverGrowthCalendarDays settings false))
