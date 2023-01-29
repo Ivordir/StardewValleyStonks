@@ -190,9 +190,12 @@ let parseCrop farmCropOverrides forageCropData seedId (data: string) =
     spriteSheetRow,
     if spriteSheetRow = forageSpriteSheetRow then
       let season =
-        match Seasons.tryExactlyOne seasons with
-        | Some season -> season
-        | None -> failwith $"Forage crop {seedId} does not grow in a single season."
+        match seasons with
+        | Seasons.Spring -> Season.Spring
+        | Seasons.Summer -> Season.Summer
+        | Seasons.Fall -> Season.Fall
+        | Seasons.Winter -> Season.Winter
+        | _ -> failwith $"Forage crop {seedId} does not grow in a single season."
 
       if regrowTime.IsSome then failwith $"Forage crop {seedId} regrows."
 
