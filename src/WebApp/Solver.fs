@@ -475,15 +475,17 @@ let private mapSolution (vars: GameVariables) (solution: (FertilizerSpanRequest 
       let last = cropHarvests.Length - 1
       cropHarvests[last] <- Array.append cropHarvests[last] [| seed, 1u |]
 
-    let startDate = {
-      Season = seasons[span.Start]
-      Day = if span.Start = 0 then vars.StartDate.Day else Date.firstDay
-    }
-
-    let endDate = {
-      Season = seasons[span.Stop]
-      Day = if span.Stop = seasons.Length - 1 then vars.EndDate.Day else Date.lastDay
-    }
+    let startDate, endDate =
+      if vars.Location = Farm then
+        {
+          Season = seasons[span.Start]
+          Day = if span.Start = 0 then vars.StartDate.Day else Date.firstDay
+        }, {
+          Season = seasons[span.Stop]
+          Day = if span.Stop = seasons.Length - 1 then vars.EndDate.Day else Date.lastDay
+        }
+      else
+        vars.StartDate, vars.EndDate
 
     {
       StartDate = startDate
