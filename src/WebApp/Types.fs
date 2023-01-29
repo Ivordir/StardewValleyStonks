@@ -166,6 +166,61 @@ module Selections =
       Products = selected.Products |> ensureEntries (GameData.seedItemPairs data)
   }
 
+  let private mapOfSets table =
+    table
+    |> Table.toSeq
+    |> Seq.map (fun (key, table) -> key, table |> Table.keys |> Set.ofSeq)
+    |> Map.ofSeq
+
+  let allSelected (data: GameData) =
+    let seedItemPairs = GameData.seedItemPairs data
+    let forageCrops = Set.ofSeq data.ForageCrops.Keys
+    {
+      Crops = Set.ofSeq data.Crops.Keys
+      SeedPrices = mapOfSets data.SeedPrices
+
+      NoFertilizer = true
+      Fertilizers = Set.ofSeq data.Fertilizers.Keys
+      FertilizerPrices = mapOfSets data.FertilizerPrices
+
+      SellRaw = Set.ofArray seedItemPairs
+
+      Products =
+        seedItemPairs
+        |> Seq.map (fun (seed, item) ->
+          (seed, item),
+          item
+          |> GameData.products data
+          |> Seq.map Product.processor
+          |> Set.ofSeq)
+        |> Map.ofSeq
+
+      SellForageSeeds = forageCrops
+
+      UseHarvestedSeeds =
+        seedItemPairs
+        |> Seq.choose (fun (seed, item) ->
+          if nat seed = nat item
+          then Some seed
+          else None)
+        |> Set.ofSeq
+
+      UseSeedMaker =
+        data.Crops
+        |> Table.toSeq
+        |> Seq.choose (fun (seed, crop) ->
+          if Crop.canGetOwnSeedsFromSeedMaker crop
+          then Some seed
+          else None)
+        |> Set.ofSeq
+
+      UseForageSeeds = forageCrops
+
+      CustomSeedPrices = Selection.empty
+      CustomFertilizerPrices = Selection.empty
+      CustomSellPrices = Selection.empty
+    }
+
 
 type SeedStrategy =
   | [<CompiledName ("Buy First Seed")>] BuyFirstSeed

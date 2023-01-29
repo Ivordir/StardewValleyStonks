@@ -808,7 +808,7 @@ module LoadSave =
         ImportSave {| Dispatch = saveDispatch |}
 
         button [
-          onClick (fun _ -> loadDispatch (snd Data.defaultSavedSettings.Value[0]))
+          onClick (fun _ -> loadDispatch Data.defaultSettings)
           text "Reset Settings to Default"
         ]
 

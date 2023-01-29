@@ -113,6 +113,7 @@ module Processor =
   let preservesJar = ProcessorName "Preserves Jar"
   let keg = ProcessorName "Keg"
   let seedMaker = ProcessorName "Seed Maker"
+  let mill = ProcessorName "Mill"
 
   let preservesQuality modData processor =
     processor <> seedMaker

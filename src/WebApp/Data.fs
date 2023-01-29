@@ -12,7 +12,6 @@ open Thoth.Json.Net
 
 let private extractedData: JsonValue = importDefault "../../public/data/Extracted.json"
 let private supplementalData: JsonValue = importDefault "../../public/data/Supplemental.json5"
-let private settingsData: JsonValue = importDefault "../../public/data/Settings.json5"
 
 let private load json decoder =
   json
@@ -69,223 +68,6 @@ assert // valid ratios (no zeros)
   |> Seq.forall (function
     | { Ratio = Some (i, o) } -> i > 0u && o > 0u
     | _ -> true)
-
-
-module private Shorthand =
-  type SelectKeys<'key when 'key: comparison> =
-    | SelectAllKeys of bool
-    | SelectKeys of bool * 'key Set
-
-  module SelectKeys =
-    let toSet allKeys = function
-      | SelectAllKeys true -> Set.ofSeq allKeys
-      | SelectAllKeys false -> Set.empty
-      | SelectKeys (true, keys) -> keys
-      | SelectKeys (false, keys) -> Set.ofSeq allKeys - keys
-
-    let columnWise data columnSelections =
-      data
-      |> Table.toSeq
-      |> Seq.map (fun (key, row) ->
-        key,
-        row
-        |> Table.keys
-        |> Seq.filter (fun column ->
-          match columnSelections |> Table.tryFind column with
-          | None -> true
-          | Some (SelectAllKeys b) -> b
-          | Some (SelectKeys (select, keys)) -> select = keys.Contains key)
-        |> Set.ofSeq)
-      |> Map.ofSeq
-
-
-  type KeySelection<'key, 'value when 'key: comparison> = {
-    Values: Map<'key, 'value>
-    Selected: 'key SelectKeys
-  }
-
-  module KeySelection =
-    let toSelection keySelection : Selection<_,_> = {
-      Values = keySelection.Values
-      Selected = keySelection.Selected |> SelectKeys.toSet (Map.keys keySelection.Values)
-    }
-
-
-  type ShorthandSettings = {
-    SelectedCrops: SeedId SelectKeys option
-    SelectedSeedPrices: Table<Vendor, SeedId SelectKeys> option
-
-    AllowNoFertilizer: bool option
-    SelectedFertilizers: FertilizerName SelectKeys option
-    SelectedFertilizerPrices: Table<Vendor, FertilizerName SelectKeys> option
-
-    SellRaw: (SeedId * ItemId) SelectKeys option
-    SelectedProducts: Table<Processor, (SeedId * ItemId) SelectKeys> option
-    SellForageSeeds: SeedId SelectKeys option
-
-    UseHarvestedSeeds: SeedId SelectKeys option
-    UseSeedMaker: SeedId SelectKeys option
-    UseForageSeeds: SeedId SelectKeys option
-
-    CustomSeedPrices: KeySelection<SeedId, nat> option
-    CustomFertilizerPrices: KeySelection<FertilizerName, nat> option
-    CustomSellPrices: KeySelection<SeedId * ItemId, nat * bool> option
-
-    Skills: Skills option
-    Multipliers: Multipliers option
-    ModData: ModData option
-    CropAmount: CropAmountSettings option
-    JojaMembership: bool option
-    Irrigated: bool option
-
-    StartDate: Date option
-    EndDate: Date option
-    Location: Location option
-
-    SeedStrategy: SeedStrategy option
-    PayForFertilizer: bool option
-    ReplaceLostFertilizer: bool option
-  }
-
-  [<RequireQualifiedAccess>]
-  module Decode =
-    let [<Literal>] private SelectField = "Select"
-    let [<Literal>] private EntriesField = "Entries"
-
-    let selectKeys key =
-      Decode.oneOf [
-        Decode.bool |> Decode.map SelectAllKeys
-        Decode.array key |> Decode.map (fun keys -> SelectKeys (true, Set.ofArray keys))
-        Decode.map2
-          (fun select entries -> SelectKeys (select, Set.ofArray entries))
-          (Decode.field SelectField Decode.bool)
-          (Decode.field EntriesField (Decode.array key))
-      ]
-
-    let keySelection key values =
-      let u = Unchecked.defaultof<KeySelection<_,_>>
-      Decode.object (fun get -> {
-        Values = get.Required.Field (nameof u.Values) values
-        Selected = get.Required.Field (nameof u.Selected) (selectKeys key)
-      } )
-
-    let shorthandSettings =
-      let u = Unchecked.defaultof<ShorthandSettings>
-      Decode.object (fun get ->
-        let field name decode = get.Optional.Field name decode
-        {
-          SelectedCrops = field (nameof u.SelectedCrops) (selectKeys Decode.seedId)
-          SelectedSeedPrices = field (nameof u.SelectedSeedPrices) (Decode.table VendorName (selectKeys Decode.seedId))
-
-          AllowNoFertilizer = field (nameof u.AllowNoFertilizer) Decode.bool
-          SelectedFertilizers = field (nameof u.SelectedFertilizers) (selectKeys Decode.string)
-          SelectedFertilizerPrices = field (nameof u.SelectedFertilizerPrices) (Decode.table VendorName (selectKeys Decode.string))
-
-          SellRaw = field (nameof u.SellRaw) (selectKeys (Decode.tuple2 Decode.seedId Decode.itemId))
-          SelectedProducts = field (nameof u.SelectedProducts) (Decode.table ProcessorName (selectKeys (Decode.tuple2 Decode.seedId Decode.itemId)))
-          SellForageSeeds = field (nameof u.SellForageSeeds) (selectKeys Decode.seedId)
-
-          UseHarvestedSeeds = field (nameof u.UseHarvestedSeeds) (selectKeys Decode.seedId)
-          UseSeedMaker = field (nameof u.UseSeedMaker) (selectKeys Decode.seedId)
-          UseForageSeeds = field (nameof u.UseForageSeeds) (selectKeys Decode.seedId)
-
-          CustomSeedPrices = field (nameof u.CustomSeedPrices) (keySelection Decode.seedId (Decode.mapObjParse Decode.parseSeedId Decode.uint32))
-          CustomFertilizerPrices = field (nameof u.CustomFertilizerPrices) (keySelection Decode.string (Decode.mapObj id Decode.uint32))
-          CustomSellPrices = field (nameof u.CustomSellPrices) (keySelection (Decode.tuple2 Decode.seedId Decode.itemId) (Decode.Auto.generateDecoder ()))
-
-          Skills = field (nameof u.Skills) (Decode.Auto.generateDecoder ())
-          Multipliers = field (nameof u.Multipliers) (Decode.Auto.generateDecoder ())
-          ModData = field (nameof u.ModData) (Decode.Auto.generateDecoder ())
-          CropAmount = field (nameof u.CropAmount) (Decode.Auto.generateDecoder ())
-          JojaMembership = field (nameof u.JojaMembership) Decode.bool
-          Irrigated = field (nameof u.Irrigated) Decode.bool
-
-          StartDate = field (nameof u.StartDate) Decode.date
-          EndDate = field (nameof u.EndDate) Decode.date
-          Location = field (nameof u.Location) (Decode.Auto.generateDecoder ())
-
-          SeedStrategy = field (nameof u.SeedStrategy) (Decode.Auto.generateDecoder ())
-          PayForFertilizer = field (nameof u.PayForFertilizer) Decode.bool
-          ReplaceLostFertilizer = field (nameof u.ReplaceLostFertilizer) Decode.bool
-        }
-      )
-
-
-  let private selectKeys allKeys selectKeys =
-    selectKeys
-    |> Option.defaultValue (SelectAllKeys true)
-    |> SelectKeys.toSet allKeys
-
-  let private columnSelect data columnSelections =
-    columnSelections
-    |> Option.defaultWith Table.empty
-    |> SelectKeys.columnWise data
-
-  let private keySelection selection = selection |> Option.defaultOrMap Selection.empty KeySelection.toSelection
-
-  let toSettings (short: ShorthandSettings) =
-    let seedItemPairs = GameData.seedItemPairs gameData
-
-    {
-      Game = {
-        Skills = short.Skills |> Option.defaultValue Skills.zero
-        Multipliers = short.Multipliers |> Option.defaultValue Multipliers.common
-        ModData = short.ModData |> Option.defaultValue ModData.common
-        CropAmount = short.CropAmount |> Option.defaultValue CropAmountSettings.common
-        JojaMembership = short.Irrigated |> Option.defaultValue false
-        Irrigated = short.Irrigated |> Option.defaultValue false
-
-        StartDate = short.StartDate |> Option.defaultValue { Season = Season.Spring; Day = Date.firstDay }
-        EndDate = short.EndDate |> Option.defaultValue { Season = Season.Fall; Day = Date.lastDay }
-        Location = short.Location |> Option.defaultValue Farm
-      }
-
-      Profit = {
-        SeedStrategy = short.SeedStrategy |> Option.defaultValue BuyFirstSeed
-        PayForFertilizer = short.PayForFertilizer |> Option.defaultValue true
-        ReplaceLostFertilizer = short.ReplaceLostFertilizer |> Option.defaultValue true
-      }
-
-      Selected = {
-        Crops = short.SelectedCrops |> selectKeys gameData.Crops.Keys
-        SeedPrices = short.SelectedSeedPrices |> columnSelect gameData.SeedPrices
-
-        NoFertilizer = short.AllowNoFertilizer |> Option.defaultValue true
-        Fertilizers = short.SelectedFertilizers |> selectKeys gameData.Fertilizers.Keys
-        FertilizerPrices = short.SelectedFertilizerPrices |> columnSelect gameData.FertilizerPrices
-
-        SellRaw = short.SellRaw |> selectKeys seedItemPairs
-        Products =
-          columnSelect
-            (seedItemPairs |> Table.ofKeys (snd >> GameData.products gameData >> Table.ofValues Product.processor))
-            short.SelectedProducts
-        SellForageSeeds = short.SellForageSeeds |> selectKeys gameData.ForageCrops.Keys
-
-        UseHarvestedSeeds =
-          selectKeys
-            (seedItemPairs |> Seq.choose (fun (seed, item) ->
-              if nat seed = nat item
-              then Some seed
-              else None))
-            short.UseHarvestedSeeds
-
-        UseSeedMaker =
-          selectKeys
-            (gameData.Crops
-              |> Table.toSeq
-              |> Seq.choose (fun (seed, crop) ->
-                if Crop.canGetOwnSeedsFromSeedMaker crop
-                then Some seed
-                else None))
-            short.UseSeedMaker
-
-        UseForageSeeds = short.UseForageSeeds |> selectKeys gameData.ForageCrops.Keys
-
-        CustomSeedPrices = keySelection short.CustomSeedPrices
-        CustomFertilizerPrices = keySelection short.CustomFertilizerPrices
-        CustomSellPrices = keySelection short.CustomSellPrices
-      }
-    }
 
 
 let private settings =
@@ -371,45 +153,64 @@ module Decode =
   let savedSettings = Decode.list (Decode.tuple2 Decode.string settings)
 
 
-let defaultSavedSettings = lazy (
-  Shorthand.Decode.shorthandSettings
-  |> Decode.map Shorthand.toSettings
-  |> Decode.keyValuePairs
-  |> load settingsData
-)
+let defaultSettings = {
+  Selected = {
+    Selections.allSelected gameData with
+      CustomFertilizerPrices = {
+        Values = Map.ofArray [|
+          "Basic Fertilizer", 4u
+          "Quality Fertilizer", 34u
+          "Deluxe Fertilizer", 216u
+          "Speed-Gro", 30u
+          "Deluxe Speed-Gro", 46u
+          "Hyper Speed-Gro", 376u
+        |]
+        Selected = Set.empty
+      }
 
-assert (not defaultSavedSettings.Value.IsEmpty)
+      CustomSeedPrices = {
+        Values = Map.ofArray [|
+          831u<_>, 24u
+          833u<_>, 400u
+          885u<_>, 8u
+        |]
+        Selected = Set.empty
+      }
+  }
+  Game = GameVariables.common
+  Profit = {
+    SeedStrategy = BuyFirstSeed
+    PayForFertilizer = true
+    ReplaceLostFertilizer = true
+  }
+}
 
-#if DEBUG
-let private skillValid skill = skill.Level <= Skill.maxLevel
-let private dateValid date = Date.firstDay <= date.Day && date.Day <= Date.lastDay
-
-let private assertSettings predicate =
-  assert (defaultSavedSettings.Value |> List.forall (fun (_, settings) -> predicate settings))
-
-let private isKeySubset table keys = keys |> Seq.forall (fun key -> table |> Table.containsKey key)
-let private isFertilizerNameSubset keys = keys |> isKeySubset gameData.Fertilizers
-let private isSeedIdSubset keys = keys |> isKeySubset gameData.Crops
-
-let private isNestedKeySubset tables key keys =
-  tables
-  |> Table.tryFind key
-  |> Option.exists (fun table -> keys |> isKeySubset table)
-
-assertSettings (fun settings -> skillValid settings.Game.Skills.Farming && skillValid settings.Game.Skills.Foraging)
-assertSettings (fun settings -> dateValid settings.Game.StartDate && dateValid settings.Game.EndDate)
-assertSettings (fun settings -> [| 0.0..0.25..1.0 |] |> Array.contains settings.Game.Multipliers.ProfitMargin)
-assertSettings (fun settings ->
-  settings.Game.CropAmount.LuckBuff <= CropAmount.maxLuckBuff
-  && CropAmount.minGiantCropChecks <= settings.Game.CropAmount.GiantChecksPerTile && settings.Game.CropAmount.GiantChecksPerTile <= CropAmount.maxGiantCropChecks)
-
-assertSettings (fun settings -> isFertilizerNameSubset settings.Selected.Fertilizers)
-assertSettings (fun settings -> settings.Selected.FertilizerPrices |> Map.forall (isNestedKeySubset gameData.FertilizerPrices))
-
-assertSettings (fun settings -> isSeedIdSubset settings.Selected.Crops)
-assertSettings (fun settings -> settings.Selected.SeedPrices |> Map.forall (isNestedKeySubset gameData.SeedPrices))
-#endif
-
+let defaultSavedSettings = [
+  "Year 1", {
+    defaultSettings with
+      Selected = {
+        defaultSettings.Selected with
+          Crops = defaultSettings.Selected.Crops - Set.ofArray [| 476u<_>; 478u<_>; 485u<_>; 486u<_>; 489u<_>; 494u<_>; 499u<_>; 802u<_>; 831u<_>; 833u<_>; 885u<_> |]
+          Fertilizers = Set.ofArray [| "Basic Fertilizer"; "Speed-Gro" |]
+          Products = defaultSettings.Selected.Products |> Map.map (fun _ products -> products |> Set.remove Processor.mill)
+      }
+  }
+  "End Game", {
+    defaultSettings with
+      Game = {
+        GameVariables.common with
+          Skills = {
+            Skills.zero with
+              Farming = { Skill.zero with Level = Skill.maxLevel }
+              Foraging = { Skill.zero with Level = Skill.maxLevel }
+              Professions = Set.ofArray [| Tiller; Artisan; Gatherer; Botanist |]
+          }
+          Multipliers = { Multipliers.common with BearsKnowledge = true }
+          CropAmount = { CropAmountSettings.common with SpecialCharm = true }
+      }
+      Profit = { defaultSettings.Profit with SeedStrategy = StockpileSeeds }
+  }
+]
 
 let defaultRanker = {
   RankItem = RankCrops
@@ -441,10 +242,10 @@ let defaultUI = {
   ShowNormalizedProductPrices = false
 }
 
-let defaultApp = lazy {
+let defaultApp = {
   Data = gameData
-  State = snd defaultSavedSettings.Value[0], defaultUI
-  SavedSettings = defaultSavedSettings.Value
+  State = defaultSettings, defaultUI
+  SavedSettings = defaultSavedSettings
 }
 
 
@@ -490,8 +291,8 @@ module LocalStorage =
         None
 
   let private loadState () =
-     tryLoad "app state" StateKey Decode.state
-     |> Option.defaultWith (fun () -> defaultApp.Value.State)
+    tryLoad "app state" StateKey Decode.state
+    |> Option.defaultValue defaultApp.State
 
   let private loadSavedSettings () =
     tryLoad "saved settings" SavedSettingsKey Decode.savedSettings
@@ -526,9 +327,8 @@ module LocalStorage =
     | None ->
       // assume first time loading
       console.info "No version key found in local storage, loading default app..."
-      let app = defaultApp.Value
-      saveAll app
-      app
+      saveAll defaultApp
+      defaultApp
 
     | Some None ->
       // something's really wrong if this is the case
