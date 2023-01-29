@@ -24,7 +24,7 @@ module Encode =
     seq
     |> Seq.map (fun (k, v) -> keyString k, encodeValue v)
     #if !FABLE_COMPILER
-    |> List.ofSeq
+    |> List.ofSeq // for some reason the API is different between Thoth.Json and Thoth.Json.Net
     #endif
     |> Encode.object
 
@@ -187,7 +187,7 @@ module Decode =
       Name = get.Required.Field (nameof u.Name) Decode.string
       Quality = get.Optional.Field (nameof u.Quality) Decode.uint32 |> Option.defaultValue 0u
       Speed = get.Optional.Field (nameof u.Speed) Decode.float |> Option.defaultValue 0.0
-    } )
+    })
 
   let vendor = Decode.string |> Decode.map VendorName
 
@@ -211,7 +211,7 @@ module Decode =
     Decode.object (fun get -> {
       Season = get.Required.Field (nameof u.Season) season
       Day = get.Required.Field (nameof u.Day) Decode.uint32
-    } )
+    })
 
   let seedPrice: SeedPrice Decoder =
     Decode.map3 (fun a b c -> a, b, c)
@@ -237,8 +237,7 @@ module Decode =
         ExtraCropChance = field (nameof u.ExtraCropChance) Decode.float CropAmount.singleAmount.ExtraCropChance
         CanDouble = field (nameof u.CanDouble) Decode.bool CropAmount.singleAmount.CanDouble
         FarmingQualities = field (nameof u.FarmingQualities) Decode.bool CropAmount.singleAmount.FarmingQualities
-      }
-    )
+      })
 
   let farmCrop =
     let u = Unchecked.defaultof<FarmCrop>
@@ -253,7 +252,7 @@ module Decode =
       Stages = get.Required.Field (nameof u.Stages) (Decode.array Decode.uint32)
       RegrowTime = get.Optional.Field (nameof u.RegrowTime) Decode.uint32
       Paddy = get.Optional.Field (nameof u.Paddy) Decode.bool |> Option.defaultValue false
-    } )
+    })
 
   let forageCrop =
     let u = Unchecked.defaultof<ForageCrop>
@@ -265,8 +264,7 @@ module Decode =
         SeedRecipeUnlockLevel = field (nameof u.SeedRecipeUnlockLevel) Decode.uint32
         Season = field (nameof u.Season) season
         Stages = field (nameof u.Stages) (Decode.array Decode.uint32)
-      }
-    )
+      })
 
   let extractedData: ExtractedData Decoder =
     let u = Unchecked.defaultof<ExtractedData>
@@ -277,8 +275,7 @@ module Decode =
         Products = field (nameof u.Products) (tableParse parseItemId (Decode.array processedItem))
         FarmCrops = field (nameof u.FarmCrops) (Decode.array farmCrop)
         ForageCrops = field (nameof u.ForageCrops) (Decode.array forageCrop)
-      }
-    )
+      })
 
   let supplementalData: SupplementalData Decoder =
     let u = Unchecked.defaultof<SupplementalData>
@@ -290,5 +287,4 @@ module Decode =
         GenerateSeedPrices = field (nameof u.GenerateSeedPrices) (table VendorName (Decode.array seedId))
         SeedPrices = field (nameof u.SeedPrices) (tableParse parseSeedId (Decode.array seedPrice))
         ProcessorUnlockLevel = field (nameof u.ProcessorUnlockLevel) (table ProcessorName Decode.uint32)
-      }
-    )
+      })

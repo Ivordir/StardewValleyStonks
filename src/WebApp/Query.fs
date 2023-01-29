@@ -12,7 +12,7 @@ type GrowthSpan = {
 }
 
 let private consecutiveInSeasonDays startDate endDate seasons =
-  let nthSeason, days = Date.seasonsAndDays startDate endDate
+  let nthSeason, days = Date.seasonAndDaySpan startDate endDate
 
   let rec nextSeason start finish totalDays list =
     if finish = nthSeason.Length then

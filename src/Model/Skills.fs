@@ -34,7 +34,6 @@ module Fertilizer =
     let speed = Option.defaultOrMap 0.0 speed
 
 
-
 module Multiplier =
   let [<Literal>] bearsKnowledge = 3.0
   let [<Literal>] tiller = 1.1
@@ -42,7 +41,6 @@ module Multiplier =
   let [<Literal>] agriculturist = 0.1
   let [<Literal>] gatherer = 1.2
   let [<Literal>] irrigated = 0.25
-
 
 
 type Quality =

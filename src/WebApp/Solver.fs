@@ -293,7 +293,7 @@ let private fertilizerSpans data settings mode =
 
   let seasons, days =
     if settings.Game.Location = Farm
-    then Date.seasonsAndDays settings.Game.StartDate settings.Game.EndDate
+    then Date.seasonAndDaySpan settings.Game.StartDate settings.Game.EndDate
     else [| settings.Game.StartDate.Season |], [| Date.totalDays settings.Game.StartDate settings.Game.EndDate |]
 
   let fertilizerData =

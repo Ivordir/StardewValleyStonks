@@ -41,12 +41,7 @@ module GameData =
       Crop.items crop |> Array.map (fun item -> seed, item))
     |> Array.concat
 
-  let seedItemPairs data =
-    data.Crops
-    |> Table.toSeq
-    |> Seq.map (fun (seed, crop) ->
-      Crop.items crop |> Array.map (fun item -> seed, item))
-    |> Array.concat
+  let seedItemPairs data = seedItemPairsFrom data.Crops.Values
 
   let private implicitProduct data item processor =
     match Item.category item, processor with
@@ -115,7 +110,7 @@ module GameData =
 
     let seeds =
       crops
-      |> Array.choose (fun crop ->
+      |> Seq.choose (fun crop ->
         if Crop.canGetOwnSeedsFromSeedMaker crop
         then Some (Crop.mainItem crop, Crop.seed crop)
         else None)
@@ -273,12 +268,13 @@ module Game =
       let price =
         match price with
         | Some price -> price
-        | None -> 2u * (data.Items[seed * 1u<_>] |> Item.sellPrice)
+        | None -> 2u * data.Items[seed * 1u<_>].SellPrice
       if vendor = Vendor.joja
       then price |> withMultiplier (vars.Multipliers.ProfitMargin * if vars.JojaMembership then 1.0 else 1.25)
       else price |> withMultiplier vars.Multipliers.ProfitMargin |> max 1u
 
   let itemPrice vars forage item quality = Item.price vars.Skills vars.Multipliers forage item quality
+
   let itemPriceByQuality vars forage item = Item.priceByQuality vars.Skills vars.Multipliers forage item
 
   let productPrice data vars item quality product =

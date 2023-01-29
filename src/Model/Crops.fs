@@ -24,19 +24,12 @@ module Seasons =
 
   let inline intersect (a: Seasons) (b: Seasons) = a &&& b
   let inline overlap a b = intersect a b <> Seasons.None
-  let inline contains season seasons = overlap (ofSeason season) seasons
+  let contains season seasons = overlap (ofSeason season) seasons
 
   let inline add season (seasons: Seasons) = seasons ||| ofSeason season
   let inline remove season (seasons: Seasons) = seasons &&& ~~~(ofSeason season)
 
   let ofSeq seasons = seasons |> Seq.fold (fun seasons season -> seasons |> add season) Seasons.None
-
-  let tryExactlyOne = function
-    | Seasons.Spring -> Some Season.Spring
-    | Seasons.Summer -> Some Season.Summer
-    | Seasons.Fall -> Some Season.Fall
-    | Seasons.Winter -> Some Season.Winter
-    | _ -> None
 
   let rec setOrder (a: Seasons) (b: Seasons) =
     if a = Seasons.None || b = Seasons.None then
@@ -60,11 +53,6 @@ module Season =
   let previous = function
     | Season.Spring -> Season.Winter
     | season -> ofInt (int season - 1)
-
-  let ofSeasons seasons =
-    match Seasons.tryExactlyOne seasons with
-    | Some season -> season
-    | None -> invalidArg (nameof seasons) $"The given seasons: '{seasons}' was not a single season."
 
   let seasonsBetween start finish =
     let mutable seasons = Seasons.None
@@ -113,7 +101,7 @@ module Date =
     days[days.Length - 1] <- days[days.Length - 1] - (daysInSeason - finish.Day)
     days
 
-  let seasonsAndDays start finish = seasonSpan start finish, daySpan start finish
+  let seasonAndDaySpan start finish = seasonSpan start finish, daySpan start finish
 
   let totalDays start finish =
     (Season.distance start.Season finish.Season) * daysInSeason - start.Day + finish.Day + 1u
@@ -148,7 +136,6 @@ module CropAmountSettings =
     GiantChecksPerTile = 8.0
     ShavingToolLevel = None
   }
-
 
 
 type CropAmount = {
@@ -288,7 +275,7 @@ module SeedPrice =
 module Growth =
   (*
   Stardew Valley passes speed around as a float32.
-  This is later converted to a float (float64), introducing a small amout of error.
+  This is later converted to a float (float64), introducing a small amount of error.
   This small error is sometimes enough to give an extra day of reduction,
   since the value is later passed into the ceiling function.
 
