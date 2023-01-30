@@ -2,6 +2,7 @@ FSharp.Core
 Thoth.Json
 Thoth.Json.Net
 Fable.Core
+Fable.Browser.Url
 Fable.Browser.Worker
 Fable.Elmish.React
 Feliz

@@ -6,6 +6,7 @@ framework net6.0
 nuget FSharp.Core
 nuget Fable.Core
 nuget Fable.React < 9.0
+nuget Fable.Browser.Url
 nuget Fable.Browser.Worker
 nuget Fable.Elmish.React < 4.0
 nuget Thoth.Json

@@ -467,19 +467,13 @@ let private mapSolution (vars: GameVariables) (solution: (FertilizerSpanRequest 
   solution, totalProfit
 
 open Fable.Core
+open Browser.Url
 open Browser.Worker
 
 let [<Global>] private import: {| meta: {| url: string |} |} = jsNative
 
-[<AllowNullLiteral>]
-type private URLType =
-  [<Emit("new $0($1...)")>]
-  abstract Create: url: string * ?``base``: string -> string // Browser.Types.URL
-
-let [<Global>] private URL: URLType = jsNative
-
 let createWorker () =
-  let worker = Worker.Create (URL.Create ("Worker.js", import.meta.url), unbox {| ``type`` = Browser.Types.WorkerType.Module |} )
+  let worker = Worker.Create (unbox<string> (URL.Create ("Worker.js", import.meta.url)), unbox {| ``type`` = Browser.Types.WorkerType.Module |})
   let mutable inProgressRequest = None
   let mutable nextRequest = None
 
