@@ -44,7 +44,7 @@ let debouncer timeout (f : _ -> unit) =
     last |> Option.iter Browser.Dom.window.clearInterval
     last <- Some <| Browser.Dom.window.setTimeout ((fun () -> f value), timeout)
 
-let internal handle (event: Browser.Types.Event) =
+let internal handleEvent (event: Browser.Types.Event) =
   event.stopPropagation ()
   event.preventDefault ()
 
