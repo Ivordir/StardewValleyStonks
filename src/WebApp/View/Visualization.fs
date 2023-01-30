@@ -93,11 +93,8 @@ module GrowthCalendar =
 
     let days, stageList = loop season (int remainingDays) stageList
 
-    let days, stageList = appendCropHarvests settings None span.WithoutFertilizer days stageList
-
     let firstStage =
       [|
-        span.WithoutFertilizer |> Array.tryHead |> Option.map fst
         span.CropHarvests[0] |> Array.tryHead |> Option.map fst
         Array.tryHead span.BridgeCrops
         span.RegrowCrop |> Option.map (fun (_, crop, _) -> FarmCrop crop)
@@ -139,7 +136,6 @@ module GrowthCalendar =
         StartDate = { Season = span.StartSeason; Day = if span.StartSeason = settings.Game.StartDate.Season then settings.Game.StartDate.Day else Date.firstDay }
         EndDate = { Season = span.EndSeason; Day = if span.EndSeason = settings.Game.EndDate.Season then settings.Game.EndDate.Day else Date.lastDay }
         Fertilizer = fertilizer
-        WithoutFertilizer = [||]
         CropHarvests = [| cropHarvests |]
         BridgeCrops = [||]
         RegrowCrop = regrowCrop
@@ -584,18 +580,14 @@ module SummaryTable =
       ]
 
   let private cropFertTimeline (solution: Solver.FertilizerDateSpan) =
-    let fertilizer = solution.Fertilizer
     Array.concat [|
-      solution.WithoutFertilizer |> Array.map (fun (crop, harvests) -> crop, None, harvests)
-      solution.CropHarvests[0] |> Array.map (fun (crop, harvests) -> crop, fertilizer, harvests)
+      solution.CropHarvests[0]
       solution.CropHarvests
       |> Array.tail
       |> Array.zip solution.BridgeCrops
       |> Array.collect (fun (bridgeCrop, cropHarvests) ->
-        cropHarvests
-        |> Array.map (fun (crop, harvests) -> crop, fertilizer, harvests)
-        |> Array.append [| bridgeCrop, fertilizer, 1u |])
-      solution.RegrowCrop |> Option.map (fun (_, crop, harvests) -> FarmCrop crop, fertilizer, harvests) |> Option.toArray
+        cropHarvests |> Array.append [| bridgeCrop, 1u |])
+      solution.RegrowCrop |> Option.map (fun (_, crop, harvests) -> FarmCrop crop, harvests) |> Option.toArray
     |]
 
   let solverProfitSummaryTable data settings total (solutions: Solver.FertilizerDateSpan list) =
@@ -626,8 +618,8 @@ module SummaryTable =
 
             [
               tbody [ fertilizerBoughtRow false fertilizer fertilizerPrice 1.0 ]
-              yield! cropFertTimeline solution |> Array.map (fun args ->
-                let harvestsSummary = args |||> Query.Solver.profitAndHarvestsSummary data settings (i = len - 1)
+              yield! cropFertTimeline solution |> Array.map (fun (crop, harvests) ->
+                let harvestsSummary = Query.Solver.profitAndHarvestsSummary data settings (i = len - 1) crop fertilizer harvests
                 harvestSummaryTable data settings fertilizer fertilizerPrice harvestsSummary.NetProfit harvestsSummary)
             ])
           |> Seq.concat
@@ -659,7 +651,8 @@ module SummaryTable =
         ]
       ]
       tbody (solutions |> Seq.map (fun solution ->
-        cropFertTimeline solution |> Array.map (fun (crop, _, harvests) ->
+        cropFertTimeline solution
+        |> Array.map (fun (crop, harvests) ->
           let xpPerHarvest = Game.xpPerHarvest data settings.Game crop
           tr [
             td [ Image.Icon.crop data crop ]

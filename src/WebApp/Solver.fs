@@ -17,12 +17,6 @@ uphold the growth time and expected profit per harvest (linearity).
 But the last harvest of the season does not have to have its fertilizer replaced,
 and this should be reflected in the model to save cost.
 
-The cost of replacing the fertilizer may make the crop less profitable (e.g., high custom fertilizer prices),
-such that the crop is more profitable when planted without any fertilizer.
-Since fertilizer can be always be added to ground with no fertilizer,
-but fertilizers cannot be swapped without destroying the previous one,
-then the season may "start" with some amount of harvests of these crops without fertilizer.
-
 Regrow crops must "end" the season, since they remain in the ground until they become out of season.
 As a consequence, there can only be one distinct regrow crop per season / dateSpan.
 
@@ -51,7 +45,6 @@ Because of these reasons, instead of solving a model for each pair of fertilizer
 a model/subproblem must be solved for each pair of fertilizer and consecutive season range / dateSpan.
 
 Put together, the variables should model the following timeline of harvests/crops for some fertilizer and dateSpan:
-- 0 or more harvests without fertilizer in the starting season, for crops that can destroy fertilizer (and the fertilizer has a non-zero cost)
 - 0 or more non-regrow crop harvests in the starting season
 - 0 or more of the following:
   - a bridge harvest followed by 0 or more non-regrow harvests in the next season
@@ -90,7 +83,6 @@ let private groupFertilizersBySpeed fertilizersAndCost =
 type private Variable =
   | PlantCrop of Crop
   | PlantCropUnreplacedFertilizer of Crop
-  | PlantCropNoFertilizer of Crop
   | PlantBridgeCrop of Crop
   | DayUsedForBridgeCrop
   | PlantRegrowCropFixedHarvests of FarmCrop * nat
@@ -110,7 +102,6 @@ type FertilizerDateSpan = {
   StartDate: Date
   EndDate: Date
   Fertilizer: Fertilizer option
-  WithoutFertilizer: (Crop * nat) array
   CropHarvests: (Crop * nat) array array
   BridgeCrops: Crop array
   RegrowCrop: (int * FarmCrop * nat) option
@@ -151,17 +142,6 @@ let private unreplacedFertilizerVariables settings season (fertilizer, fertCost)
         Objective, profit
         string season, Game.growthTime settings.Game fertilizer crop |> float
         EndingCrop, 1.0
-      |]
-    ))
-
-let private noFertilizerVariables settings season crops =
-  crops |> Array.choose (fun (crop, profit) ->
-    if Query.replacedFertilizerPerHarvest settings crop = 0.0 then None else
-    let profit = profit None
-    if profit < 0.0 then None else Some (
-      (season, PlantCropNoFertilizer crop), [|
-        Objective, profit
-        string season, Game.growthTime settings.Game None crop |> float
       |]
     ))
 
@@ -255,9 +235,9 @@ let private bridgeRegrowToNextSeason season days nextSeason regrowValues =
     string season, float (days - 1u)
   |]
 
-let private createModels startSeason endSeason noFertilizerVariables constraintsAndVariables fertilizerData =
+let private createModels startSeason endSeason constraintsAndVariables fertilizerData =
   (constraintsAndVariables, fertilizerData) ||> Array.map2 (fun (constraints, variables) (fert, fertCost) ->
-    let variables = (if fertCost = 0u then variables else noFertilizerVariables :: variables) |> Array.concat
+    let variables = Array.concat variables
     let span = {
       Start = startSeason
       Stop = endSeason
@@ -346,12 +326,7 @@ let private fertilizerSpans data settings mode =
       let variables = regularVars :: regrowVars :: variables
       constraints, variables)
 
-    let noFertilizerVariables =
-      if mode = MaximizeGold && settings.Selected.NoFertilizer
-      then noFertilizerVariables settings startSeason regularCropVars
-      else [||]
-
-    let models = createModels startSeason endSeason noFertilizerVariables constraintsAndVariables fertilizerData :: models
+    let models = createModels startSeason endSeason constraintsAndVariables fertilizerData :: models
 
     if startSeason = 0 then models else
 
@@ -434,12 +409,6 @@ let private mapSolution (vars: GameVariables) (solution: (FertilizerSpanRequest 
         assert (regrowVariables.Length = 0)
         None
 
-    let withoutFertilizer = variables |> Array.choose (function
-      | season, PlantCropNoFertilizer seed, harvests ->
-        assert (season = span.Start)
-        Some (seed, harvests)
-      | _ -> None)
-
     let cropHarvests = variables |> Array.choose (function
       | season, PlantCrop seed, harvests -> Some (season, (seed, harvests))
       | _ -> None)
@@ -491,7 +460,6 @@ let private mapSolution (vars: GameVariables) (solution: (FertilizerSpanRequest 
       StartDate = startDate
       EndDate = endDate
       Fertilizer = span.Fertilizer
-      WithoutFertilizer = withoutFertilizer
       CropHarvests = cropHarvests
       BridgeCrops = bridgeCrops
       RegrowCrop = regrowCrop
