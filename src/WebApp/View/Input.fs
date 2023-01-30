@@ -63,7 +63,7 @@ let [<ReactComponent>] private NumberInput (props: {|
     onKeyDown (fun e ->
       match e.key with
       | "Enter" | "Escape" ->
-        handle e
+        handleEvent e
         updateInput ()
       | _ -> ())
   ]
