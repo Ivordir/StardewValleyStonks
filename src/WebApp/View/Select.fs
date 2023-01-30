@@ -14,42 +14,110 @@ open type React
 
 open Core.Operators
 
+type private 'a Props = {|
+  Width: Styles.ICssUnit
+  ToString: ('a -> string) option
+  Display: 'a -> ReactElement
+  Options: 'a array
+  Selected: 'a
+  Dispatch: 'a -> unit
+|}
+
+type private 'a State = {|
+  Focused: bool
+  Hover: int option
+  Scroll: bool
+  Search: string
+  Options: 'a array
+|}
+
 let private tryScroll (list: Browser.Types.HTMLElement) (index: int) (mode: string) =
   let elm = list.children?item index
   if not (isNullOrUndefined elm) then
     elm?scrollIntoView {| block = mode |}
 
-let [<ReactComponent>] private Select (props: {|
-    Width: Styles.ICssUnit
-    ToString: ('a -> string) option
-    Display: 'a -> ReactElement
-    Options: 'a array
-    Selected: 'a
-    Dispatch: 'a -> unit
-  |})
-  =
+let selectControl initialState inputRef (props: _ Props) (state: _ State) setState =
+  div [
+    className "select-control"
+    children [
+      input [
+        onFocus (fun _ -> setState {| state with Focused = true |})
+        onBlur (fun _ -> setState initialState)
+        prop.ref<Browser.Types.HTMLInputElement> inputRef
+
+        match props.ToString with
+        | Some toString ->
+          className "select-input-search"
+          prop.type'.text
+          placeholder " "
+          value state.Search
+          onChange (fun (str: string) ->
+            let lower = str.ToLower ()
+            let options = props.Options |> Array.filter (fun opt -> (toString opt).ToLower().Contains lower)
+            setState {|
+              state with
+                Search = str
+                Hover = state.Hover |> Option.defaultOrMap 0 (min (options.Length - 1) >> max 0) |> Some
+                Options = options
+            |})
+        | None ->
+          className "select-input-hidden"
+          prop.inputMode.none
+      ]
+
+      Html.span [
+        className "select-value"
+        children (props.Display props.Selected)
+      ]
+    ]
+  ]
+
+let selectList listRef clearHover (props: _ Props) (state: _ State) setState hover =
+  div [
+    className "select-list"
+    tabIndex -1
+    onMouseDown handleEvent
+    children [
+      if state.Options.Length = 0 then
+        div (ofStr "No results found...")
+      else
+        ul [
+          prop.ref<Browser.Types.HTMLElement> listRef
+          children (state.Options |> Array.mapi (fun i opt ->
+            li [
+              onMouseDown (fun e ->
+                if e.button = 0 then
+                  props.Dispatch opt
+                  clearHover e)
+
+              onMouseMove (fun _ ->
+                if state.Hover <> Some i then
+                  setState {|
+                    state with
+                      Focused = true
+                      Hover = Some i
+                      Scroll = false
+                  |})
+
+              if hover = i then className "hover"
+              children (props.Display opt)
+            ]
+          ))
+        ]
+      ]
+    ]
+
+let [<ReactComponent>] private Select (props: _ Props) =
   let selectedIndex =
     props.Options
     |> Array.tryFindIndex ((=) props.Selected)
     |> Option.defaultValue 0
 
   let selectOffset e offset =
-    let index =
-      if props.Options.Length = 0 then None else
-      let index = selectedIndex + offset
-      if index < 0 then
-        if selectedIndex = 0 then None else Some 0
-      elif index >= props.Options.Length then
-        let last = props.Options.Length - 1
-        if selectedIndex = last then None else Some last
-      else
-        Some index
-
-    match index with
-    | None -> ()
-    | Some i -> props.Dispatch props.Options[i]
-
-    handle e
+    handleEvent e
+    let index = selectedIndex + offset |> min (props.Options.Length - 1) |> max 0
+    if index <> selectedIndex then
+      props.Dispatch props.Options[index]
 
   let initialState = {|
     Focused = false
@@ -79,7 +147,7 @@ let [<ReactComponent>] private Select (props: {|
     | _ -> ())
 
   let setHover e i =
-    handle e
+    handleEvent e
     if state.Hover <> Some i then
       setState {|
         state with
@@ -89,7 +157,7 @@ let [<ReactComponent>] private Select (props: {|
       |}
 
   let clearHover e =
-    handle e
+    handleEvent e
     setState {| initialState with Focused = true |}
 
   div [
@@ -141,77 +209,8 @@ let [<ReactComponent>] private Select (props: {|
         className "select"
         style [ style.width props.Width ]
         children [
-          div [
-            className "select-control"
-            children [
-              input [
-                onFocus (fun _ -> setState {| state with Focused = true |})
-                onBlur (fun _ -> setState initialState)
-                prop.ref inputRef
-
-                match props.ToString with
-                | Some toString ->
-                  className "select-input-search"
-                  prop.type'.text
-                  placeholder " "
-                  value state.Search
-                  onChange (fun (str: string) ->
-                    let lower = str.ToLower ()
-                    let options = props.Options |> Array.filter (fun opt -> (toString opt).ToLower().Contains lower)
-                    setState {|
-                      state with
-                        Search = str
-                        Hover = state.Hover |> Option.defaultOrMap 0 (min (options.Length - 1) >> max 0) |> Some
-                        Options = options
-                    |})
-                | None ->
-                  className "select-input-hidden"
-                  prop.inputMode.none
-              ]
-
-              Html.span [
-                className "select-value"
-                children (props.Display props.Selected)
-              ]
-            ]
-          ]
-
-          match state.Hover with
-          | None -> none
-          | Some hover ->
-            div [
-              className "select-list"
-              tabIndex -1
-              onMouseDown handle
-              children (
-                if state.Options.Length = 0 then
-                  div (ofStr "No results found...")
-                else
-                  ul [
-                    prop.ref listRef
-                    children (state.Options |> Array.mapi (fun i opt ->
-                      li [
-                        onMouseDown (fun e ->
-                          if e.button = 0 then
-                            props.Dispatch opt
-                            clearHover e)
-
-                        onMouseMove (fun _ ->
-                          if state.Hover <> Some i then
-                            setState {|
-                              state with
-                                Focused = true
-                                Hover = Some i
-                                Scroll = false
-                            |})
-
-                        if hover = i then className "hover"
-                        children (props.Display opt)
-                      ]
-                    ))
-                  ]
-                )
-              ]
+          selectControl initialState inputRef props state setState
+          state.Hover |> Option.defaultOrMap none (selectList listRef clearHover props state setState)
         ]
       ]
     ]
