@@ -207,7 +207,7 @@ module Crops =
         ])
       (SetCropSort >> uiDispatch)
       cropSort
-      (cropOrder data crops)
+      crops
 
   let products data settings productSort productQuality showNormalizedPrices crops dispatch =
     let uiDispatch = SetUI >> dispatch
@@ -341,7 +341,7 @@ module Crops =
           ]))
         (SetProductSort >> uiDispatch)
         productSort
-        (cropOrder data crops)
+        crops
     ]
 
   let seeds data settings seedSort crops dispatch =
@@ -453,7 +453,7 @@ module Crops =
           ]])
         (SetSeedSort >> uiDispatch)
         seedSort
-        (cropOrder data crops)
+        crops
     ]
 
   let private filteredCrops app =
@@ -471,6 +471,8 @@ module Crops =
     data.Crops.Values
     |> Seq.filter (fun crop -> filters |> Seq.forall (fun predicate -> predicate crop))
     |> Array.ofSeq
+
+  let sort (data: GameData) = Crop.name data.Items.Find
 
   let private selectFilter name value dispatch =
     Select.options
@@ -525,7 +527,7 @@ module Crops =
 
   let tab app dispatch =
     let settings, ui = app.State
-    let crops = filteredCrops app
+    let crops = filteredCrops app |> Seq.sortBy (sort app.Data)
     let uiDispatch = SetUI >> dispatch
 
     div [
@@ -543,7 +545,7 @@ module Crops =
 module Fertilizers =
   let fertilizerVendors = refMemo (fun (data: GameData) -> sortKeysByHighestCount data.FertilizerPrices)
 
-  let table (data: GameData) settings fertSort open' dispatch =
+  let table (data: GameData) settings fertSort open' fertilizers dispatch =
     let uiDispatch = SetUI >> dispatch
     let selectDispatch = SetSelections >> SetSettings >> dispatch
     animatedDetails
@@ -574,11 +576,11 @@ module Fertilizers =
             ])
           (SetFertilizerSort >> uiDispatch)
           fertSort
-          (fertilizerOrder data.Fertilizers.Values)
+          fertilizers
       ])
       (curry SetDetailsOpen OpenDetails.Fertilizers >> uiDispatch)
 
-  let prices (data: GameData) settings fertPriceSort open' dispatch =
+  let prices (data: GameData) settings fertPriceSort open' fertilizers dispatch =
     let uiDispatch = SetUI >> dispatch
     let dispatch = SetSettings >> dispatch
     let selectDispatch = SetSelections >> dispatch
@@ -650,15 +652,16 @@ module Fertilizers =
             ]])
           (SetFertilizerPriceSort >> uiDispatch)
           fertPriceSort
-          (fertilizerOrder data.Fertilizers.Values)
+          fertilizers
       ])
       (curry SetDetailsOpen OpenDetails.FertilizerPrices >> uiDispatch)
 
   let tab app dispatch =
     let settings, ui = app.State
+    let fertilizers = app.Data.Fertilizers.Values |> Seq.sortBy Fertilizer.name
     div [ prop.id "fertilizer-tab"; children [
-      table app.Data settings ui.FertilizerSort (ui.OpenDetails.Contains OpenDetails.Fertilizers) dispatch
-      prices app.Data settings ui.FertilizerPriceSort (ui.OpenDetails.Contains OpenDetails.FertilizerPrices) dispatch
+      table app.Data settings ui.FertilizerSort (ui.OpenDetails.Contains OpenDetails.Fertilizers) fertilizers dispatch
+      prices app.Data settings ui.FertilizerPriceSort (ui.OpenDetails.Contains OpenDetails.FertilizerPrices) fertilizers dispatch
     ]]
 
 

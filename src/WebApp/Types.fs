@@ -19,10 +19,6 @@ module internal Util =
 
   let compareBy projection a b = compare (projection a) (projection b)
 
-  let fertilizerOrder seq = seq |> Seq.sortBy Fertilizer.name
-  let fertilizerOptOrder seq = seq |> Seq.sortBy (Option.map Fertilizer.name)
-  let cropOrder (data: GameData) seq = seq |> Seq.sortBy (Crop.name data.Items.Find)
-
   let inline unitUnionCases<'a> =
     typeof<'a>
     |> Reflection.FSharpType.GetUnionCases

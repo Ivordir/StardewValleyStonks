@@ -689,8 +689,8 @@ module SummaryTable =
 
 
 let pairData metric timeNorm data settings =
-  let crops = Query.Selected.inSeasonCrops data settings |> cropOrder data |> Array.ofSeq
-  let fertilizers = Query.Selected.fertilizersOpt data settings |> fertilizerOptOrder |> Array.ofSeq
+  let crops = Query.Selected.inSeasonCrops data settings |> Array.ofSeq
+  let fertilizers = Query.Selected.fertilizersOpt data settings |> Array.ofSeq
   let rankValue = Query.rankValue metric
 
   let data = crops |> Array.collect (fun crop ->
@@ -1049,11 +1049,13 @@ let [<ReactComponent>] SelectedCropAndFertilizer (props: {|
 
   let cropOptions =
     pairData.Crops
+    |> Array.sortBy (Settings.Crops.sort data)
     |> Array.map Choice1Of2
     |> Array.append [| bestCrop |]
 
   let fertilizerOptions =
     pairData.Fertilizers
+    |> Array.sortBy Fertilizer.Opt.name
     |> Array.map Choice1Of2
     |> Array.append [| bestFert |]
 
