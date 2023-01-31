@@ -11,22 +11,6 @@ type prop with
   static member inline onToggle (handler: bool -> unit) =
     Interop.mkAttr "onToggle" (fun (e: Browser.Types.Event) -> handler e.target?``open``)
 
-  static member inline onChange (handler: nat -> unit) =
-    Interop.mkAttr "onChange" (fun (e: Browser.Types.Event) ->
-      let value: float = unbox e.target?valueAsNumber
-      if not <| isNullOrUndefined value
-        && not <| System.Double.IsNaN value
-        && value >= 0.0
-      then
-        round value |> unbox |> handler)
-
-  static member inline valueOrDefault (n: nat) =
-    prop.ref (fun e -> if e |> isNull |> not && e?value <> n then e?value <- n)
-
-  static member inline value (n: nat) = Interop.mkAttr "value" n
-  static member inline min (n: nat) = Interop.mkAttr "min" n
-  static member inline max (n: nat) = Interop.mkAttr "max" n
-
 
 type Html with
   static member inline text (n: nat) = string n |> Html.text
@@ -36,6 +20,13 @@ let inline ofStr (str: string) = Html.text str
 let inline ofNat (n: nat) = Html.text n
 let inline ofInt (i: int) = Html.text i
 let inline ofFloat (x: float) = Html.text x
+
+let gold (g: nat) = string g + "g"
+let percent value = sprintf "%.0f%%" (value * 100.0)
+let percent2Decimal value = sprintf "%.2f%%" (value * 100.0)
+let float2Decimal = sprintf "%.2f"
+let floatRound2 (x: float) = System.Math.Round (x, 2)
+let gold2Decimal = sprintf "%.2fg"
 
 
 let debouncer timeout (f : _ -> unit) =
@@ -47,7 +38,6 @@ let debouncer timeout (f : _ -> unit) =
 let internal handleEvent (event: Browser.Types.Event) =
   event.stopPropagation ()
   event.preventDefault ()
-
 
 
 open Fable.Core
@@ -157,11 +147,6 @@ module Image =
 
   let allQualities = at <| qualityRoot "All"
   let rightArrow = at <| uiRoot "Right Arrow"
-  // let rightArrow =
-  //   div [
-  //     class' "right-arrow"
-  //     children (img [ src <| uiRoot "Right Arrow" ])
-  //   ]
 
   [<RequireQualifiedAccess>]
   module Icon =
@@ -180,25 +165,34 @@ module Image =
     let private nameIsPartofPath path name = at (path name) name
 
     let skill = nameIsPartofPath skillRoot
+
     let profession (profession: Profession) = string profession |> skill
+
     let fertilizer = Fertilizer.name >> nameIsPartofPath fertilizerRoot
+
     let item (item: Item) = at (itemPath item.Id) item.Name
     let item' (data: GameData) = data.Items.Find >> item
+
     let private withQuality path name quality =
       fragment [
         withQuality (img [ src path ]) quality
         ofStr name
       ]
+
     let itemQuality item quality = withQuality (itemPath item.Id) item.Name quality
+
     let itemQuality' (data: GameData) = data.Items.Find >> itemQuality
+
     let crop (data: GameData) = function
       | FarmCrop c -> at (c.Item |> string |> itemRoot) (FarmCrop.name data.Items.Find c)
       | ForageCrop c -> at (c.Seed |> string |> itemRoot) (ForageCrop.name c)
 
     let vendor (VendorName name) = nameIsPartofPath vendorRoot name
+
     let processor = function
       | ProcessorName "Mill" -> withClass Class.iconProcessorLarge (processorRoot "Mill") "Mill"
       | ProcessorName processor -> withClass Class.iconProcessor (processorRoot processor) processor
+
     let product (data: GameData) item product =
       let name = Product.name data.Items.Find item product
       let path =
@@ -207,6 +201,7 @@ module Image =
         | Processed product -> itemPath product.Item
         | product -> productRoot (string product)
       at path name
+
     let productQuality (data: GameData) item product quality =
       let name = Product.name data.Items.Find item product
       let path =
@@ -217,14 +212,6 @@ module Image =
       withQuality path name quality
 
     let season = Season.name >> nameIsPartofPath seasonRoot
-
-
-let gold (g: nat) = string g + "g"
-let percent value = sprintf "%.0f%%" (value * 100.0)
-let percent2 value = sprintf "%.2f%%" (value * 100.0)
-let floatFixedRound = sprintf "%.2f"
-let floatRound (x: float) = System.Math.Round (x, 2)
-let goldFixedRound = sprintf "%.2fg"
 
 
 let opacityCheckbox checked' dispatch =
@@ -268,11 +255,12 @@ let labeled label element =
 let viewTab toString tab currentTab dispatch =
   li [
     if currentTab = tab then Class.active
-    children (
+    children [
       button [
         onClick (fun _ -> dispatch tab)
         text (toString tab: string)
-      ] )
+      ]
+    ]
   ]
 
 let viewTabsWith toString tabs currentTab dispatch =
@@ -283,19 +271,7 @@ let viewTabsWith toString tabs currentTab dispatch =
 let inline viewTabs (current: 'tab) dispatch = viewTabsWith Reflection.getCaseName unitUnionCases<'tab> current dispatch
 
 
-// let warningIcon =
-//   img [
-//     class' "alert"
-//     src (Image.uiRoot "Warning")
-//   ]
-
-// let errorIcon =
-//   img [
-//     class' "alert"
-//     src (Image.uiRoot "Error")
-//   ]
-
-let animatedDetails open' (summary': ReactElement) (children': _ seq) dispatch =
+let animatedDetails open' (summary': ReactElement) (children': ReactElement) dispatch =
   details [
     isOpen open'
     onToggle dispatch

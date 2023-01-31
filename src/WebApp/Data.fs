@@ -43,13 +43,15 @@ assert // all seed items have the Seeds category
 assert // no zero growth stages
   gameData.Crops.Values |> Seq.forall (Crop.stages >> Array.contains 0u >> not)
 
-assert // non-zero regrow times, and supported/valid extra item amounts
+assert // no zero regrow times
+  gameData.FarmCrops.Values |> Seq.forall (FarmCrop.regrowTime >> Option.contains 0u >> not)
+
+assert // supported/valid extra item amounts
   gameData.FarmCrops.Values |> Seq.forall (fun crop ->
-    match crop.RegrowTime, crop.ExtraItem with
-    | Some time, Some (item, amount) -> time > 0u && (nat item <> nat crop.Seed || amount >= 1.0)
-    | Some time, None -> time > 0u
-    | None, Some (_, amount) -> amount >= FarmCrop.minExtraItemAmount
-    | None, None -> true)
+    crop.ExtraItem |> Option.forall (fun (item, amount) ->
+      if crop.RegrowTime.IsSome && nat item = nat crop.Seed
+      then amount >= 1.0
+      else amount >= FarmCrop.minExtraItemAmount))
 
 assert // crop amounts have values in the valid ranges
   gameData.FarmCrops.Values |> Seq.forall (fun crop ->
@@ -75,7 +77,7 @@ let private settings =
   |> Extra.withCustom Encode.date Decode.date
   |> Extra.withCustom
     (Encode.mapObj string (Encode.mapSeq Encode.vendor): Map<SeedId, Vendor Set> -> _)
-    (Decode.mapObjParse Decode.parseSeedId (Decode.Auto.generateDecoder ()))
+    (Decode.mapObjParse Decode.parseSeedId (Decode.set Decode.vendor))
   |> Extra.withCustom
     (Encode.mapObj string Encode.uint32: Map<SeedId, nat> -> _)
     (Decode.mapObjParse Decode.parseSeedId Decode.uint32)
@@ -101,7 +103,7 @@ let private decodeCropFilters =
     Regrows = get.Optional.Field (nameof u.Regrows) Decode.bool
     Giant = get.Optional.Field (nameof u.Giant) Decode.bool
     Forage = get.Optional.Field (nameof u.Forage) Decode.bool
-  } )
+  })
 
 let private encodeSettings = Encode.Auto.generateEncoder<Settings> (extra = settings)
 let private decodeSettings = Decode.Auto.generateDecoder<Settings> (extra = settings)
@@ -124,7 +126,7 @@ let private decodeNestedOption =
         Decode.string |> Decode.map (function
           | "" -> Some None
           | fert -> Some (Some fert))
-      ] ))
+      ]))
 
 let private ui =
   Extra.empty
@@ -155,7 +157,7 @@ module Decode =
 
 let defaultSettings = {
   Selected = {
-    Selections.allSelected gameData with
+    Selections.createAllSelected gameData with
       CustomFertilizerPrices = {
         Values = Map.ofArray [|
           "Basic Fertilizer", 4u
@@ -256,22 +258,22 @@ module LocalStorage =
   let [<Literal>] SavedSettingsKey = "SavedSettings"
 
   let inline private getItem key = Browser.WebStorage.localStorage.getItem key |> unbox<string option>
-  let inline private setItem key data = Browser.WebStorage.localStorage.setItem (key, data)
+  let inline private setItem key data =
+    try Browser.WebStorage.localStorage.setItem (key, data)
+    with e ->
+      // setItem can throw if localstorage is full
+      console.error $"Failed to save {key}: {e}"
 
   let private saveVersion () = setItem VersionKey App.version.String
 
-  let private trySave name key encoder value =
-    try
-      value
-      |> encoder
-      |> Encode.toString 0
-      |> setItem key
-    with e ->
-      // setItem can throw if localstorage is full
-      console.error $"Failed to save {name}: {e}"
+  let private trySave key encoder value =
+    value
+    |> encoder
+    |> Encode.toString 0
+    |> setItem key
 
-  let saveState state = trySave "app state" StateKey Encode.state state
-  let saveSettings settings = trySave "settings" SavedSettingsKey Encode.savedSettings settings
+  let saveState state = trySave StateKey Encode.state state
+  let saveSettings settings = trySave SavedSettingsKey Encode.savedSettings settings
 
   let private saveAll app =
     saveVersion ()

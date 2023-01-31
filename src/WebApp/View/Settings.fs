@@ -42,7 +42,7 @@ module Skills =
         div [
           qualityClasses[quality]
           style [ style.custom ("flexGrow", qualities[quality]) ]
-        ] ))
+        ]))
       ]
 
       div [ Class.cropQualitiesProbs; children (Quality.all |> Array.map (fun quality ->
@@ -50,10 +50,10 @@ module Skills =
         div [
           qualityClasses[quality]
           style [ style.custom ("flexGrow", prob) ]
-          if prob > 0.0 then text (percent2 prob)
-        ] ))
+          if prob > 0.0 then text (percent2Decimal prob)
+        ]))
       ]
-    ] ]
+    ]]
 
   let skill name skill dispatch =
     fragment [
@@ -81,7 +81,7 @@ module Skills =
           profession skills Artisan dispatch
           profession skills Agriculturist dispatch
         ]
-      ] ]
+      ]]
       cropQualities (Skills.farmCropQualities skills)
     ]
 
@@ -92,7 +92,7 @@ module Skills =
       div [ Class.professions; children [
         div (profession skills Gatherer dispatch)
         div (profession skills Botanist dispatch)
-      ] ]
+      ]]
       cropQualities (Skills.forageCropQualities skills)
     ]
 
@@ -104,7 +104,7 @@ module Skills =
         checkboxText "Ignore Skill Level Unlocks" skills.IgnoreSkillLevelRequirements (SetIgnoreSkillLevelRequirements >> dispatch)
         checkboxText "Ignore Profession Conflicts" skills.IgnoreProfessionConflicts (SetIgnoreProfessionConflicts >> dispatch)
       ]
-    ] ]
+    ]]
 
 let viewPrice price =
   fragment [
@@ -188,7 +188,6 @@ module Crops =
         let seed = Crop.seed crop
         let price = Query.Price.seedMinVendorAndPrice data settings seed
         let enoughSeeds = Query.canMakeEnoughSeeds data settings crop
-
         tr [
           key (string seed)
           if not enoughSeeds || not <| Game.cropIsInSeason settings.Game crop then Class.disabled
@@ -202,7 +201,7 @@ module Crops =
               Html.span [ Class.seasonSlot; children [
                 if Crop.growsInSeason season crop then
                   Image.season season
-              ] ]
+              ]]
             ))
           ]
         ])
@@ -218,8 +217,6 @@ module Crops =
     let processors = processors data
 
     let itemRow mainCrop forage seed item =
-      let theItem = data.Items[item]
-      let selected = settings.Selected.Products[seed, item]
       tr [
         td [
           if not mainCrop then
@@ -228,7 +225,7 @@ module Crops =
         ]
         td [
           checkbox (settings.Selected.SellRaw.Contains (seed, item)) (curry SetSelected (seed, item) >> SelectSellRaw >> selectDispatch)
-          ofNat <| Game.itemPrice settings.Game forage theItem productQuality
+          ofNat <| Game.itemPrice settings.Game forage data.Items[item] productQuality
         ]
         yield! processors |> Array.map (fun processor ->
           match GameData.product data item processor with
@@ -236,7 +233,7 @@ module Crops =
             td [
               if not <| Game.processorUnlocked data settings.Game processor then Class.disabled
               children [
-                checkbox (selected.Contains processor) (curry SetSelected (seed, item) >> curry SelectProducts processor >> selectDispatch)
+                checkbox (settings.Selected.Products[seed, item].Contains processor) (curry SetSelected (seed, item) >> curry SelectProducts processor >> selectDispatch)
                 if showNormalizedPrices
                 then ofFloat <| Game.productNormalizedPrice data settings.Game item productQuality product
                 else ofNat <| Game.productPrice data settings.Game item productQuality product
@@ -294,15 +291,16 @@ module Crops =
           ])
 
         Column.withSort
-          (compareBy (fun crop ->
-            if Crop.isForage crop
-            then Some (Game.itemPrice settings.Game true data.Items[Crop.seed crop * 1u<_>] Quality.Normal)
-            else None))
+          (compareBy (function
+            | ForageCrop c -> Some (Game.itemPrice settings.Game true data.Items[c.Seed * 1u<_>] Quality.Normal)
+            | FarmCrop _ -> None))
           (div [
             if not (data.ForageCrops.Values |> Seq.exists (ForageCrop.seedRecipeUnlocked settings.Game.Skills)) then Class.disabled
-            let keys = seedItemPairs |> Seq.map fst |> Seq.filter data.ForageCrops.ContainsKey |> Set.ofSeq
             children [
-              columnCheckbox keys settings.Selected.SellForageSeeds (SelectSellForageSeeds >> selectDispatch)
+              columnCheckbox
+                (crops |> Seq.choose (function | ForageCrop c -> Some c.Seed | FarmCrop _ -> None) |> Set.ofSeq)
+                settings.Selected.SellForageSeeds
+                (SelectSellForageSeeds >> selectDispatch)
               ofStr "Forage Seeds"
             ]
           ])
@@ -310,8 +308,10 @@ module Crops =
         Column.withSort
           (compareBy (fun crop -> Query.cropItemsHighestCustomPrice settings.Selected crop productQuality))
           (fragment [
-            let keys = seedItemPairs |> Set.filter settings.Selected.CustomSellPrices.Values.ContainsKey
-            columnCheckbox keys settings.Selected.CustomSellPrices.Selected (SelectCustom >> SetCustomSellPrice >> selectDispatch)
+            columnCheckbox
+              (seedItemPairs |> Set.filter settings.Selected.CustomSellPrices.Values.ContainsKey)
+              settings.Selected.CustomSellPrices.Selected
+              (SelectCustom >> SetCustomSellPrice >> selectDispatch)
             ofStr "Custom"
           ])
       ]
@@ -373,23 +373,29 @@ module Crops =
         Column.header (div [
           if not <| Game.processorUnlocked data settings.Game Processor.seedMaker then Class.disabled
           children [
-            let keys = crops |> Seq.choose (fun crop -> if Crop.canGetOwnSeedsFromSeedMaker crop then Some (Crop.seed crop) else None) |> Set.ofSeq
-            columnCheckbox keys settings.Selected.UseSeedMaker (SelectUseSeedMaker >> selectDispatch)
+            columnCheckbox
+              (crops |> Seq.choose (fun crop -> if Crop.canGetOwnSeedsFromSeedMaker crop then Some (Crop.seed crop) else None) |> Set.ofSeq)
+              settings.Selected.UseSeedMaker
+              (SelectUseSeedMaker >> selectDispatch)
             Image.Icon.processor Processor.seedMaker
           ]
         ])
 
         Column.header (fragment [
-          let keys = crops |> Seq.choose (fun crop -> if Crop.makesOwnSeeds crop then Some (Crop.seed crop) else None) |> Set.ofSeq
-          columnCheckbox keys settings.Selected.UseHarvestedSeeds (SelectUseHarvestedSeeds >> selectDispatch)
+          columnCheckbox
+            (crops |> Seq.choose (fun crop -> if Crop.makesOwnSeeds crop then Some (Crop.seed crop) else None) |> Set.ofSeq)
+            settings.Selected.UseHarvestedSeeds
+            (SelectUseHarvestedSeeds >> selectDispatch)
           ofStr "Raw Seeds"
         ])
 
         Column.header (div [
           if not (data.ForageCrops.Values |> Seq.exists (ForageCrop.seedRecipeUnlocked settings.Game.Skills)) then Class.disabled
           children [
-            let keys = seeds |> Set.filter data.ForageCrops.ContainsKey
-            columnCheckbox keys settings.Selected.UseForageSeeds (SelectUseForageSeeds >> selectDispatch)
+            columnCheckbox
+              (seeds |> Set.filter data.ForageCrops.ContainsKey)
+              settings.Selected.UseForageSeeds
+              (SelectUseForageSeeds >> selectDispatch)
             ofStr "Forage Seeds"
           ]
         ])
@@ -397,8 +403,10 @@ module Crops =
         Column.withSort
           (Option.noneMaxCompareBy (Crop.seed >> settings.Selected.CustomSeedPrices.Values.TryFind))
           (fragment [
-            let keys = seeds |> Set.filter settings.Selected.CustomSeedPrices.Values.ContainsKey
-            columnCheckbox keys settings.Selected.CustomSeedPrices.Selected (SelectCustom >> SetCustomSeedPrice >> selectDispatch)
+            columnCheckbox
+              (seeds |> Set.filter settings.Selected.CustomSeedPrices.Values.ContainsKey)
+              settings.Selected.CustomSeedPrices.Selected
+              (SelectCustom >> SetCustomSeedPrice >> selectDispatch)
             ofStr "Custom"
           ])
       ]
@@ -410,9 +418,9 @@ module Crops =
               td [
                 match data.SeedPrices[seed].TryFind vendor with
                 | Some price ->
-                  yield checkbox (settings.Selected.SeedPrices[seed].Contains vendor) (curry SetSelected seed >> curry SelectSeedPrices vendor >> selectDispatch)
-                  yield Game.seedPrice data settings.Game seed price |> ofNat
-                | None -> yield none
+                  checkbox (settings.Selected.SeedPrices[seed].Contains vendor) (curry SetSelected seed >> curry SelectSeedPrices vendor >> selectDispatch)
+                  Game.seedPrice data settings.Game seed price |> ofNat
+                | None -> none
               ])
             td [
               if not <| Game.processorUnlocked data settings.Game Processor.seedMaker then Class.disabled
@@ -425,14 +433,13 @@ module Crops =
               if Crop.makesOwnSeeds crop then
                 checkbox (settings.Selected.UseHarvestedSeeds.Contains seed) (curry SetSelected seed >> SelectUseHarvestedSeeds >> selectDispatch)
             ]
-            td (
-              match crop with
-              | FarmCrop _ -> []
-              | ForageCrop c -> [
+            match crop with
+            | FarmCrop _ -> td []
+            | ForageCrop c ->
+              td [
                 if not <| ForageCrop.seedRecipeUnlocked settings.Game.Skills c then Class.disabled
                 children (checkbox (settings.Selected.UseForageSeeds.Contains seed) (curry SetSelected seed >> SelectUseForageSeeds >> selectDispatch))
               ]
-            )
             td [
               viewCustom
                 "Custom Seed Price"
@@ -497,11 +504,12 @@ module Crops =
         Html.span [
           if filters.InSeason then Class.disabled
           children (Season.all |> Array.map (fun season ->
-          checkboxWith
-            (fragment [
-              Image.season season
-              ofStr <| Season.name season ])
-            (filters.Seasons |> Seasons.contains season)
+            checkboxWith
+              (fragment [
+                Image.season season
+                ofStr <| Season.name season
+              ])
+              (filters.Seasons |> Seasons.contains season)
               (toggleSeason season >> SetSeasons >> dispatch)))
         ]
       ]
@@ -541,7 +549,7 @@ module Fertilizers =
     animatedDetails
       open'
       (ofStr "Fertilizers")
-      [
+      (fragment [
         checkboxText "Allow No Fertilizer" settings.Selected.NoFertilizer (SelectNoFertilizer >> selectDispatch)
         sortTable [
           Column.header (columnCheckbox (Set.ofSeq data.Fertilizers.Keys) settings.Selected.Fertilizers (SelectFertilizers >> selectDispatch))
@@ -553,7 +561,6 @@ module Fertilizers =
           (fun fertilizer ->
             let name = Fertilizer.name fertilizer
             let price = Query.Price.fertilizerMinVendorAndPrice data settings name
-
             tr [
               key (string name)
               if settings.Profit.PayForFertilizer && price = None then Class.disabled
@@ -568,7 +575,7 @@ module Fertilizers =
           (SetFertilizerSort >> uiDispatch)
           fertSort
           (fertilizerOrder data.Fertilizers.Values)
-      ]
+      ])
       (curry SetDetailsOpen OpenDetails.Fertilizers >> uiDispatch)
 
   let prices (data: GameData) settings fertPriceSort open' dispatch =
@@ -582,7 +589,7 @@ module Fertilizers =
     animatedDetails
       open'
       (ofStr "Prices")
-      [
+      (fragment [
         checkboxText "Pay for Fertilizer" settings.Profit.PayForFertilizer (SetPayForFertilizer >> SetProfit >> dispatch)
         Html.span [
           if not settings.Profit.PayForFertilizer then Class.disabled
@@ -611,8 +618,10 @@ module Fertilizers =
           Column.withSort
             (Option.noneMaxCompareBy (Fertilizer.name >> settings.Selected.CustomFertilizerPrices.Values.TryFind))
             (fragment [
-              let keys = keys |> Set.filter settings.Selected.CustomFertilizerPrices.Values.ContainsKey
-              columnCheckbox keys settings.Selected.CustomFertilizerPrices.Selected (SelectCustom >> SetCustomFertilizerPrice >> selectDispatch)
+              columnCheckbox
+                (keys |> Set.filter settings.Selected.CustomFertilizerPrices.Values.ContainsKey)
+                settings.Selected.CustomFertilizerPrices.Selected
+                (SelectCustom >> SetCustomFertilizerPrice >> selectDispatch)
               ofStr "Custom"
             ])
         ]
@@ -624,9 +633,9 @@ module Fertilizers =
                 td [
                   match data.FertilizerPrices[name].TryFind vendor with
                   | Some price ->
-                    yield checkbox (settings.Selected.FertilizerPrices[name].Contains vendor) (curry SetSelected name >> curry SelectFertilizerPrices vendor >> selectDispatch)
-                    yield ofNat price
-                  | None -> yield none
+                    checkbox (settings.Selected.FertilizerPrices[name].Contains vendor) (curry SetSelected name >> curry SelectFertilizerPrices vendor >> selectDispatch)
+                    ofNat price
+                  | None -> none
                 ])
               td [
                 viewCustom
@@ -642,7 +651,7 @@ module Fertilizers =
           (SetFertilizerPriceSort >> uiDispatch)
           fertPriceSort
           (fertilizerOrder data.Fertilizers.Values)
-      ]
+      ])
       (curry SetDetailsOpen OpenDetails.FertilizerPrices >> uiDispatch)
 
   let tab app dispatch =
@@ -650,7 +659,8 @@ module Fertilizers =
     div [ prop.id "fertilizer-tab"; children [
       table app.Data settings ui.FertilizerSort (ui.OpenDetails.Contains OpenDetails.Fertilizers) dispatch
       prices app.Data settings ui.FertilizerPriceSort (ui.OpenDetails.Contains OpenDetails.FertilizerPrices) dispatch
-    ] ]
+    ]]
+
 
 module Misc =
   let private date min max (date: Date) dispatch =
@@ -661,8 +671,14 @@ module Misc =
         Season.all
         date.Season
         (fun season -> dispatch { date with Season = season })
-      Input.natWith (length.rem 2) (Some min) (Some max) date.Day (fun day -> dispatch { date with Day = day })
-    ] ]
+
+      Input.natWith
+        (length.rem 2)
+        (Some min)
+        (Some max)
+        date.Day
+        (fun day -> dispatch { date with Day = day })
+    ]]
 
   let dates (startDate: Date) (endDate: Date) dispatch =
     let sameSeason = startDate.Season = endDate.Season
@@ -677,9 +693,8 @@ module Misc =
       labeled "Profit Margin:" <| Select.options
         (length.rem 5)
         (function
-          | 1.0 -> "Normal"
-          | margin -> percent margin
-          >> ofStr)
+          | 1.0 -> ofStr "Normal"
+          | margin -> ofStr (percent margin))
         [| 1.0..(-0.25)..0.25 |]
         multipliers.ProfitMargin
         (SetProfitMargin >> dispatch)
@@ -691,8 +706,20 @@ module Misc =
     div [
       label [
         ofStr "Giant Crop Checks Per Tile:"
-        Input.floatWith (length.rem 4) 10e4 (Some CropAmount.minGiantCropChecks) (Some CropAmount.maxGiantCropChecks) settings.GiantChecksPerTile (SetGiantChecksPerTile >> dispatch)
-        Input.floatRange 10e4 CropAmount.minGiantCropChecks CropAmount.maxGiantCropChecks settings.GiantChecksPerTile (SetGiantChecksPerTile >> dispatch)
+        Input.floatWith
+          (length.rem 4)
+          10e-4
+          (Some CropAmount.minGiantCropChecks)
+          (Some CropAmount.maxGiantCropChecks)
+          settings.GiantChecksPerTile
+          (SetGiantChecksPerTile >> dispatch)
+
+        Input.floatRange
+          10e-4
+          CropAmount.minGiantCropChecks
+          CropAmount.maxGiantCropChecks
+          settings.GiantChecksPerTile
+          (SetGiantChecksPerTile >> dispatch)
       ]
 
       Select.options
@@ -711,10 +738,9 @@ module Misc =
     ]
 
   let mods data open' modData dispatch =
-    animatedDetails
-      open'
+    animatedDetails open'
       (ofStr "Mods")
-      [
+      (fragment [
         let dispatch = SetModData >> SetGameVariables >> SetSettings >> dispatch
         checkboxText "Quality Products" modData.QualityProducts (SetQualityProducts >> dispatch)
         ul [
@@ -728,7 +754,7 @@ module Misc =
             ]
           ))
         ]
-      ]
+      ])
       (curry SetDetailsOpen OpenDetails.Mod >> SetUI >> dispatch)
 
   let tab modsOpen data settings dispatch =
@@ -737,20 +763,14 @@ module Misc =
     div [ prop.id "misc"; children [
       div [ Class.date; children [
         labeled "Location: " <| Select.unitUnion (length.rem 7.5) settings.Location (SetLocation >> dispatch)
-
         dates settings.StartDate settings.EndDate dispatch
-      ] ]
-
+      ]]
       multipliers settings.Multipliers (SetMultipliers >> dispatch)
-
       cropAmountSettings settings.CropAmount (SetCropAmount >> dispatch)
-
-      div [
-        checkboxText "Irrigated" settings.Irrigated (SetIrrigated >> dispatch)
-      ]
-
+      div (checkboxText "Irrigated" settings.Irrigated (SetIrrigated >> dispatch))
       mods data modsOpen settings.ModData appDispatch
-    ] ]
+    ]]
+
 
 module LoadSave =
   let [<ReactComponent>] ImportSave (props: {| Dispatch: _ |}) =
@@ -766,8 +786,7 @@ module LoadSave =
               let save = Data.loadSaveGame text
               save |> Option.iter (fst >> LoadSaveGame >> props.Dispatch)
               setSave (Some save))
-            |> ignore
-          )
+            |> ignore)
         ]
       ]]
 
@@ -802,22 +821,29 @@ module LoadSave =
         ]
       ))
 
-      div [ style [ style.display.flex; style.flexDirection.column; style.width.maxContent ]; children [
-        Dialog.toggleEdit "Save Current Settings As" "Save Current Settings" "Untitled Settings" (SaveSettings >> saveDispatch) Input.text
-
-        ImportSave {| Dispatch = saveDispatch |}
-
-        button [
-          onClick (fun _ -> loadDispatch Data.defaultSettings)
-          text "Reset Settings to Default"
+      div [
+        style [
+          style.display.flex
+          style.flexDirection.column
+          style.width.maxContent
         ]
+        children [
+          Dialog.toggleEdit "Save Current Settings As" "Save Current Settings" "Untitled Settings" (SaveSettings >> saveDispatch) Input.text
 
-        button [
-          // add warning
-          onClick (fun _ -> dispatch HardReset)
-          text "Hard Reset"
+          ImportSave {| Dispatch = saveDispatch |}
+
+          button [
+            onClick (fun _ -> loadDispatch Data.defaultSettings)
+            text "Reset Settings to Default"
+          ]
+
+          button [
+            // add warning
+            onClick (fun _ -> dispatch HardReset)
+            text "Hard Reset"
+          ]
         ]
-      ] ]
+      ]
     ]
 
 let section app dispatch =
@@ -832,4 +858,4 @@ let section app dispatch =
     | Fertilizers -> Fertilizers.tab app dispatch
     | Misc -> Misc.tab (ui.OpenDetails.Contains OpenDetails.Mod) app.Data settings.Game dispatch
     | SettingsTab.LoadSettings -> LoadSave.tab app appDispatch
-  ] ]
+  ]]

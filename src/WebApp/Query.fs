@@ -2,7 +2,6 @@ module StardewValleyStonks.WebApp.Query
 
 open StardewValleyStonks
 
-
 type GrowthSpan = {
   StartSeason: Season
   EndSeason: Season
@@ -26,12 +25,6 @@ let private consecutiveInSeasonDays startDate endDate seasons =
   // 4 seasons can be splitted into at most 2 groups of consecutive seasons
   assert (consecutiveDays.Length <= 2)
   Array.ofList consecutiveDays
-
-let timeNormalizationDivisor growthSpan crop = function
-  | TotalPeriod -> 1.0
-  | PerDay -> Growth.daysNeededFor (Crop.regrowTime crop) growthSpan.GrowthTime growthSpan.Harvests |> float
-  | PerSeason -> float growthSpan.TotalDays / float Date.daysInSeason
-
 
 /// Returns the GrowthSpan for this crop that has the most harvests,
 /// and, in the case of a tie, the date span with the least days.
@@ -58,13 +51,15 @@ let bestGrowthSpan vars fertilizer crop =
     Harvests = harvests
   }
 
+let timeNormalizationDivisor growthSpan crop = function
+  | TotalPeriod -> 1.0
+  | PerDay -> Growth.daysNeededFor (Crop.regrowTime crop) growthSpan.GrowthTime growthSpan.Harvests |> float
+  | PerSeason -> float growthSpan.TotalDays / float Date.daysInSeason
+
 let replacedFertilizerPerHarvest settings crop =
   if settings.Profit.ReplaceLostFertilizer
   then Game.fertilizerLossProb settings.Game crop
   else 0.0
-
-let replacedFertilizerAmount settings crop harvests =
-  float (harvests - 1u) * replacedFertilizerPerHarvest settings crop
 
 let seedPriceValueFromVendor data settings vendor seed =
   data.SeedPrices[seed].TryFind vendor |> Option.map (Game.seedPrice data settings.Game seed)
@@ -109,7 +104,7 @@ module Selected =
   let fertilizersOpt data settings =
     fertilizers data settings
     |> Seq.map Some
-    |> Seq.append (if settings.Selected.NoFertilizer then [ None ] else [])
+    |> Seq.append [ if settings.Selected.NoFertilizer then None ]
 
   let fertilizerVendorsAndPrices data settings fertilizer =
     settings.Selected.FertilizerPrices[fertilizer] |> mapSelectedPrices data.FertilizerPrices[fertilizer]
@@ -292,14 +287,6 @@ let fertilizerCost data settings fertilizer =
   else Some 0u
 
 let fertilizerCostOpt data settings = Option.defaultOrMap (Some 0u) (fertilizerCost data settings)
-
-// let productOutputQuality settings product quality = product |> Product.outputQuality settings.ModData quality
-
-// let outputQuality settings product quality =
-//   match product with
-//   | NonCustom None -> quality
-//   | NonCustom (Some product) -> productOutputQuality settings product quality
-//   | Custom (_, preservesQuality) -> if preservesQuality then quality else Normal
 
 [<System.Flags>]
 type InvalidReasons =
@@ -641,7 +628,7 @@ module internal Profit =
       let fertCost = fertilizerCostOpt data settings (Fertilizer.Opt.name fertilizer)
       match growthSpan, seedPriceAndProfit, fertCost with
       | Some span, Some (seedPrice, profit), Some fertCost ->
-        let fertilizerCost = float fertCost * (1.0 + replacedFertilizerAmount settings crop span.Harvests)
+        let fertilizerCost = float fertCost * (1.0 + float (span.Harvests - 1u) * replacedFertilizerPerHarvest settings crop)
         let divisor = timeNormalizationDivisor span crop timeNormalization
         let profit = profit fertilizer span.Harvests
         Ok (profit, float seedPrice + fertilizerCost, divisor)
@@ -1017,11 +1004,7 @@ module Solver =
     | StockpileSeeds -> HarvestsSummary.stockpileSeeds data settings lastCrop crop fertilizer harvests
     | BuyFirstSeed ->
       let summary = HarvestsSummary.ignoreSeeds data settings lastCrop crop fertilizer harvests
-      let seedsBought =
-        if Crop.regrows crop
-        then 1.0
-        else float harvests
-
+      let seedsBought = if Crop.regrows crop then 1.0 else float harvests
       { summary with
           ItemAndSeedSummary = { summary.ItemAndSeedSummary with SeedsBought = seedsBought }
           NetProfit = (summary.NetProfit, summary.SeedPrice) ||> Option.map2 (fun profit (_, price) -> profit - float price * seedsBought)

@@ -156,7 +156,7 @@ let private regrowVariablesAndConstraints settings season prevDays totalDays fer
       let fixedVariables = [
         for h in (max minHarvests 1u)..(min maxHarvests (data.HarvestsForMinCost - 1u)) do
           let cost = data.Cost h
-          let usedDays = growthTime + (h - 1u) * crop.RegrowTime.Value
+          let usedDays = Growth.daysNeededFor crop.RegrowTime growthTime h
           (season, PlantRegrowCropFixedHarvests (crop, h)), regrowValues |> Array.append [|
             Objective, data.ProfitPerHarvest * float h - cost
             string season, float (if prevDays > usedDays then 0u else usedDays - prevDays)
@@ -165,7 +165,7 @@ let private regrowVariablesAndConstraints settings season prevDays totalDays fer
 
       if maxHarvests >= data.HarvestsForMinCost then
         let harvests = max data.HarvestsForMinCost minHarvests
-        let usedDays = growthTime + crop.RegrowTime.Value * (harvests - 1u)
+        let usedDays = Growth.daysNeededFor crop.RegrowTime growthTime harvests
         let harvestsName = string crop.Seed @ string season
         let firstVariable =
           (season, PlantRegrowCropFirstHarvests (crop, harvests)), regrowValues |> Array.append [|
@@ -201,7 +201,7 @@ let private regrowVariablesAndConstraints settings season prevDays totalDays fer
 
   constraints, variables
 
-let private bridgeToNextSeason settings objectiveValue season nextSeason days (bridgeCropsVars: _ array) fertilizerData constraintsAndVariables =
+let private bridgeToNextSeason settings objectiveValue season nextSeason days bridgeCropsVars fertilizerData constraintsAndVariables =
   (constraintsAndVariables, fertilizerData) ||> Array.map2 (fun (constraints, variables) (fertilizer, fertCost) ->
     let constraints =
       (string nextSeason <== float (days - 1u))
@@ -210,7 +210,7 @@ let private bridgeToNextSeason settings objectiveValue season nextSeason days (b
       :: constraints
 
     let variables =
-      if bridgeCropsVars.Length > 0 then
+      if Array.isEmpty bridgeCropsVars then
         [|
           (season, DayUsedForBridgeCrop), [|
             string season, 1.0

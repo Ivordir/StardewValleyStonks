@@ -20,6 +20,7 @@ module internal Util =
   let compareBy projection a b = compare (projection a) (projection b)
 
   let fertilizerOrder seq = seq |> Seq.sortBy Fertilizer.name
+  let fertilizerOptOrder seq = seq |> Seq.sortBy (Option.map Fertilizer.name)
   let cropOrder (data: GameData) seq = seq |> Seq.sortBy (Crop.name data.Items.Find)
 
   let inline unitUnionCases<'a> =
@@ -81,8 +82,8 @@ module Result =
 
 [<RequireQualifiedAccess>]
 module Array =
-  let mapReduce reduction mapping (array: _ array) =
-    if array.Length = 0 then invalidArg (nameof array) "The given array cannot be empty."
+  let mapReduce reduction mapping array =
+    if Array.isEmpty array then invalidArg (nameof array) "The given array cannot be empty."
     let mutable current = mapping array[0]
     for x in array do
       current <- reduction current (mapping x)
@@ -127,9 +128,6 @@ module Selection =
     then Some selection.Values[key]
     else None
 
-  let allSelected selection =
-    selection.Values.Keys |> Seq.forall selection.Selected.Contains
-
 
 type Selections = {
   Crops: SeedId Set
@@ -172,7 +170,7 @@ module Selections =
     |> Seq.map (fun (key, table) -> key, table |> Table.keys |> Set.ofSeq)
     |> Map.ofSeq
 
-  let allSelected (data: GameData) =
+  let createAllSelected (data: GameData) =
     let seedItemPairs = GameData.seedItemPairs data
     let forageCrops = Set.ofSeq data.ForageCrops.Keys
     {
@@ -326,7 +324,7 @@ module CropFilters =
     Forage = None
   }
 
-type TableSort = (int * bool)
+type TableSort = int * bool
 
 type UIState = {
   Mode: AppMode
