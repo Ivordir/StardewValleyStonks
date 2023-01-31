@@ -776,49 +776,57 @@ module Misc =
 
 
 module LoadSave =
-  let [<ReactComponent>] ImportSave (props: {| Dispatch: _ |}) =
-    let save, setSave = useState None
+  let importSave presets dispatch =
+    Dialog.toggleEdit
+      "Import Save Game"
+      "Import Save"
+      None
+      (Option.bind snd >> Option.iter (fst >> LoadSaveGame >> dispatch))
+      (fun save setSave ->
+        fragment [
+          // wiki link to save game path
 
-    fragment [
-      label [ Class.fileInput; children [
-        ofStr "Import Save"
-        input [
-          prop.type'.file
-          onChange (fun (e: Browser.Types.File) ->
-            e.text().``then`` (fun text ->
-              let save = Data.loadSaveGame text
-              save |> Option.iter (fst >> LoadSaveGame >> props.Dispatch)
-              setSave (Some save))
-            |> ignore)
-        ]
-      ]]
+          label [ Class.fileInput; children [
+            ofStr "Choose Save File"
+            input [
+              prop.type'.file
+              onChange (fun (e: Browser.Types.File) ->
+                e.text().``then`` (fun text -> Some (e.name, Data.loadSaveGame text) |> setSave) |> ignore)
+            ]
+          ]]
 
-      match save with
-      | None | Some (Some (_, [||])) -> none
-      | Some None ->
-        Dialog.create "Invalid Save" (fun () -> setSave None)
-          (ofStr "Failed to laod the save game. Did you pick the right file?")
-      | Some (Some (_, missing)) ->
-        Dialog.create "Warning" (fun () -> setSave None) (fragment [
-          ofStr "Failed to load the following data from the save game:"
-          ul (missing |> Array.map (ofStr >> li))
+          match save with
+          | None -> none
+          | Some (fileName, preset) ->
+            if fileName <> "SaveGameInfo" then
+              ofStr $"It appears you have chosen a file called '{fileName}'. Please choose the file called 'SaveGameInfo'."
+
+            match preset with
+            | None -> ofStr "Failed to load the save game."
+            | Some (preset, missing) ->
+              if missing.Length > 0 then
+                ofStr "Warning: failed to load the following data from the save game:"
+                ul (missing |> Array.map (ofStr >> li))
+                ofStr "Click \"Ok\" if you want to continue anyways."
+
+              if preset.UniqueId |> Option.exists (fun uniqueId -> presets |> List.exists (Preset.hasId uniqueId)) then
+                ofStr "This save game has been previously imported. Clicking \"Ok\" will update/overwrite the existing preset."
         ])
-    ]
 
   let tab app dispatch =
-    let saveDispatch = SetSavedSettings >> dispatch
+    let saveDispatch = SetPresets >> dispatch
     let loadDispatch = LoadSettings >> SetState >> dispatch
     div [
-      ul (app.SavedSettings |> List.mapi (fun i (name, settings) ->
+      ul (app.Presets |> List.mapi (fun i preset ->
         li [
-          ofStr name
+          ofStr preset.Name
           button [
-            onClick (fun _ -> loadDispatch settings)
+            onClick (fun _ -> loadDispatch preset.Settings)
             text "Load"
           ]
-          Dialog.toggleEdit "Rename" "Edit" name (curry RenameSettings i >> saveDispatch) Input.text
+          Dialog.toggleEdit "Rename" "Edit" preset.Name (curry RenamePreset i >> saveDispatch) Input.text
           button [
-            onClick (fun _ -> saveDispatch (DeleteSettings i))
+            onClick (fun _ -> saveDispatch (DeletePreset i))
             text "x"
           ]
         ]
@@ -831,9 +839,8 @@ module LoadSave =
           style.width.maxContent
         ]
         children [
-          Dialog.toggleEdit "Save Current Settings As" "Save Current Settings" "Untitled Settings" (SaveSettings >> saveDispatch) Input.text
-
-          ImportSave {| Dispatch = saveDispatch |}
+          Dialog.toggleEdit "Save Current Settings As" "Save Current Settings" "Untitled Settings" (fun name -> SavePreset (name, fst app.State) |> saveDispatch) Input.text
+          importSave app.Presets saveDispatch
 
           button [
             onClick (fun _ -> loadDispatch Data.defaultSettings)

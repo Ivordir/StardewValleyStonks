@@ -341,9 +341,19 @@ type UIState = {
   ShowNormalizedProductPrices: bool
 }
 
+type Preset = {
+  Name: string
+  UniqueId: int64 option
+  Settings: Settings
+}
+
+[<RequireQualifiedAccess>]
+module Preset =
+  let hasId uniqueId preset = preset.UniqueId |> Option.contains uniqueId
+
 type App = {
   Data: GameData // refetched on every tab load, not saved
-  SavedSettings: (string * Settings) list // save separately to coordinate between multiple tabs
+  Presets: Preset list // save separately to coordinate between multiple tabs
   State: Settings * UIState // race, last edited tab gets its state saved
 }
 

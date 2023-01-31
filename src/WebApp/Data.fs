@@ -143,7 +143,12 @@ module Encode =
   let cropFilters = encodeCropFilters
   let ui = encodeUI
   let state = Encode.tuple2 settings ui
-  let savedSettings (saved: _ list) = saved |> Encode.mapSeq (Encode.tuple2 Encode.string settings)
+  let preset preset = Encode.object [
+    nameof preset.Name, Encode.string preset.Name
+    if preset.UniqueId.IsSome then
+      nameof preset.UniqueId, Encode.int64 preset.UniqueId.Value
+    nameof preset.Settings, encodeSettings preset.Settings
+  ]
 
 
 [<RequireQualifiedAccess>]
@@ -152,7 +157,13 @@ module Decode =
   let cropFilters = decodeCropFilters
   let ui = decodeUI
   let state = Decode.tuple2 settings ui
-  let savedSettings = Decode.list (Decode.tuple2 Decode.string settings)
+  let preset =
+    let u = Unchecked.defaultof<Preset>
+    Decode.object (fun get -> {
+      Name = get.Required.Field (nameof u.Name) Decode.string
+      UniqueId = get.Optional.Field (nameof u.UniqueId) Decode.int64
+      Settings = get.Required.Field (nameof u.Settings) decodeSettings
+    })
 
 
 let defaultSettings = {
@@ -187,30 +198,38 @@ let defaultSettings = {
   }
 }
 
-let defaultSavedSettings = [
-  "Year 1", {
-    defaultSettings with
-      Selected = {
-        defaultSettings.Selected with
-          Crops = defaultSettings.Selected.Crops - Set.ofArray [| 476u<_>; 478u<_>; 485u<_>; 486u<_>; 489u<_>; 494u<_>; 499u<_>; 802u<_>; 831u<_>; 833u<_>; 885u<_> |]
-          Fertilizers = Set.ofArray [| "Basic Fertilizer"; "Speed-Gro" |]
-          Products = defaultSettings.Selected.Products |> Map.map (fun _ products -> products |> Set.remove Processor.mill)
-      }
+let defaultPresets = [
+  {
+    Name = "Year 1"
+    UniqueId = None
+    Settings = {
+      defaultSettings with
+        Selected = {
+          defaultSettings.Selected with
+            Crops = defaultSettings.Selected.Crops - Set.ofArray [| 476u<_>; 478u<_>; 485u<_>; 486u<_>; 489u<_>; 494u<_>; 499u<_>; 802u<_>; 831u<_>; 833u<_>; 885u<_> |]
+            Fertilizers = Set.ofArray [| "Basic Fertilizer"; "Speed-Gro" |]
+            Products = defaultSettings.Selected.Products |> Map.map (fun _ products -> products |> Set.remove Processor.mill)
+        }
+    }
   }
-  "End Game", {
-    defaultSettings with
-      Game = {
-        GameVariables.common with
-          Skills = {
-            Skills.zero with
-              Farming = { Skill.zero with Level = Skill.maxLevel }
-              Foraging = { Skill.zero with Level = Skill.maxLevel }
-              Professions = Set.ofArray [| Tiller; Artisan; Gatherer; Botanist |]
-          }
-          Multipliers = { Multipliers.common with BearsKnowledge = true }
-          CropAmount = { CropAmountSettings.common with SpecialCharm = true }
-      }
-      Profit = { defaultSettings.Profit with SeedStrategy = StockpileSeeds }
+  {
+    Name = "End Game"
+    UniqueId = None
+    Settings = {
+      defaultSettings with
+        Game = {
+          GameVariables.common with
+            Skills = {
+              Skills.zero with
+                Farming = { Skill.zero with Level = Skill.maxLevel }
+                Foraging = { Skill.zero with Level = Skill.maxLevel }
+                Professions = Set.ofArray [| Tiller; Artisan; Gatherer; Botanist |]
+            }
+            Multipliers = { Multipliers.common with BearsKnowledge = true }
+            CropAmount = { CropAmountSettings.common with SpecialCharm = true }
+        }
+        Profit = { defaultSettings.Profit with SeedStrategy = StockpileSeeds }
+    }
   }
 ]
 
@@ -247,7 +266,7 @@ let defaultUI = {
 let defaultApp = {
   Data = gameData
   State = defaultSettings, defaultUI
-  SavedSettings = defaultSavedSettings
+  Presets = defaultPresets
 }
 
 
@@ -255,7 +274,7 @@ let defaultApp = {
 module LocalStorage =
   let [<Literal>] VersionKey = "Version"
   let [<Literal>] StateKey = "State"
-  let [<Literal>] SavedSettingsKey = "SavedSettings"
+  let [<Literal>] PresetsKey = "Presets"
 
   let inline private getItem key = Browser.WebStorage.localStorage.getItem key |> unbox<string option>
   let inline private setItem key data =
@@ -273,37 +292,37 @@ module LocalStorage =
     |> setItem key
 
   let saveState state = trySave StateKey Encode.state state
-  let saveSettings settings = trySave SavedSettingsKey Encode.savedSettings settings
+  let savePresets presets = trySave PresetsKey (Encode.mapSeq Encode.preset) presets
 
   let private saveAll app =
     saveVersion ()
     saveState app.State
-    saveSettings app.SavedSettings
+    savePresets app.Presets
 
-  let private tryLoad name key decoder =
+  let private tryLoad key decoder =
     match getItem key with
     | None ->
-      console.error $"Failed to load {name} from local storage: key not found."
+      console.error $"Failed to load {key} from local storage: key not found."
       None
     | Some json ->
       match json |> Decode.fromString decoder with
       | Ok app -> Some app
       | Error e ->
-        console.error $"Failed to load {name} from local storage: {e}"
+        console.error $"Failed to load {key} from local storage: {e}"
         None
 
   let private loadState () =
-    tryLoad "app state" StateKey Decode.state
+    tryLoad StateKey Decode.state
     |> Option.defaultValue defaultApp.State
 
   let private loadSavedSettings () =
-    tryLoad "saved settings" SavedSettingsKey Decode.savedSettings
+    tryLoad PresetsKey (Decode.list Decode.preset)
     |> Option.defaultValue []
 
   let private loadOldApp () = {
     Data = gameData
     State = loadState ()
-    SavedSettings = loadSavedSettings ()
+    Presets = loadSavedSettings ()
   }
 
   let private minorPatchFixes = [] // index i -> (vX.i.X -> vX.(i+1).X)
@@ -321,7 +340,7 @@ module LocalStorage =
     {
       Data = gameData
       State = adaptSettings settings, ui
-      SavedSettings = app.SavedSettings |> List.map (fun (name, settings) -> name, adaptSettings settings)
+      Presets = app.Presets |> List.map (fun preset -> { preset with Settings = adaptSettings settings })
     }
 
   let loadApp () =
@@ -371,16 +390,16 @@ module LocalStorage =
         | Some ver when ver = App.version -> ()
         | _ -> reload () // out of date -> fetch updated scripts, etc.
 
-      | SavedSettingsKey when isNullOrUndefined e.newValue ->
+      | PresetsKey when isNullOrUndefined e.newValue ->
         // user manually deleted key?
         dispatch []
 
-      | SavedSettingsKey ->
-        // load new savedSettings
-        match e.newValue |> Decode.fromString Decode.savedSettings with
-        | Ok saved -> dispatch saved
+      | PresetsKey ->
+        // sync presets
+        match e.newValue |> Decode.fromString (Decode.list Decode.preset) with
+        | Ok preset -> dispatch preset
         | Error e ->
-          // failed to decode saved settings, saved settings may now race instead of syncing.
+          // failed to decode presets, presets may now race instead of syncing.
           console.error $"Failed to load saved settings from local storage: {e}"
 
       | StateKey -> ()
@@ -414,6 +433,7 @@ module private XML =
 
   let boolValue = parseWith System.Boolean.TryParse
   let natValue = parseWith System.UInt32.TryParse
+  let int64Value = parseWith System.Int64.TryParse
   let floatValue = parseWith System.Double.TryParse
 
   let private array typePath parser (doc: Browser.Types.XMLDocument) (node: obj) path =
@@ -464,6 +484,8 @@ let loadSaveGame xml =
     let season = tryGet "Season" natValue "seasonForSaveGame" (uint Season.Spring) |> int |> enum
     let profitMargin = tryGet "Difficulty Modifier" floatValue "difficultyModifier" Multipliers.common.ProfitMargin
     let farmerName = tryGet "Farmer Name" stringValue "name" "Imported Save"
+    let uniqueId = int64Value doc farmer "UniqueMultiplayerID"
+    if uniqueId.IsNone then missing.Add "Unique Game ID"
     let professions =
       [|
         Tiller, 1u
@@ -478,7 +500,7 @@ let loadSaveGame xml =
         else None)
       |> Set.ofArray
 
-    let settings = {
+    let game = {
       GameVariables.common with
         Skills = {
           Skills.zero with
@@ -496,4 +518,9 @@ let loadSaveGame xml =
         JojaMembership = mailReceived |> Array.contains "JojaMember"
     }
 
-    (farmerName, settings), resizeToArray missing)
+    {
+      Name = farmerName
+      UniqueId = uniqueId
+      Settings = { defaultSettings with Game = game }
+    },
+    resizeToArray missing)

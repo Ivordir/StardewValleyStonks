@@ -17,7 +17,7 @@ open type StardewValleyStonks.WebApp.Update.AppMessage
 open StardewValleyStonks.WebApp.View
 
 let saveState = debouncer 100 Data.LocalStorage.saveState
-let saveSettings = debouncer 100 Data.LocalStorage.saveSettings
+let savePresets = debouncer 100 Data.LocalStorage.savePresets
 
 let update msg app =
   match msg with
@@ -25,11 +25,11 @@ let update msg app =
     let state = app.State |> Update.state msg app.Data
     saveState state
     { app with State = state }
-  | SetSavedSettings msg ->
-    let saved = app.SavedSettings |> Update.savedSettings msg (fst app.State)
-    saveSettings saved
-    { app with SavedSettings = saved }
-  | SyncSavedSettings saved -> { app with SavedSettings = saved }
+  | SetPresets msg ->
+    let presets = app.Presets |> Update.savedSettings msg
+    savePresets presets
+    { app with Presets = presets }
+  | SyncPresets presets -> { app with Presets = presets }
   | HardReset ->
     Data.LocalStorage.clear ()
     Browser.Dom.window.location.reload ()
@@ -53,7 +53,7 @@ let view app dispatch =
     ]
 
 let localStorageSub dispatch =
-  Data.LocalStorage.subscribe (SyncSavedSettings >> dispatch)
+  Data.LocalStorage.subscribe (SyncPresets >> dispatch)
   { new System.IDisposable with member _.Dispose () = () }
 
 do

@@ -114,11 +114,11 @@ type UIMessage =
   | SetProductQuality of Quality
   | SetShowNormalizedProductPrices of bool
 
-type SavedSettingsMessage =
-  | LoadSaveGame of string * GameVariables
-  | SaveSettings of string
-  | RenameSettings of int * string
-  | DeleteSettings of int
+type PresetsMessage =
+  | LoadSaveGame of Preset
+  | SavePreset of string * Settings
+  | RenamePreset of int * string
+  | DeletePreset of int
 
 type StateMessage =
   | SetSettings of SettingsMessage
@@ -127,8 +127,8 @@ type StateMessage =
 
 type AppMessage =
   | SetState of StateMessage
-  | SetSavedSettings of SavedSettingsMessage
-  | SyncSavedSettings of (string * Settings) list
+  | SetPresets of PresetsMessage
+  | SyncPresets of Preset list
   | HardReset
 
 let private setSelected makeSelected value set =
@@ -256,13 +256,6 @@ let profit msg profit =
   | SetPayForFertilizer value -> { profit with PayForFertilizer = value }
   | SetReplaceLostFertilizer value -> { profit with ReplaceLostFertilizer = value }
 
-let tableSort multi ((col, asc) as s) sort =
-  match sort |> List.tryFindIndexBack (fst >> (=) col), multi with
-  | Some i, true -> sort |> List.updateAt i (col, not asc)
-  | Some _, false -> [ col, not asc ]
-  | None, true -> s :: sort
-  | None, false -> [ s ]
-
 let settings data msg (settings: Settings) =
   match msg with
   | SetGameVariables msg -> { settings with Game = settings.Game |> gameVariables msg }
@@ -288,12 +281,24 @@ let ranker msg ranker =
   | SetBrushSpan (start, finish) -> { ranker with BrushSpan = start, finish }
   | SetSelectedCropAndFertilizer pair -> { ranker with SelectedCropAndFertilizer = pair }
 
-let savedSettings msg settings saved =
+let savedSettings msg presets =
   match msg with
-  | LoadSaveGame (name, vars) -> (name, { settings with Game = vars }) :: saved
-  | SaveSettings name -> (name, settings) :: saved
-  | RenameSettings (i, name) -> saved |> List.updateAt i (name, saved |> List.item i |> snd)
-  | DeleteSettings i -> saved |> List.removeAt i
+  | LoadSaveGame preset ->
+    preset.UniqueId
+    |> Option.bind (fun uniqueId -> presets |> List.tryFindIndex (Preset.hasId uniqueId))
+    |> Option.defaultOrMap (preset :: presets) (fun i -> presets |> List.updateAt i preset)
+
+  | SavePreset (name, settings) ->
+    {
+      Name = name
+      UniqueId = None
+      Settings = settings
+    } :: presets
+
+  | RenamePreset (i, name) ->
+    presets |> List.updateAt i { (presets |> List.item i) with Name = name }
+
+  | DeletePreset i -> presets |> List.removeAt i
 
 let ui msg ui =
   match msg with
