@@ -30,7 +30,7 @@ let update msg app =
     savePresets presets
     { app with Presets = presets }
   | SyncPresets presets -> { app with Presets = presets }
-  | HardReset ->
+  | NuclearReset ->
     Data.LocalStorage.clear ()
     Browser.Dom.window.location.reload ()
     app
@@ -44,12 +44,13 @@ let view app dispatch =
   with e ->
     console.error e
     div [
-      ofStr "Whoops, something went wrong. Please reload the page..."
+      ofStr "Whoops, something went wrong. Please try reloading the page. If this message remains after reloading the page, try doing a "
+      Settings.LoadSave.nuclearReset dispatch
       br []
-      ofStr (sprintf "%A" e)
-
-      // ofStr "If this message remains after reloading the page, try doing a "
-      // hardResetButton
+      details [
+        summary (ofStr "Error Message")
+        ofStr (sprintf "%A" e)
+      ]
     ]
 
 let localStorageSub dispatch =

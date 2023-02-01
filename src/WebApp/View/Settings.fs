@@ -808,6 +808,12 @@ module LoadSave =
                 ofStr "This save game has been previously imported. Clicking \"Ok\" will update/overwrite the existing preset."
         ])
 
+  let nuclearReset dispatch =
+    Dialog.toggleEdit "Nuclear Reset" "Nuclear Reset" () (fun () -> dispatch NuclearReset) (fun () _ ->
+      p [
+        ofStr "Note: This will reset Stardew Valley Stonks to its default settings, deleting all custom presets in the process."
+      ])
+
   let tab app dispatch =
     let saveDispatch = SetPresets >> dispatch
     let loadDispatch = LoadSettings >> SetState >> dispatch
@@ -842,11 +848,7 @@ module LoadSave =
             text "Reset Settings to Default"
           ]
 
-          button [
-            // add warning
-            onClick (fun _ -> dispatch HardReset)
-            text "Hard Reset"
-          ]
+          nuclearReset dispatch
         ]
       ]
     ]

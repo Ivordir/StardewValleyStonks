@@ -129,7 +129,7 @@ type AppMessage =
   | SetState of StateMessage
   | SetPresets of PresetsMessage
   | SyncPresets of Preset list
-  | HardReset
+  | NuclearReset
 
 let private setSelected makeSelected value set =
   if makeSelected

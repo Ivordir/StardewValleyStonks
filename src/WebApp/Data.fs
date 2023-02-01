@@ -376,7 +376,7 @@ module LocalStorage =
     Browser.Dom.window.onstorage <- fun e ->
       match e.key with
       | null ->
-        // local storage was cleared (hard reset triggered)
+        // local storage was cleared (nuclear reset triggered)
         reload ()
 
       | VersionKey when isNullOrUndefined e.newValue ->
