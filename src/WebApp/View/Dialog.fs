@@ -42,20 +42,6 @@ let [<ReactComponent>] private Dialog (props: {|
     ]
   ]
 
-let [<ReactComponent>] private EditDialog (props: {|
-    Title: string
-    State: 'a
-    OnClose: 'a option -> unit
-    Children: 'a -> ('a -> unit) -> ReactElement
-  |}) =
-  let state, setState = useState props.State
-  Dialog {|
-    Cancel = true
-    Title = props.Title
-    Close = fun ok -> props.OnClose (if ok then Some state else None)
-    Children = props.Children state setState
-  |}
-
 let [<ReactComponent>] private EditDialogToggle (props: {|
     Title: string
     ToggleText: string
@@ -63,21 +49,25 @@ let [<ReactComponent>] private EditDialogToggle (props: {|
     Dispatch: 'a -> unit
     Children: 'a -> ('a -> unit) -> ReactElement
   |}) =
-    let modal, setModal = useState false
-    fragment [
-      button [
-        onClick (fun _ -> setModal true)
-        text props.ToggleText
-      ]
-      if modal then EditDialog {|
-        Title = props.Title
-        State = props.State
-        OnClose = (fun state ->
-          state |> Option.iter props.Dispatch
-          setModal false)
-        Children = props.Children
-      |}
+  let state, setState = useState None
+  fragment [
+    button [
+      onClick (fun _ -> setState (Some props.State))
+      text props.ToggleText
     ]
+
+    match state with
+    | None -> none
+    | Some state ->
+      Dialog {|
+        Cancel = true
+        Title = props.Title
+        Close = fun ok ->
+          if ok then props.Dispatch state
+          setState None
+        Children = props.Children state (Some >> setState)
+      |}
+  ]
 
 let create title close children = Dialog {|
   Cancel = false
