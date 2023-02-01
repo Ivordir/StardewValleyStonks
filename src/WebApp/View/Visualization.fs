@@ -15,10 +15,10 @@ open Core.Operators
 open Core.ExtraTopLevelOperators
 
 module GrowthCalendar =
-  let rec repeatAppend n items list =
+  let rec private repeatCons n items list =
     if n = 0u
     then list
-    else repeatAppend (n - 1u) items (items :: list)
+    else repeatCons (n - 1u) items (items :: list)
 
   let stageImage stage seed = div (Image.growthStage stage seed)
 
@@ -40,7 +40,7 @@ module GrowthCalendar =
     regrow[regrow.Length - 1] <- harvestItem
     let filler = int totalDays - int usedDays |> max 0
     let stageList = Array.create filler (div []) :: stageList
-    let stageList = repeatAppend (harvests - 1u) regrow stageList
+    let stageList = repeatCons (harvests - 1u) regrow stageList
     let stageList = firstHarvest :: stageList
     season, (totalDays + days[season] - usedDays - nat filler), stageList
 
@@ -54,10 +54,10 @@ module GrowthCalendar =
 
       let harvestItem = div (Image.item' <| Crop.mainItem crop)
       let stages = Array.append stageImages [| harvestItem |]
-      loop (i - 1) (remainingDays - int usedDays) (repeatAppend harvests stages stageList)
+      loop (i - 1) (remainingDays - int usedDays) (repeatCons harvests stages stageList)
     loop (Array.length cropHarvests - 1) remainingDays stageList
 
-  let solverGrowthCalendarDays settings single (span: Solver.FertilizerDateSpan) =
+  let solver settings single (span: Solver.FertilizerDateSpan) =
     let stageList = [ Array.create (int (Date.daysInSeason - span.EndDate.Day)) (div [ Class.disabled ]) ]
     let days =
       if not single && settings.Game.Location = Farm
@@ -74,7 +74,6 @@ module GrowthCalendar =
 
       if season = 0 then remainingDays, stageList else
       let season = season - 1
-
       let crop = span.BridgeCrops[season]
       let seed = Crop.seed crop
       let stages, time = Game.growthTimeAndStages settings.Game span.Fertilizer crop
@@ -101,10 +100,11 @@ module GrowthCalendar =
       |]
       |> Array.tryPick id
       |> Option.map (Crop.seed >> stageImage 0)
+      |> Option.toArray
 
     Array.create (int (settings.Game.StartDate.Day - 1u)) (div [ Class.disabled ])
     :: Array.create (days - 1) (div [])
-    :: Option.toArray firstStage
+    :: firstStage
     :: stageList
     |> Array.concat
     |> Array.chunkBySize (int Date.daysInSeason)
@@ -124,7 +124,7 @@ module GrowthCalendar =
         ]
       ])
 
-  let growthCalender app crop fertilizer =
+  let ranker app crop fertilizer =
     let settings, _ = app.State
     match Query.bestGrowthSpan settings.Game fertilizer crop with
     | None -> ofStr (if Game.cropIsInSeason settings.Game crop then "No harvests possible!" else "Crop not in season!")
@@ -157,14 +157,14 @@ module GrowthCalendar =
 
       div [
         Class.calendar
-        children (solverGrowthCalendarDays settings true span)
+        children (solver settings true span)
       ]
 
 
 module SummaryTable =
   let pluralize x text = if x = 1.0 then text else (text + "s")
 
-  let harvestsSummaryHeaderRow data settings crop (harvests: nat) =
+  let private harvestsSummaryHeaderRow data settings crop (harvests: nat) =
     tr [
       td [ colSpan 6; children [
         Image.Icon.crop data crop
@@ -179,7 +179,7 @@ module SummaryTable =
       ]
     ]
 
-  let stockpiledSeedRow settings =
+  let private stockpiledSeedRow settings =
     if settings.Profit.SeedStrategy <> StockpileSeeds then none else
     tr [
       td [
@@ -190,7 +190,7 @@ module SummaryTable =
       td (float2Decimal 1.0)
     ]
 
-  let boughtRow (icon: _ -> ReactElement) (seeds: _ -> ReactElement) item price amount =
+  let private boughtRow (icon: _ -> ReactElement) (seeds: _ -> ReactElement) item price amount =
     if amount = 0.0 then none else
     tr [
       td [ colSpan 4; children [
@@ -216,10 +216,10 @@ module SummaryTable =
         | Some (_, cost) -> ofStr (gold2Decimal <| amount * -float cost)
         | None -> ofStr "???"
       ]
-      td [ seeds amount ]
+      td (seeds amount)
     ]
 
-  let fertilizerBoughtRow replacement fertilizer price amount =
+  let private fertilizerBoughtRow replacement fertilizer price amount =
     match fertilizer, price with
     | Some fertilizer, Some price ->
       boughtRow
@@ -234,7 +234,7 @@ module SummaryTable =
         amount
     | _ -> none
 
-  let seedsBoughtRow data (seed: SeedId) seedPrice amount =
+  let private seedsBoughtRow data (seed: SeedId) seedPrice amount =
     if amount = 0.0 then none else
     boughtRow
       (fun seed -> Image.Icon.item' data (seed * 1u<_>))
@@ -243,7 +243,7 @@ module SummaryTable =
       seedPrice
       amount
 
-  let harvestedSeedsRows data item (amounts: _ Qualities) =
+  let private harvestedSeedsRows data item (amounts: _ Qualities) =
     fragment [
       for i = Quality.highest downto 0 do
         let quality = enum i
@@ -264,7 +264,7 @@ module SummaryTable =
         ]
     ]
 
-  let seedMakerRows data crop item (amounts: _ Qualities) =
+  let private seedMakerRows data crop item (amounts: _ Qualities) =
     let seed = Crop.seed crop
     fragment [
       for i = Quality.highest downto 0 do
@@ -290,7 +290,7 @@ module SummaryTable =
         ]
     ]
 
-  let forageSeedsRows data settings items (seed: SeedId) amountSold amountUsed =
+  let private forageSeedsRows data settings items (seed: SeedId) amountSold amountUsed =
     let totalAmount = amountSold + amountUsed
     if totalAmount = 0.0 then none else
     fragment (items |> Array.mapi (fun i item ->
@@ -322,12 +322,12 @@ module SummaryTable =
       ]
     ))
 
-  let seedAmountsRows data crop seedAmounts = fragment (seedAmounts |> Array.map (fun (item, amounts: _ Qualities) ->
+  let private seedAmountsRows data crop seedAmounts = fragment (seedAmounts |> Array.map (fun (item, amounts: _ Qualities) ->
     if item = Crop.seedItem crop then harvestedSeedsRows data item amounts
     elif item = Crop.mainItem crop then seedMakerRows data crop item amounts
     else assert false; none))
 
-  let rawItemRow data item quality profit amount =
+  let private rawItemRow data item quality profit amount =
     fragment [
       td []
       td []
@@ -340,7 +340,7 @@ module SummaryTable =
       ]
     ]
 
-  let productRow data settings item quality product profit amount =
+  let private productRow data settings item quality product profit amount =
     fragment [
       let amountPerItem = Product.amountPerItem product
       td (Image.Icon.itemQuality' data item quality)
@@ -357,7 +357,7 @@ module SummaryTable =
       ]
     ]
 
-  let customSellPriceRow data item quality custom amount =
+  let private customSellPriceRow data item quality custom amount =
     fragment [
       td []
       td []
@@ -373,7 +373,7 @@ module SummaryTable =
       ]
     ]
 
-  let unknownSellAs data item quality amount =
+  let private unknownSellAs data item quality amount =
     tr [
       td (Image.Icon.itemQuality' data item quality)
       td [
@@ -386,7 +386,7 @@ module SummaryTable =
       td []
     ]
 
-  let soldAmountsRows data settings (items: _ array) (summary: Query.HarvestsSummary) =
+  let private soldAmountsRows data settings (items: _ array) (summary: Query.HarvestsSummary) =
     fragment [
       for i = 0 to items.Length - 1 do
         let item = items[i]
@@ -406,13 +406,13 @@ module SummaryTable =
               | NonCustom (Some product) -> productRow data settings item quality product profit amount
               | Custom (price, preservesQuality) -> customSellPriceRow data item quality (price, preservesQuality) amount
 
-              td [ ofStr <| gold2Decimal (profit * amount) ]
+              td (gold2Decimal (profit * amount))
               td []
             ]
           | None -> unknownSellAs data item quality amount
       ]
 
-  let harvestsSummaryFooterRow settings profit =
+  let private harvestsSummaryFooterRow settings profit =
     tr [
       td [
         colSpan 6
@@ -431,7 +431,7 @@ module SummaryTable =
       ]
     ]
 
-  let harvestSummaryTable data settings fertilizer fertilizerPrice profit (summary: Query.HarvestsSummary) =
+  let private harvestSummaryTable data settings fertilizer fertilizerPrice profit (summary: Query.HarvestsSummary) =
     let itemSummary = summary.ItemAndSeedSummary
     let crop = summary.Crop
     let seed = Crop.seed crop
@@ -447,7 +447,7 @@ module SummaryTable =
       harvestsSummaryFooterRow settings profit
     ]
 
-  let rankerProfitSummaryTableFooter roi timeNorm (profitSummary: Query.Ranker.ProfitSummary) =
+  let private rankerProfitFooter roi timeNorm (profitSummary: Query.Ranker.ProfitSummary) =
     tfoot [
       if not roi && timeNorm <> TotalPeriod then
         tr [
@@ -488,7 +488,7 @@ module SummaryTable =
         ]
     ]
 
-  let rankerRoiSummary settings timeNorm (profitSummary: Query.Ranker.ProfitSummary) =
+  let rankerRoi settings timeNorm (profitSummary: Query.Ranker.ProfitSummary) =
     let investment = profitSummary.Investment (settings.Profit.SeedStrategy = BuyFirstSeed)
     let roi = investment |> Option.bind profitSummary.ROI
     div [
@@ -525,7 +525,7 @@ module SummaryTable =
       | _ -> none
     ]
 
-  let rankerProfitSummaryTable roi (data: GameData) settings timeNorm crop fertilizer =
+  let rankerProfit roi (data: GameData) settings timeNorm crop fertilizer =
     if not <| Game.cropIsInSeason settings.Game crop then ofStr "Crop not in season!" else
 
     match Query.Ranker.profitSummary data settings timeNorm crop fertilizer with
@@ -542,14 +542,14 @@ module SummaryTable =
           ]
           tbody [ fertilizerBoughtRow false fertilizer profitSummary.FertilizerPrice 1.0 ]
           harvestSummaryTable data settings fertilizer profitSummary.FertilizerPrice profitSummary.NetProfit profitSummary.HarvestSummary
-          rankerProfitSummaryTableFooter roi timeNorm profitSummary
+          rankerProfitFooter roi timeNorm profitSummary
         ]
 
         if roi then
-          rankerRoiSummary settings timeNorm profitSummary
+          rankerRoi settings timeNorm profitSummary
       ]]
 
-  let rankerXpSummary (data: GameData) settings timeNorm crop fertilizer =
+  let rankerXp (data: GameData) settings timeNorm crop fertilizer =
     match Query.Ranker.xpSummary data settings timeNorm crop fertilizer with
     | Error e ->
       div [
@@ -599,7 +599,7 @@ module SummaryTable =
       solution.RegrowCrop |> Option.map (fun (_, crop, harvests) -> FarmCrop crop, harvests) |> Option.toArray
     |]
 
-  let solverProfitSummaryTable data settings total (solutions: Solver.FertilizerDateSpan list) =
+  let solverProfit data settings total (solutions: Solver.FertilizerDateSpan list) =
     div [ Class.breakdownTable; children [
       table [
         thead [
@@ -647,7 +647,7 @@ module SummaryTable =
       ]
     ]]
 
-  let solverXpSummaryTable data settings total (solutions: Solver.FertilizerDateSpan list) =
+  let solverXp data settings total (solutions: Solver.FertilizerDateSpan list) =
     table [
       thead [
         tr [
@@ -682,7 +682,7 @@ module SummaryTable =
     ]
 
 
-let pairData metric timeNorm data settings =
+let private pairData metric timeNorm data settings =
   let crops = Query.Selected.inSeasonCrops data settings |> Array.ofSeq
   let fertilizers = Query.Selected.fertilizersOpt data settings |> Array.ofSeq
   let rankValue = Query.rankValue metric
@@ -703,7 +703,7 @@ module Ranker =
   open Fable.Core.JsInterop
   open Feliz.Recharts
 
-  let selectFromGraph rankItem (pairs: _ array) dispatch i =
+  let private selectFromGraph rankItem (pairs: _ array) dispatch i =
     let crop, fert = pairs[i]
     (match rankItem with
     | RankCropsAndFertilizers -> (Some crop, Some fert)
@@ -713,7 +713,7 @@ module Ranker =
     |> SetSelectedCropAndFertilizer
     |> dispatch
 
-  let pairImage (data: GameData) (pairs: (SeedId * string option) array) selectPair props =
+  let private pairImage (data: GameData) (pairs: (SeedId * string option) array) selectPair props =
     let index: int = props?payload?value
     let crop, fert = pairs[index]
     Svg.svg [
@@ -741,7 +741,7 @@ module Ranker =
       ]
     ]
 
-  let chartTooltip (data: GameData) (pairs: (SeedId * string option) array) props =
+  let private chartTooltip (data: GameData) (pairs: (SeedId * string option) array) props =
     // number of harvests
     // item qualities / amounts per harvest
     // products sold + amount + price
@@ -763,10 +763,10 @@ module Ranker =
       ]
     | _ -> none
 
-  let private getPath x y width height =
+  let private svgRectPath x y width height =
     $"M {x},{y} h {width} v {height} h -{width} Z"
 
-  let barBackground gap selectPair props =
+  let private barBackground gap selectPair props =
     let x: float = props?x - gap / 2.0
     let y: float = props?y
     let width: float = props?width + gap
@@ -781,10 +781,10 @@ module Ranker =
       svg.y y
       svg.width width
       svg.height height
-      svg.d (getPath x y width height)
+      svg.d (svgRectPath x y width height)
     ]
 
-  let errorBar (pairs: (SeedId * string option) array) props =
+  let private errorBar (pairs: (SeedId * string option) array) props =
     let x: float = props?x
     let y: float = props?y
     let width: float = props?width
@@ -799,7 +799,7 @@ module Ranker =
         svg.y y
         svg.width width
         svg.height height
-        svg.d (getPath x y width height)
+        svg.d (svgRectPath x y width height)
       ]
     | Error (flags: Query.InvalidReasons) ->
       let crop, fert = pairs[fst props?payload]
@@ -832,7 +832,7 @@ module Ranker =
         ]
       ]
 
-  let graph ranker model pairs (data: _ array) dispatch =
+  let private graph ranker model pairs (data: _ array) dispatch =
     let barGap = 4.0
     let selectPair = selectFromGraph ranker.RankItem pairs dispatch
     Recharts.responsiveContainer [
@@ -897,8 +897,14 @@ module Ranker =
       let pairs =
         match ranker.RankItem with
         | RankCropsAndFertilizers -> pairData.Pairs
-        | RankCrops -> pairData.Pairs |> Array.groupBy (fst >> fst) |> Array.map (snd >> Array.maxBy (snd >> Option.ofResult))
-        | RankFertilizers -> pairData.Pairs |> Array.groupBy (fst >> snd) |> Array.map (snd >> Array.maxBy (snd >> Option.ofResult))
+        | RankCrops ->
+          pairData.Pairs
+          |> Array.groupBy (fst >> fst)
+          |> Array.map (snd >> Array.maxBy (snd >> Option.ofResult))
+        | RankFertilizers ->
+          pairData.Pairs
+          |> Array.groupBy (fst >> snd)
+          |> Array.map (snd >> Array.maxBy (snd >> Option.ofResult))
 
       let pairs =
         if ranker.ShowInvalid then pairs else
@@ -985,7 +991,7 @@ let private selectSpecificOrBest name toString (viewItem: _ -> ReactElement) ite
     selected
     dispatch
 
-let [<ReactComponent>] SelectedCropAndFertilizer (props: {|
+let [<ReactComponent>] AuditCropAndFertilizer (props: {|
     App: _
     Seed: _
     Fertilizer: _
@@ -994,10 +1000,9 @@ let [<ReactComponent>] SelectedCropAndFertilizer (props: {|
   let app = props.App
   let seed = props.Seed
   let fertName = props.Fertilizer
-  let dispatch = props.Dispatch
 
-  let appDispatch = dispatch
-  let dispatch = SetRanker >> dispatch
+  let appDispatch = props.Dispatch
+  let dispatch = SetRanker >> props.Dispatch
   let data = app.Data
   let settings, ui = app.State
   let ranker = ui.Ranker
@@ -1114,15 +1119,15 @@ let [<ReactComponent>] SelectedCropAndFertilizer (props: {|
         (ui.OpenDetails.Contains OpenDetails.RankerProfitBreakdown)
         (ofStr "Profit Breakdown")
         (match metric with
-          | Gold -> SummaryTable.rankerProfitSummaryTable false data settings timeNorm crop fert
-          | XP -> SummaryTable.rankerXpSummary data settings timeNorm crop fert
-          | ROI -> SummaryTable.rankerProfitSummaryTable true data settings timeNorm crop fert)
+          | Gold -> SummaryTable.rankerProfit false data settings timeNorm crop fert
+          | XP -> SummaryTable.rankerXp data settings timeNorm crop fert
+          | ROI -> SummaryTable.rankerProfit true data settings timeNorm crop fert)
         (curry SetDetailsOpen OpenDetails.RankerProfitBreakdown >> appDispatch)
 
       animatedDetails
         (ui.OpenDetails.Contains OpenDetails.RankerGrowthCalendar)
         (ofStr "Growth Calendar")
-        (GrowthCalendar.growthCalender app crop fert)
+        (GrowthCalendar.ranker app crop fert)
         (curry SetDetailsOpen OpenDetails.RankerGrowthCalendar >> appDispatch)
 
     | _ ->
@@ -1134,13 +1139,11 @@ let [<ReactComponent>] SelectedCropAndFertilizer (props: {|
 
 
 let rankerOrAudit app dispatch =
-  let appDispatch = dispatch
-  let dispatch = SetRanker >> dispatch
   let settings, ui = app.State
   let ranker = ui.Ranker
   match ranker.SelectedCropAndFertilizer with
-  | Some (crop, fert) -> SelectedCropAndFertilizer {| App = app; Seed = crop; Fertilizer = fert; Dispatch = appDispatch |}
-  | None -> Elmish.React.Common.lazyView3 Ranker.ranker ranker (app.Data, settings) dispatch
+  | Some (crop, fert) -> AuditCropAndFertilizer {| App = app; Seed = crop; Fertilizer = fert; Dispatch = dispatch |}
+  | None -> Elmish.React.Common.lazyView3 Ranker.ranker ranker (app.Data, settings) (SetRanker >> dispatch)
 
 
 // The solver typically takes < 50ms, but with
@@ -1172,11 +1175,11 @@ let [<ReactComponent>] Solver (props: {|
       if solving then className "disabled"
       children [
         match props.SolverMode with
-        | MaximizeGold -> SummaryTable.solverProfitSummaryTable props.Data settings total solution
-        | MaximizeXP -> SummaryTable.solverXpSummaryTable props.Data settings total solution
+        | MaximizeGold -> SummaryTable.solverProfit props.Data settings total solution
+        | MaximizeXP -> SummaryTable.solverXp props.Data settings total solution
         div [
           Class.calendar
-          children (solution |> Seq.collect (GrowthCalendar.solverGrowthCalendarDays settings false))
+          children (solution |> Seq.collect (GrowthCalendar.solver settings false))
         ]
       ]
     ]
@@ -1185,9 +1188,9 @@ let [<ReactComponent>] Solver (props: {|
 let section app dispatch =
   let settings, ui = app.State
   let uiDispatch = SetUI >> dispatch
-  let rankerChart = ui.Mode = Ranker && ui.Ranker.SelectedCropAndFertilizer.IsNone
+
   section [
-    prop.id (if rankerChart then "visualization-graph" else "visualization")
+    prop.id (if ui.Mode = Ranker && ui.Ranker.SelectedCropAndFertilizer.IsNone then "visualization-graph" else "visualization")
     children [
       viewTabs ui.Mode (SetAppMode >> uiDispatch)
       match ui.Mode with
