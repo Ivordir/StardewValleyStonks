@@ -1046,9 +1046,12 @@ let [<ReactComponent>] SelectedCropAndFertilizer (props: {|
     |> Array.append [| bestCrop |]
 
   let fertilizerOptions =
+    // array.sort moves undefined elements to the end of the array even with a compare function
+    // so we wrap with all elements with Some before sorting and then unwraping
     pairData.Fertilizers
-    |> Array.sortBy Fertilizer.Opt.name
-    |> Array.map Choice1Of2
+    |> Array.map Some
+    |> Array.sortBy (Option.get >> Fertilizer.Opt.name)
+    |> Array.map (Option.get >> Choice1Of2)
     |> Array.append [| bestFert |]
 
   let crop = seed |> Option.defaultOrMap bestCrop (data.Crops.Find >> Choice1Of2)
