@@ -1049,7 +1049,7 @@ let [<ReactComponent>] SelectedCropAndFertilizer (props: {|
 
   let cropOptions =
     pairData.Crops
-    |> Array.sortBy (Settings.Crops.sort data)
+    |> Array.sortBy (Settings.Crops.sortKey data)
     |> Array.map Choice1Of2
     |> Array.append [| bestCrop |]
 

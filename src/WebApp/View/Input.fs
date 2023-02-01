@@ -71,8 +71,8 @@ let [<ReactComponent>] private NumberInput (props: {|
 let natWith width (min: nat option) (max: nat option) (value: nat) dispatch =
   NumberInput {|
     Width = width
-    Min = min |> Option.defaultOrMap 0.0 float |> Some
-    Max = max |> Option.map float
+    Min = min |> Option.defaultValue System.UInt32.MinValue |> float |> Some
+    Max = max |> Option.defaultValue System.UInt32.MaxValue |> float |> Some
     Precision = 1.0
     Value = float value
     Dispatch = nat >> dispatch

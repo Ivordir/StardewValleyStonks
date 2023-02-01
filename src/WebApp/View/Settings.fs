@@ -469,7 +469,7 @@ module Crops =
     |> Seq.filter (fun crop -> filters |> Seq.forall (fun predicate -> predicate crop))
     |> Array.ofSeq
 
-  let sort (data: GameData) = Crop.name data.Items.Find
+  let sortKey (data: GameData) = Crop.name data.Items.Find
 
   let private selectFilter name value dispatch =
     Select.options
@@ -489,6 +489,7 @@ module Crops =
       if selected
       then filters.Seasons |> Seasons.add season
       else filters.Seasons |> Seasons.remove season
+
     div [
       input [
         className "input-box"
@@ -524,8 +525,8 @@ module Crops =
 
   let tab app dispatch =
     let settings, ui = app.State
-    let crops = filteredCrops app |> Seq.sortBy (sort app.Data)
     let uiDispatch = SetUI >> dispatch
+    let crops = filteredCrops app |> Seq.sortBy (sortKey app.Data)
 
     div [
       cropFilter ui.CropFilters (SetCropFilters >> uiDispatch)
