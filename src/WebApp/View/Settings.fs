@@ -117,7 +117,7 @@ let viewPrice price =
     | None -> ofStr "???"
   ]
 
-let viewCustom title (viewValue: _ -> ReactElement) (editValue: _ -> _ -> ReactElement) defaultValue (selection: Selection<_,_>) key dispatch =
+let custom (viewValue: _ -> ReactElement) (editValue: _ -> _ -> ReactElement) defaultValue title (selection: Selection<_,_>) key dispatch =
   fragment [
     let value = selection.Values.TryFind key
     match value with
@@ -133,12 +133,8 @@ let viewCustom title (viewValue: _ -> ReactElement) (editValue: _ -> _ -> ReactE
       editValue
   ]
 
-let editCustomPrice = Input.nat (length.rem 7.5)
-
-let editCustomSellPrice (price, preserveQuality) setState = fragment [
-  Input.nat (length.rem 2) price (fun price -> setState (price, preserveQuality))
-  checkboxText "Scale with quality" preserveQuality (fun preserveQuality -> setState (price, preserveQuality))
-]
+let customPrice title selection key dispatch =
+  custom ofNat (Input.nat (length.rem 7.5)) 0u title selection key dispatch
 
 
 let private sortKeysByHighestCount table =
@@ -242,11 +238,15 @@ module Crops =
           | None -> td [])
         td []
         td [
-          viewCustom
-            "Custom Sell Price"
+          custom
             (Query.customSellPriceValue productQuality >> ofNat)
-            editCustomSellPrice
+            (fun (price, preserveQuality) setState ->
+              fragment [
+                Input.nat (length.rem 2) price (fun price -> setState (price, preserveQuality))
+                checkboxText "Scale with quality" preserveQuality (fun preserveQuality -> setState (price, preserveQuality))
+              ])
             (0u, false)
+            "Custom Sell Price"
             settings.Selected.CustomSellPrices
             (seed, item)
             (SetCustomSellPrice >> selectDispatch)
@@ -441,11 +441,8 @@ module Crops =
                 children (checkbox (settings.Selected.UseForageSeeds.Contains seed) (curry SetSelected seed >> SelectUseForageSeeds >> selectDispatch))
               ]
             td [
-              viewCustom
+              customPrice
                 "Custom Seed Price"
-                ofNat
-                editCustomPrice
-                0u
                 settings.Selected.CustomSeedPrices
                 seed
                 (SetCustomSeedPrice >> selectDispatch)
@@ -640,11 +637,8 @@ module Fertilizers =
                   | None -> none
                 ])
               td [
-                viewCustom
+                customPrice
                   "Custom Fertilizer Price"
-                  ofNat
-                  editCustomPrice
-                  0u
                   settings.Selected.CustomFertilizerPrices
                   name
                   (SetCustomFertilizerPrice >> selectDispatch)
