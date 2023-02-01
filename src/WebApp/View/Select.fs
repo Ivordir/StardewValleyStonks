@@ -79,7 +79,7 @@ let selectList listRef clearHover (props: _ Props) (state: _ State) setState hov
     onMouseDown handleEvent
     children [
       if state.Options.Length = 0 then
-        div (ofStr "No results found...")
+        div "No results found..."
       else
         ul [
           prop.ref<Browser.Types.HTMLElement> listRef

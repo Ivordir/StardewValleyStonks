@@ -48,7 +48,7 @@ let view app dispatch =
       Settings.LoadSave.nuclearReset dispatch
       br []
       details [
-        summary (ofStr "Error Message")
+        summary "Error Message"
         ofStr (sprintf "%A" e)
       ]
     ]

@@ -187,7 +187,7 @@ module SummaryTable =
         text "Stockpiled Seed"
       ]
       td []
-      td [ ofStr <| float2Decimal 1.0 ]
+      td (float2Decimal 1.0)
     ]
 
   let boughtRow (icon: _ -> ReactElement) (seeds: _ -> ReactElement) item price amount =
@@ -253,14 +253,14 @@ module SummaryTable =
           td []
           td []
           td []
-          td [ Image.Icon.itemQuality' data item quality ]
+          td (Image.Icon.itemQuality' data item quality)
           td []
           td [
             ofStr " x "
             ofStr <| float2Decimal amount
           ]
           td []
-          td [ ofStr <| float2Decimal amount ]
+          td (float2Decimal amount)
         ]
     ]
 
@@ -273,20 +273,20 @@ module SummaryTable =
         if amount = 0.0 then none else
         let seedAmount = amount * Processor.seedMakerExpectedAmount seed
         tr [
-          td [ Image.Icon.itemQuality' data item quality ]
+          td (Image.Icon.itemQuality' data item quality)
           td [
             ofStr " x "
             ofStr <| float2Decimal amount
           ]
-          td [ Image.rightArrow ]
-          td [ Image.Icon.productQuality data item (SeedsFromSeedMaker (seed * 1u<_>)) Quality.Normal ]
+          td Image.rightArrow
+          td (Image.Icon.productQuality data item (SeedsFromSeedMaker (seed * 1u<_>)) Quality.Normal)
           td []
           td [
             ofStr " x "
             ofStr <| float2Decimal seedAmount
           ]
           td []
-          td [ ofStr <| float2Decimal seedAmount ]
+          td (float2Decimal seedAmount)
         ]
     ]
 
@@ -295,19 +295,15 @@ module SummaryTable =
     if totalAmount = 0.0 then none else
     fragment (items |> Array.mapi (fun i item ->
       tr [
-        td [
-          Image.Icon.item' data item
-        ]
+        td (Image.Icon.item' data item)
         td [
           ofStr " x "
           ofStr <| float2Decimal (totalAmount / float ForageCrop.forageSeedsPerCraft)
         ]
-        td [ Image.rightArrow ]
+        td Image.rightArrow
         if i = 0 then
           let span = rowSpan items.Length
-          td [ span; children [
-            Image.Icon.item' data (seed * 1u<_>)
-          ]]
+          td [ span; children (Image.Icon.item' data (seed * 1u<_>)) ]
           td [ span; children [
             ofStr <| gold (Game.seedItemSellPrice data settings.Game seed)
           ]]
@@ -336,8 +332,8 @@ module SummaryTable =
       td []
       td []
       td []
-      td [ Image.Icon.itemQuality' data item quality ]
-      td [ ofStr <| gold (nat profit) ]
+      td (Image.Icon.itemQuality' data item quality)
+      td (gold (nat profit))
       td [
         ofStr " x "
         ofStr <| float2Decimal amount
@@ -347,14 +343,14 @@ module SummaryTable =
   let productRow data settings item quality product profit amount =
     fragment [
       let amountPerItem = Product.amountPerItem product
-      td [ Image.Icon.itemQuality' data item quality ]
+      td (Image.Icon.itemQuality' data item quality)
       td [
         ofStr " x "
         ofStr <| float2Decimal amount
       ]
-      td [ Image.rightArrow ]
-      td [ Image.Icon.productQuality data item product (Product.outputQuality settings.Game.ModData quality product) ]
-      td [ ofStr <| gold (nat (profit / amountPerItem)) ]
+      td (Image.rightArrow)
+      td (Image.Icon.productQuality data item product (Product.outputQuality settings.Game.ModData quality product))
+      td (gold (nat (profit / amountPerItem)))
       td [
         ofStr " x "
         ofStr <| float2Decimal (amount * amountPerItem)
@@ -370,7 +366,7 @@ module SummaryTable =
         Image.Icon.itemQuality' data item quality
         ofStr " (Custom)"
       ]
-      td [ ofStr <| gold (Query.customSellPriceValue quality custom) ]
+      td (gold (Query.customSellPriceValue quality custom))
       td [
         ofStr " x "
         ofStr <| float2Decimal amount
@@ -379,12 +375,12 @@ module SummaryTable =
 
   let unknownSellAs data item quality amount =
     tr [
-      td [ Image.Icon.itemQuality' data item quality ]
+      td (Image.Icon.itemQuality' data item quality)
       td [
         ofStr " x "
         ofStr <| float2Decimal amount
       ]
-      td [ Image.rightArrow ]
+      td Image.rightArrow
       td [ colSpan 3; text "???" ]
       td []
       td []
@@ -540,7 +536,7 @@ module SummaryTable =
           thead [
             tr [
               th [ colSpan 6 ]
-              th [ ofStr "Profit" ]
+              th "Profit"
               th [ if settings.Profit.SeedStrategy <> IgnoreSeeds then ofStr "Seeds" ]
             ]
           ]
@@ -609,7 +605,7 @@ module SummaryTable =
         thead [
           tr [
             th [ colSpan 6 ]
-            th [ ofStr "Profit" ]
+            th "Profit"
             th [ if settings.Profit.SeedStrategy <> IgnoreSeeds then ofStr "Seeds" ]
           ]
         ]
@@ -644,7 +640,7 @@ module SummaryTable =
                 colSpan 6
                 text "Total"
               ]
-              td [ ofStr <| gold2Decimal total ]
+              td (gold2Decimal total)
               td []
             ]
           ]
@@ -659,8 +655,8 @@ module SummaryTable =
             colSpan 2
             text "Crop"
           ]
-          th [ ofStr "Harvests" ]
-          th [ ofStr "XP" ]
+          th "Harvests"
+          th "XP"
         ]
       ]
       tbody (solutions |> Seq.map (fun solution ->
@@ -668,10 +664,10 @@ module SummaryTable =
         |> Array.map (fun (crop, harvests) ->
           let xpPerHarvest = Game.xpPerHarvest data settings.Game crop
           tr [
-            td [ Image.Icon.crop data crop ]
-            td [ ofStr (sprintf "%.2fxp" xpPerHarvest) ]
-            td [ ofStr $" x {harvests}" ]
-            td [ ofStr (sprintf "%.2fxp" (xpPerHarvest * float harvests)) ]
+            td (Image.Icon.crop data crop)
+            td (sprintf "%.2fxp" xpPerHarvest)
+            td $" x {harvests}"
+            td (sprintf "%.2fxp" (xpPerHarvest * float harvests))
           ]))
         |> Array.concat)
       tfoot [
@@ -680,9 +676,7 @@ module SummaryTable =
             colSpan 3
             text "Total"
           ]
-          td [
-            ofStr (sprintf "%.2fxp" total)
-          ]
+          td (sprintf "%.2fxp" total)
         ]
       ]
     ]
@@ -762,7 +756,7 @@ module Ranker =
       let crop, fert = pairs[index]
       let fertDesc = Option.defaultOrMap "" (fun fert -> $" with {fert}")
       div [
-        div (ofStr (Crop.name data.Items.Find data.Crops[crop] + fertDesc fert))
+        div (Crop.name data.Items.Find data.Crops[crop] + fertDesc fert)
         match result with
         | Ok profit -> div (ofFloat profit)
         | Error _ -> none
@@ -911,9 +905,7 @@ module Ranker =
         pairs |> Array.filter (snd >> Result.isOk)
 
       if pairs.Length = 0 then
-        div [
-          ofStr "No valid items found"
-        ]
+        div "No valid items found"
       else
         let pairData =
           pairs
@@ -1185,10 +1177,7 @@ let [<ReactComponent>] Solver (props: {|
         ]
       ]
     ]
-  | None ->
-    div [
-      ofStr "Loading..."
-    ]
+  | None -> div "Loading..."
 
 let section app dispatch =
   let settings, ui = app.State

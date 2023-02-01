@@ -801,7 +801,7 @@ module LoadSave =
             | Some (preset, missing) ->
               if missing.Length > 0 then
                 ofStr "Warning: failed to load the following data from the save game:"
-                ul (missing |> Array.map (ofStr >> li))
+                ul (missing |> Array.map li)
                 ofStr "Click \"Ok\" if you want to continue anyways."
 
               if preset.UniqueId |> Option.exists (fun uniqueId -> presets |> List.exists (Preset.hasId uniqueId)) then
@@ -810,9 +810,7 @@ module LoadSave =
 
   let nuclearReset dispatch =
     Dialog.toggleEdit "Nuclear Reset" "Nuclear Reset" () (fun () -> dispatch NuclearReset) (fun () _ ->
-      p [
-        ofStr "Note: This will reset Stardew Valley Stonks to its default settings, deleting all custom presets in the process."
-      ])
+      p "Note: This will reset Stardew Valley Stonks to its default settings, deleting all custom presets in the process.")
 
   let tab app dispatch =
     let saveDispatch = SetPresets >> dispatch
