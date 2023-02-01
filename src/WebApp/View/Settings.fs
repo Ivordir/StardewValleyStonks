@@ -652,7 +652,7 @@ module Fertilizers =
 
   let tab app dispatch =
     let settings, ui = app.State
-    let fertilizers = app.Data.Fertilizers.Values |> Seq.sortBy Fertilizer.name
+    let fertilizers = app.Data.Fertilizers.Values |> Seq.sortBy Fertilizer.name |> Array.ofSeq
     div [ prop.id "fertilizer-tab"; children [
       table app.Data settings ui.FertilizerSort (ui.OpenDetails.Contains OpenDetails.Fertilizers) fertilizers dispatch
       prices app.Data settings ui.FertilizerPriceSort (ui.OpenDetails.Contains OpenDetails.FertilizerPrices) fertilizers dispatch
