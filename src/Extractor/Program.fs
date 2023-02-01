@@ -270,18 +270,13 @@ let parseCrop farmCropOverrides forageCropData seedId (data: string) =
   | _ -> failwith $"Unexpected crop data format for crop {seedId}: {data}"
 
 
-let getSubTexture graphics x y width height (texture: Texture2D) =
-  let data: Color array = Array.zeroCreate (texture.Width * texture.Height)
-  texture.GetData data
+let saveSubTexture name graphics x y width height (texture: Texture2D) =
   let sub = Array.zeroCreate (width * height)
-  for y0 = 0 to height - 1 do
-    let y1 = y0 * width
-    let y2 = (y0 + y) * texture.Width
-    for x0 = 0 to width - 1 do
-      sub.[x0 + y1] <- data.[x0 + x + y2]
+  texture.GetData (0, Rectangle (x, y, width, height), sub, 0, sub.Length)
   let subtexture = new Texture2D (graphics, width, height)
   subtexture.SetData sub
-  subtexture
+  use file = File.OpenWrite (name + ".png")
+  subtexture.SaveAsPng (file, width, height)
 
 let saveStageImages graphics outputPath cropSpriteSheet crop (spriteSheetRow: uint) =
   let path = Path.Combine (outputPath, string (Crop.seed crop))
@@ -291,9 +286,14 @@ let saveStageImages graphics outputPath cropSpriteSheet crop (spriteSheetRow: ui
   let y = (int spriteSheetRow / 2) * cropImageHeight
 
   let save name i =
-    let subTexture = cropSpriteSheet |> getSubTexture graphics (x + i * cropImageWidth) y cropImageWidth cropImageHeight
-    use file = Path.Combine (path, name + ".png") |> File.OpenWrite
-    subTexture.SaveAsPng (file, cropImageWidth, cropImageHeight)
+    saveSubTexture
+      (Path.Combine (path, name))
+      graphics
+      (x + i * cropImageWidth)
+      y
+      cropImageWidth
+      cropImageHeight
+      cropSpriteSheet
 
   let stages = Crop.stages crop
 
@@ -305,16 +305,14 @@ let saveStageImages graphics outputPath cropSpriteSheet crop (spriteSheetRow: ui
 
 let saveItemImage graphics outputPath (itemSpriteSheet: Texture2D) item =
   let id = int item.Id
-  let subTexture =
-    getSubTexture
-      graphics
-      (id * itemImageWidth % itemSpriteSheet.Width)
-      (id * itemImageWidth / itemSpriteSheet.Width * itemImageHeight)
-      itemImageWidth
-      itemImageHeight
-      itemSpriteSheet
-  use file = Path.Combine (outputPath, string id + ".png") |> File.OpenWrite
-  subTexture.SaveAsPng (file, itemImageWidth, itemImageHeight)
+  saveSubTexture
+    (Path.Combine (outputPath, string id))
+    graphics
+    (id * itemImageWidth % itemSpriteSheet.Width)
+    (id * itemImageWidth / itemSpriteSheet.Width * itemImageHeight)
+    itemImageWidth
+    itemImageHeight
+    itemSpriteSheet
 
 
 [<EntryPoint>]
