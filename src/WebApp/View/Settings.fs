@@ -779,26 +779,59 @@ module LoadSave =
       (Option.bind snd >> Option.iter (fst >> LoadSaveGame >> dispatch))
       (fun save setSave ->
         fragment [
-          // wiki link to save game path
-
-          label [ Class.fileInput; children [
-            ofStr "Choose Save File"
-            input [
-              prop.type'.file
-              onChange (fun (e: Browser.Types.File) ->
-                e.text().``then`` (fun text -> Some (e.name, Data.loadSaveGame text) |> setSave) |> ignore)
+          p [
+            ofStr """
+              Please provide the "SaveGameInfo" file for the save you want to import.
+              Instructions for where to find this file can be found on the
+            """
+            a [
+              href "https://stardewvalleywiki.com/Saves#Save_format"
+              target "_blank"
+              rel "noopener noreferrer"
+              text "Stardew Valley Wiki"
             ]
-          ]]
+            ofStr "."
+          ]
+
+          div [
+            let loadFile (file: Browser.Types.File) =
+              file.text().``then`` (fun text -> Some (file.name, Data.loadSaveGame text) |> setSave) |> ignore
+
+            label [ Class.fileInput; children [
+              ofStr "Choose Save File"
+              input [
+                prop.type'.file
+                onChange loadFile
+              ]
+            ]]
+
+            div [
+              className "file-dropzone"
+              onDrop (fun e ->
+                handleEvent e
+                if e.dataTransfer.files.length > 0 then
+                  loadFile e.dataTransfer.files[0])
+
+              onDragOver handleEvent
+              text "or drag file here"
+            ]
+          ]
 
           match save with
           | None -> none
           | Some (fileName, preset) ->
             if fileName <> "SaveGameInfo" then
-              ofStr $"It appears you have chosen a file called '{fileName}'. Please choose the file called 'SaveGameInfo'."
+              ofStr $"It appears you have chosen a file named \"{fileName}\". Please choose the file named \"SaveGameInfo\"."
 
             match preset with
             | None -> ofStr "Failed to load the save game."
             | Some (preset, missing) ->
+              div [
+                Html.span preset.Name
+                let startDate = preset.Settings.Game.StartDate
+                Html.span $"{Season.name startDate.Season} {startDate.Day}"
+              ]
+
               if missing.Length > 0 then
                 ofStr "Warning: failed to load the following data from the save game:"
                 ul (missing |> Array.map li)

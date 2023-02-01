@@ -44,15 +44,19 @@ input
   font-family: inherit
   font-size: inherit
 
-.file-input
-  display: inline-block
+.file
+  &-dropzone
+    background: lightgray
+    height: 5rem
 
-  &:hover
-    transform: scale(1.1)
+  &-input
+    display: inline-block
 
-  & > input
-    display: none
+    & > input
+      display: none
 
+    &:hover
+      transform: scale(1.1)
 
 
 input[type=range]:focus
