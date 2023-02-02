@@ -82,11 +82,11 @@ let cropItemsHighestRawPrice (data: GameData) vars crop quality =
 
 let cropItemsHighestProductPriceFrom data vars crop quality processor =
   crop |> itemsHighest (fun item ->
-    GameData.product data item processor |> Option.map (Game.productPrice data vars item quality))
+    GameData.product data item processor |> Option.map (Game.productPrice data vars quality))
 
 let cropItemsHighestProductNormalizedPriceFrom data vars crop quality processor =
   crop |> itemsHighest (fun item ->
-    GameData.product data item processor |> Option.map (Game.productNormalizedPrice data vars item quality))
+    GameData.product data item processor |> Option.map (Game.productNormalizedPrice data vars quality))
 
 let cropItemsHighestCustomPrice data crop quality =
   crop |> itemsHighest (fun item ->
@@ -197,13 +197,13 @@ module Price =
   let private itemMaxProductPriceBy projection data settings seed item (quality: Quality) =
     let products = Selected.unlockedProducts data settings seed item
     if products.Length = 0 then None else
-    products |> Array.mapReduce max (projection data settings.Game item quality) |> Some
+    products |> Array.mapReduce max (projection data settings.Game quality) |> Some
 
   let itemMaxProductPrice data settings seed item quality = itemMaxProductPriceBy Game.productPrice data settings seed item quality
   let itemMaxProductPriceNormalized data settings seed item quality = itemMaxProductPriceBy Game.productNormalizedPrice data settings seed item quality
 
   let private itemMaxProductPriceByQualityBy projection data settings seed item =
-    let prices = Selected.unlockedProducts data settings seed item |> Array.map (projection data settings.Game item)
+    let prices = Selected.unlockedProducts data settings seed item |> Array.map (projection data settings.Game)
     if prices.Length = 0 then None else
     Qualities.init (fun quality -> prices |> Array.mapReduce max (Qualities.item quality)) |> Some
 
@@ -244,7 +244,7 @@ module Price =
 
   let private itemMaxProductAndPriceByQualityBy projection data settings seed item =
     let products = Selected.unlockedProducts data settings seed item |> Array.map (fun product ->
-      product, projection data settings.Game item product)
+      product, projection data settings.Game product)
 
     if products.Length = 0 then None else
     Qualities.init (fun quality ->

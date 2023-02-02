@@ -44,13 +44,14 @@ module GameData =
   let seedItemPairs data = seedItemPairsFrom data.Crops.Values
 
   let private implicitProduct data item processor =
+    let itemId = item.Id
     match Item.category item, processor with
-    | Fruit, ProcessorName "Preserves Jar" -> Some Jam
-    | Fruit, ProcessorName "Keg" -> Some Wine
-    | Vegetable, ProcessorName "Preserves Jar" -> Some Pickles
-    | Vegetable, ProcessorName "Keg" -> Some Juice
+    | Fruit, ProcessorName "Preserves Jar" -> Some (Jam itemId)
+    | Fruit, ProcessorName "Keg" -> Some (Wine itemId)
+    | Vegetable, ProcessorName "Preserves Jar" -> Some (Pickles itemId)
+    | Vegetable, ProcessorName "Keg" -> Some (Juice itemId)
     | _, ProcessorName "Seed Maker" ->
-      match data.Seed.TryFind item.Id with
+      match data.Seed.TryFind itemId with
       | Some seed -> Some (SeedsFromSeedMaker (seed * 1u<_>))
       | None -> None
     | _ -> None
@@ -277,17 +278,22 @@ module Game =
 
   let itemPriceByQuality vars forage item = Item.priceByQuality vars.Skills vars.Multipliers forage item
 
-  let productPrice data vars item quality product =
-    Product.price data.Items.Find vars.Skills vars.Multipliers vars.ModData item quality product
+  let productPriceAndQuality data vars quality product =
+    Product.priceAndQuality data.Items.Find vars.Skills vars.Multipliers vars.ModData quality product
 
-  let productPriceByQuality data vars item product =
-    Product.priceByQuality data.Items.Find vars.Skills vars.Multipliers vars.ModData item product
+  let productPrice data vars quality product =
+    Product.price data.Items.Find vars.Skills vars.Multipliers vars.ModData quality product
 
-  let productNormalizedPrice data vars item quality product =
-    Product.normalizedPrice data.Items.Find vars.Skills vars.Multipliers vars.ModData item quality product
+  let productPriceByQuality data vars product =
+    Product.priceByQuality data.Items.Find vars.Skills vars.Multipliers vars.ModData product
 
-  let productNormalizedPriceByQuality data vars item product =
-    Product.normalizedPriceByQuality data.Items.Find vars.Skills vars.Multipliers vars.ModData item product
+  let productNormalizedPrice data vars quality product =
+    Product.normalizedPrice data.Items.Find vars.Skills vars.Multipliers vars.ModData quality product
+
+  let productNormalizedPriceByQuality data vars product =
+    Product.normalizedPriceByQuality data.Items.Find vars.Skills vars.Multipliers vars.ModData product
+
+  let productQuality vars quality product = Product.outputQuality vars.ModData quality product
 
   let seedItemSellPrice data vars (seed: SeedId) = itemPrice vars false data.Items[seed * 1u<_>] Quality.Normal
 

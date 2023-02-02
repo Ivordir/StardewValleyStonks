@@ -273,7 +273,7 @@ module SummaryTable =
           td "x"
           td (float2Decimal amount)
           td Image.rightArrow
-          td (Image.Icon.productQuality data item (SeedsFromSeedMaker (seed * 1u<_>)) Quality.Normal)
+          td (Image.Icon.productQuality data (SeedsFromSeedMaker (seed * 1u<_>)) Quality.Normal)
           td []
           td "x"
           td (float2Decimal seedAmount)
@@ -331,7 +331,7 @@ module SummaryTable =
       td "x"
       td (float2Decimal amount)
       td Image.rightArrow
-      td (Image.Icon.productQuality data item product (Product.outputQuality settings.Game.ModData quality product))
+      td (Image.Icon.productQuality data product (Product.outputQuality settings.Game.ModData quality product))
       td (gold (nat (profit / amountPerItem)))
       td "x"
       td (float2Decimal (amount * amountPerItem))
@@ -698,7 +698,7 @@ module SummaryTable =
               let icon, amountPerItem =
                 match product with
                 | NonCustom None -> Image.Icon.itemQuality' data item quality, 1.0
-                | NonCustom (Some product) -> Image.Icon.productQuality data item product (Product.outputQuality settings.Game.ModData quality product), Product.amountPerItem product
+                | NonCustom (Some product) -> Image.Icon.productQuality data product (Product.outputQuality settings.Game.ModData quality product), Product.amountPerItem product
                 | Custom (_, preservesQuality) -> Image.Icon.itemQuality' data item (if preservesQuality then quality else Quality.Normal), 1.0
 
               let amount = amount * amountPerItem

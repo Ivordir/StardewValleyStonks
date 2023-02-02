@@ -223,7 +223,7 @@ module Crops =
           checkbox (settings.Selected.SellRaw.Contains (seed, item)) (curry SetSelected (seed, item) >> SelectSellRaw >> selectDispatch)
           ofNat <| Game.itemPrice settings.Game forage data.Items[item] productQuality
         ]
-        yield! processors |> Array.map (fun processor ->
+        fragment (processors |> Array.map (fun processor ->
           match GameData.product data item processor with
           | Some product ->
             td [
@@ -231,11 +231,11 @@ module Crops =
               children [
                 checkbox (settings.Selected.Products[seed, item].Contains processor) (curry SetSelected (seed, item) >> curry SelectProducts processor >> selectDispatch)
                 if showNormalizedPrices
-                then ofFloat <| Game.productNormalizedPrice data settings.Game item productQuality product
-                else ofNat <| Game.productPrice data settings.Game item productQuality product
+                then ofFloat <| Game.productNormalizedPrice data settings.Game productQuality product
+                else ofNat <| Game.productPrice data settings.Game productQuality product
               ]
             ]
-          | None -> td [])
+          | None -> td []))
         td []
         td [
           custom
@@ -327,7 +327,7 @@ module Crops =
             | ForageCrop c ->
               tr [
                 td (Image.Icon.crop data crop)
-                yield! Seq.replicate (processors.Length + 1) (td [])
+                fragment (Seq.replicate (processors.Length + 1) (td []))
                 td [
                   if not <| ForageCrop.seedRecipeUnlocked settings.Game.Skills c then Class.disabled
                   children [
@@ -337,7 +337,7 @@ module Crops =
                 ]
                 td []
               ]
-              yield! c.Items |> Array.map (itemRow false true seed)
+              c.Items |> Array.map (itemRow false true seed) |> fragment
           ]))
         (SetProductSort >> uiDispatch)
         productSort
@@ -414,14 +414,14 @@ module Crops =
           let seed = Crop.seed crop
           tr [ key (string seed); children [
             td (Image.Icon.crop data crop)
-            yield! seedVendors |> Array.map (fun vendor ->
+            fragment (seedVendors |> Array.map (fun vendor ->
               td [
                 match data.SeedPrices[seed].TryFind vendor with
                 | Some price ->
                   checkbox (settings.Selected.SeedPrices[seed].Contains vendor) (curry SetSelected seed >> curry SelectSeedPrices vendor >> selectDispatch)
                   Game.seedPrice data settings.Game seed price |> ofNat
                 | None -> none
-              ])
+              ]))
             td [
               if not <| Game.processorUnlocked data settings.Game Processor.seedMaker then Class.disabled
               children [
@@ -629,14 +629,14 @@ module Fertilizers =
             let name = fert.Name
             tr [ key (string name); children [
               td (Image.Icon.fertilizer fert)
-              yield! fertilizerVendors |> Array.map (fun vendor ->
+              fragment (fertilizerVendors |> Array.map (fun vendor ->
                 td [
                   match data.FertilizerPrices[name].TryFind vendor with
                   | Some price ->
                     checkbox (settings.Selected.FertilizerPrices[name].Contains vendor) (curry SetSelected name >> curry SelectFertilizerPrices vendor >> selectDispatch)
                     ofNat price
                   | None -> none
-                ])
+                ]))
               td [
                 customPrice
                   "Custom Fertilizer Price"

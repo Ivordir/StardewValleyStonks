@@ -195,22 +195,22 @@ module Image =
       | ProcessorName "Mill" -> withClass Class.iconProcessorLarge (processorRoot "Mill") "Mill"
       | ProcessorName processor -> withClass Class.iconProcessor (processorRoot processor) processor
 
-    let product (data: GameData) item product =
-      let name = Product.name data.Items.Find item product
-      let path =
-        match product with
-        | SeedsFromSeedMaker seed -> itemPath seed
-        | Processed product -> itemPath product.Item
-        | product -> productRoot (string product)
+    let private productPath = function
+      | Jam _ -> productRoot (nameof Jam)
+      | Pickles _ -> productRoot (nameof Pickles)
+      | Wine _ -> productRoot (nameof Wine)
+      | Juice _ -> productRoot (nameof Juice)
+      | SeedsFromSeedMaker seed -> itemPath seed
+      | Processed product -> itemPath product.Item
+
+    let product (data: GameData) product =
+      let name = Product.name data.Items.Find product
+      let path = productPath product
       at path name
 
-    let productQuality (data: GameData) item product quality =
-      let name = Product.name data.Items.Find item product
-      let path =
-        match product with
-        | SeedsFromSeedMaker seed -> itemPath seed
-        | Processed product -> itemPath product.Item
-        | product -> productRoot (string product)
+    let productQuality (data: GameData) product quality =
+      let name = Product.name data.Items.Find product
+      let path = productPath product
       withQuality path name quality
 
     let season = Season.name >> nameIsPartofPath seasonRoot
