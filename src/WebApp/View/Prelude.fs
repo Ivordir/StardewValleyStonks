@@ -28,6 +28,8 @@ let float2Decimal = sprintf "%.2f"
 let floatRound2 (x: float) = System.Math.Round (x, 2)
 let gold2Decimal = sprintf "%.2fg"
 
+let pluralize x text = if x = 1.0 then text else (text + "s")
+
 
 let debouncer timeout (f : _ -> unit) =
   let mutable last = None

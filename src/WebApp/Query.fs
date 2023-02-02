@@ -88,9 +88,9 @@ let cropItemsHighestProductNormalizedPriceFrom data vars crop quality processor 
   crop |> itemsHighest (fun item ->
     GameData.product data item processor |> Option.map (Game.productNormalizedPrice data vars item quality))
 
-let cropItemsHighestCustomPrice model crop quality =
+let cropItemsHighestCustomPrice data crop quality =
   crop |> itemsHighest (fun item ->
-    model.CustomSellPrices.Values.TryFind (Crop.seed crop, item) |> Option.map (customSellPriceValue quality))
+    data.CustomSellPrices.Values.TryFind (Crop.seed crop, item) |> Option.map (customSellPriceValue quality))
 
 
 module Selected =
