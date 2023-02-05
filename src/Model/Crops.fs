@@ -220,8 +220,8 @@ module CropAmount =
     else Qualities.zero |> Qualities.updateQuality Normal amount
 
   let expectedGiantCropsFromShaving (shavingToolLevel: ToolLevel) =
-    let damage = (int shavingToolLevel) / 2 + 1 |> float
-    let numHits = 3.0 / damage |> ceil
+    let damage = float (int shavingToolLevel / 2 + 1)
+    let numHits = ceil (3.0 / damage)
     let shavingProb = damage / 5.0
     shavingProb * numHits
 
@@ -374,7 +374,7 @@ module FarmCrop =
     if crop.Giant then 1.0 - giantCropProb else 1.0
 
   let xpPerHarvest item giantCropProb crop =
-    xpItemsPerHarvest giantCropProb crop * float (xpPerItem item crop)
+    float (xpPerItem item crop) * xpItemsPerHarvest giantCropProb crop
 
   let items crop =
     match crop.ExtraItem with
@@ -410,10 +410,14 @@ module ForageCrop =
   let growsInSeason season crop = crop.Season = season
   let growsInSeasons seasons crop = seasons |> Seasons.contains crop.Season
 
-  let xpItemsPerHarvest skills = if skills |> Skills.professionActive Gatherer then Multiplier.gatherer else 1.0
-  let xpPerHarvest skills = xpItemsPerHarvest skills * float xpPerItem
+  let xpItemsPerHarvest skills =
+    if skills |> Skills.professionActive Gatherer
+    then Multiplier.gatherer
+    else 1.0
 
-  let name crop = (Season.name crop.Season) + " Forage"
+  let xpPerHarvest skills = float xpPerItem * xpItemsPerHarvest skills
+
+  let name crop = Season.name crop.Season + " Forage"
 
 
 type Crop =
@@ -442,7 +446,7 @@ module Crop =
     | FarmCrop crop -> crop.Stages
     | ForageCrop crop -> crop.Stages
 
-  let totalDays crop = crop |> stages |> Array.sum
+  let growthTime crop = crop |> stages |> Array.sum
 
   let paddy = function
     | FarmCrop crop -> crop.Paddy
@@ -468,9 +472,9 @@ module Crop =
     | FarmCrop crop -> FarmCrop.seedItem crop
     | ForageCrop crop -> ForageCrop.seedItem crop
 
-  let growthTime speed crop = Growth.time speed (stages crop)
+  let growthTimeWith speed crop = Growth.time speed (stages crop)
 
-  let stagesAndTime speed crop = Growth.stagesAndTime speed (stages crop)
+  let growthStagesAndTime speed crop = Growth.stagesAndTime speed (stages crop)
 
   let regrowTime = function
     | FarmCrop crop -> crop.RegrowTime

@@ -171,6 +171,7 @@ module Decode =
             acc.Add (key, value)
             parseKeys rest
           | None -> false
+
       if parseKeys kvps
       then acc |> mapping |> Decode.succeed
       else fun path value -> Error (path, BadPrimitive ("a valid key", value)))

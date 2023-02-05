@@ -312,7 +312,7 @@ let private invalidReasons hasOneHarvest hasFertilierPrice hasEnoughSeeds =
 let private farmCropMaxNonBoughtSeeds data settings crop =
   let seedsFromMainItem =
     let mainItemAmount = Game.farmCropMainItemAmount settings.Game crop
-    if Selected.unlockedUseSeedsFromSeedMaker data settings (FarmCrop crop) then mainItemAmount * Processor.seedMakerExpectedAmount crop.Seed
+    if Selected.unlockedUseSeedsFromSeedMaker data settings (FarmCrop crop) then mainItemAmount * Processor.seedMakerExpectedQuantity crop.Seed
     elif Selected.useHarvestedSeeds settings crop.Seed crop.Item then mainItemAmount
     else 0.0
 
@@ -331,7 +331,7 @@ let private forageCropMaxNonBoughtSeeds data settings crop =
 
   let seedMakerAmount =
     if Selected.unlockedUseSeedsFromSeedMaker data settings (ForageCrop crop)
-    then Processor.seedMakerExpectedAmount crop.Seed
+    then Processor.seedMakerExpectedQuantity crop.Seed
     else 0.0
 
   let mainItemAmount = Game.forageCropMainItemAmount settings.Game crop
@@ -379,7 +379,7 @@ module internal Profit =
           seedCostsAndAmounts.Add (cost, seeds)
 
     if Selected.unlockedUseSeedsFromSeedMaker data settings crop then
-      addCostAndAmount 0 (Processor.seedMakerExpectedAmount seed)
+      addCostAndAmount 0 (Processor.seedMakerExpectedQuantity seed)
 
     crop
     |> Crop.items
@@ -396,7 +396,7 @@ module internal Profit =
 
     while i < opportunityCostsAndSeedsPerHarvest.Length && seedsLeft > 0.0 do
       let cost, seedsPerHarvest = opportunityCostsAndSeedsPerHarvest[i]
-      let seedsMade = seedsPerHarvest * float harvests |> min seedsLeft
+      let seedsMade = min seedsLeft (seedsPerHarvest * float harvests)
       totalCost <- totalCost + cost * seedsMade
       seedsLeft <- seedsLeft - seedsMade
       i <- i + 1
@@ -481,7 +481,7 @@ module internal Profit =
 
     if seedTarget > 0.0 && Selected.unlockedUseSeedsFromSeedMaker data settings (ForageCrop crop) then
       let item = crop.Items[0]
-      let amount = Processor.seedMakerExpectedAmount crop.Seed
+      let amount = Processor.seedMakerExpectedQuantity crop.Seed
       for quality in validQualities do
         variables.Add (MadeSeeds (item, quality), [| "Seeds", amount; string item @ string quality, 1.0 |])
 
@@ -785,7 +785,7 @@ module internal ProfitSummary =
 
     let seed = Crop.seed crop
     if Selected.unlockedUseSeedsFromSeedMaker data settings crop then
-      addCostAndAmount 0 (Processor.seedMakerExpectedAmount seed)
+      addCostAndAmount 0 (Processor.seedMakerExpectedQuantity seed)
 
     items
     |> Array.tryFindIndex (Selected.useHarvestedSeeds settings seed)
@@ -804,7 +804,7 @@ module internal ProfitSummary =
     let mutable i = 0
     while i < seedCostAndAmountData.Length && seedsLeft > 0.0 do
       let data = seedCostAndAmountData[i]
-      let seedsMade = data.HarvestedAmount * data.SeedsPerAmount |> min seedsLeft
+      let seedsMade = min seedsLeft (data.HarvestedAmount * data.SeedsPerAmount)
       usedAmountsForSeeds[data.ItemIndex][int data.Quality] <- seedsMade / data.SeedsPerAmount
       seedsLeft <- seedsLeft - seedsMade
       i <- i + 1
@@ -896,7 +896,7 @@ module internal ProfitSummary =
 
     assert
       not makeSeeds ||
-      let seeds = seedsBought + usedForageSeeds + (seedAmounts |> Array.sumBy (snd >> Qualities.sum)) * Processor.seedMakerExpectedAmount crop.Seed
+      let seeds = seedsBought + usedForageSeeds + (seedAmounts |> Array.sumBy (snd >> Qualities.sum)) * Processor.seedMakerExpectedQuantity crop.Seed
       abs (seeds - float harvests) < 1e-5
 
     assert
@@ -957,7 +957,7 @@ module internal ProfitSummary =
       |> Array.groupBy snd
       |> Array.map (fun ((product, quality, price), items) ->
         let items = items |> Array.map fst
-        let quantity = Product.amountPerItem product * (items |> Array.sumBy snd)
+        let quantity = Product.quantityPerInput product * (items |> Array.sumBy snd)
         {
           Product = product
           Quality = quality

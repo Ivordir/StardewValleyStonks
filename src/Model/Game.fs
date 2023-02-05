@@ -198,7 +198,7 @@ module Game =
     Fertilizer.Opt.speed fertilizer + growthMultiplier vars crop
 
   let growthTimeAndStages vars fertilizer crop =
-    Crop.stagesAndTime (growthSpeed vars fertilizer crop) crop
+    Crop.growthStagesAndTime (growthSpeed vars fertilizer crop) crop
 
   let growthTime vars fertilizer crop = growthTimeAndStages vars fertilizer crop |> snd
 
@@ -220,7 +220,7 @@ module Game =
     else 0.0
 
   let fertilizerLossProb vars = function
-    | FarmCrop c -> farmCropFertilizerLossProb vars c
+    | FarmCrop crop -> farmCropFertilizerLossProb vars crop
     | ForageCrop _ -> forageCropFertilizerLossProb vars.Location
 
   let farmCropMainItemAmount vars crop =
@@ -243,7 +243,8 @@ module Game =
     | Some (_, amount) -> [| amounts; Qualities.zero |> Qualities.updateQuality Quality.Normal amount |]
     | None -> [| amounts |]
 
-  let forageCropMainItemAmount vars (crop: ForageCrop) = ForageCrop.xpItemsPerHarvest vars.Skills / float crop.Items.Length
+  let forageCropMainItemAmount vars (crop: ForageCrop) =
+    ForageCrop.xpItemsPerHarvest vars.Skills / float crop.Items.Length
 
   let cropMainItemAmount vars = function
     | FarmCrop crop -> farmCropMainItemAmount vars crop
@@ -270,6 +271,7 @@ module Game =
         match price with
         | Some price -> price
         | None -> 2u * data.Items[seed * 1u<_>].SellPrice
+
       if vendor = Vendor.joja
       then price |> withMultiplier (vars.Multipliers.ProfitMargin * if vars.JojaMembership then 1.0 else 1.25)
       else price |> withMultiplier vars.Multipliers.ProfitMargin |> max 1u

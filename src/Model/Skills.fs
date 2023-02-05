@@ -192,11 +192,11 @@ module Skills =
   *)
   let private ifElseDistribution (probabilities: (Quality * float) array) =
     let dist = Array.zeroCreate Quality.count
-    let mutable runningProb = 1.0
+    let mutable currentProb = 1.0
     for quality, rawProb in probabilities do
-      let prob = runningProb * min 1.0 rawProb
+      let prob = currentProb * min 1.0 rawProb
       dist[int quality] <- prob
-      runningProb <- runningProb - prob // = runningProb * (1.0 - rawProb)
+      currentProb <- currentProb - prob // = currentProb * (1.0 - rawProb)
     assert (abs (Array.sum dist - 1.0) < 1e-10)
     Qualities.wrap dist
 

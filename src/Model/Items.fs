@@ -125,12 +125,9 @@ module Processor =
     then quality
     else Quality.Normal
 
-  let seedMakerExpectedAmount (seed: SeedId) =
+  let seedMakerExpectedQuantity (seed: SeedId) =
     seedMakerSeedProb * seedMakerExpectedSeedOutput
     + if nat seed = nat Item.ancientSeeds then seedMakerAncientSeedProb else 0.0
-
-  let seedMakerInputNeededForOneSeed (seed: SeedId) =
-    1.0 / seedMakerExpectedAmount seed
 
 
 [<RequireQualifiedAccess>]
@@ -200,7 +197,6 @@ module Product =
   let winePrice basePrice = basePrice * 3u
   let juicePrice basePrice = basePrice |> withMultiplier 2.25
 
-
   let private productPrice = function
     | Jam _ | Pickles _ -> preservesJarPrice
     | Wine _ -> winePrice
@@ -233,15 +229,15 @@ module Product =
     then Item.priceByQualityCalc multiplier price
     else Item.priceCalc multiplier price Quality.Normal |> Qualities.create
 
-  let amountPerItem product =
+  let quantityPerInput product =
     match product with
-    | SeedsFromSeedMaker seedId -> Processor.seedMakerExpectedAmount (seedId * 1u<_>)
+    | SeedsFromSeedMaker seedId -> Processor.seedMakerExpectedQuantity (seedId * 1u<_>)
     | Processed { Ratio = Some (i, o) } -> float o / float i
     | _ -> 1.0
 
   let normalizedPrice getItem skills multipliers modData quality product =
-    float (price getItem skills multipliers modData quality product) * amountPerItem product
+    float (price getItem skills multipliers modData quality product) * quantityPerInput product
 
   let normalizedPriceByQuality getItem skills multipliers modData product =
-    let amount = amountPerItem product
-    priceByQuality getItem skills multipliers modData product |> Qualities.map (fun price -> float price * amount)
+    let quantity = quantityPerInput product
+    priceByQuality getItem skills multipliers modData product |> Qualities.map (fun price -> float price * quantity)
