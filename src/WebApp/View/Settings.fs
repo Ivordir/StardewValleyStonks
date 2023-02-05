@@ -235,7 +235,8 @@ module Crops =
                 else ofNat <| Game.productPrice data settings.Game productQuality product
               ]
             ]
-          | None -> td []))
+          | None -> td []
+        ))
         td []
         td [
           custom
@@ -421,7 +422,8 @@ module Crops =
                   checkbox (settings.Selected.SeedPrices[seed].Contains vendor) (curry SetSelected seed >> curry SelectSeedPrices vendor >> selectDispatch)
                   Game.seedPrice data settings.Game seed price |> ofNat
                 | None -> none
-              ]))
+              ]
+            ))
             td [
               if not <| Game.processorUnlocked data settings.Game Processor.seedMaker then Class.disabled
               children [
@@ -636,7 +638,8 @@ module Fertilizers =
                     checkbox (settings.Selected.FertilizerPrices[name].Contains vendor) (curry SetSelected name >> curry SelectFertilizerPrices vendor >> selectDispatch)
                     ofNat price
                   | None -> none
-                ]))
+                ]
+              ))
               td [
                 customPrice
                   "Custom Fertilizer Price"

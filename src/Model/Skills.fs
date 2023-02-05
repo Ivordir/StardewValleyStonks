@@ -88,6 +88,7 @@ module Qualities =
   let inline map mapping qualities = qualities |> unwrap |> Array.map mapping |> ByQuality
   let inline map2 mapping a b = Array.map2 mapping (unwrap a) (unwrap b) |> ByQuality
 
+  let indexed qualities = qualities |> unwrap |> Array.mapi (fun i x -> enum<Quality> i, x)
   let inline toArray qualities = qualities |> unwrap |> Array.copy
 
   let inline sum qualities = qualities |> unwrap |> Array.sum

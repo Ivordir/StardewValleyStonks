@@ -22,11 +22,13 @@ let inline ofInt (i: int) = Html.text i
 let inline ofFloat (x: float) = Html.text x
 
 let gold (g: nat) = string g + "g"
+let xp (xp: nat) = string xp + "xp"
 let percent value = sprintf "%.0f%%" (value * 100.0)
 let percent2Decimal value = sprintf "%.2f%%" (value * 100.0)
-let float2Decimal = sprintf "%.2f"
+let floatFormat2 = sprintf "%.2f"
 let floatRound2 (x: float) = System.Math.Round (x, 2)
-let gold2Decimal = sprintf "%.2fg"
+let goldFormat2 = sprintf "%.2fg"
+let xpFormat2 = sprintf "%.2fxp"
 
 let pluralize x text = if x = 1.0 then text else (text + "s")
 
