@@ -44,19 +44,6 @@ module GrowthCalendar =
     let stageList = firstHarvest :: stageList
     season, (totalDays + days[season] - usedDays - nat filler), stageList
 
-  let private appendCropHarvests settings fertilizer (cropHarvests: _ array) remainingDays stageList =
-    let rec loop i remainingDays stageList =
-      if i < 0 then remainingDays, stageList else
-      let crop, harvests = cropHarvests[i]
-      let stages, time = Game.growthTimeAndStages settings.Game fertilizer crop
-      let usedDays = Growth.daysNeededFor None time harvests
-      let stageImages = stageImages stages (Crop.seed crop)
-
-      let harvestItem = div (Image.item' <| Crop.mainItem crop)
-      let stages = Array.append stageImages [| harvestItem |]
-      loop (i - 1) (remainingDays - int usedDays) (repeatCons harvests stages stageList)
-    loop (Array.length cropHarvests - 1) remainingDays stageList
-
   let solver settings single (span: Solver.FertilizerDateSpan) =
     let stageList = [ Array.create (int (Date.daysInSeason - span.EndDate.Day)) (div [ Class.disabled ]) ]
     let days =
@@ -69,33 +56,31 @@ module GrowthCalendar =
         (days.Length - 1, Array.last days, stageList)
         (solverRegrowCropCalendarDays settings days span.Fertilizer stageList)
 
-    let rec loop season remainingDays stageList =
-      let remainingDays, stageList = appendCropHarvests settings span.Fertilizer span.CropHarvests[season] remainingDays stageList
+    let season, days, stageList =
+      (span.CropHarvests, (season, int remainingDays, stageList)) ||> Array.foldBack (fun (crop, harvests, bridgeCrop) (season, remainingDays, stageList) ->
+        let seed = Crop.seed crop
+        let stages, time = Game.growthTimeAndStages settings.Game span.Fertilizer crop
+        let stageImages = stageImages stages seed
+        let harvestItem = [| div (Image.item' <| Crop.mainItem crop) |]
+        if bridgeCrop then
+          let filler = int remainingDays - int time |> max 0
+          let days = int remainingDays + int days[season] - int time - filler
+          let stageList =
+            stageImages
+            :: Array.create filler (stageImage stages.Length seed)
+            :: harvestItem
+            :: stageList
+          season - 1, days, stageList
+        else
+          season,
+          remainingDays - int (Growth.daysNeededFor None time harvests),
+          repeatCons harvests (Array.append stageImages harvestItem) stageList)
 
-      if season = 0 then remainingDays, stageList else
-      let season = season - 1
-      let crop = span.BridgeCrops[season]
-      let seed = Crop.seed crop
-      let stages, time = Game.growthTimeAndStages settings.Game span.Fertilizer crop
-      let stageImages = stageImages stages seed
-
-      let harvestItem = div (Image.item' <| Crop.mainItem crop)
-      let filler = int remainingDays - int time |> max 0
-      let days = int remainingDays + int days[season] - int time - filler
-      let stageList =
-        stageImages
-        :: Array.create filler (stageImage stages.Length seed)
-        :: [| harvestItem |]
-        :: stageList
-
-      loop season days stageList
-
-    let days, stageList = loop season (int remainingDays) stageList
+    assert (season = 0)
 
     let firstStage =
       [|
-        span.CropHarvests[0] |> Array.tryHead |> Option.map fst
-        Array.tryHead span.BridgeCrops
+        span.CropHarvests |> Array.tryHead |> Option.map (fun (crop, _,_) -> crop)
         span.RegrowCrop |> Option.map (fun (_, crop, _) -> FarmCrop crop)
       |]
       |> Array.tryPick id
@@ -131,8 +116,8 @@ module GrowthCalendar =
     | Some (span: Query.GrowthSpan) ->
       let cropHarvests, regrowCrop =
         match crop with
-        | FarmCrop crop when crop.RegrowTime.IsSome -> [| |], Some (0, crop, span.Harvests)
-        | _ -> [| crop, span.Harvests |], None
+        | FarmCrop crop when crop.RegrowTime.IsSome -> [||], Some (0, crop, span.Harvests)
+        | _ -> [| crop, span.Harvests, false |], None
 
       let span: Solver.FertilizerDateSpan = {
         StartDate = {
@@ -150,8 +135,7 @@ module GrowthCalendar =
             else Date.lastDay
         }
         Fertilizer = fertilizer
-        CropHarvests = [| cropHarvests |]
-        BridgeCrops = [||]
+        CropHarvests = cropHarvests
         RegrowCrop = regrowCrop
       }
 
@@ -561,18 +545,7 @@ module SummaryTable =
           ]
       ]
 
-  let private cropFertTimeline (solution: Solver.FertilizerDateSpan) =
-    Array.concat [|
-      solution.CropHarvests[0]
-      solution.CropHarvests
-      |> Array.tail
-      |> Array.zip solution.BridgeCrops
-      |> Array.collect (fun (bridgeCrop, cropHarvests) ->
-        cropHarvests |> Array.append [| bridgeCrop, 1u |])
-      solution.RegrowCrop |> Option.map (fun (_, crop, harvests) -> FarmCrop crop, harvests) |> Option.toArray
-    |]
-
-  let solverProfit data settings total (solutions: Solver.FertilizerDateSpan list) =
+  let solverProfit data settings total (solutions: Solver.FertilizerDateSpan array) =
     div [ Class.breakdownTable; children [
       table [
         thead [
@@ -583,30 +556,12 @@ module SummaryTable =
           ]
         ]
 
-        let len = List.length solutions
-        yield!
-          solutions
-          |> Seq.mapi (fun i solution ->
-            let fertilizer = solution.Fertilizer
-            let fertilizerPrice =
-              match fertilizer with
-              | None -> None
-              | Some _ when not settings.Profit.PayForFertilizer -> None
-              | Some fertilizer ->
-                fertilizer
-                |> Fertilizer.name
-                |> Query.Price.fertilizerMinVendorAndPrice data settings
-                |> Some
+        fragment (solutions |> Array.map (fun solution ->
+          // TODO
+          none
+        ))
 
-            [
-              tbody [ fertilizerBoughtRow false fertilizer fertilizerPrice 1.0 ]
-              yield! cropFertTimeline solution |> Array.map (fun (crop, harvests) ->
-                let harvestsSummary = Query.Solver.profitAndHarvestsSummary data settings (i = len - 1) crop fertilizer harvests
-                harvestSummaryTable data settings fertilizer fertilizerPrice harvestsSummary.NetProfit harvestsSummary)
-            ])
-          |> Seq.concat
-
-        if len > 1 then
+        if solutions |> Array.sumBy (fun summary -> Array.length summary.CropHarvests + if summary.RegrowCrop.IsSome then 1 else 0) <> 1 then
           tfoot [
             tr [
               td [ colSpan 6; text "Total" ]
@@ -617,7 +572,7 @@ module SummaryTable =
       ]
     ]]
 
-  let solverXp data settings total (solutions: Solver.FertilizerDateSpan list) =
+  let solverXp data settings total (solutions: Solver.FertilizerDateSpan array) =
     table [
       thead [
         tr [
@@ -628,8 +583,8 @@ module SummaryTable =
         ]
       ]
       tbody (solutions |> Seq.map (fun solution ->
-        cropFertTimeline solution
-        |> Array.map (fun (crop, harvests) ->
+        solution.CropHarvests
+        |> Array.map (fun (crop, harvests, _) ->
           let xpPerHarvest = Game.xpPerHarvest data settings.Game crop
           tr [
             td (Image.Icon.crop data crop)
