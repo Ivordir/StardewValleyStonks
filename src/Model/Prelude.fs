@@ -7,9 +7,21 @@ module Prelude =
   let inline nat value = uint value
 
   let inline withMultiplier multiplier (value: nat) =
-    multiplier * float value |> nat
+    nat (multiplier * float value)
 
-  let inline internal enumName (e: 'a) = System.Enum.GetName (typeof<'a>, e)
+
+[<RequireQualifiedAccess>]
+module Enum =
+  let rec bitSetOrder a b =
+    if int a = 0 || int b = 0 then
+      compare a b
+    else
+      let c = compare (b &&& 1) (a &&& 1)
+      if c = 0
+      then bitSetOrder (a >>> 1) (b >>> 1)
+      else c
+
+  let inline internal name (e: 'a) = System.Enum.GetName (typeof<'a>, e)
 
 
 [<RequireQualifiedAccess>]

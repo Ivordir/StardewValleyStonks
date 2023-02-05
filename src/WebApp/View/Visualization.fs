@@ -904,23 +904,12 @@ module Ranker =
 
         let pairs = pairs |> Array.map fst
 
-        let setOrder a b =
-          let rec next a b =
-            if int a = 0 || int b = 0 then
-              compare a b
-            else
-              let c = compare (int b &&& 1) (int a &&& 1)
-              if c = 0
-              then next (a >>> 1) (b >>> 1)
-              else c
-          next a b
-
         pairData |> Array.sortInPlaceWith (fun a b ->
           match snd a, snd b with
           | Ok a, Ok b -> compare b a
           | Ok _, Error _ -> -1
           | Error _, Ok _ -> 1
-          | Error a, Error b -> setOrder a b)
+          | Error a, Error b -> Enum.bitSetOrder (int a) (int b))
 
         fragment [
           div [ Class.graphControls; children [

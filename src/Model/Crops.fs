@@ -30,20 +30,13 @@ module Seasons =
 
   let ofSeq seasons = seasons |> Seq.fold (fun seasons season -> seasons |> add season) Seasons.None
 
-  let rec setOrder (a: Seasons) (b: Seasons) =
-    if a = Seasons.None || b = Seasons.None then
-      compare a b
-    else
-      let c = compare (int b &&& 1) (int a &&& 1)
-      if c = 0
-      then setOrder (a >>> 1) (b >>> 1)
-      else c
+  let setOrder (a: Seasons) (b: Seasons) = Enum.bitSetOrder (int a) (int b)
 
 [<RequireQualifiedAccess>]
 module Season =
   let [<Literal>] count = 4
 
-  let name (season: Season) = enumName season
+  let name (season: Season) = Enum.name season
 
   let private wrapAroundNegative value =
     if value < 0
@@ -109,7 +102,7 @@ type ToolLevel =
 
 [<RequireQualifiedAccess>]
 module ToolLevel =
-  let name (toolLevel: ToolLevel) = enumName toolLevel
+  let name (toolLevel: ToolLevel) = Enum.name toolLevel
 
   let all = Array.init 5 enum<ToolLevel>
 

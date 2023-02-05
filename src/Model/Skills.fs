@@ -54,7 +54,7 @@ module Quality =
   let [<Literal>] highest = 3
   let [<Literal>] count = 4
 
-  let name (quality: Quality) = enumName quality
+  let name (quality: Quality) = Enum.name quality
 
   let all = Array.init count enum<Quality>
 
