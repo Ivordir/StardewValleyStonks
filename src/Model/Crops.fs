@@ -18,13 +18,12 @@ type Season =
 
 [<RequireQualifiedAccess>]
 module Seasons =
-  let [<Literal>] count = 4
-
   let inline ofSeason (season: Season) = enum<Seasons> (1 <<< int season)
 
   let inline intersect (a: Seasons) (b: Seasons) = a &&& b
-  let inline overlap a b = intersect a b <> Seasons.None
-  let contains season seasons = overlap (ofSeason season) seasons
+  let inline disjoint a b = intersect a b = Seasons.None
+  let inline nonDisjoint a b = not <| disjoint a b
+  let contains season seasons = nonDisjoint (ofSeason season) seasons
 
   let inline add season (seasons: Seasons) = seasons ||| ofSeason season
   let inline remove season (seasons: Seasons) = seasons &&& ~~~(ofSeason season)
@@ -42,17 +41,24 @@ module Seasons =
 
 [<RequireQualifiedAccess>]
 module Season =
+  let [<Literal>] count = 4
+
   let name (season: Season) = enumName season
 
-  let inline private ofInt (i: int) = enum<Season> i
+  let private wrapAroundNegative value =
+    if value < 0
+    then value + count
+    else value
 
-  let next = function
-    | Season.Winter -> Season.Spring
-    | season -> ofInt (int season + 1)
+  let private plusMod (i: int) (season: Season) = (int season + i) % 4
 
-  let previous = function
-    | Season.Spring -> Season.Winter
-    | season -> ofInt (int season - 1)
+  let inline private plus i season = plusMod i season |> enum<Season>
+
+  // truncated division/mod necessitates handling of negative remainder
+  let private minus i season = plusMod -i season |> wrapAroundNegative |> enum<Season>
+
+  let next season = season |> plus 1
+  let previous season = season |> minus 1
 
   let seasonsBetween start finish =
     let mutable seasons = Seasons.None
@@ -63,22 +69,12 @@ module Season =
     seasons |> Seasons.add season
 
   let distance (start: Season) (finish: Season) =
-    let dist = int finish - int start
-    if dist < 0
-    then Seasons.count + dist
-    else dist
-    |> nat
+    wrapAroundNegative (int finish - int start)
 
   let span start finish =
-    let dist = int (distance start finish)
-    let seasons = Array.zeroCreate (dist + 1)
-    let mutable season = start
-    for i = 0 to dist do
-      seasons[i] <- season
-      season <- next season
-    seasons
+    Array.init (distance start finish + 1) (fun i -> start |> plus i)
 
-  let all = Array.init Seasons.count enum<Season>
+  let all = Array.init count enum<Season>
 
 
 type Date = {
@@ -95,16 +91,13 @@ module Date =
   let inline seasonSpan start finish = Season.span start.Season finish.Season
 
   let daySpan start finish =
-    let dist = Season.distance start.Season finish.Season
-    let days = Array.create (int dist + 1) daysInSeason
+    let days = Array.create (Season.distance start.Season finish.Season + 1) daysInSeason
     days[0] <- daysInSeason - start.Day + 1u
     days[days.Length - 1] <- days[days.Length - 1] - (daysInSeason - finish.Day)
     days
 
-  let seasonAndDaySpan start finish = seasonSpan start finish, daySpan start finish
-
   let totalDays start finish =
-    (Season.distance start.Season finish.Season) * daysInSeason - start.Day + finish.Day + 1u
+    nat (Season.distance start.Season finish.Season) * daysInSeason - start.Day + finish.Day + 1u
 
 
 type ToolLevel =
@@ -378,7 +371,7 @@ module FarmCrop =
 
   let seasons crop = crop.Seasons
   let growsInSeason season crop = crop.Seasons |> Seasons.contains season
-  let growsInSeasons seasons crop = crop.Seasons |> Seasons.overlap seasons
+  let growsInSeasons seasons crop = crop.Seasons |> Seasons.nonDisjoint seasons
 
   let xpPerItem item crop =
     let price = item crop.Item |> Item.sellPrice |> float
