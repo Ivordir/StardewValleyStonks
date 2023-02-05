@@ -34,7 +34,7 @@ let bestGrowthSpan vars fertilizer crop =
     then crop |> Crop.seasons |> consecutiveInSeasonDays vars.StartDate vars.EndDate
     else [| (vars.StartDate.Season, vars.EndDate.Season), Date.totalDays vars.StartDate vars.EndDate |]
 
-  if consecutiveDays.Length = 0 then None else
+  if Array.isEmpty consecutiveDays then None else
 
   let time = Game.growthTime vars fertilizer crop
 
@@ -164,7 +164,7 @@ module Price =
   let private minVendorAndPrice (selectedPrices: GameData -> Settings -> _ -> _) data settings customPrices key =
     let price =
       let prices = selectedPrices data settings key |> Array.ofSeq
-      if prices.Length = 0 then None else
+      if Array.isEmpty prices then None else
       let vendor, price = Array.minBy snd prices
       Some (NonCustom vendor, price)
 
@@ -177,7 +177,7 @@ module Price =
 
   let private minPrice selectedPriceValues data settings customPrices key =
     let prices = selectedPriceValues data settings key |> Array.ofSeq
-    if prices.Length = 0
+    if Array.isEmpty prices
     then None
     else Some (Array.min prices)
     |> Option.min (customPrices |> Selection.selectedValue key)
@@ -196,7 +196,7 @@ module Price =
 
   let private itemMaxProductPriceBy projection data settings seed item (quality: Quality) =
     let products = Selected.unlockedProducts data settings seed item
-    if products.Length = 0 then None else
+    if Array.isEmpty products then None else
     products |> Array.mapReduce max (projection data settings.Game quality) |> Some
 
   let itemMaxProductPrice data settings seed item quality = itemMaxProductPriceBy Game.productPrice data settings seed item quality
@@ -204,7 +204,7 @@ module Price =
 
   let private itemMaxProductPriceByQualityBy projection data settings seed item =
     let prices = Selected.unlockedProducts data settings seed item |> Array.map (projection data settings.Game)
-    if prices.Length = 0 then None else
+    if Array.isEmpty prices then None else
     Qualities.init (fun quality -> prices |> Array.mapReduce max (Qualities.item quality)) |> Some
 
   let itemMaxProductPriceByQuality data settings seed item = itemMaxProductPriceByQualityBy Game.productPriceByQuality data settings seed item
@@ -246,7 +246,7 @@ module Price =
     let products = Selected.unlockedProducts data settings seed item |> Array.map (fun product ->
       product, projection data settings.Game product)
 
-    if products.Length = 0 then None else
+    if Array.isEmpty products then None else
     Qualities.init (fun quality ->
       products |> Array.mapReduce (maxBy snd) (fun (product, prices: _ Qualities) -> product, prices[quality]))
     |> Some
@@ -277,7 +277,7 @@ module Price =
       productPrices
     |]
 
-    if sellAs.Length = 0 then None else
+    if Array.isEmpty sellAs then None else
     Qualities.init (fun quality -> sellAs |> Array.mapReduce (maxBy snd) (Qualities.item quality)) |> Some
 
 

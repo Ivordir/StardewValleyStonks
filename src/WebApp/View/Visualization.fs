@@ -972,10 +972,10 @@ module Ranker =
 
   let ranker ranker (data, settings) dispatch =
     let pairData = pairData ranker.RankMetric ranker.TimeNormalization data settings
-    if pairData.Pairs.Length = 0 then
+    if Array.isEmpty pairData.Pairs then
       div [
-        if pairData.Crops.Length = 0 then ofStr "No Crops Selected"
-        if pairData.Fertilizers.Length = 0 then ofStr "No Fertilizers Selected"
+        if Array.isEmpty pairData.Crops then ofStr "No Crops Selected"
+        if Array.isEmpty pairData.Fertilizers then ofStr "No Fertilizers Selected"
       ]
     else
       let pairs =
@@ -994,7 +994,7 @@ module Ranker =
         if ranker.ShowInvalid then pairs else
         pairs |> Array.filter (snd >> Result.isOk)
 
-      if pairs.Length = 0 then
+      if Array.isEmpty pairs then
         div "No valid items found"
       else
         let pairData =
@@ -1099,7 +1099,7 @@ let [<ReactComponent>] AuditCropAndFertilizer (props: {|
     let pairs = pairData.Pairs
 
     let bestCrop, bestFert =
-      if pairs.Length = 0 then None, None else
+      if Array.isEmpty pairs then None, None else
       let crop, fert = pairs |> Array.maxBy (snd >> Option.ofResult) |> fst
       Some data.Crops[crop], Some (Option.map data.Fertilizers.Find fert)
 
@@ -1113,7 +1113,7 @@ let [<ReactComponent>] AuditCropAndFertilizer (props: {|
       match fertName with
       | Some fert' ->
         let fert = Option.map data.Fertilizers.Find fert'
-        if pairData.Crops.Length = 0 then None else
+        if Array.isEmpty pairData.Crops then None else
         pairData.Crops |> Array.maxBy (fun crop -> metricValue data settings timeNorm crop fert |> Option.ofResult) |> Some
       | None -> bestCrop
 
@@ -1121,7 +1121,7 @@ let [<ReactComponent>] AuditCropAndFertilizer (props: {|
       match seed with
       | Some seed ->
         let crop = data.Crops[seed]
-        if pairData.Fertilizers.Length = 0 then None else
+        if Array.isEmpty pairData.Fertilizers then None else
         let profit = metricValue data settings timeNorm crop
         pairData.Fertilizers |> Array.maxBy (profit >> Option.ofResult) |> Some
       | None -> bestFert
@@ -1216,8 +1216,8 @@ let [<ReactComponent>] AuditCropAndFertilizer (props: {|
 
     | _ ->
       div [
-        if pairData.Fertilizers.Length = 0 then ofStr "No fertilizers selected!"
-        if pairData.Crops.Length = 0 then ofStr "No crops selected!"
+        if Array.isEmpty pairData.Fertilizers then ofStr "No fertilizers selected!"
+        if Array.isEmpty pairData.Crops then ofStr "No crops selected!"
       ]
   ]]
 

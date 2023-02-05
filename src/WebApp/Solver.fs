@@ -406,7 +406,7 @@ let private mapSolution (vars: GameVariables) (solution: (FertilizerSpanRequest 
           Some (season - span.Start, seed, harvests + harvests2)
 
       | regrowVariables ->
-        assert (regrowVariables.Length = 0)
+        assert (Array.isEmpty regrowVariables)
         None
 
     let cropHarvests = variables |> Array.choose (function

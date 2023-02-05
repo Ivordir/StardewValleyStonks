@@ -171,7 +171,7 @@ let parseCrop farmCropOverrides forageCropData seedId (data: string) =
 
     let growthStages =
       let splitted = growthStages.Split ' '
-      if splitted.Length = 0 then failwith $"The crop {seedId} had no growth stages." else
+      if Array.isEmpty splitted then failwith $"The crop {seedId} had no growth stages." else
       let stages = splitted |> Array.map uint
       if stages |> Array.contains 0u then failwith $"The crop {seedId} had a growth stage of 0."
       stages

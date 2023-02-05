@@ -78,7 +78,7 @@ let selectList listRef clearHover (props: _ Props) (state: _ State) setState hov
     tabIndex -1
     onMouseDown handleEvent
     children [
-      if state.Options.Length = 0 then
+      if Array.isEmpty state.Options then
         div "No results found..."
       else
         ul [
