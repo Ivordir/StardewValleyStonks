@@ -293,7 +293,7 @@ module Crops =
 
         Column.withSort
           (compareBy (function
-            | ForageCrop c -> Some (Game.itemPrice settings.Game true data.Items[c.Seed * 1u<_>] Quality.Normal)
+            | ForageCrop c -> Some (Game.seedItemSellPrice data settings.Game c.Seed)
             | FarmCrop _ -> None))
           (div [
             if not (data.ForageCrops.Values |> Seq.exists (ForageCrop.seedRecipeUnlocked settings.Game.Skills)) then Class.disabled
@@ -333,7 +333,7 @@ module Crops =
                   if not <| ForageCrop.seedRecipeUnlocked settings.Game.Skills c then Class.disabled
                   children [
                     checkbox (settings.Selected.SellForageSeeds.Contains seed) (curry SetSelected seed >> SelectSellForageSeeds >> selectDispatch)
-                    ofNat <| Game.itemPrice settings.Game true data.Items[seed * 1u<_>] Quality.Normal
+                    ofNat <| Game.seedItemSellPrice data settings.Game seed
                   ]
                 ]
                 td []

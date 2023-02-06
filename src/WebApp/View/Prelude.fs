@@ -176,6 +176,7 @@ module Image =
 
     let item (item: Item) = at (itemPath item.Id) item.Name
     let item' (data: GameData) = data.Items.Find >> item
+    let seed data (seed: SeedId) = seed |> convertUnit |> item' data
 
     let private withQuality path name quality =
       fragment [

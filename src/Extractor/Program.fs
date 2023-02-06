@@ -167,7 +167,7 @@ let parseCrop farmCropOverrides forageCropData seedId (data: string) =
   match data.Split '/' with
   | [| growthStages; seasons; spriteSheetRow; itemId; regrowTime; scythe; cropAmount; _; _ |] ->
     let spriteSheetRow = uint spriteSheetRow
-    let itemId = nat itemId * 1u<_>
+    let itemId = itemId |> nat |> convertUnit
 
     let growthStages =
       let splitted = growthStages.Split ' '
@@ -357,7 +357,7 @@ let main args =
 
   let inline tryLoadData name path =
     (tryLoad (name + " data") path: Dictionary<int,_>)
-    |> Seq.map (fun (KeyValue (k, v)) -> nat k * 1u<_>, v)
+    |> Seq.map (fun (KeyValue (k, v)) -> k |> nat |> convertUnit, v)
 
   let cropData = tryLoadData "crop" cropDataPath |> Seq.filter (fst >> config.SkipCrops.Contains >> not) |> Array.ofSeq
   let itemData = tryLoadData "item" itemDataPath |> Table.ofSeq

@@ -50,10 +50,7 @@ module GameData =
     | Fruit, ProcessorName "Keg" -> Some (Wine itemId)
     | Vegetable, ProcessorName "Preserves Jar" -> Some (Pickles itemId)
     | Vegetable, ProcessorName "Keg" -> Some (Juice itemId)
-    | _, ProcessorName "Seed Maker" ->
-      match data.Seed.TryFind itemId with
-      | Some seed -> Some (SeedsFromSeedMaker (seed * 1u<_>))
-      | None -> None
+    | _, ProcessorName "Seed Maker" -> data.Seed.TryFind itemId |> Option.map (convertUnit >> SeedsFromSeedMaker)
     | _ -> None
 
   let product data item processor =
@@ -270,7 +267,7 @@ module Game =
       let price =
         match price with
         | Some price -> price
-        | None -> 2u * data.Items[seed * 1u<_>].SellPrice
+        | None -> 2u * data.Items[convertUnit seed].SellPrice
 
       if vendor = Vendor.joja
       then price |> withMultiplier (vars.Multipliers.ProfitMargin * if vars.JojaMembership then 1.0 else 1.25)
@@ -297,7 +294,7 @@ module Game =
 
   let productQuality vars quality product = Product.outputQuality vars.ModData quality product
 
-  let seedItemSellPrice data vars (seed: SeedId) = itemPrice vars false data.Items[seed * 1u<_>] Quality.Normal
+  let seedItemSellPrice data vars (seed: SeedId) = itemPrice vars false data.Items[convertUnit seed] Quality.Normal
 
   let xpPerItem data crop =
     Crop.xpPerItem data.Items.Find crop

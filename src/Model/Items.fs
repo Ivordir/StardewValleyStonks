@@ -231,7 +231,7 @@ module Product =
 
   let quantityPerInput product =
     match product with
-    | SeedsFromSeedMaker seedId -> Processor.seedMakerExpectedQuantity (seedId * 1u<_>)
+    | SeedsFromSeedMaker seedId -> seedId |> convertUnit |> Processor.seedMakerExpectedQuantity
     | Processed { Ratio = Some (i, o) } -> float o / float i
     | _ -> 1.0
 

@@ -272,7 +272,7 @@ module SummaryTable =
     | _ -> none
 
   let private seedsBoughtRow data (seed: SeedId) seedPrice amount =
-    boughtRow seedPrice amount amount (Image.Icon.item' data (seed * 1u<_>))
+    boughtRow seedPrice amount amount (Image.Icon.seed data seed)
 
   let private harvestedSeedsRows data item (amounts: _ Qualities) =
     amounts
@@ -288,8 +288,8 @@ module SummaryTable =
       |> Array.map (fun (quality, amount) -> (item, quality), amount)
 
     let seed = Crop.seed crop
-    let seedAmount = Qualities.sum amounts * Processor.seedMakerExpectedAmount seed
-    inputItemAmountRows inputs data None seedAmount 0.0 seedAmount (Image.Icon.item' data (seed * 1u<_>))
+    let seedAmount = Qualities.sum amounts * Processor.seedMakerExpectedQuantity seed
+    inputItemAmountRows inputs data None seedAmount 0.0 seedAmount (Image.Icon.seed data seed)
 
   let private forageSeedsItemAmounts items amount =
     let itemAmount = amount / float ForageCrop.forageSeedsPerCraft
@@ -297,7 +297,7 @@ module SummaryTable =
 
   let private forageSeedsRows data settings items (seed: SeedId) amountSold amountUsed =
     if amountSold = 0.0 && amountUsed = 0.0 then none else
-    let itemCell = Image.Icon.item' data (seed * 1u<_>)
+    let itemCell = Image.Icon.seed data seed
     let price = Game.seedItemSellPrice data settings.Game seed
     fragment [
       inputItemAmountRows (forageSeedsItemAmounts items amountUsed) data None amountUsed 0.0 amountUsed itemCell
