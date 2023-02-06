@@ -667,7 +667,7 @@ type SoldProductSummary = {
   Quality: Quality
   Price: nat
   Quantity: float
-  InputItemQuantities: ((ItemId * Quality) * float) array
+  ConsumedItemQuantities: ((ItemId * Quality) * float) array
 }
 
 type CropProfitSummary = {
@@ -701,21 +701,6 @@ type ProfitSummary = {
       if investment = 0u
       then None
       else Some ((total - float investment) / float investment * 100.0))
-
-
-type CropXpSummary = {
-  Crop: Crop
-  Harvests: nat
-  XpPerItem: nat
-  ItemQuantity: float
-}
-
-type XpSummary = {
-  Fertilizer: Fertilizer option
-  CropSummaries: CropXpSummary array
-  Xp: float
-  TimeNormalization: float
-}
 
 module private ProfitSummary =
   open YALPS
@@ -939,7 +924,7 @@ module private ProfitSummary =
           Quality = quality
           Price = price
           Quantity = quantity
-          InputItemQuantities = items
+          ConsumedItemQuantities = items
         })
 
     resizeToArray unsoldItems,
@@ -1015,6 +1000,20 @@ module private ProfitSummary =
         else
           buyFirstSeedItemSummary nonForageItemAndSeedSummary data settings crop seedPrice prices amounts harvests)
 
+
+type CropXpSummary = {
+  Crop: Crop
+  Harvests: nat
+  XpPerItem: nat
+  ItemQuantity: float
+}
+
+type XpSummary = {
+  Fertilizer: Fertilizer option
+  CropSummaries: CropXpSummary array
+  Xp: float
+  TimeNormalization: float
+}
 
 let private cropXpSummary data settings crop harvests =
   let xpPerItem = Game.xpPerItem data crop
@@ -1097,11 +1096,9 @@ module Ranker =
 
 module Solver =
   let nonRegrowCropProfitPerHarvest = Profit.nonRegrowCropProfitPerHarvest
-
   let regrowCropProfitData = Profit.regrowCropProfitData
 
   let nonRegrowCropXpPerHarvest = XP.nonRegrowCropXpPerHarvest
-
   let regrowCropXpData = XP.regrowCropXpData
 
   let profitSummary data settings fertilizer cropHarvests =

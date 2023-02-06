@@ -264,7 +264,7 @@ let defaultUI = {
   SettingsTab = Skills
   OpenDetails = Set.ofArray [|
     OpenDetails.Fertilizers
-    OpenDetails.RankerProfitBreakdown
+    OpenDetails.RankerSummary
     OpenDetails.RankerGrowthCalendar
   |]
   CropTab = defaultCropTabState

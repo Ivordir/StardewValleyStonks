@@ -317,7 +317,7 @@ module SummaryTable =
 
   let private soldProductRow data (summary: Query.SoldProductSummary) =
     inputItemAmountRows
-      summary.InputItemQuantities
+      summary.ConsumedItemQuantities
       data
       (Some summary.Price)
       summary.Quantity
@@ -1082,13 +1082,13 @@ let [<ReactComponent>] AuditCropAndFertilizer (props: {|
     match crop, fert with
     | (Choice1Of2 crop | Choice2Of2 (Some crop)), (Choice1Of2 fert | Choice2Of2 (Some fert)) ->
       animatedDetails
-        (ui.OpenDetails.Contains OpenDetails.RankerProfitBreakdown)
+        (ui.OpenDetails.Contains OpenDetails.RankerSummary)
         (ofStr "Summary")
         (match metric with
           | Gold -> SummaryTable.rankerProfit false data settings timeNorm fert crop
           | XP -> SummaryTable.rankerXp data settings timeNorm fert crop
           | ROI -> SummaryTable.rankerProfit true data settings timeNorm fert crop)
-        (curry SetDetailsOpen OpenDetails.RankerProfitBreakdown >> appDispatch)
+        (curry SetDetailsOpen OpenDetails.RankerSummary >> appDispatch)
 
       animatedDetails
         (ui.OpenDetails.Contains OpenDetails.RankerGrowthCalendar)

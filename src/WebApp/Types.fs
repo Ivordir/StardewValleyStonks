@@ -303,9 +303,9 @@ type OpenDetails =
   | FertilizerPrices
   | Mod
   | RankerGrowthCalendar
-  | RankerProfitBreakdown
+  | RankerSummary
   | SolverGrowthCalendar
-  | SolverProfitBreakdown
+  | SolverSummary
 
 type CropFilters = {
   NameSearch: string
