@@ -20,7 +20,7 @@ let floatRange (precision: float) (min: float) (max: float) (value: float) (disp
     prop.min min
     prop.max max
     step precision
-    valueOrDefault value
+    prop.value value
     onChange dispatch
   ]
 
@@ -47,19 +47,23 @@ let [<ReactComponent>] private NumberInput (props: {|
 
   input [
     class'
+    style [ style.width props.Width ]
     prop.type'.number
     if props.Min.IsSome then prop.min props.Min.Value
     if props.Max.IsSome then prop.max props.Max.Value
-    step (1.0 / props.Precision)
-    style [ style.width props.Width ]
-    valueOrDefault value
+    step props.Precision
+    prop.value value
+
     onChange (fun (v: float) ->
-      let v = System.Math.Truncate (v / props.Precision) * props.Precision
+      let p = 1.0 / props.Precision
+      let v = System.Math.Round (v * p) / p
       if v <> value
       && props.Min |> Option.forall (fun m -> m <= v)
       && props.Max |> Option.forall (fun m -> v <= m) then
         props.Dispatch v)
+
     onBlur (fun _ -> updateInput ())
+
     onKeyDown (fun e ->
       match e.key with
       | "Enter" | "Escape" ->
