@@ -261,14 +261,15 @@ let private fertilizerSpans data settings mode =
     match mode with
     | MaximizeGold ->
       removeStrictlyWorseFertilizers,
-      (fun crop data (fertilizer: Fertilizer option) fertCost -> data fertilizer - Query.replacedFertilizerPerHarvest settings crop * float fertCost),
-      Query.Profit.nonRegrowCropProfitPerHarvest data settings,
-      Query.Profit.regrowCropProfitData data settings
+      (fun crop data (fertilizer: Fertilizer option) fertCost ->
+        data fertilizer - Query.replacedFertilizerPerHarvest settings crop * float fertCost),
+      Query.Solver.nonRegrowCropProfitPerHarvest data settings,
+      Query.Solver.regrowCropProfitData data settings
     | MaximizeXP ->
       groupFertilizersBySpeed,
       (fun _ data fertilizer _ -> data fertilizer),
-      Query.XP.nonRegrowCropXpPerHarvest data settings >> Option.map konst,
-      Query.XP.regrowCropXpData data settings >> Option.map konst
+      Query.Solver.nonRegrowCropXpPerHarvest data settings >> Option.map konst,
+      Query.Solver.regrowCropXpData data settings >> Option.map konst
 
   let seasons, days =
     if settings.Game.Location = Farm

@@ -630,7 +630,7 @@ module SummaryTable =
 let private pairData metric timeNorm data settings =
   let crops = Query.Selected.inSeasonCrops data settings |> Array.ofSeq
   let fertilizers = Query.Selected.fertilizersOpt data settings |> Array.ofSeq
-  let rankValue = Query.rankValue metric
+  let rankValue = Query.Ranker.rankValue metric
 
   let data = crops |> Array.collect (fun crop ->
     let profit = rankValue data settings timeNorm crop
@@ -992,11 +992,7 @@ let [<ReactComponent>] AuditCropAndFertilizer (props: {|
       let crop, fert = pairs |> Array.maxBy (snd >> Option.ofResult) |> fst
       Some data.Crops[crop], Some (Option.map data.Fertilizers.Find fert)
 
-    let metricValue =
-      match metric with
-      | Gold -> Query.cropProfit
-      | ROI -> Query.cropROI
-      | XP -> Query.cropXP
+    let metricValue = Query.Ranker.rankValue metric
 
     let bestCrop =
       match fertName with

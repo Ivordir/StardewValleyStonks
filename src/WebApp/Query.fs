@@ -350,14 +350,14 @@ let canMakeEnoughSeeds data settings crop =
     Selected.cropHasPrice settings (Crop.seed crop)
     || maxNonBoughtSeeds data settings crop >= 1.0
 
-type internal RegrowCropProfitData = {
+type RegrowCropProfitData = {
   ProfitPerHarvest: float
   HarvestsForMinCost: nat
   MinCost: float
   Cost: nat -> float
 }
 
-module internal Profit =
+module private Profit =
   let private constantRegrowData profit seedCost = {
     ProfitPerHarvest = profit
     HarvestsForMinCost = 1u
@@ -637,15 +637,8 @@ module internal Profit =
 
     data >> mapping
 
-let cropProfit = Profit.mapData (Result.map (fun (profit, investment, timeNorm) ->
-  (profit - investment) / timeNorm))
 
-let cropROI = Profit.mapData (Result.bind (fun (profit, investment, timeNorm) ->
-  if investment = 0.0
-  then Error IR.NoInvestment
-  else Ok ((profit - investment) / investment * 100.0 / timeNorm)))
-
-module internal XP =
+module private XP =
   let nonRegrowCropXpPerHarvest data settings crop =
     if not <| canMakeEnoughSeeds data settings crop
     then None
@@ -659,23 +652,6 @@ module internal XP =
       MinCost = 0.0
       Cost = konst 0.0
     }
-
-let cropXP data settings timeNorm crop =
-  let enoughSeeds = canMakeEnoughSeeds data settings crop
-  fun fertilizer ->
-    let hasFertPrice = fertilizerCostOpt data settings (Fertilizer.Opt.name fertilizer) |> Option.isSome
-    match bestGrowthSpan settings.Game fertilizer crop with
-    | Some span when hasFertPrice && enoughSeeds ->
-      let xpPerHarvest = Game.xpPerHarvest data settings.Game crop
-      let xp = float span.Harvests * xpPerHarvest
-      let divisor = timeNormalizationDivisor span crop timeNorm
-      Ok (xp / divisor)
-    | span -> invalidReasons span.IsSome hasFertPrice enoughSeeds
-
-let rankValue = function
-  | Gold -> cropProfit
-  | ROI -> cropROI
-  | XP -> cropXP
 
 
 type SoldItemSummary = {
@@ -741,7 +717,7 @@ type XpSummary = {
   TimeNormalization: float
 }
 
-module internal ProfitSummary =
+module private ProfitSummary =
   open YALPS
   open Profit
 
@@ -1051,6 +1027,31 @@ let private cropXpSummary data settings crop harvests =
   }
 
 module Ranker =
+  let profit = Profit.mapData (Result.map (fun (profit, investment, timeNorm) ->
+    (profit - investment) / timeNorm))
+
+  let roi = Profit.mapData (Result.bind (fun (profit, investment, timeNorm) ->
+    if investment = 0.0
+    then Error IR.NoInvestment
+    else Ok ((profit - investment) / investment * 100.0 / timeNorm)))
+
+  let xp data settings timeNorm crop =
+    let enoughSeeds = canMakeEnoughSeeds data settings crop
+    fun fertilizer ->
+      let hasFertPrice = fertilizerCostOpt data settings (Fertilizer.Opt.name fertilizer) |> Option.isSome
+      match bestGrowthSpan settings.Game fertilizer crop with
+      | Some span when hasFertPrice && enoughSeeds ->
+        let xpPerHarvest = Game.xpPerHarvest data settings.Game crop
+        let xp = float span.Harvests * xpPerHarvest
+        let divisor = timeNormalizationDivisor span crop timeNorm
+        Ok (xp / divisor)
+      | span -> invalidReasons span.IsSome hasFertPrice enoughSeeds
+
+  let rankValue = function
+    | Gold -> profit
+    | ROI -> roi
+    | XP -> xp
+
   let profitSummary data settings timeNormalization fertilizer crop =
     let harvestsSummary =
       match settings.Profit.SeedStrategy with
@@ -1095,6 +1096,14 @@ module Ranker =
 
 
 module Solver =
+  let nonRegrowCropProfitPerHarvest = Profit.nonRegrowCropProfitPerHarvest
+
+  let regrowCropProfitData = Profit.regrowCropProfitData
+
+  let nonRegrowCropXpPerHarvest = XP.nonRegrowCropXpPerHarvest
+
+  let regrowCropXpData = XP.regrowCropXpData
+
   let profitSummary data settings fertilizer cropHarvests =
     let fertilizerVendorAndPrice, fertCost =
       match fertilizer with
