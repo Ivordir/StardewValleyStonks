@@ -148,16 +148,16 @@ type Selections = {
 
 [<RequireQualifiedAccess>]
 module Selections =
-  let private ensureEntries keys (map: Map<_,_>) =
+  let private ensureMapEntries keys (map: Map<_,_>) =
     keys
     |> Seq.map (fun key -> key, map.TryFind key |> Option.defaultValue Set.empty)
     |> Map.ofSeq
 
-  let adapt (data: GameData) (selected: Selections) = {
+  let ensureEntries (data: GameData) (selected: Selections) = {
     selected with
-      SeedPrices = selected.SeedPrices |> ensureEntries data.Crops.Keys
-      FertilizerPrices = selected.FertilizerPrices |> ensureEntries data.Fertilizers.Keys
-      Products = selected.Products |> ensureEntries (GameData.seedItemPairs data)
+      SeedPrices = selected.SeedPrices |> ensureMapEntries data.Crops.Keys
+      FertilizerPrices = selected.FertilizerPrices |> ensureMapEntries data.Fertilizers.Keys
+      Products = selected.Products |> ensureMapEntries (GameData.seedItemPairs data)
   }
 
   let private mapOfSets table =
@@ -232,6 +232,10 @@ type Settings = {
   Profit: ProfitSettings
   Selected: Selections
 }
+
+module Settings =
+  let ensureEntries data (settings: Settings) =
+    { settings with Selected = Selections.ensureEntries data settings.Selected }
 
 
 type AppMode =
@@ -385,7 +389,18 @@ module Version =
 
 [<RequireQualifiedAccess>]
 module App =
-  // Major = completely new schema -> convert data
-  // Minor = new fields, other minor schema edits -> edit data
-  // Patch = potentially new crops, fertilizers, or items on crops -> adapt settings
+  // Major: incompatible/new schema -> convert data
+  // Minor:
+  //   new crops, fertilizers, or items on crops -> add entries on settings
+  //   compatible schema change -> updated coders should be sufficient
+  // Patch: no action needed
   let version = Version.tryParse "0.0.1" |> Option.get
+
+  let ensureEntries data app =
+    let settings, ui = app.State
+    {
+      Data = data
+      State = Settings.ensureEntries data settings, ui
+      Presets = app.Presets |> List.map (fun preset ->
+        { preset with Settings = Settings.ensureEntries data settings })
+    }

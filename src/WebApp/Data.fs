@@ -286,7 +286,8 @@ module LocalStorage =
     try Browser.WebStorage.localStorage.setItem (key, data)
     with e ->
       // setItem can throw if localstorage is full
-      console.error $"Failed to save {key}: {e}"
+      console.error $"Failed to save {key}, local storage might be full."
+      console.error e
 
   let private saveVersion () = setItem VersionKey App.version.String
 
@@ -320,33 +321,9 @@ module LocalStorage =
     tryLoad StateKey Decode.state
     |> Option.defaultValue defaultApp.State
 
-  let private loadSavedSettings () =
+  let private loadPresets () =
     tryLoad PresetsKey (Decode.list Decode.preset)
     |> Option.defaultValue []
-
-  let private loadOldApp () = {
-    Data = gameData
-    State = loadState ()
-    Presets = loadSavedSettings ()
-  }
-
-  let private minorPatchFixes = [] // index i -> (vX.i.X -> vX.(i+1).X)
-
-  let private applyMinorPatchFixes ver app =
-    minorPatchFixes
-    |> List.skip (int ver.Minor)
-    |> List.fold (fun app fix -> fix app) app
-
-  let private adaptSettings (settings: Settings) =
-    { settings with Selected = Selections.adapt gameData settings.Selected }
-
-  let private adaptApp app =
-    let settings, ui = app.State
-    {
-      Data = gameData
-      State = adaptSettings settings, ui
-      Presets = app.Presets |> List.map (fun preset -> { preset with Settings = adaptSettings settings })
-    }
 
   let loadApp () =
     match getItem VersionKey |> Option.map Version.tryParse with
@@ -365,15 +342,18 @@ module LocalStorage =
       // load and convert data here (once next version comes out)
       // console.info $"Upgrading to version {ver.Major}..."
 
-    | Some (Some ver) when ver <> App.version ->
-      let app =
-        loadOldApp ()
-        |> applyMinorPatchFixes ver
-        |> adaptApp
+    | Some (Some ver) ->
+      let app = {
+        Data = gameData
+        State = loadState ()
+        Presets = loadPresets ()
+      }
+
+      if ver = App.version then app else
+
+      let app = App.ensureEntries gameData app
       saveAll app
       app
-
-    | Some (Some _) -> loadOldApp ()
 
   let inline private reload () = Browser.Dom.window.location.reload ()
 
