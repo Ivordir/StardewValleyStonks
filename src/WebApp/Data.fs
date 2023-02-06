@@ -286,8 +286,7 @@ module LocalStorage =
     try Browser.WebStorage.localStorage.setItem (key, data)
     with e ->
       // setItem can throw if localstorage is full
-      console.error $"Failed to save {key}, local storage might be full."
-      console.error e
+      console.error (errorWithMessage $"Failed to save {key}, local storage might be full." e)
 
   let private saveVersion () = setItem VersionKey App.version.String
 

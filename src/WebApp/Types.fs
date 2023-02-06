@@ -7,6 +7,9 @@ open Fable.Core
 module internal Util =
   let console = JS.console
 
+  [<Emit "new Error($0, { cause: $1 })">]
+  let errorWithMessage (msg: string) (error: exn): exn = jsNative
+
   let inline konst x _ = x
   let inline curry f a b = f (a, b)
 

@@ -69,7 +69,7 @@ do
   root?style?setProperty("--sixth-border", borderWidth fontPx 6)
 
 Program.mkSimple Data.LocalStorage.loadApp update view
-|> Program.withErrorHandler (fun (msg, e) -> console.error (msg, e))
+|> Program.withErrorHandler (fun (msg, e) -> console.error (errorWithMessage msg e))
 |> Program.withSubscription (fun _ -> [ [ "localStorage" ], localStorageSub ])
 |> Program.withReactBatched "app"
 |> Program.run
