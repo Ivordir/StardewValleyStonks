@@ -279,9 +279,7 @@ let private fertilizerSpans data settings mode =
   let fertilizerData =
     Query.Selected.fertilizersOpt data settings
     |> Seq.choose (fun fertilizer ->
-      match Query.fertilizerCostOpt data settings (Fertilizer.Opt.name fertilizer) with
-      | Some cost -> Some (fertilizer, cost)
-      | None -> None)
+      Query.fertilizerCostOpt data settings (Fertilizer.Opt.name fertilizer) |> Option.map (fun cost -> fertilizer, cost))
     |> Array.ofSeq
     |> fertilizerFilter
 
@@ -291,9 +289,7 @@ let private fertilizerSpans data settings mode =
     |> Array.partition Crop.regrows
 
   let cropData = crops |> Array.choose (fun crop ->
-    match objectiveValueWithFertilizer crop with
-    | Some objectiveValue -> Some (crop, objectiveValue)
-    | None -> None)
+    objectiveValueWithFertilizer crop |> Option.map (fun objectiveValue -> crop, objectiveValue))
 
   let cropData =
     if settings.Game.Location = Farm
@@ -302,9 +298,8 @@ let private fertilizerSpans data settings mode =
 
   let regrowCropData = regrowCrops |> Array.choose (function
     | FarmCrop crop ->
-      match regrowCropData crop with
-      | Some data -> Some (crop, fertilizerData |> Array.map (fst >> data))
-      | None -> None
+      regrowCropData crop |> Option.map (fun data ->
+        crop, fertilizerData |> Array.map (fst >> data))
     | ForageCrop _ -> None)
 
   let regrowCropData =
@@ -344,12 +339,13 @@ let private fertilizerSpans data settings mode =
 
   [
     for endSeason = seasons.Length - 1 downto 0 do
+      let startingConstraints = [
+        string endSeason <== float (days[endSeason] - 1u)
+        EndingCrop <== 1.0
+      ]
+
       let constraintsAndVariables = fertilizerData |> Array.map (fun (fert, fertCost) ->
-        [
-          string endSeason <== float (days[endSeason] - 1u)
-          EndingCrop <== 1.0
-        ],
-        [ unreplacedFertilizerVariables settings endSeason (fert, fertCost) cropData[endSeason] ])
+        startingConstraints, [ unreplacedFertilizerVariables settings endSeason (fert, fertCost) cropData[endSeason] ])
 
       nextSeasonModels 0u endSeason endSeason regrowCropData[endSeason] [| EndingCrop, 1.0 |] constraintsAndVariables []
   ]
@@ -456,6 +452,7 @@ let private mapSolution (vars: GameVariables) (solution: (FertilizerSpanRequest 
     })
 
   Array.ofSeq solution, totalValue
+
 
 open Fable.Core
 open Browser.Url

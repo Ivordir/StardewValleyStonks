@@ -1,7 +1,6 @@
 module internal StardewValleyStonks.WebApp.Worker
 
 open Fable.Core
-
 open YALPS
 
 type Input = Model<int, string> array
