@@ -247,25 +247,29 @@ let defaultRanker = {
   SelectedCropAndFertilizer = None
 }
 
-let defaultUI = {
-  Mode = Ranker
-  Ranker = defaultRanker
-  SolverMode = MaximizeGold
-  SettingsTab = Skills
-  CropTab = CropsTable
-  OpenDetails = Set.ofArray [|
-    OpenDetails.Fertilizers
-    OpenDetails.RankerProfitBreakdown
-    OpenDetails.RankerGrowthCalendar
-  |]
-  CropFilters = CropFilters.empty
-  FertilizerSort = 4u, true
-  FertilizerPriceSort = 0u, true
+let defaultCropTabState = {
+  Tab = CropsTable
+  Filters = CropFilters.empty
   CropSort = 5u, true
   ProductSort = 0u, true
   SeedSort = 0u, true
   ProductQuality = Quality.Normal
   ShowNormalizedProductPrices = false
+}
+
+let defaultUI = {
+  Mode = Ranker
+  Ranker = defaultRanker
+  SolverMode = MaximizeGold
+  SettingsTab = Skills
+  OpenDetails = Set.ofArray [|
+    OpenDetails.Fertilizers
+    OpenDetails.RankerProfitBreakdown
+    OpenDetails.RankerGrowthCalendar
+  |]
+  CropTab = defaultCropTabState
+  FertilizerSort = 4u, true
+  FertilizerPriceSort = 0u, true
 }
 
 let defaultApp = {

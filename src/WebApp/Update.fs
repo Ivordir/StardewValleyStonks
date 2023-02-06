@@ -88,6 +88,15 @@ type CropFiltersMessage =
   | SetForage of bool option
   | ClearFilters
 
+type CropTabMessage =
+  | SetCropTab of CropTab
+  | SetCropFilters of CropFiltersMessage
+  | SetCropSort of TableSort
+  | SetProductSort of TableSort
+  | SetSeedSort of TableSort
+  | SetProductQuality of Quality
+  | SetShowNormalizedProductPrices of bool
+
 type RankerMessage =
   | SetRankItem of RankItem
   | SetRankMetric of RankMetric
@@ -101,16 +110,10 @@ type UIMessage =
   | SetRanker of RankerMessage
   | SetSolverMode of SolverMode
   | SetSettingsTab of SettingsTab
-  | SetCropTab of CropTab
   | SetDetailsOpen of OpenDetails * bool
-  | SetCropFilters of CropFiltersMessage
+  | SetCropTabState of CropTabMessage
   | SetFertilizerSort of TableSort
   | SetFertilizerPriceSort of TableSort
-  | SetCropSort of TableSort
-  | SetProductSort of TableSort
-  | SetSeedSort of TableSort
-  | SetProductQuality of Quality
-  | SetShowNormalizedProductPrices of bool
 
 type PresetsMessage =
   | LoadSaveGame of Preset
@@ -270,6 +273,16 @@ let cropFilters msg filters =
   | SetForage value -> { filters with Forage = value }
   | ClearFilters -> CropFilters.empty
 
+let cropTab msg state =
+  match msg with
+  | SetCropTab tab -> { state with Tab = tab }
+  | SetCropFilters msg -> { state with Filters = cropFilters msg state.Filters }
+  | SetCropSort (col, asc) -> { state with CropSort = col, asc }
+  | SetProductSort (col, asc) -> { state with ProductSort = col, asc }
+  | SetSeedSort (col, asc) -> { state with SeedSort = col, asc }
+  | SetProductQuality quality -> { state with ProductQuality = quality }
+  | SetShowNormalizedProductPrices value -> { state with ShowNormalizedProductPrices = value }
+
 let ranker msg ranker =
   match msg with
   | SetRankItem item -> { ranker with RankItem = item }
@@ -304,18 +317,13 @@ let ui msg ui =
   | SetRanker msg -> { ui with Ranker = ranker msg ui.Ranker }
   | SetSolverMode mode -> { ui with SolverMode = mode }
   | SetSettingsTab tab -> { ui with SettingsTab = tab }
-  | SetCropTab tab -> { ui with CropTab = tab }
   | SetDetailsOpen (details, selected) -> { ui with OpenDetails = ui.OpenDetails |> setSelected selected details }
-  | SetCropFilters msg -> { ui with CropFilters = cropFilters msg ui.CropFilters }
+  | SetCropTabState msg -> { ui with CropTab = cropTab msg ui.CropTab }
   | SetFertilizerSort (col, asc) -> { ui with FertilizerSort = col, asc }
   | SetFertilizerPriceSort (col, asc) -> { ui with FertilizerPriceSort = col, asc }
-  | SetCropSort (col, asc) -> { ui with CropSort = col, asc }
-  | SetProductSort (col, asc) -> { ui with ProductSort = col, asc }
-  | SetSeedSort (col, asc) -> { ui with SeedSort = col, asc }
-  | SetProductQuality quality -> { ui with ProductQuality = quality }
-  | SetShowNormalizedProductPrices value -> { ui with ShowNormalizedProductPrices = value }
 
-let state msg data (oldSettings, oldUI)=
+
+let state msg data (oldSettings, oldUI) =
   match msg with
   | SetSettings msg -> oldSettings |> settings data msg, oldUI
   | SetUI msg -> oldSettings, oldUI |> ui msg

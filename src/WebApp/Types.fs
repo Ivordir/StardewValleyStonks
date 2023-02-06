@@ -329,23 +329,26 @@ module CropFilters =
 
 type TableSort = nat * bool
 
+type CropTabState = {
+  Tab: CropTab
+  Filters: CropFilters
+  CropSort: TableSort
+  ProductSort: TableSort
+  SeedSort: TableSort
+  ProductQuality: Quality
+  ShowNormalizedProductPrices: bool
+}
+
 type UIState = {
   Mode: AppMode
   Ranker: Ranker
   SolverMode: SolverMode
 
   SettingsTab: SettingsTab
-  CropTab: CropTab
   OpenDetails: OpenDetails Set
-  CropFilters: CropFilters
-
+  CropTab: CropTabState
   FertilizerSort: TableSort
   FertilizerPriceSort: TableSort
-  CropSort: TableSort
-  ProductSort: TableSort
-  SeedSort: TableSort
-  ProductQuality: Quality
-  ShowNormalizedProductPrices: bool
 }
 
 type Preset = {
