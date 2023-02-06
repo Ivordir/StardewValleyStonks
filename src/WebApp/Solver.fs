@@ -209,21 +209,19 @@ let private bridgeToNextSeason settings objectiveValue season nextSeason days br
       :: constraints
 
     let variables =
-      if Array.isEmpty bridgeCropsVars then
-        [|
-          (season, DayUsedForBridgeCrop), [|
-            string season, 1.0
-            BridgeDays @ string nextSeason, -1.0
-          |]
-          (nextSeason, DayUsedForBridgeCrop), [|
-            string nextSeason, 1.0
-            BridgeDays @ string nextSeason, -1.0
-          |]
+      if Array.isEmpty bridgeCropsVars then variables else
+      [|
+        (season, DayUsedForBridgeCrop), [|
+          string season, 1.0
+          BridgeDays @ string nextSeason, -1.0
         |]
-        :: bridgeCropVariables settings objectiveValue nextSeason (fertilizer, fertCost) bridgeCropsVars
-        :: variables
-      else
-        variables
+        (nextSeason, DayUsedForBridgeCrop), [|
+          string nextSeason, 1.0
+          BridgeDays @ string nextSeason, -1.0
+        |]
+      |]
+      :: bridgeCropVariables settings objectiveValue nextSeason (fertilizer, fertCost) bridgeCropsVars
+      :: variables
 
     constraints, variables)
 
