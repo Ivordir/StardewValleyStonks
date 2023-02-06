@@ -662,7 +662,7 @@ module Ranker =
     let index: int = props?payload?value
     let crop, fert = pairs[index]
     Svg.svg [
-      svg.className "pairSelect"
+      svg.className "pair-image"
       svg.onClick (fun _ -> selectPair index)
       svg.x (props.x - 10.0)
       svg.y props.y
@@ -756,10 +756,8 @@ module Ranker =
     let height: float = props?height
     let i: int = fst props?payload
     Svg.path [
-      svg.classes [ "recharts-rectangle"; "pairSelect" ]
-      svg.fill "#00000000"
+      svg.className "pair-select"
       svg.onClick (fun _ -> selectPair i)
-      svg.radius 0
       svg.x x
       svg.y y
       svg.width width
@@ -775,7 +773,7 @@ module Ranker =
     match snd props?payload with
     | Ok _ ->
       Svg.path [
-        svg.className "recharts-rectangle"
+        // svg.className "recharts-rectangle"
         svg.fill "blue"
         svg.radius 0
         svg.x x
