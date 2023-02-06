@@ -320,7 +320,7 @@ module CropFilters =
     Forage = None
   }
 
-type TableSort = int * bool
+type TableSort = nat * bool
 
 type UIState = {
   Mode: AppMode

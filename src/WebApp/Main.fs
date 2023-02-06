@@ -26,7 +26,7 @@ let update msg app =
     saveState state
     { app with State = state }
   | SetPresets msg ->
-    let presets = app.Presets |> Update.savedSettings msg
+    let presets = app.Presets |> Update.presets msg
     savePresets presets
     { app with Presets = presets }
   | SyncPresets presets -> { app with Presets = presets }

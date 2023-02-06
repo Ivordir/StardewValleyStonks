@@ -35,7 +35,7 @@ assert // no missing item references
   |> Seq.forall gameData.Items.ContainsKey
 
 assert // no negative speeds
-  gameData.Fertilizers.Values |> Seq.forall (fun fertilizer -> Fertilizer.speed fertilizer >= Fertilizer.minSpeed)
+  gameData.Fertilizers.Values |> Seq.forall (fun fertilizer -> fertilizer.Speed >= Fertilizer.minSpeed)
 
 assert // all seed items have the Seeds category
   gameData.Crops.Values |> Seq.forall (Crop.seedItem >> gameData.Items.Find >> Item.category >> (=) Seeds)
@@ -72,7 +72,7 @@ assert // valid ratios (no zeros)
     | _ -> true)
 
 
-let private settings =
+let private settingsCoders =
   Extra.empty
   |> Extra.withCustom Encode.date Decode.date
   |> Extra.withCustom
@@ -105,8 +105,8 @@ let private decodeCropFilters =
     Forage = get.Optional.Field (nameof u.Forage) Decode.bool
   })
 
-let private encodeSettings = Encode.Auto.generateEncoder<Settings> (extra = settings)
-let private decodeSettings = Decode.Auto.generateDecoder<Settings> (extra = settings)
+let private encodeSettings = Encode.Auto.generateEncoder<Settings> (extra = settingsCoders)
+let private decodeSettings = Decode.Auto.generateDecoder<Settings> (extra = settingsCoders)
 
 let private encodeNestedOption =
   Encode.option
@@ -128,13 +128,13 @@ let private decodeNestedOption =
           | fert -> Some (Some fert))
       ]))
 
-let private ui =
+let private uiCoders =
   Extra.empty
   |> Extra.withCustom encodeCropFilters decodeCropFilters
   |> Extra.withCustom encodeNestedOption decodeNestedOption
 
-let private encodeUI = Encode.Auto.generateEncoder<UIState> (extra = ui)
-let private decodeUI = Decode.Auto.generateDecoder<UIState> (extra = ui)
+let private encodeUI = Encode.Auto.generateEncoder<UIState> (extra = uiCoders)
+let private decodeUI = Decode.Auto.generateDecoder<UIState> (extra = uiCoders)
 
 
 [<RequireQualifiedAccess>]
@@ -206,9 +206,14 @@ let defaultPresets = [
       defaultSettings with
         Selected = {
           defaultSettings.Selected with
-            Crops = defaultSettings.Selected.Crops - Set.ofArray [| 476u<_>; 478u<_>; 485u<_>; 486u<_>; 489u<_>; 494u<_>; 499u<_>; 802u<_>; 831u<_>; 833u<_>; 885u<_> |]
+            Crops =
+              defaultSettings.Selected.Crops - Set.ofArray [|
+                476u<_>; 478u<_>; 485u<_>; 486u<_>; 489u<_>; 494u<_>
+                499u<_>; 802u<_>; 831u<_>; 833u<_>; 885u<_>
+              |]
             Fertilizers = Set.ofArray [| "Basic Fertilizer"; "Speed-Gro" |]
-            Products = defaultSettings.Selected.Products |> Map.map (fun _ products -> products |> Set.remove Processor.mill)
+            Products = defaultSettings.Selected.Products |> Map.map (fun _ products ->
+              products |> Set.remove Processor.mill)
         }
     }
   }
@@ -254,11 +259,11 @@ let defaultUI = {
     OpenDetails.RankerGrowthCalendar
   |]
   CropFilters = CropFilters.empty
-  FertilizerSort = 4, true
-  FertilizerPriceSort = 0, true
-  CropSort = 5, true
-  ProductSort = 0, true
-  SeedSort = 0, true
+  FertilizerSort = 4u, true
+  FertilizerPriceSort = 0u, true
+  CropSort = 5u, true
+  ProductSort = 0u, true
+  SeedSort = 0u, true
   ProductQuality = Quality.Normal
   ShowNormalizedProductPrices = false
 }

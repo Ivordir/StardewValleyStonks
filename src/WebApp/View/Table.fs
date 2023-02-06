@@ -1,5 +1,6 @@
 module StardewValleyStonks.WebApp.View.Table
 
+open StardewValleyStonks
 open StardewValleyStonks.WebApp
 
 open Feliz
@@ -20,12 +21,13 @@ let columnCheckbox (keys: _ Set) selected dispatch =
 let sortTable columns displayItem setSort (sortCol, ascending) items =
   let columns = Array.ofSeq columns
   let sortedItems =
-    match snd columns[sortCol] with
+    match snd columns[int sortCol] with
     | Some sort when ascending -> Seq.sortWith sort items
     | Some sort -> Seq.sortWith (fun x y -> sort y x) items
     | None -> items
 
   let headers = columns |> Seq.mapi (fun i (header: ReactElement, sort) ->
+    let i = nat i
     th [
       if sort.IsSome then
         onClick (fun _ -> setSort (i, if sortCol = i then not ascending else true))

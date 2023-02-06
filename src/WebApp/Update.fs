@@ -96,8 +96,6 @@ type RankerMessage =
   | SetBrushSpan of nat * nat
   | SetSelectedCropAndFertilizer of (SeedId option * FertilizerName option option) option
 
-type SortMessage = int * bool
-
 type UIMessage =
   | SetAppMode of AppMode
   | SetRanker of RankerMessage
@@ -106,11 +104,11 @@ type UIMessage =
   | SetCropTab of CropTab
   | SetDetailsOpen of OpenDetails * bool
   | SetCropFilters of CropFiltersMessage
-  | SetFertilizerSort of SortMessage
-  | SetFertilizerPriceSort of SortMessage
-  | SetCropSort of SortMessage
-  | SetProductSort of SortMessage
-  | SetSeedSort of SortMessage
+  | SetFertilizerSort of TableSort
+  | SetFertilizerPriceSort of TableSort
+  | SetCropSort of TableSort
+  | SetProductSort of TableSort
+  | SetSeedSort of TableSort
   | SetProductQuality of Quality
   | SetShowNormalizedProductPrices of bool
 
@@ -281,7 +279,7 @@ let ranker msg ranker =
   | SetBrushSpan (start, finish) -> { ranker with BrushSpan = start, finish }
   | SetSelectedCropAndFertilizer pair -> { ranker with SelectedCropAndFertilizer = pair }
 
-let savedSettings msg presets =
+let presets msg presets =
   match msg with
   | LoadSaveGame preset ->
     preset.UniqueId
