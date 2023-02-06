@@ -776,6 +776,54 @@ module Misc =
 
 
 module LoadSave =
+  let saveFileInput setSave =
+    div [
+      let loadFile (file: Browser.Types.File) =
+        file.text().``then`` (fun text -> Some (file.name, Data.loadSaveGame text) |> setSave) |> ignore
+
+      label [ Class.fileInput; children [
+        ofStr "Choose Save File"
+        input [
+          prop.type'.file
+          onChange loadFile
+        ]
+      ]]
+
+      div [
+        className "file-dropzone"
+        onDrop (fun e ->
+          handleEvent e
+          if e.dataTransfer.files.length > 0 then
+            loadFile e.dataTransfer.files[0])
+
+        onDragOver handleEvent
+        text "or drag the file here"
+      ]
+    ]
+
+  let saveFileMessages presets = Option.defaultOrMap none (fun (fileName, preset) ->
+    fragment [
+      if fileName <> "SaveGameInfo" then
+        ofStr $"It appears you have chosen a file named \"{fileName}\". Please choose the file named \"SaveGameInfo\"."
+
+      match preset with
+      | None -> ofStr "Failed to load the save game."
+      | Some (preset, missing: string array) ->
+        div [
+          Html.span preset.Name
+          let startDate = preset.Settings.Game.StartDate
+          Html.span $"{Season.name startDate.Season} {startDate.Day}"
+        ]
+
+        if missing.Length > 0 then
+          ofStr "Warning: failed to load the following data from the save game:"
+          ul (missing |> Array.map li)
+          ofStr "Click \"Ok\" if you want to continue anyways."
+
+        if preset.UniqueId |> Option.exists (fun uniqueId -> presets |> List.exists (Preset.hasId uniqueId)) then
+          ofStr "This save game has been previously imported. Clicking \"Ok\" will update/overwrite the existing preset."
+    ])
+
   let importSave presets dispatch =
     Dialog.toggleEdit
       "Import Save Game"
@@ -798,57 +846,13 @@ module LoadSave =
             ofStr "."
           ]
 
-          div [
-            let loadFile (file: Browser.Types.File) =
-              file.text().``then`` (fun text -> Some (file.name, Data.loadSaveGame text) |> setSave) |> ignore
-
-            label [ Class.fileInput; children [
-              ofStr "Choose Save File"
-              input [
-                prop.type'.file
-                onChange loadFile
-              ]
-            ]]
-
-            div [
-              className "file-dropzone"
-              onDrop (fun e ->
-                handleEvent e
-                if e.dataTransfer.files.length > 0 then
-                  loadFile e.dataTransfer.files[0])
-
-              onDragOver handleEvent
-              text "or drag file here"
-            ]
-          ]
-
-          match save with
-          | None -> none
-          | Some (fileName, preset) ->
-            if fileName <> "SaveGameInfo" then
-              ofStr $"It appears you have chosen a file named \"{fileName}\". Please choose the file named \"SaveGameInfo\"."
-
-            match preset with
-            | None -> ofStr "Failed to load the save game."
-            | Some (preset, missing) ->
-              div [
-                Html.span preset.Name
-                let startDate = preset.Settings.Game.StartDate
-                Html.span $"{Season.name startDate.Season} {startDate.Day}"
-              ]
-
-              if missing.Length > 0 then
-                ofStr "Warning: failed to load the following data from the save game:"
-                ul (missing |> Array.map li)
-                ofStr "Click \"Ok\" if you want to continue anyways."
-
-              if preset.UniqueId |> Option.exists (fun uniqueId -> presets |> List.exists (Preset.hasId uniqueId)) then
-                ofStr "This save game has been previously imported. Clicking \"Ok\" will update/overwrite the existing preset."
+          saveFileInput setSave
+          saveFileMessages presets save
         ])
 
   let nuclearReset dispatch =
-    Dialog.toggleEdit "Nuclear Reset" "Nuclear Reset" () (fun () -> dispatch NuclearReset) (fun () _ ->
-      p "Note: This will reset Stardew Valley Stonks to its default settings, deleting all custom presets in the process.")
+    Dialog.confirmAction "Nuclear Reset" "Nuclear Reset" (fun () -> dispatch NuclearReset)
+      (p "Note: This will reset Stardew Valley Stonks to its default settings, deleting all custom presets in the process.")
 
   let tab app dispatch =
     let saveDispatch = SetPresets >> dispatch
@@ -876,7 +880,13 @@ module LoadSave =
           style.width.maxContent
         ]
         children [
-          Dialog.toggleEdit "Save Current Settings As" "Save Current Settings" "Untitled Settings" (fun name -> SavePreset (name, fst app.State) |> saveDispatch) Input.text
+          Dialog.toggleEdit
+            "Save Current Settings As"
+            "Save Current Settings"
+            "Untitled Settings"
+            (fun name -> SavePreset (name, fst app.State) |> saveDispatch)
+            Input.text
+
           importSave app.Presets saveDispatch
 
           button [

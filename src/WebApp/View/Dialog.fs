@@ -83,3 +83,6 @@ let toggleEdit title toggleText state dispatch children = EditDialogToggle {|
   Dispatch = dispatch
   Children = children
 |}
+
+let confirmAction title actionText dispatch children =
+  toggleEdit title actionText () dispatch (fun () _ -> children)
