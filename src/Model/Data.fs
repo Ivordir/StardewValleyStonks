@@ -46,7 +46,7 @@ module Encode =
   let season (season: Season) = Season.name season |> Encode.string
 
   let seasons seasons =
-    Season.all
+    Enum.values
     |> Array.filter (fun season -> seasons |> Seasons.contains season)
     |> mapSeq season
 

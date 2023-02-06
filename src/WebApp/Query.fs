@@ -445,7 +445,7 @@ module private Profit =
 
     let sellForageSeeds, useForageSeeds = Selected.unlockedForageSeedsSellAndUse settings crop
 
-    let validQualities = Quality.all |> Array.filter (fun q -> amounts[q] > 0.0)
+    let validQualities = Enum.values |> Array.filter (fun q -> amounts[q] > 0.0)
 
     // This is necessary, since any quality of an item can be used to craft forage seeds.
     // The only restriction is that one of each item is needed/consumed per craft.

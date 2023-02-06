@@ -23,7 +23,8 @@ module Enum =
       then bitSetOrder (a >>> 1) (b >>> 1)
       else c
 
-  let inline internal name (e: 'a) = System.Enum.GetName (typeof<'a>, e)
+  let inline name (e: 'a) = System.Enum.GetName (typeof<'a>, e)
+  let inline values<'a> = System.Enum.GetValues typeof<'a> |> unbox<'a array>
 
 
 [<RequireQualifiedAccess>]

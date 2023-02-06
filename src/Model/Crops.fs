@@ -67,8 +67,6 @@ module Season =
   let span start finish =
     Array.init (distance start finish + 1) (fun i -> start |> plus i)
 
-  let all = Array.init count enum<Season>
-
 
 type Date = {
   Season: Season
@@ -103,8 +101,6 @@ type ToolLevel =
 [<RequireQualifiedAccess>]
 module ToolLevel =
   let name (toolLevel: ToolLevel) = Enum.name toolLevel
-
-  let all = Array.init 5 enum<ToolLevel>
 
 
 type CropAmountSettings = {

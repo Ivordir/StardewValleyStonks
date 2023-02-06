@@ -33,22 +33,23 @@ module Skills =
       ]
     ]
 
-  let private qualityClasses =
-    Qualities.init (fun quality -> className ((Quality.name quality).ToLower ()))
+  let private qualityClasses = Enum.values |> Array.map (fun quality ->
+    className ((Quality.name quality).ToLower ()))
 
   let cropQualities (qualities: float Qualities) =
+    let qualities = qualityClasses, Qualities.toArray qualities
+
     div [ Class.cropQualities; children [
-      div [ Class.cropQualitiesBars; children (Quality.all |> Array.map (fun quality ->
+      div [ Class.cropQualitiesBars; children (qualities ||> Array.map2 (fun class' prob ->
         div [
-          qualityClasses[quality]
-          style [ style.custom ("flexGrow", qualities[quality]) ]
+          class'
+          style [ style.custom ("flexGrow", prob) ]
         ]))
       ]
 
-      div [ Class.cropQualitiesProbs; children (Quality.all |> Array.map (fun quality ->
-        let prob = qualities[quality]
+      div [ Class.cropQualitiesProbs; children (qualities ||> Array.map2 (fun class' prob ->
         div [
-          qualityClasses[quality]
+          class'
           style [ style.custom ("flexGrow", prob) ]
           if prob > 0.0 then text (percent2Decimal prob)
         ]))
@@ -191,7 +192,7 @@ module Crops =
             td (viewPrice price)
             td (Game.growthTime settings.Game None crop |> ofNat)
             td (Crop.regrowTime crop |> ofOption ofNat)
-            td (Season.all |> Array.map (fun season ->
+            td (Enum.values |> Array.map (fun season ->
               Html.span [ Class.seasonSlot; children [
                 if Crop.growsInSeason season crop then
                   Image.season season
@@ -256,10 +257,8 @@ module Crops =
     let itemRow = productsItemRow data settings productQuality showNormalizedPrices selectDispatch
 
     fragment [
-      labeled "View with quality: " <| Select.options
+      labeled "View with quality: " <| Select.enum
         (length.rem 5)
-        (Quality.name >> ofStr)
-        Quality.all
         productQuality
         (SetProductQuality >> cropTabDispatch)
 
@@ -505,7 +504,7 @@ module Crops =
         checkboxText "In Season" filters.InSeason (SetInSeason >> dispatch)
         Html.span [
           if filters.InSeason then Class.disabled
-          children (Season.all |> Array.map (fun season ->
+          children (Enum.values |> Array.map (fun season ->
             checkboxWith
               (fragment [
                 Image.season season
@@ -668,10 +667,8 @@ module Fertilizers =
 module Misc =
   let private date min max (date: Date) dispatch =
     div [ Class.date; children [
-      Select.options
+      Select.enum
         (length.rem 6)
-        (Season.name >> ofStr)
-        Season.all
         date.Season
         (fun season -> dispatch { date with Season = season })
 
@@ -726,7 +723,7 @@ module Misc =
       labeled "Shaving Enchantment: " <| Select.options
         (length.rem 5)
         (Option.defaultOrMap "None" ToolLevel.name >> ofStr)
-        (ToolLevel.all |> Array.map Some |> Array.append [| None |])
+        (Enum.values |> Array.map Some |> Array.append [| None |])
         settings.ShavingToolLevel
         (SetShavingToolLevel >> dispatch)
 

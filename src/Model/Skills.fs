@@ -56,8 +56,6 @@ module Quality =
 
   let name (quality: Quality) = Enum.name quality
 
-  let all = Array.init count enum<Quality>
-
 
 [<Erase>]
 type 'a Qualities = ByQuality of 'a array

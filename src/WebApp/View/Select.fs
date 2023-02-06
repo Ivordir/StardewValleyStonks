@@ -238,3 +238,6 @@ let options width display options selected dispatch =
 
 let inline unitUnion width (selected: 'a) dispatch =
   options width (Reflection.getCaseName >> ofStr) unitUnionCases<'a> selected dispatch
+
+let inline enum width (selected: 'a) dispatch =
+  options width (Enum.name >> ofStr) Enum.values selected dispatch
