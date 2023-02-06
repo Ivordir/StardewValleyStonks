@@ -14,6 +14,24 @@ open type React
 open Core.Operators
 open Core.ExtraTopLevelOperators
 
+let noHarvestsMessage settings crop =
+  if Game.cropIsInSeason settings.Game crop
+  then "No harvests possible!"
+  else "Crop not in season!"
+  |> ofStr
+
+let invalidReasons settings crop (reasons: Query.InvalidReasons) =
+  div [
+    if reasons.HasFlag Query.InvalidReasons.NotEnoughDays then
+      noHarvestsMessage settings crop
+    if reasons.HasFlag Query.InvalidReasons.NoFertilizerPrice then
+      ofStr "No fertilizer price!"
+    if reasons.HasFlag Query.InvalidReasons.NotEnoughSeeds then
+      ofStr "No seed source!"
+    if reasons.HasFlag Query.InvalidReasons.NoInvestment then
+      ofStr "No investment!"
+  ]
+
 module GrowthCalendar =
   let rec private repeatCons n items list =
     if n = 0u
@@ -112,7 +130,7 @@ module GrowthCalendar =
   let ranker app fertilizer crop =
     let settings, _ = app.State
     match Query.bestGrowthSpan settings.Game fertilizer crop with
-    | None -> ofStr (if Game.cropIsInSeason settings.Game crop then "No harvests possible!" else "Crop not in season!")
+    | None -> noHarvestsMessage settings crop
     | Some (span: Query.GrowthSpan) ->
       let cropHarvests, regrowCrop =
         match crop with
@@ -429,12 +447,10 @@ module SummaryTable =
       | _ -> none
     ]
 
-  let rankerProfit roi (data: GameData) settings timeNorm fertilizer crop =
-    if not <| Game.cropIsInSeason settings.Game crop then ofStr "Crop not in season!" else
-
+  let rankerProfit roi data settings timeNorm fertilizer crop =
     match Query.Ranker.profitSummary data settings timeNorm fertilizer crop with
-    | None -> ofStr "No harvests possible!"
-    | Some profitSummary ->
+    | None -> noHarvestsMessage settings crop
+    | Some summary ->
       div [ Class.breakdownTable; children [
         table [
           thead [
@@ -447,27 +463,18 @@ module SummaryTable =
               th [ if settings.Profit.SeedStrategy <> IgnoreSeeds then ofStr "Seeds" ]
             ]
           ]
-          tbody [ fertilizerBoughtRow false fertilizer profitSummary.FertilizerPrice 1.0 ]
-          harvestSummaryTable data settings fertilizer profitSummary.FertilizerPrice profitSummary.CropSummaries[0]
-          normalizationFooter 8 roi timeNorm profitSummary
+          tbody [ fertilizerBoughtRow false fertilizer summary.FertilizerPrice 1.0 ]
+          harvestSummaryTable data settings fertilizer summary.FertilizerPrice summary.CropSummaries[0]
+          normalizationFooter 8 roi timeNorm summary
         ]
 
         if roi then
-          rankerRoi settings timeNorm profitSummary
+          rankerRoi settings timeNorm summary
       ]]
 
   // TODO
   let rankerXp (data: GameData) settings timeNorm fertilizer crop =
     match Query.Ranker.xpSummary data settings timeNorm fertilizer crop with
-    | Error e ->
-      div [
-        if e.HasFlag Query.InvalidReasons.NotEnoughDays then
-          ofStr (if not <| Game.cropIsInSeason settings.Game crop then "Crop not in season!" else "No harvests possible!")
-        if e.HasFlag Query.InvalidReasons.NoFertilizerPrice then
-          ofStr "No Fertilizer Price!"
-        if e.HasFlag Query.InvalidReasons.NotEnoughSeeds then
-          ofStr "No Seed Source!"
-      ]
     | Ok xpSummary ->
       let summary = xpSummary.CropSummaries[0]
       div [
@@ -489,6 +496,7 @@ module SummaryTable =
             ofStr $"{xpFormat2 xpSummary.Xp} / {value} {pluralize value unit} = {xpFormat2 (xpSummary.Xp / xpSummary.TimeNormalization)}/{unit}"
           ]
       ]
+    | Error e -> invalidReasons settings crop e
 
   let solverProfit data settings total (solutions: Solver.FertilizerDateSpan array) =
     div [ Class.breakdownTable; children [
@@ -628,6 +636,12 @@ module SummaryTable =
     ]
 
 
+type PairData = {
+  Crops: Crop array
+  Fertilizers: Fertilizer option array
+  Pairs: ((SeedId * FertilizerName option) * Result<float, Query.InvalidReasons>) array
+}
+
 let private pairData metric timeNorm data settings =
   let crops = Query.Selected.inSeasonCrops data settings |> Array.ofSeq
   let fertilizers = Query.Selected.fertilizersOpt data settings |> Array.ofSeq
@@ -638,11 +652,17 @@ let private pairData metric timeNorm data settings =
     fertilizers |> Array.map (fun fert ->
       (Crop.seed crop, Fertilizer.Opt.name fert), profit fert))
 
-  {|
+  {
     Crops = crops
     Fertilizers = fertilizers
     Pairs = data
-  |}
+  }
+
+let private emptyPairData (pairData: PairData) =
+  div [
+    if Array.isEmpty pairData.Crops then ofStr "No crops selected!"
+    if Array.isEmpty pairData.Fertilizers then ofStr "No fertilizers selected!"
+  ]
 
 
 module Ranker =
@@ -704,13 +724,7 @@ module Ranker =
         | Ok profit ->
           assert (profitSummary.NetProfit |> Option.exists (fun x -> abs (x / profitSummary.TimeNormalization - profit) < 1e-5))
           SummaryTable.tooltipProfit data settings timeNorm roi profitSummary
-        | Error e ->
-            if e.HasFlag Query.InvalidReasons.NoFertilizerPrice then
-              ofStr "No fertilizer price!"
-            if e.HasFlag Query.InvalidReasons.NotEnoughSeeds then
-              ofStr "No seed source!"
-            if e.HasFlag Query.InvalidReasons.NoInvestment then
-              ofStr "No investment!"
+        | Error e -> invalidReasons settings crop e
       | None ->
         div [
           Image.Icon.crop data crop
@@ -721,16 +735,8 @@ module Ranker =
             Image.Icon.fertilizer fert
         ]
         match profit with
-        | Error e ->
-          if e.HasFlag Query.InvalidReasons.NotEnoughDays then
-            ofStr "Not enough days!"
-          if e.HasFlag Query.InvalidReasons.NoFertilizerPrice then
-            ofStr "No fertilizer price!"
-          if e.HasFlag Query.InvalidReasons.NotEnoughSeeds then
-            ofStr "No seed source!"
-          if e.HasFlag Query.InvalidReasons.NoInvestment then
-            ofStr "No investment!"
         | Ok _ -> assert false; none
+        | Error e -> invalidReasons settings crop e
       ]
 
   let private chartTooltip (data: GameData) settings timeNorm rankItem (pairs: (SeedId * string option) array) props =
@@ -869,78 +875,73 @@ module Ranker =
 
   let ranker ranker (data, settings) dispatch =
     let pairData = pairData ranker.RankMetric ranker.TimeNormalization data settings
-    if Array.isEmpty pairData.Pairs then
-      div [
-        if Array.isEmpty pairData.Crops then ofStr "No Crops Selected"
-        if Array.isEmpty pairData.Fertilizers then ofStr "No Fertilizers Selected"
-      ]
+    if Array.isEmpty pairData.Pairs then emptyPairData pairData else
+    let pairs =
+      match ranker.RankItem with
+      | RankCropsAndFertilizers -> pairData.Pairs
+      | RankCrops ->
+        pairData.Pairs
+        |> Array.groupBy (fst >> fst)
+        |> Array.map (snd >> Array.maxBy (snd >> Option.ofResult))
+      | RankFertilizers ->
+        pairData.Pairs
+        |> Array.groupBy (fst >> snd)
+        |> Array.map (snd >> Array.maxBy (snd >> Option.ofResult))
+
+    let pairs =
+      if ranker.ShowInvalid then pairs else
+      pairs |> Array.filter (snd >> Result.isOk)
+
+    if Array.isEmpty pairs then
+      div "No valid items found"
     else
-      let pairs =
-        match ranker.RankItem with
-        | RankCropsAndFertilizers -> pairData.Pairs
-        | RankCrops ->
-          pairData.Pairs
-          |> Array.groupBy (fst >> fst)
-          |> Array.map (snd >> Array.maxBy (snd >> Option.ofResult))
-        | RankFertilizers ->
-          pairData.Pairs
-          |> Array.groupBy (fst >> snd)
-          |> Array.map (snd >> Array.maxBy (snd >> Option.ofResult))
+      let pairData =
+        pairs
+        |> Array.indexed
+        |> Array.map (fun (i, (_, profit)) -> i, profit)
 
-      let pairs =
-        if ranker.ShowInvalid then pairs else
-        pairs |> Array.filter (snd >> Result.isOk)
+      let pairs = pairs |> Array.map fst
 
-      if Array.isEmpty pairs then
-        div "No valid items found"
-      else
-        let pairData =
-          pairs
-          |> Array.indexed
-          |> Array.map (fun (i, (_, profit)) -> i, profit)
+      pairData |> Array.sortInPlaceWith (fun a b ->
+        match snd a, snd b with
+        | Ok a, Ok b -> compare b a
+        | Ok _, Error _ -> -1
+        | Error _, Ok _ -> 1
+        | Error a, Error b -> Enum.bitSetOrder (int a) (int b))
 
-        let pairs = pairs |> Array.map fst
+      fragment [
+        div [ Class.graphControls; children [
+          ofStr "Rank"
+          Select.options (length.rem 6) (fun rankby ->
+            div [
+              prop.text (string rankby)
+              title (
+                match rankby with
+                | RankCropsAndFertilizers -> "All pairs of crops and fertilizers."
+                | RankCrops -> "Pick the best fertilizer for each crop."
+                | RankFertilizers -> "Pick the best crop for each fertilizer."
+              )
+            ])
+            unitUnionCases<RankItem>
+            ranker.RankItem
+            (SetRankItem >> dispatch)
 
-        pairData |> Array.sortInPlaceWith (fun a b ->
-          match snd a, snd b with
-          | Ok a, Ok b -> compare b a
-          | Ok _, Error _ -> -1
-          | Error _, Ok _ -> 1
-          | Error a, Error b -> Enum.bitSetOrder (int a) (int b))
+          rankBy "By" ranker dispatch
 
-        fragment [
-          div [ Class.graphControls; children [
-            ofStr "Rank"
-            Select.options (length.rem 6) (fun rankby ->
-              div [
-                prop.text (string rankby)
-                title (
-                  match rankby with
-                  | RankCropsAndFertilizers -> "All pairs of crops and fertilizers."
-                  | RankCrops -> "Pick the best fertilizer for each crop."
-                  | RankFertilizers -> "Pick the best crop for each fertilizer."
-                )
-              ])
-              unitUnionCases<RankItem>
-              ranker.RankItem
-              (SetRankItem >> dispatch)
-
-            rankBy "By" ranker dispatch
-
-            checkboxText "Show Invalid" ranker.ShowInvalid (SetShowInvalid >> dispatch)
-          ]]
-          div [
-            Class.graph
-            children [
-              Elmish.React.Common.lazyView3With
-                (fun (data1, _) (data2, _) -> data1 = data2)
-                (fun (pairs, pairData) (ranker, data, settings) -> graph ranker data settings pairs pairData)
-                (pairs, pairData)
-                (ranker, data, settings)
-                dispatch
-            ]
+          checkboxText "Show Invalid" ranker.ShowInvalid (SetShowInvalid >> dispatch)
+        ]]
+        div [
+          Class.graph
+          children [
+            Elmish.React.Common.lazyView3With
+              (fun (data1, _) (data2, _) -> data1 = data2)
+              (fun (pairs, pairData) (ranker, data, settings) -> graph ranker data settings pairs pairData)
+              (pairs, pairData)
+              (ranker, data, settings)
+              dispatch
           ]
         ]
+      ]
 
 
 let private selectSpecificOrBest name toString (viewItem: _ -> ReactElement) items selected dispatch =
@@ -1096,11 +1097,7 @@ let [<ReactComponent>] AuditCropAndFertilizer (props: {|
         (GrowthCalendar.ranker app fert crop)
         (curry SetDetailsOpen OpenDetails.RankerGrowthCalendar >> appDispatch)
 
-    | _ ->
-      div [
-        if Array.isEmpty pairData.Fertilizers then ofStr "No fertilizers selected!"
-        if Array.isEmpty pairData.Crops then ofStr "No crops selected!"
-      ]
+    | _ -> emptyPairData pairData
   ]]
 
 
