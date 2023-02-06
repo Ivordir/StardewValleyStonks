@@ -351,7 +351,7 @@ module SummaryTable =
 
     consumedItemsRowsWithEnd inputs data (fun row col -> Some (unknownRowEnd row col false 0.0 0.0 (ofStr "???")))
 
-  let private harvestsSummaryFooterRow settings profit =
+  let private cropProfitSummaryFooterRow settings profit =
     tr [
       td [ colSpan 8; text "Total" ]
       td [
@@ -367,7 +367,7 @@ module SummaryTable =
       ]
     ]
 
-  let private harvestSummaryTable data settings fertilizer fertilizerPrice (summary: Query.CropProfitSummary) =
+  let private cropProfitSummaryBody data settings fertilizer fertilizerPrice (summary: Query.CropProfitSummary) =
     let crop = summary.Crop
     let seed = Crop.seed crop
     let items = Crop.items crop
@@ -381,7 +381,7 @@ module SummaryTable =
       fragment (summary.SoldItems |> Array.map (soldItemRow data))
       fragment (summary.SoldProducts |> Array.map (soldProductRow data))
       fertilizerBoughtRow true fertilizer fertilizerPrice summary.ReplacedFertilizer
-      harvestsSummaryFooterRow settings summary.NetProfit
+      cropProfitSummaryFooterRow settings summary.NetProfit
     ]
 
   let private normalizationFooter colSpan roi timeNorm (profitSummary: Query.ProfitSummary) =
@@ -410,6 +410,29 @@ module SummaryTable =
       ]
     ]
 
+  let private profitSummary data settings (footer: ReactElement) (summaries: Query.ProfitSummary array) =
+    table [
+      thead [
+        tr [
+          th [ colSpan 5; text "Item" ]
+          th "Price"
+          th "x"
+          th "Quantity"
+          th "Profit"
+          th [ if settings.Profit.SeedStrategy <> IgnoreSeeds then ofStr "Seeds" ]
+        ]
+      ]
+
+      fragment (summaries |> Array.map (fun summary ->
+        fragment [
+          tbody [ fertilizerBoughtRow false summary.Fertilizer summary.FertilizerPrice 1.0 ]
+          fragment (summary.CropSummaries |> Array.map (cropProfitSummaryBody data settings summary.Fertilizer summary.FertilizerPrice))
+        ]))
+
+      footer
+    ]
+
+  // TODO
   let rankerRoi settings timeNorm (profitSummary: Query.ProfitSummary) =
     let investment = profitSummary.Investment (settings.Profit.SeedStrategy = BuyFirstSeed)
     let roi = investment |> Option.bind profitSummary.ROI
@@ -452,24 +475,8 @@ module SummaryTable =
     | None -> noHarvestsMessage settings crop
     | Some summary ->
       div [ Class.breakdownTable; children [
-        table [
-          thead [
-            tr [
-              th [ colSpan 5; text "Item" ]
-              th "Price"
-              th "x"
-              th "Quantity"
-              th "Profit"
-              th [ if settings.Profit.SeedStrategy <> IgnoreSeeds then ofStr "Seeds" ]
-            ]
-          ]
-          tbody [ fertilizerBoughtRow false fertilizer summary.FertilizerPrice 1.0 ]
-          harvestSummaryTable data settings fertilizer summary.FertilizerPrice summary.CropSummaries[0]
-          normalizationFooter 8 roi timeNorm summary
-        ]
-
-        if roi then
-          rankerRoi settings timeNorm summary
+        profitSummary data settings (normalizationFooter 8 roi timeNorm summary) [| summary |]
+        if roi then rankerRoi settings timeNorm summary
       ]]
 
   // TODO
@@ -499,34 +506,28 @@ module SummaryTable =
     | Error e -> invalidReasons settings crop e
 
   let solverProfit data settings total (solutions: Solver.FertilizerDateSpan array) =
-    div [ Class.breakdownTable; children [
-      table [
-        thead [
-          tr [
-            th [ colSpan 5 ]
-            th "Price"
-            th "x"
-            th "Quantity"
-            th "Profit"
-            th [ if settings.Profit.SeedStrategy <> IgnoreSeeds then ofStr "Seeds" ]
-          ]
+    let summaries = solutions |> Array.map (fun solution ->
+      let regrowHarvests = solution.RegrowCrop |> Option.map (fun (_, crop, harvests) -> FarmCrop crop, harvests)
+      let cropHarvests = solution.CropHarvests |> Array.map (fun (crop, harvests, _) -> crop, harvests)
+      regrowHarvests
+      |> Option.toArray
+      |> Array.append cropHarvests
+      |> Query.Solver.profitSummary data settings solution.Fertilizer)
+
+    let numCrops = solutions |> Array.sumBy (fun summary ->
+      Array.length summary.CropHarvests + if summary.RegrowCrop.IsSome then 1 else 0)
+
+    let footer =
+      if numCrops = 1 then none else
+      tfoot [
+        tr [
+          td [ colSpan 8; text "Total" ]
+          td (goldFormat2 total)
+          td []
         ]
-
-        fragment (solutions |> Array.map (fun solution ->
-          // TODO
-          none
-        ))
-
-        if solutions |> Array.sumBy (fun summary -> Array.length summary.CropHarvests + if summary.RegrowCrop.IsSome then 1 else 0) <> 1 then
-          tfoot [
-            tr [
-              td [ colSpan 8; text "Total" ]
-              td (goldFormat2 total)
-              td []
-            ]
-          ]
       ]
-    ]]
+
+    div [ Class.breakdownTable; children (profitSummary data settings footer summaries) ]
 
   // TODO
   let solverXp data settings total (solutions: Solver.FertilizerDateSpan array) =
