@@ -47,7 +47,7 @@ let sortTable columns displayItem setSort (sortCol, ascending) items =
               text "-"
           ]
       ]
-    ] )
+    ])
 
   table [
     // className "table"

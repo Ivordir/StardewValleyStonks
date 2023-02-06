@@ -16,6 +16,7 @@ type Html with
   static member inline text (n: nat) = string n |> Html.text
 
 
+let ofOption mapping option = option |> Option.defaultOrMap Html.none mapping
 let inline ofStr (str: string) = Html.text str
 let inline ofNat (n: nat) = Html.text n
 let inline ofInt (i: int) = Html.text i

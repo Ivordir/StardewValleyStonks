@@ -190,7 +190,7 @@ module Crops =
             td (Image.Icon.crop data crop)
             td (viewPrice price)
             td (Game.growthTime settings.Game None crop |> ofNat)
-            td (Crop.regrowTime crop |> Option.defaultOrMap none ofNat)
+            td (Crop.regrowTime crop |> ofOption ofNat)
             td (Season.all |> Array.map (fun season ->
               Html.span [ Class.seasonSlot; children [
                 if Crop.growsInSeason season crop then
@@ -323,7 +323,7 @@ module Crops =
             match crop with
             | FarmCrop c ->
               itemRow true false seed c.Item
-              c.ExtraItem |> Option.defaultOrMap none (fst >> itemRow false false seed)
+              c.ExtraItem |> ofOption (fst >> itemRow false false seed)
             | ForageCrop c ->
               tr [
                 td (Image.Icon.crop data crop)
@@ -695,9 +695,7 @@ module Misc =
       checkboxText "Bear's Knowledge" multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
       labeled "Profit Margin:" <| Select.options
         (length.rem 5)
-        (function
-          | 1.0 -> ofStr "Normal"
-          | margin -> ofStr (percent margin))
+        (fun margin -> ofStr (if margin = 1.0 then "Normal" else percent margin))
         [| 1.0..(-0.25)..0.25 |]
         multipliers.ProfitMargin
         (SetProfitMargin >> dispatch)
@@ -725,13 +723,12 @@ module Misc =
           (SetGiantChecksPerTile >> dispatch)
       ]
 
-      Select.options
+      labeled "Shaving Enchantment: " <| Select.options
         (length.rem 5)
         (Option.defaultOrMap "None" ToolLevel.name >> ofStr)
         (ToolLevel.all |> Array.map Some |> Array.append [| None |])
         settings.ShavingToolLevel
         (SetShavingToolLevel >> dispatch)
-      |> labeled "Shaving Enchantment: "
 
       checkboxText "Special Charm" settings.SpecialCharm (SetSpecialCharm >> dispatch)
       label [
@@ -801,7 +798,7 @@ module LoadSave =
       ]
     ]
 
-  let saveFileMessages presets = Option.defaultOrMap none (fun (fileName, preset) ->
+  let saveFileMessages presets = ofOption (fun (fileName, preset) ->
     fragment [
       if fileName <> "SaveGameInfo" then
         ofStr $"It appears you have chosen a file named \"{fileName}\". Please choose the file named \"SaveGameInfo\"."

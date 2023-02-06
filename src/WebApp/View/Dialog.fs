@@ -50,23 +50,21 @@ let [<ReactComponent>] private EditDialogToggle (props: {|
     Children: 'a -> ('a -> unit) -> ReactElement
   |}) =
   let state, setState = useState None
+
   fragment [
     button [
       onClick (fun _ -> setState (Some props.State))
       text props.ToggleText
     ]
 
-    match state with
-    | None -> none
-    | Some state ->
-      Dialog {|
-        Cancel = true
-        Title = props.Title
-        Close = fun ok ->
-          if ok then props.Dispatch state
-          setState None
-        Children = props.Children state (Some >> setState)
-      |}
+    state |> ofOption (fun state -> Dialog {|
+      Cancel = true
+      Title = props.Title
+      Close = fun ok ->
+        if ok then props.Dispatch state
+        setState None
+      Children = props.Children state (Some >> setState)
+    |})
   ]
 
 let create title close children = Dialog {|

@@ -38,7 +38,7 @@ module GrowthCalendar =
     let firstHarvest = Array.append stageImages [| harvestItem |]
     let regrow = Array.create (int crop.RegrowTime.Value) (div (Image.regrowStage crop.Seed))
     regrow[regrow.Length - 1] <- harvestItem
-    let filler = int totalDays - int usedDays |> max 0
+    let filler = max 0 (int totalDays - int usedDays)
     let stageList = Array.create filler (div []) :: stageList
     let stageList = repeatCons (harvests - 1u) regrow stageList
     let stageList = firstHarvest :: stageList
@@ -63,7 +63,7 @@ module GrowthCalendar =
         let stageImages = stageImages stages seed
         let harvestItem = [| div (Image.item' <| Crop.mainItem crop) |]
         if bridgeCrop then
-          let filler = int remainingDays - int time |> max 0
+          let filler = max 0 (int remainingDays - int time)
           let days = int remainingDays + int days[season] - int time - filler
           let stageList =
             stageImages
@@ -189,7 +189,7 @@ module SummaryTable =
 
     if noProfit && noSeeds then None else
 
-    let price = price |> Option.defaultOrMap none (gold >> ofStr)
+    let price = price |> ofOption (gold >> ofStr)
     let quantity = if quantity = 0.0 then none else ofStr (toPrecision quantity)
     let profit = if noProfit then none else ofStr (goldFormat2 profit)
     let seeds = if noSeeds then none else ofStr (floatFormat2 seeds)
@@ -202,7 +202,7 @@ module SummaryTable =
     rowEndWithContent rowSpan colSpan itemCell none quantity (if required then ofStr "???" else none) seeds
 
   let singleRow price quantity profit seeds itemCell =
-    rowEnd 1 5 itemCell price quantity profit seeds |> Option.defaultOrMap none (fun rowEnd -> tr [ rowEnd ])
+    rowEnd 1 5 itemCell price quantity profit seeds |> ofOption (fun rowEnd -> tr [ rowEnd ])
 
   let inputItemAmountRowsWithEnd inputItemAmounts data (rowEnd: _ -> _ -> ReactElement option) =
     let inputRows = inputItemAmounts |> Array.choose (fun (item, quantity) ->
@@ -211,7 +211,7 @@ module SummaryTable =
       then None
       else Some (item, quantity))
 
-    rowEnd inputRows.Length 1 |> Option.defaultOrMap none (fun rowEnd ->
+    rowEnd inputRows.Length 1 |> ofOption (fun rowEnd ->
       let rowSpan = rowSpan 1
       fragment (inputRows |> Array.mapi (fun i ((item, quality), amount) ->
         tr [
@@ -588,11 +588,11 @@ module SummaryTable =
           th "Profit"
         ]
       ]
+
       tbody [
-        profitSummary.FertilizerPrice
-        |> Option.defaultOrMap none (fun price ->
+        profitSummary.FertilizerPrice |> ofOption (fun price ->
           tooltipBoughtRow
-            (profitSummary.Fertilizer |> Option.defaultOrMap none Image.Icon.fertilizer)
+            (profitSummary.Fertilizer |> ofOption Image.Icon.fertilizer)
             (Option.map snd price)
             (1.0 + summary.ReplacedFertilizer))
 
@@ -623,6 +623,7 @@ module SummaryTable =
           td (profitSummary.NetProfit |> Option.defaultOrMap "???" goldFormat2)
         ]
       ]
+
       normalizationFooter 4 roi timeNorm profitSummary
     ]
 
@@ -674,15 +675,13 @@ module Ranker =
           svg.width 20
           svg.height 20
         ]
-        match fert with
-        | Some f ->
+        fert |> ofOption (fun fert ->
           Svg.image [
-            svg.href <| Image.fertilizerRoot (string f)
+            svg.href <| Image.fertilizerRoot (string fert)
             svg.width 20
             svg.height 20
             svg.y 20
-          ]
-        | None -> none
+          ])
       ]
     ]
 
@@ -738,8 +737,8 @@ module Ranker =
     match props?payload with
     | Some (payload: _ array) when payload.Length > 0 && props?active ->
       let (index: int, result: Result<float, Query.InvalidReasons>) = payload[0]?payload
-      let crop, fertilizer = pairs[index]
-      let crop = data.Crops[crop]
+      let seed, fertilizer = pairs[index]
+      let crop = data.Crops[seed]
       let fertilizer = Option.map data.Fertilizers.Find fertilizer
       match rankItem with
       | Gold | ROI -> chartProfitTooltip data settings timeNorm (rankItem = ROI) fertilizer crop result
@@ -832,9 +831,9 @@ module Ranker =
             tooltip.content (chartTooltip data settings ranker.TimeNormalization ranker.RankMetric pairs)
           ]
           Recharts.bar [
-            bar.dataKey (snd >> (function Ok y -> y | Error _ -> 0.0))
+            bar.dataKey (snd >> function Ok y -> y | Error _ -> 0.0)
             bar.fill "blue"
-            bar.onClick (fun props -> fst props?payload |> selectPair)
+            bar.onClick (fun props -> props?payload |> fst |> selectPair)
             Interop.mkBarAttr "background" (barBackground barGap selectPair)
             Interop.mkBarAttr "shape" (errorBar pairs)
           ]

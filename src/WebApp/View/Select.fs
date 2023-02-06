@@ -115,7 +115,7 @@ let [<ReactComponent>] private Select (props: _ Props) =
 
   let selectOffset e offset =
     handleEvent e
-    let index = selectedIndex + offset |> min (props.Options.Length - 1) |> max 0
+    let index = (selectedIndex + offset) |> min (props.Options.Length - 1) |> max 0
     if index <> selectedIndex then
       props.Dispatch props.Options[index]
 
@@ -191,10 +191,10 @@ let [<ReactComponent>] private Select (props: _ Props) =
       | "ArrowUp", Some hover -> setHover e (if hover = 0 then state.Options.Length - 1 else hover - 1)
 
       | "PageDown", None -> selectOffset e 5
-      | "PageDown", Some hover -> setHover e (hover + 5 |> min (state.Options.Length - 1))
+      | "PageDown", Some hover -> setHover e (min (state.Options.Length - 1) (hover + 5))
 
       | "PageUp", None -> selectOffset e -5
-      | "PageUp", Some hover -> setHover e (hover - 5 |> max 0)
+      | "PageUp", Some hover -> setHover e (max 0 (hover - 5))
 
       | "Home", None -> selectOffset e -props.Options.Length
       | "Home", Some _ -> setHover e 0
@@ -210,7 +210,7 @@ let [<ReactComponent>] private Select (props: _ Props) =
         style [ style.width props.Width ]
         children [
           selectControl initialState inputRef props state setState
-          state.Hover |> Option.defaultOrMap none (selectList listRef clearHover props state setState)
+          state.Hover |> ofOption (selectList listRef clearHover props state setState)
         ]
       ]
     ]
