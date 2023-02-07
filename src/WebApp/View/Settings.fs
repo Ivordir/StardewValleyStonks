@@ -37,22 +37,21 @@ module Skills =
     className ((Quality.name quality).ToLower ()))
 
   let cropQualities (qualities: float Qualities) =
-    let qualities = qualityClasses, Qualities.toArray qualities
+    let qualities = Qualities.toArray qualities
+    let mapQualities (text: _ -> ReactElement) =
+      (qualityClasses, qualities) ||> Array.map2 (fun class' prob ->
+        div [
+          class'
+          style [ style.custom ("flexGrow", prob) ]
+          children (text prob)
+        ])
 
     div [ Class.cropQualities; children [
-      div [ Class.cropQualitiesBars; children (qualities ||> Array.map2 (fun class' prob ->
-        div [
-          class'
-          style [ style.custom ("flexGrow", prob) ]
-        ]))
-      ]
-
-      div [ Class.cropQualitiesProbs; children (qualities ||> Array.map2 (fun class' prob ->
-        div [
-          class'
-          style [ style.custom ("flexGrow", prob) ]
-          if prob > 0.0 then text (percent2Decimal prob)
-        ]))
+      div [ Class.cropQualitiesBars; children (mapQualities (konst none)) ]
+      div [ Class.cropQualitiesProbs; children (mapQualities (fun prob ->
+        if prob = 0.0
+        then none
+        else ofStr (percent2Decimal prob)))
       ]
     ]]
 
