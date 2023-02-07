@@ -200,7 +200,7 @@ module Crops =
         let enoughSeeds = Query.canMakeEnoughSeeds data settings crop
         tr [
           key (string seed)
-          if not enoughSeeds || not <| Game.cropIsInSeason settings.Game crop then Class.disabled
+          if not enoughSeeds || not (Game.cropIsInSeason settings.Game crop) then Class.disabled
           children [
             td (checkbox (settings.Selected.Crops.Contains seed) (curry SetSelected seed >> selectDispatch))
             td (Image.Icon.crop data crop)
@@ -231,21 +231,21 @@ module Crops =
           (settings.Selected.SellRaw.Contains (seed, item))
           (curry SetSelected (seed, item) >> SelectSellRaw >> dispatch)
 
-        ofNat <| Game.itemPrice settings.Game forage data.Items[item] quality
+        ofNat (Game.itemPrice settings.Game forage data.Items[item] quality)
       ]
       fragment (processors data |> Array.map (fun processor ->
         match GameData.product data item processor with
         | Some product ->
           td [
-            if not <| Game.processorUnlocked data settings.Game processor then Class.disabled
+            if not (Game.processorUnlocked data settings.Game processor) then Class.disabled
             children [
               checkbox
                 (settings.Selected.Products[seed, item].Contains processor)
                 (curry SetSelected (seed, item) >> curry SelectProducts processor >> dispatch)
 
               if showNormalizedPrices
-              then ofFloat <| Game.productNormalizedPrice data settings.Game quality product
-              else ofNat <| Game.productPrice data settings.Game quality product
+              then ofFloat (Game.productNormalizedPrice data settings.Game quality product)
+              else ofNat (Game.productPrice data settings.Game quality product)
             ]
           ]
         | None -> td []
@@ -278,10 +278,7 @@ module Crops =
     let itemRow = productsItemRow data settings productQuality showNormalizedPrices selectDispatch
 
     fragment [
-      labeled "View with quality: " <| Select.enum
-        (length.rem 5)
-        productQuality
-        (SetProductQuality >> cropTabDispatch)
+      labeled "View with quality: " (Select.enum (length.rem 5) productQuality (SetProductQuality >> cropTabDispatch))
 
       checkboxText "Normalize Prices" showNormalizedPrices (SetShowNormalizedProductPrices >> cropTabDispatch)
 
@@ -301,8 +298,8 @@ module Crops =
           else compareBy (fun crop -> Query.cropItemsHighestProductPriceFrom data settings.Game crop productQuality processor)
 
         yield! processors |> Array.map (fun processor ->
-          Column.withSort (priceSort processor) <| div [
-            if not <| Game.processorUnlocked data settings.Game processor then Class.disabled
+          Column.withSort (priceSort processor) (div [
+            if not (Game.processorUnlocked data settings.Game processor) then Class.disabled
             let keys = seedItemPairs |> Set.filter (fun (_, item) -> GameData.product data item processor |> Option.isSome)
             children [
               checkbox
@@ -311,7 +308,7 @@ module Crops =
 
               Image.Icon.processor processor
             ]
-          ])
+          ]))
 
         Column.withSort
           (compareBy (function
@@ -352,13 +349,13 @@ module Crops =
                 td (Image.Icon.crop data (ForageCrop crop))
                 fragment (Array.create (processors.Length + 1) (td []))
                 td [
-                  if not <| ForageCrop.seedRecipeUnlocked settings.Game.Skills crop then Class.disabled
+                  if not (ForageCrop.seedRecipeUnlocked settings.Game.Skills crop) then Class.disabled
                   children [
                     checkbox
                       (settings.Selected.SellForageSeeds.Contains seed)
                       (curry SetSelected seed >> SelectSellForageSeeds >> selectDispatch)
 
-                    ofNat <| Game.seedItemSellPrice data settings.Game seed
+                    ofNat (Game.seedItemSellPrice data settings.Game seed)
                   ]
                 ]
                 td []
@@ -384,10 +381,11 @@ module Crops =
         settings.Game.JojaMembership
         (SetJojaMembership >> SetGameVariables >> settingsDispatch)
 
-      labeled "Seed Strategy:" <| Select.unitUnion
-        (length.rem 8)
-        settings.Profit.SeedStrategy
-        (SetSeedStrategy >> SetProfit >> settingsDispatch)
+      labeled "Seed Strategy:"
+        (Select.unitUnion
+          (length.rem 8)
+          settings.Profit.SeedStrategy
+          (SetSeedStrategy >> SetProfit >> settingsDispatch))
 
       sortTable [
         ofStr "Crop" |> Column.withSort (compareBy (Crop.name data.Items.Find))
@@ -405,7 +403,7 @@ module Crops =
             ]))
 
         Column.header (div [
-          if not <| Game.processorUnlocked data settings.Game Processor.seedMaker then Class.disabled
+          if not (Game.processorUnlocked data settings.Game Processor.seedMaker) then Class.disabled
           children [
             let keys =
               crops
@@ -474,7 +472,7 @@ module Crops =
               ))
             ))
             td [
-              if not <| Game.processorUnlocked data settings.Game Processor.seedMaker then Class.disabled
+              if not (Game.processorUnlocked data settings.Game Processor.seedMaker) then Class.disabled
               children [
                 if Crop.canGetOwnSeedsFromSeedMaker crop then
                   checkbox
@@ -492,7 +490,7 @@ module Crops =
             | FarmCrop _ -> td []
             | ForageCrop crop ->
               td [
-                if not <| ForageCrop.seedRecipeUnlocked settings.Game.Skills crop then Class.disabled
+                if not (ForageCrop.seedRecipeUnlocked settings.Game.Skills crop) then Class.disabled
                 children [
                   checkbox
                     (settings.Selected.UseForageSeeds.Contains seed)
@@ -535,15 +533,16 @@ module Crops =
   let sortKey (data: GameData) = Crop.name data.Items.Find
 
   let private selectFilter name value dispatch =
-    labeled name <| Select.options
-      (length.rem 3)
-      (function
-        | Some true -> ofStr "Yes"
-        | Some false -> ofStr "No"
-        | None -> ofStr "Any")
-      [| Some true; Some false; None |]
-      value
-      dispatch
+    labeled name
+      (Select.options
+        (length.rem 3)
+        (function
+          | Some true -> ofStr "Yes"
+          | Some false -> ofStr "No"
+          | None -> ofStr "Any")
+        [| Some true; Some false; None |]
+        value
+        dispatch)
 
   let cropFilter filters dispatch =
     let toggleSeason season selected =
@@ -566,10 +565,7 @@ module Crops =
           if filters.InSeason then Class.disabled
           children (Enum.values |> Array.map (fun season ->
             checkboxWith
-              (fragment [
-                Image.season season
-                ofStr <| Season.name season
-              ])
+              (Image.Icon.season season)
               (filters.Seasons |> Seasons.contains season)
               (toggleSeason season >> SetSeasons >> dispatch)))
         ]
@@ -787,12 +783,13 @@ module Misc =
     div [
       checkboxText "Bear's Knowledge" multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
 
-      labeled "Profit Margin:" <| Select.options
-        (length.rem 5)
-        (fun margin -> ofStr (if margin = 1.0 then "Normal" else percent margin))
-        [| 1.0..(-0.25)..0.25 |]
-        multipliers.ProfitMargin
-        (SetProfitMargin >> dispatch)
+      labeled "Profit Margin:"
+        (Select.options
+          (length.rem 5)
+          (fun margin -> ofStr (if margin = 1.0 then "Normal" else percent margin))
+          [| 1.0..(-0.25)..0.25 |]
+          multipliers.ProfitMargin
+          (SetProfitMargin >> dispatch))
 
       checkboxText
         "Apply Tiller to Foraged Grapes and Blackberries"
@@ -820,12 +817,13 @@ module Misc =
           (SetGiantChecksPerTile >> dispatch)
       ]
 
-      labeled "Shaving Enchantment: " <| Select.options
-        (length.rem 5)
-        (Option.defaultOrMap "None" ToolLevel.name >> ofStr)
-        (Enum.values |> Array.map Some |> Array.append [| None |])
-        settings.ShavingToolLevel
-        (SetShavingToolLevel >> dispatch)
+      labeled "Shaving Enchantment: "
+        (Select.options
+          (length.rem 5)
+          (Option.defaultOrMap "None" ToolLevel.name >> ofStr)
+          (Enum.values |> Array.map Some |> Array.append [| None |])
+          settings.ShavingToolLevel
+          (SetShavingToolLevel >> dispatch))
 
       checkboxText "Special Charm" settings.SpecialCharm (SetSpecialCharm >> dispatch)
       label [
@@ -862,7 +860,7 @@ module Misc =
     let dispatch = SetGameVariables >> SetSettings >> dispatch
     div [ prop.id "misc"; children [
       div [ Class.date; children [
-        labeled "Location: " <| Select.unitUnion (length.rem 7.5) settings.Location (SetLocation >> dispatch)
+        labeled "Location: " (Select.unitUnion (length.rem 7.5) settings.Location (SetLocation >> dispatch))
         dates settings.StartDate settings.EndDate dispatch
       ]]
       multipliers settings.Multipliers (SetMultipliers >> dispatch)

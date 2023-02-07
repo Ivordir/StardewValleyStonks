@@ -38,7 +38,7 @@ let debouncer timeout (f : _ -> unit) =
   let mutable last = None
   fun value ->
     last |> Option.iter Browser.Dom.window.clearInterval
-    last <- Some <| Browser.Dom.window.setTimeout ((fun () -> f value), timeout)
+    last <- Some (Browser.Dom.window.setTimeout ((fun () -> f value), timeout))
 
 let internal handleEvent (event: Browser.Types.Event) =
   event.stopPropagation ()
@@ -125,16 +125,14 @@ module Image =
   let private withQuality (img: ReactElement) quality =
     div [ Class.quality; children [
       img
-      at <| qualityRoot (Quality.name quality)
+      at (qualityRoot (Quality.name quality))
     ]]
   let itemQuality' = item' >> withQuality
   let crop = function
     | FarmCrop crop -> at (crop.Item |> string |> itemRoot)
     | ForageCrop crop -> at (crop.Seed |> string |> itemRoot)
-  let growthStage (i: int) (seed: SeedId) =
-    at <| cropRoot $"{seed}/{i}"
-  let regrowStage (seed: SeedId) =
-    at <| cropRoot $"{seed}/Regrow"
+  let growthStage (i: int) (seed: SeedId) = at (cropRoot $"{seed}/{i}")
+  let regrowStage (seed: SeedId) = at (cropRoot $"{seed}/Regrow")
 
   let fertilizer' (fertilizer: FertilizerName) = fertilizer |> fertilizerRoot |> at
   let fertilizer = Fertilizer.name >> fertilizer'
@@ -144,14 +142,24 @@ module Image =
   let processor = function
     | ProcessorName "Mill" -> "Mill" |> processorRoot |> withClass Class.iconProcessorLarge
     | ProcessorName processor -> processor |> processorRoot |> withClass Class.iconProcessor
+
+  let private productPath = function
+    | Jam _ -> productRoot (nameof Jam)
+    | Pickles _ -> productRoot (nameof Pickles)
+    | Wine _ -> productRoot (nameof Wine)
+    | Juice _ -> productRoot (nameof Juice)
+    | SeedsFromSeedMaker seed -> itemPath seed
+    | Processed product -> itemPath product.Item
+
   let product = function
     | SeedsFromSeedMaker seed -> item' seed
     | Processed product -> item' product.Item
-    | product -> at <| productRoot (string product)
+    | product -> at (productPath product)
+
   let productQuality = product >> withQuality
 
-  let allQualities = at <| qualityRoot "All"
-  let rightArrow = at <| uiRoot "Right Arrow"
+  let allQualities = at (qualityRoot "All")
+  let rightArrow = at (uiRoot "Right Arrow")
 
   [<RequireQualifiedAccess>]
   module Icon =
@@ -198,14 +206,6 @@ module Image =
     let processor = function
       | ProcessorName "Mill" -> withClass Class.iconProcessorLarge (processorRoot "Mill") "Mill"
       | ProcessorName processor -> withClass Class.iconProcessor (processorRoot processor) processor
-
-    let private productPath = function
-      | Jam _ -> productRoot (nameof Jam)
-      | Pickles _ -> productRoot (nameof Pickles)
-      | Wine _ -> productRoot (nameof Wine)
-      | Juice _ -> productRoot (nameof Juice)
-      | SeedsFromSeedMaker seed -> itemPath seed
-      | Processed product -> itemPath product.Item
 
     let product (data: GameData) product =
       let name = Product.name data.Items.Find product

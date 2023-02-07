@@ -203,7 +203,7 @@ let private select msg set =
 
 let private mapSelectWith containsKey key msg map =
   match msg with
-  | SetSelected (id', selected) -> map |> Map.change id' (Option.map <| setSelected selected key)
+  | SetSelected (id', selected) -> map |> Map.change id' (Option.map (setSelected selected key))
   | SetManySelected (keys, selected) ->
     map |> Map.map (fun id' selection ->
       if containsKey id' key && keys.Contains id'

@@ -22,7 +22,7 @@ module Seasons =
 
   let inline intersect (a: Seasons) (b: Seasons) = a &&& b
   let inline disjoint a b = intersect a b = Seasons.None
-  let inline nonDisjoint a b = not <| disjoint a b
+  let inline nonDisjoint a b = not (disjoint a b)
   let contains season seasons = nonDisjoint (ofSeason season) seasons
 
   let inline add season (seasons: Seasons) = seasons ||| ofSeason season

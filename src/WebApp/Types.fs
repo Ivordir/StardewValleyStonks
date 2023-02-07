@@ -31,7 +31,7 @@ module internal Util =
     let mutable prevInput = Unchecked.defaultof<_>
     let mutable prevOutput = Unchecked.defaultof<_>
     fun x ->
-      if not <| refEqual x prevInput then
+      if not (refEqual x prevInput) then
         prevInput <- x
         prevOutput <- f x
       prevOutput

@@ -524,7 +524,7 @@ module private Profit =
         "Seeds", float ForageCrop.forageSeedsPerCraft
       |])
 
-    let solution = Solver.solve <| Model.create Maximize "Profit" constraints variables
+    let solution = Solver.solve (Model.create Maximize "Profit" constraints variables)
     assert (solution.status = Optimal)
     solution
 
@@ -672,13 +672,13 @@ module private Profit =
 
 module private XP =
   let nonRegrowCropXpPerHarvest data settings crop =
-    if not <| canMakeEnoughSeeds data settings crop
+    if not (canMakeEnoughSeeds data settings crop)
     then None
     else Some (Game.xpPerHarvest data settings.Game crop)
 
   let regrowCropXpData data settings crop =
     let crop = FarmCrop crop
-    if not <| canMakeEnoughSeeds data settings crop then None else Some {
+    if not (canMakeEnoughSeeds data settings crop) then None else Some {
       ProfitPerHarvest = Game.xpPerHarvest data settings.Game crop
       HarvestsForMinCost = 1u
       MinCost = 0.0

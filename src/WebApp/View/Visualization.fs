@@ -80,7 +80,7 @@ module GrowthCalendar =
         let seed = Crop.seed crop
         let stages, time = Game.growthTimeAndStages settings.Game span.Fertilizer crop
         let stageImages = stageImages stages seed
-        let harvestItem = [| div (Image.item' <| Crop.mainItem crop) |]
+        let harvestItem = [| div (Image.item' (Crop.mainItem crop)) |]
         if bridgeCrop then
           let filler = max 0 (int remainingDays - int time)
           let days = int remainingDays + int days[season] - int time - filler
@@ -359,14 +359,14 @@ module SummaryTable =
       td [ colSpan 8; text "Total" ]
       td [
         match profit with
-        | Some profit -> ofStr <| goldFormat2 profit
+        | Some profit -> ofStr (goldFormat2 profit)
         | None -> ofStr "???"
       ]
       td [
         match settings.Profit.SeedStrategy with
         | IgnoreSeeds -> none
-        | StockpileSeeds -> ofStr <| floatFormat2 1.0
-        | BuyFirstSeed -> ofStr <| floatFormat2 0.0
+        | StockpileSeeds -> ofStr (floatFormat2 1.0)
+        | BuyFirstSeed -> ofStr (floatFormat2 0.0)
       ]
     ]
 
@@ -590,6 +590,7 @@ module SummaryTable =
 
   let tooltipProfit data settings timeNorm roi (profitSummary: Query.ProfitSummary) =
     let summary = profitSummary.CropSummaries[0]
+    let seed = Crop.seed summary.Crop
     table [
       thead [
         tr [
@@ -609,13 +610,13 @@ module SummaryTable =
             (1.0 + summary.ReplacedFertilizer))
 
         tooltipBoughtRow
-          (Image.Icon.item' data <| Crop.seedItem summary.Crop)
+          (Image.Icon.seed data seed)
           (Option.map snd summary.SeedPrice)
           summary.SeedsBought
 
         tooltipSoldRow
-          (Image.Icon.item' data <| Crop.seedItem summary.Crop)
-          (Game.seedItemSellPrice data settings.Game (Crop.seed summary.Crop))
+          (Image.Icon.seed data seed)
+          (Game.seedItemSellPrice data settings.Game seed)
           summary.ForageSeedsSold
 
         fragment (summary.SoldItems |> Array.map (fun summary ->
@@ -695,13 +696,13 @@ module Ranker =
       svg.height 40
       svg.children [
         Svg.image [
-          svg.href <| Image.itemRoot (Crop.mainItem data.Crops[crop] |> string)
+          svg.href (Image.itemRoot (Crop.mainItem data.Crops[crop] |> string))
           svg.width 20
           svg.height 20
         ]
         fert |> ofOption (fun fert ->
           Svg.image [
-            svg.href <| Image.fertilizerRoot (string fert)
+            svg.href (Image.fertilizerRoot fert)
             svg.width 20
             svg.height 20
             svg.y 20
@@ -802,19 +803,20 @@ module Ranker =
         svg.height maxHeight
         svg.children [
           if flags.HasFlag Query.InvalidReasons.NoFertilizerPrice then
-            Svg.image [
-              svg.href <| Image.fertilizerRoot (string fert)
-              svg.height width
-            ]
+            fert |> ofOption (fun fert ->
+              Svg.image [
+                svg.href (Image.fertilizerRoot fert)
+                svg.height width
+              ])
           if flags.HasFlag Query.InvalidReasons.NotEnoughSeeds then
             Svg.image [
-              svg.href <| Image.itemRoot (string crop)
+              svg.href (Image.itemRoot (string crop))
               svg.height width
               svg.y width
             ]
           if flags.HasFlag Query.InvalidReasons.NotEnoughDays then
             Svg.image [
-              svg.href <| Image.uiRoot "Time"
+              svg.href (Image.uiRoot "Time")
               svg.width width
               svg.height width
               svg.y (width * 2.0)
@@ -851,7 +853,7 @@ module Ranker =
             brush.startIndex (ranker.BrushSpan |> fst |> int |> min (graphData.Length - 1) |> max 0)
             brush.endIndex (ranker.BrushSpan |> snd |> int |> min (graphData.Length - 1) |> max 0)
             brush.height 30
-            Interop.mkBrushAttr "onChange" (fun i -> dispatch <| SetBrushSpan (i?startIndex, i?endIndex))
+            Interop.mkBrushAttr "onChange" (fun i -> SetBrushSpan (i?startIndex, i?endIndex) |> dispatch)
           ]
           Recharts.xAxis [
             xAxis.dataKey (fst: _ -> int)
@@ -1163,7 +1165,7 @@ let section app dispatch =
       match ui.Mode with
       | Ranker -> rankerOrSummary app uiDispatch
       | Solver ->
-        labeled "Maximize: " <| Select.unitUnion (length.rem 5) ui.SolverMode (SetSolverMode >> uiDispatch)
+        labeled "Maximize: " (Select.unitUnion (length.rem 5) ui.SolverMode (SetSolverMode >> uiDispatch))
         Solver {|
           Data = app.Data
           Settings = settings

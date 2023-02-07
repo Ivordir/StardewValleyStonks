@@ -66,7 +66,7 @@ module Item =
 
   let multiplier skills multipliers forage item =
     let categoryMultiplier =
-      if forage && item.Category = Fruit && not <| foragedFruitTillerActive multipliers item
+      if forage && item.Category = Fruit && not (foragedFruitTillerActive multipliers item)
       then 1.0
       else Category.multiplier skills item.Category
 
