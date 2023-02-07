@@ -8,8 +8,7 @@ module Prelude =
 
   let inline convertUnit x = x * 1u<_>
 
-  let inline withMultiplier multiplier (value: nat) =
-    nat (multiplier * float value)
+  let inline withMultiplier multiplier (value: nat) = nat (multiplier * float value)
 
 
 [<RequireQualifiedAccess>]

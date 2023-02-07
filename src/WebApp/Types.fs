@@ -13,8 +13,6 @@ module internal Util =
   let inline konst x _ = x
   let inline curry f a b = f (a, b)
 
-  let inline refEqual a b = System.Object.ReferenceEquals (a, b)
-
   let minBy projection a b = if projection a <= projection b then a else b
   let maxBy projection a b = if projection a >= projection b then a else b
 
@@ -27,11 +25,13 @@ module internal Util =
     |> Reflection.FSharpType.GetUnionCases
     |> Array.map (fun x -> Reflection.FSharpValue.MakeUnion (x, [||]) |> unbox<'a>)
 
+  let inline refEqual a b = System.Object.ReferenceEquals (a, b)
+
   let refMemo f =
     let mutable prevInput = Unchecked.defaultof<_>
     let mutable prevOutput = Unchecked.defaultof<_>
     fun x ->
-      if not (refEqual x prevInput) then
+      if not <| refEqual x prevInput then
         prevInput <- x
         prevOutput <- f x
       prevOutput

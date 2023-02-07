@@ -28,11 +28,9 @@ module Encode =
     #endif
     |> Encode.object
 
-  let mapObj keyString encodeValue map =
-    map |> Map.toSeq |> keyValues keyString encodeValue
+  let mapObj keyString encodeValue map = map |> Map.toSeq |> keyValues keyString encodeValue
 
-  let table keyString encodeValue table =
-    table |> Table.toSeq |> keyValues keyString encodeValue
+  let table keyString encodeValue table = table |> Table.toSeq |> keyValues keyString encodeValue
 
   let vendor (VendorName vendor) = Encode.string vendor
 

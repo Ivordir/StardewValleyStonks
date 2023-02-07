@@ -61,11 +61,9 @@ module Season =
       season <- next season
     seasons |> Seasons.add season
 
-  let distance (start: Season) (finish: Season) =
-    wrapAroundNegative (int finish - int start)
+  let distance (start: Season) (finish: Season) = wrapAroundNegative (int finish - int start)
 
-  let span start finish =
-    Array.init (distance start finish + 1) (fun i -> start |> plus i)
+  let span start finish = Array.init (distance start finish + 1) (fun i -> start |> plus i)
 
 
 type Date = {

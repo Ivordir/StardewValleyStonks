@@ -126,11 +126,11 @@ module Image =
     div [ Class.quality; children [
       img
       at <| qualityRoot (Quality.name quality)
-    ] ]
+    ]]
   let itemQuality' = item' >> withQuality
   let crop = function
-    | FarmCrop c -> at (c.Item |> string |> itemRoot)
-    | ForageCrop c -> at (c.Seed |> string |> itemRoot)
+    | FarmCrop crop -> at (crop.Item |> string |> itemRoot)
+    | ForageCrop crop -> at (crop.Seed |> string |> itemRoot)
   let growthStage (i: int) (seed: SeedId) =
     at <| cropRoot $"{seed}/{i}"
   let regrowStage (seed: SeedId) =
@@ -190,8 +190,8 @@ module Image =
     let itemQuality' (data: GameData) = data.Items.Find >> itemQuality
 
     let crop (data: GameData) = function
-      | FarmCrop c -> at (c.Item |> string |> itemRoot) (FarmCrop.name data.Items.Find c)
-      | ForageCrop c -> at (c.Seed |> string |> itemRoot) (ForageCrop.name c)
+      | FarmCrop crop -> at (crop.Item |> string |> itemRoot) (FarmCrop.name data.Items.Find crop)
+      | ForageCrop crop -> at (crop.Seed |> string |> itemRoot) (ForageCrop.name crop)
 
     let vendor (VendorName name) = nameIsPartofPath vendorRoot name
 
@@ -245,7 +245,7 @@ let checkboxWith children' checked' dispatch =
       ]
       img []
       children'
-  ] ]
+  ]]
 
 let checkbox = checkboxWith none
 let inline checkboxText str checked' msg = checkboxWith (ofStr str) checked' msg
@@ -274,7 +274,8 @@ let viewTabsWith toString tabs currentTab dispatch =
     viewTab toString tab currentTab dispatch))
   ]
 
-let inline viewTabs (current: 'tab) dispatch = viewTabsWith Reflection.getCaseName unitUnionCases<'tab> current dispatch
+let inline viewTabs (current: 'tab) dispatch =
+  viewTabsWith Reflection.getCaseName unitUnionCases<'tab> current dispatch
 
 
 let animatedDetails open' (summary': ReactElement) (children': ReactElement) dispatch =

@@ -250,7 +250,8 @@ let selections data msg (selection: Selections) =
   | SelectUseSeedMaker msg -> { selection with UseSeedMaker = selection.UseSeedMaker |> select msg }
   | SelectUseForageSeeds msg -> { selection with UseForageSeeds = selection.UseForageSeeds |> select msg }
 
-  | SetCustomFertilizerPrice msg -> { selection with CustomFertilizerPrices = selection.CustomFertilizerPrices |> custom msg }
+  | SetCustomFertilizerPrice msg ->
+    { selection with CustomFertilizerPrices = selection.CustomFertilizerPrices |> custom msg }
   | SetCustomSeedPrice msg -> { selection with CustomSeedPrices = selection.CustomSeedPrices |> custom msg }
   | SetCustomSellPrice msg -> { selection with CustomSellPrices = selection.CustomSellPrices |> custom msg }
 

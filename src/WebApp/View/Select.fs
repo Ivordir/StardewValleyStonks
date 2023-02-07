@@ -32,9 +32,7 @@ type private 'a State = {|
 |}
 
 let private tryScroll (list: Browser.Types.HTMLElement) (index: int) (mode: string) =
-  let elm = list.children?item index
-  if not (isNullOrUndefined elm) then
-    elm?scrollIntoView {| block = mode |}
+  list.children?item index |> Option.iter (fun elm -> elm?scrollIntoView {| block = mode |})
 
 let selectControl initialState inputRef (props: _ Props) (state: _ State) setState =
   div [
@@ -100,6 +98,7 @@ let selectList listRef clearHover (props: _ Props) (state: _ State) setState hov
                   |})
 
               if hover = i then className "hover"
+
               children (props.Display opt)
             ]
           ))
@@ -165,9 +164,9 @@ let [<ReactComponent>] private Select (props: _ Props) =
 
     onMouseDown (fun e ->
       if e.button = 0 then
-        match state.Hover with
-        | Some _ -> clearHover e
-        | None -> setHover e selectedIndex)
+        if state.Hover.IsSome
+        then clearHover e
+        else setHover e selectedIndex)
 
     onKeyDown (fun e ->
       match e.key, state.Hover with
@@ -179,8 +178,7 @@ let [<ReactComponent>] private Select (props: _ Props) =
         clearHover e
 
       | "Enter", None
-      | " ", None when props.ToString.IsNone || e.key = "Enter" ->
-        setHover e selectedIndex
+      | " ", None when props.ToString.IsNone || e.key = "Enter" -> setHover e selectedIndex
 
       | "ArrowRight", None
       | "ArrowDown", None -> selectOffset e 1
@@ -216,25 +214,23 @@ let [<ReactComponent>] private Select (props: _ Props) =
     ]
   ]
 
-let search width toString display options selected dispatch =
-  Select {|
-    Width = width
-    ToString = Some toString
-    Display = display
-    Options = options
-    Selected = selected
-    Dispatch = dispatch
-  |}
+let search width toString display options selected dispatch = Select {|
+  Width = width
+  ToString = Some toString
+  Display = display
+  Options = options
+  Selected = selected
+  Dispatch = dispatch
+|}
 
-let options width display options selected dispatch =
-  Select {|
-    Width = width
-    ToString = None
-    Display = display
-    Options = options
-    Selected = selected
-    Dispatch = dispatch
-  |}
+let options width display options selected dispatch = Select {|
+  Width = width
+  ToString = None
+  Display = display
+  Options = options
+  Selected = selected
+  Dispatch = dispatch
+|}
 
 let inline unitUnion width (selected: 'a) dispatch =
   options width (Reflection.getCaseName >> ofStr) unitUnionCases<'a> selected dispatch

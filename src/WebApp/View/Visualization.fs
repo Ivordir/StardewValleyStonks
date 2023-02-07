@@ -32,6 +32,7 @@ let invalidReasons settings crop (reasons: Query.InvalidReasons) =
       ofStr "No investment!"
   ]
 
+
 module GrowthCalendar =
   let rec private repeatCons n items list =
     if n = 0u
@@ -46,7 +47,7 @@ module GrowthCalendar =
     |> Array.concat
     |> Array.tail
 
-  let private solverRegrowCropCalendarDays settings (days: nat array) fertilizer stageList (season, crop, harvests) =
+  let private regrowCropCalendarDays settings (days: nat array) fertilizer stageList (season, crop, harvests) =
     let totalDays = Array.sum days[(season + 1)..]
     let stages, time = Game.growthTimeAndStages settings.Game fertilizer (FarmCrop crop)
     let usedDays = Growth.daysNeededFor crop.RegrowTime time harvests
@@ -60,9 +61,9 @@ module GrowthCalendar =
     let stageList = Array.create filler (div []) :: stageList
     let stageList = repeatCons (harvests - 1u) regrow stageList
     let stageList = firstHarvest :: stageList
-    season, (totalDays + days[season] - usedDays - nat filler), stageList
+    season, totalDays + days[season] - usedDays - nat filler, stageList
 
-  let solver settings single (span: Solver.FertilizerDateSpan) =
+  let private fromDateSpan settings single (span: Solver.FertilizerDateSpan) =
     let stageList = [ Array.create (int (Date.daysInSeason - span.EndDate.Day)) (div [ Class.disabled ]) ]
     let days =
       if not single && settings.Game.Location = Farm
@@ -72,7 +73,7 @@ module GrowthCalendar =
     let season, remainingDays, stageList =
       span.RegrowCrop |> Option.defaultOrMap
         (days.Length - 1, Array.last days, stageList)
-        (solverRegrowCropCalendarDays settings days span.Fertilizer stageList)
+        (regrowCropCalendarDays settings days span.Fertilizer stageList)
 
     let season, days, stageList =
       (span.CropHarvests, (season, int remainingDays, stageList)) ||> Array.foldBack (fun (crop, harvests, bridgeCrop) (season, remainingDays, stageList) ->
@@ -127,6 +128,8 @@ module GrowthCalendar =
         ]
       ])
 
+  let solver settings span = fromDateSpan settings false span
+
   let ranker app fertilizer crop =
     let settings, _ = app.State
     match Query.bestGrowthSpan settings.Game fertilizer crop with
@@ -159,7 +162,7 @@ module GrowthCalendar =
 
       div [
         Class.calendar
-        children (solver settings true span)
+        children (fromDateSpan settings true span)
       ]
 
 
@@ -963,7 +966,7 @@ let private selectSpecificOrBest name toString (viewItem: _ -> ReactElement) ite
     selected
     dispatch
 
-let [<ReactComponent>] AuditCropAndFertilizer (props: {|
+let [<ReactComponent>] CropAndFertilizerSummary (props: {|
     App: _
     Seed: _
     Fertilizer: _
@@ -1102,11 +1105,11 @@ let [<ReactComponent>] AuditCropAndFertilizer (props: {|
   ]]
 
 
-let rankerOrAudit app dispatch =
+let rankerOrSummary app dispatch =
   let settings, ui = app.State
   let ranker = ui.Ranker
   match ranker.SelectedCropAndFertilizer with
-  | Some (crop, fert) -> AuditCropAndFertilizer {| App = app; Seed = crop; Fertilizer = fert; Dispatch = dispatch |}
+  | Some (crop, fert) -> CropAndFertilizerSummary {| App = app; Seed = crop; Fertilizer = fert; Dispatch = dispatch |}
   | None -> Elmish.React.Common.lazyView3 Ranker.ranker ranker (app.Data, settings) (SetRanker >> dispatch)
 
 
@@ -1143,7 +1146,7 @@ let [<ReactComponent>] Solver (props: {|
         | MaximizeXP -> SummaryTable.solverXp props.Data settings total solution
         div [
           Class.calendar
-          children (solution |> Seq.collect (GrowthCalendar.solver settings false))
+          children (solution |> Seq.collect (GrowthCalendar.solver settings))
         ]
       ]
     ]
@@ -1158,7 +1161,7 @@ let section app dispatch =
     children [
       viewTabs ui.Mode (SetAppMode >> uiDispatch)
       match ui.Mode with
-      | Ranker -> rankerOrAudit app uiDispatch
+      | Ranker -> rankerOrSummary app uiDispatch
       | Solver ->
         labeled "Maximize: " <| Select.unitUnion (length.rem 5) ui.SolverMode (SetSolverMode >> uiDispatch)
         Solver {|

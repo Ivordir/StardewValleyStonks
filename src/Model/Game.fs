@@ -177,26 +177,19 @@ module GameVariables =
 module Game =
   let seasons vars = Date.seasonsBetween vars.StartDate vars.EndDate
 
-  let cropIsInSeason vars crop =
-    vars.Location <> Farm || crop |> Crop.growsInSeasons (seasons vars)
+  let cropIsInSeason vars crop = vars.Location <> Farm || crop |> Crop.growsInSeasons (seasons vars)
 
   let inSeasonCrops vars crops =
-    if vars.Location = Farm then
-      let seasons = seasons vars
-      crops |> Seq.filter (Crop.growsInSeasons seasons)
-    else
-      crops
+    if vars.Location = Farm
+    then crops |> Seq.filter (Crop.growsInSeasons (seasons vars))
+    else crops
 
   let growthMultiplier vars crop =
     (if vars.Skills |> Skills.professionActive Agriculturist then Multiplier.agriculturist else 0.0)
     + if vars.Irrigated && Crop.paddy crop then Multiplier.irrigated else 0.0
 
-  let growthSpeed vars fertilizer crop =
-    Fertilizer.Opt.speed fertilizer + growthMultiplier vars crop
-
-  let growthTimeAndStages vars fertilizer crop =
-    Crop.growthStagesAndTime (growthSpeed vars fertilizer crop) crop
-
+  let growthSpeed vars fertilizer crop = Fertilizer.Opt.speed fertilizer + growthMultiplier vars crop
+  let growthTimeAndStages vars fertilizer crop = Crop.growthStagesAndTime (growthSpeed vars fertilizer crop) crop
   let growthTime vars fertilizer crop = growthTimeAndStages vars fertilizer crop |> snd
 
   let giantCropsPossible location = location <> Greenhouse
@@ -296,11 +289,6 @@ module Game =
 
   let seedItemSellPrice data vars (seed: SeedId) = itemPrice vars false data.Items[convertUnit seed] Quality.Normal
 
-  let xpPerItem data crop =
-    Crop.xpPerItem data.Items.Find crop
-
-  let xpItemsPerHarvest vars crop =
-    Crop.xpItemsPerHarvest (giantCropProb vars) vars.Skills crop
-
-  let xpPerHarvest data vars crop =
-    Crop.xpPerHarvest data.Items.Find (giantCropProb vars) vars.Skills crop
+  let xpPerItem data crop = Crop.xpPerItem data.Items.Find crop
+  let xpItemsPerHarvest vars crop = Crop.xpItemsPerHarvest (giantCropProb vars) vars.Skills crop
+  let xpPerHarvest data vars crop = Crop.xpPerHarvest data.Items.Find (giantCropProb vars) vars.Skills crop

@@ -73,7 +73,8 @@ let private fertilizerStrictlyWorse (fert1, cost1) (fert2, cost2) =
 
 // naive O(n^2), since n <= 7
 let private removeStrictlyWorseFertilizers fertilizersAndCost =
-  fertilizersAndCost |> Array.filter (fun fertCost -> fertilizersAndCost |> Array.exists (fertilizerStrictlyWorse fertCost) |> not)
+  fertilizersAndCost |> Array.filter (fun fertCost ->
+    fertilizersAndCost |> Array.exists (fertilizerStrictlyWorse fertCost) |> not)
 
 let private groupFertilizersBySpeed fertilizersAndCost =
   fertilizersAndCost
@@ -270,14 +271,18 @@ let private fertilizerSpans data settings mode =
       Query.Solver.regrowCropXpData data settings >> Option.map konst
 
   let seasons, days =
-    if settings.Game.Location = Farm
-    then Date.seasonSpan settings.Game.StartDate settings.Game.EndDate, Date.daySpan settings.Game.StartDate settings.Game.EndDate
-    else [| settings.Game.StartDate.Season |], [| Date.totalDays settings.Game.StartDate settings.Game.EndDate |]
+    if settings.Game.Location = Farm then
+      Date.seasonSpan settings.Game.StartDate settings.Game.EndDate,
+      Date.daySpan settings.Game.StartDate settings.Game.EndDate
+    else
+      [| settings.Game.StartDate.Season |],
+      [| Date.totalDays settings.Game.StartDate settings.Game.EndDate |]
 
   let fertilizerData =
     Query.Selected.fertilizersOpt data settings
     |> Seq.choose (fun fertilizer ->
-      Query.fertilizerCostOpt data settings (Fertilizer.Opt.name fertilizer) |> Option.map (fun cost -> fertilizer, cost))
+      Query.fertilizerCostOpt data settings (Fertilizer.Opt.name fertilizer)
+      |> Option.map (fun cost -> fertilizer, cost))
     |> Array.ofSeq
     |> fertilizerFilter
 
@@ -296,8 +301,7 @@ let private fertilizerSpans data settings mode =
 
   let regrowCropData = regrowCrops |> Array.choose (function
     | FarmCrop crop ->
-      regrowCropData crop |> Option.map (fun data ->
-        crop, fertilizerData |> Array.map (fst >> data))
+      regrowCropData crop |> Option.map (fun data -> crop, fertilizerData |> Array.map (fst >> data))
     | ForageCrop _ -> None)
 
   let regrowCropData =

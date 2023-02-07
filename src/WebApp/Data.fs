@@ -321,12 +321,10 @@ module LocalStorage =
         None
 
   let private loadState () =
-    tryLoad StateKey Decode.state
-    |> Option.defaultValue defaultApp.State
+    tryLoad StateKey Decode.state |> Option.defaultValue defaultApp.State
 
   let private loadPresets () =
-    tryLoad PresetsKey (Decode.list Decode.preset)
-    |> Option.defaultValue []
+    tryLoad PresetsKey (Decode.list Decode.preset) |> Option.defaultValue []
 
   let loadApp () =
     match getItem VersionKey |> Option.map Version.tryParse with
