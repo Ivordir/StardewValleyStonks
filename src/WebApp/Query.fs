@@ -15,13 +15,17 @@ let private consecutiveInSeasonDays startDate endDate seasons =
   let days = Date.daySpan startDate endDate
 
   let rec nextSeason start finish totalDays list =
-    if finish = nthSeason.Length then
-      if totalDays = 0u then list else ((nthSeason[start], nthSeason[finish - 1]), totalDays) :: list
-    elif seasons |> Seasons.contains nthSeason[finish] then
+    if finish < nthSeason.Length && seasons |> Seasons.contains nthSeason[finish] then
       nextSeason start (finish + 1) (totalDays + days[finish]) list
     else
-      (if totalDays = 0u then list else ((nthSeason[start], nthSeason[finish - 1]), totalDays) :: list)
-      |> nextSeason (finish + 1) (finish + 1) 0u
+      let list =
+        if totalDays = 0u
+        then list
+        else ((nthSeason[start], nthSeason[finish - 1]), totalDays) :: list
+
+      if finish < nthSeason.Length
+      then nextSeason (finish + 1) (finish + 1) 0u list
+      else list
 
   let consecutiveDays = nextSeason 0 0 0u []
   // 4 seasons can be splitted into at most 2 groups of consecutive seasons
