@@ -7,6 +7,7 @@ open Feliz
 
 open type Html
 open type prop
+open type React
 
 [<RequireQualifiedAccess>]
 module Column =
@@ -54,3 +55,41 @@ let sortTable columns displayItem setSort (sortCol, ascending) items =
       tbody (sortedItems |> Seq.map displayItem)
     ]
   ]
+
+
+let [<ReactComponent>] private CollapsibleTableBody (props: {|
+    CollapsedRowCells: ReactElement array
+    BodyCells: ReactElement array array
+  |}) =
+  let collapsed, setCollapsed = useState true
+
+  fragment [
+    if collapsed then
+      tbody [
+        onClick (fun _ -> setCollapsed false)
+        children [
+          tr [
+            td []
+            fragment props.CollapsedRowCells
+          ]
+        ]
+      ]
+
+    tbody [
+      if collapsed then style [ style.visibility.collapse ]
+      children (props.BodyCells |> Seq.mapi (fun i row ->
+        tr [
+          if i = 0 then onClick (fun _ -> setCollapsed true)
+          children [
+            td []
+            fragment row
+          ]
+        ]
+      ))
+    ]
+  ]
+
+let collapsibleBody collapsedRow rows = CollapsibleTableBody {|
+  CollapsedRowCells = collapsedRow
+  BodyCells = rows
+|}

@@ -175,34 +175,32 @@ module SummaryTable =
     then value?toPrecision 3
     else floatFormat2 rounded
 
-  let private rowEndWithContent
-    rowSpan
-    colSpan
+  let private rowWithContent
+    (inputsCell: ReactElement)
     (itemCell: ReactElement)
     (price: ReactElement)
     (quantity: ReactElement)
     (profit: ReactElement)
     (seeds: ReactElement)
     =
-    let rowSpan = prop.rowSpan rowSpan
-    fragment [
-      td [
-        rowSpan
-        prop.colSpan colSpan
-        children itemCell
-      ]
-      td [ rowSpan; children price ]
-      if quantity = none then
-        td [ rowSpan; ]
-        td [ rowSpan; ]
+    [|
+      if inputsCell = none then
+        td [ colSpan 2; children itemCell ]
       else
-        td [ rowSpan; text "x" ]
-        td [ rowSpan; children quantity ]
-      td [ rowSpan; children profit ]
-      td [ rowSpan; children seeds ]
-    ]
+        td inputsCell
+        td itemCell
+      td price
+      if quantity = none then
+        td []
+        td []
+      else
+        td "x"
+        td quantity
+      td profit
+      td seeds
+    |]
 
-  let private rowEnd rowSpan colSpan itemCell (price: (nat * bool) option) quantity seeds =
+  let private rowEnd inputs itemCell (price: (nat * bool) option) quantity seeds =
     let profit = price |> Option.defaultOrMap 0.0 (fun (price, bought) ->
       floatRound2 (float price * quantity * if bought then -1.0 else 1.0))
     let noProfit = profit = 0.0
@@ -216,36 +214,30 @@ module SummaryTable =
     let profit = if noProfit then none else ofStr (goldFormat2 profit)
     let seeds = if noSeeds then none else ofStr (floatFormat2 seeds)
 
-    Some (rowEndWithContent rowSpan colSpan itemCell price quantity profit seeds)
+    Some (rowWithContent inputs itemCell price quantity profit seeds)
 
-  let unknownRowEnd rowSpan colSpan required quantity seeds itemCell =
+  let unknownRowEnd inputs itemCell required quantity seeds =
     let quantity = if quantity = 0.0 then none else ofStr (toPrecision quantity)
     let seeds = if seeds = 0.0 then none else ofStr (floatFormat2 seeds)
-    rowEndWithContent rowSpan colSpan itemCell none quantity (if required then ofStr "???" else none) seeds
+    rowWithContent inputs itemCell none quantity (if required then ofStr "???" else none) seeds
 
-  let singleRow price quantity seeds itemCell =
-    rowEnd 1 5 itemCell price quantity seeds |> ofOption (fun rowEnd -> tr [ rowEnd ])
-
-  let consumedItemsRowsWithEnd consumedItemQuantities data (rowEnd: _ -> _ -> ReactElement option) =
+  let inputsCell consumedItemQuantities data =
     let inputRows = consumedItemQuantities |> Array.choose (fun (item, quantity) ->
       let quantity = floatRound2 quantity
       if quantity = 0.0
       then None
       else Some (item, quantity))
 
-    rowEnd inputRows.Length 1 |> ofOption (fun rowEnd ->
-      let rowSpan = rowSpan 1
-      fragment (inputRows |> Array.mapi (fun i ((item, quality), amount) ->
+    table [
+      tbody (inputRows |> Array.map (fun ((item, quality), amount) ->
         tr [
-          td [ rowSpan; children (Image.Icon.itemQuality' data item quality) ]
-          td [ rowSpan; text "x" ]
-          td [ rowSpan; text (floatFormat2 amount) ]
-          td [ rowSpan; children Image.rightArrow ]
-          if i = 0 then rowEnd
-        ])))
-
-  let consumedItemsRows consumedItemQuantities data price quantity seeds itemCell =
-    consumedItemsRowsWithEnd consumedItemQuantities data (fun row col -> rowEnd row col itemCell price quantity seeds)
+          td (Image.Icon.itemQuality' data item quality)
+          td "x"
+          td (floatFormat2 amount)
+          td Image.rightArrow
+        ]
+      ))
+    ]
 
   let private harvestsSummaryHeaderRow data settings crop (harvests: nat) =
     let seeds =
@@ -253,55 +245,57 @@ module SummaryTable =
       elif Crop.regrows crop then 1u
       else harvests
 
-    singleRow None 0.0 (-float seeds) (fragment [
+    let itemCell = fragment [
       Image.Icon.crop data crop
       let harvestStr = pluralize (float harvests) "harvest"
       ofStr $" ({harvests} {harvestStr})"
-    ])
+    ]
+
+    rowEnd none itemCell None 0.0 (-float seeds) |> Option.toArray
 
   let private stockpiledSeedRow settings =
-    if settings.Profit.SeedStrategy <> StockpileSeeds then none else
-    singleRow None 0.0 1.0 (ofStr "Stockpiled Seed")
+    if settings.Profit.SeedStrategy <> StockpileSeeds then Array.empty else
+    rowEnd none (ofStr "Stockpiled Seed") None 0.0 1.0 |> Option.toArray
 
-  let private boughtRow priceAndVendor amount seeds (icon: ReactElement) =
+  let private boughtRowEnd priceAndVendor amount seeds (icon: ReactElement) =
     match priceAndVendor with
     | Some (vendor, price) ->
-      singleRow (Some (price, true)) amount seeds (fragment [
+      let itemCell = fragment [
         icon
         match vendor with
         | NonCustom vendor ->
           ofStr " from "
           Image.Icon.vendor vendor
         | Custom () -> ofStr " (Custom)"
-      ])
-    | None ->
-      if amount = 0.0 then none else
-      let seeds = floatRound2 seeds
-      tr [
-        unknownRowEnd 1 5 true seeds seeds (fragment [
-          icon
-          ofStr " from ???"
-        ])
       ]
+      rowEnd none itemCell (Some (price, true)) amount seeds
+    | None ->
+      if amount = 0.0 then None else
+      let seeds = floatRound2 seeds
+      let itemCell = fragment [
+        icon
+        ofStr " from ???"
+      ]
+
+      Some (unknownRowEnd none itemCell true seeds seeds)
 
   let private fertilizerBoughtRow replacement fertilizer price amount =
     match fertilizer, price with
     | Some fertilizer, Some price ->
-      boughtRow price amount 0.0 (fragment [
-          if replacement then ofStr "Replacement "
-          Image.Icon.fertilizer fertilizer
+      boughtRowEnd price amount 0.0 (fragment [
+        if replacement then ofStr "Replacement "
+        Image.Icon.fertilizer fertilizer
       ])
-    | _ -> none
+    | _ -> None
 
   let private seedsBoughtRow data (seed: SeedId) seedPrice amount =
-    boughtRow seedPrice amount amount (Image.Icon.seed data seed)
+    boughtRowEnd seedPrice amount amount (Image.Icon.seed data seed) |> Option.toArray
 
   let private harvestedSeedsRows data item (amounts: _ Qualities) =
     amounts
     |> Qualities.indexed
-    |> Array.map (fun (quality, amount) ->
-      singleRow None amount amount (Image.Icon.itemQuality' data item quality))
-    |> fragment
+    |> Array.choose (fun (quality, amount) ->
+      rowEnd none (Image.Icon.itemQuality' data item quality) None amount amount)
 
   let private seedMakerRows data crop item (amounts: _ Qualities) =
     let inputs =
@@ -311,40 +305,43 @@ module SummaryTable =
 
     let seed = Crop.seed crop
     let seedAmount = Qualities.sum amounts * Processor.seedMakerExpectedQuantity seed
-    consumedItemsRows inputs data None seedAmount seedAmount (Image.Icon.seed data seed)
+
+    rowEnd (inputsCell inputs data) (Image.Icon.seed data seed) None seedAmount seedAmount |> Option.toArray
 
   let private forageSeedsItemAmounts items amount =
     let itemAmount = amount / float ForageCrop.forageSeedsPerCraft
     items |> Array.map (fun item -> (item, Quality.Normal), itemAmount)
 
   let private forageSeedsRows data settings items (seed: SeedId) amountSold amountUsed =
-    if amountSold = 0.0 && amountUsed = 0.0 then none else
+    if amountSold = 0.0 && amountUsed = 0.0 then Array.empty else
     let itemCell = Image.Icon.seed data seed
     let price = Game.seedItemSellPrice data settings.Game seed
-    fragment [
-      consumedItemsRows (forageSeedsItemAmounts items amountUsed) data None amountUsed amountUsed itemCell
-      consumedItemsRows (forageSeedsItemAmounts items amountSold) data (Some (price, false)) amountSold 0.0 itemCell
-    ]
+    Array.choose id [|
+      rowEnd (inputsCell (forageSeedsItemAmounts items amountUsed) data) itemCell None amountUsed amountUsed
+      rowEnd (inputsCell (forageSeedsItemAmounts items amountSold) data) itemCell (Some (price, false)) amountSold 0.0
+    |]
 
-  let private seedAmountsRows data crop seedAmounts = fragment (seedAmounts |> Array.map (fun (item, amounts: _ Qualities) ->
-    if item = Crop.seedItem crop then harvestedSeedsRows data item amounts
-    elif item = Crop.mainItem crop then seedMakerRows data crop item amounts
-    else assert false; none))
+  let private seedAmountsRows data crop seedAmounts =
+    seedAmounts |> Array.collect (fun (item, amounts: _ Qualities) ->
+      if item = Crop.seedItem crop then harvestedSeedsRows data item amounts
+      elif item = Crop.mainItem crop then seedMakerRows data crop item amounts
+      else assert false; Array.empty)
 
   let private soldItemRow data (summary: Query.SoldItemSummary) =
-    singleRow (Some (summary.Price, false)) summary.Quantity 0.0 (fragment [
+    let itemCell = fragment [
       Image.Icon.itemQuality' data summary.Item summary.Quality
       if summary.Custom then ofStr " (Custom)"
-    ])
+    ]
+
+    rowEnd none itemCell (Some (summary.Price, false)) summary.Quantity 0.0
 
   let private soldProductRow data (summary: Query.SoldProductSummary) =
-    consumedItemsRows
-      summary.ConsumedItemQuantities
-      data
+    rowEnd
+      (inputsCell summary.ConsumedItemQuantities data)
+      (Image.Icon.productQuality data summary.Product summary.Quality)
       (Some (summary.Price, false))
       summary.Quantity
       0.0
-      (Image.Icon.productQuality data summary.Product summary.Quality)
 
   let private unsoldItemRow data (item, quantities: float Qualities) =
     let inputs =
@@ -352,40 +349,49 @@ module SummaryTable =
       |> Qualities.indexed
       |> Array.map (fun (quality, amount) -> (item, quality), amount)
 
-    consumedItemsRowsWithEnd inputs data (fun row col -> Some (unknownRowEnd row col false 0.0 0.0 (ofStr "???")))
+    unknownRowEnd (inputsCell inputs data) (ofStr "???") false 0.0 0.0
 
   let private cropProfitSummaryFooterRow settings profit =
-    tr [
-      td [ colSpan 8; text "Total" ]
-      td [
-        match profit with
-        | Some profit -> ofStr (goldFormat2 profit)
-        | None -> ofStr "???"
-      ]
-      td [
-        match settings.Profit.SeedStrategy with
-        | IgnoreSeeds -> none
-        | StockpileSeeds -> ofStr (floatFormat2 1.0)
-        | BuyFirstSeed -> ofStr (floatFormat2 0.0)
-      ]
+    let profit = profit |> Option.defaultOrMap "???" goldFormat2 |> ofStr
+    let seeds =
+      match settings.Profit.SeedStrategy with
+      | IgnoreSeeds -> none
+      | StockpileSeeds -> ofStr (floatFormat2 1.0)
+      | BuyFirstSeed -> ofStr (floatFormat2 0.0)
+
+    rowWithContent none (ofStr "Total") none none profit seeds
+
+  let private cropProfitSummaryCollapsedRow data (summary: Query.CropProfitSummary) =
+    let itemCell = fragment [
+      Image.Icon.crop data summary.Crop
+      let harvestStr = pluralize (float summary.Harvests) "harvest"
+      ofStr $" ({summary.Harvests} {harvestStr})"
     ]
 
-  let private cropProfitSummaryBody data settings fertilizer fertilizerPrice (summary: Query.CropProfitSummary) =
+    let profit = summary.NetProfit |> Option.defaultOrMap "???" goldFormat2 |> ofStr
+
+    rowWithContent none itemCell none none profit none
+
+  let private cropProfitSummaryBody data settings fertilizer fertilizerPrice summary =
+    let row = cropProfitSummaryCollapsedRow data summary
+
     let crop = summary.Crop
     let seed = Crop.seed crop
     let items = Crop.items crop
-    tbody [
+    let body = Array.concat [|
       harvestsSummaryHeaderRow data settings crop summary.Harvests
       stockpiledSeedRow settings
       seedsBoughtRow data seed summary.SeedPrice summary.SeedsBought
       seedAmountsRows data crop summary.SeedAmounts
       forageSeedsRows data settings items seed summary.ForageSeedsSold summary.ForageSeedsUsed
-      fragment (summary.UnsoldItems |> Array.map (unsoldItemRow data))
-      fragment (summary.SoldItems |> Array.map (soldItemRow data))
-      fragment (summary.SoldProducts |> Array.map (soldProductRow data))
-      fertilizerBoughtRow true fertilizer fertilizerPrice summary.ReplacedFertilizer
-      cropProfitSummaryFooterRow settings summary.NetProfit
-    ]
+      summary.UnsoldItems |> Array.map (unsoldItemRow data)
+      summary.SoldItems |> Array.choose (soldItemRow data)
+      summary.SoldProducts |> Array.choose (soldProductRow data)
+      fertilizerBoughtRow true fertilizer fertilizerPrice summary.ReplacedFertilizer |> Option.toArray
+      [| cropProfitSummaryFooterRow settings summary.NetProfit |]
+    |]
+
+    Table.collapsibleBody row body
 
   let private normalizationFooter colSpan roi timeNorm (profitSummary: Query.ProfitSummary) =
     if roi || profitSummary.TimeNormalization = 1.0 then none else
@@ -417,7 +423,8 @@ module SummaryTable =
     table [
       thead [
         tr [
-          th [ colSpan 5; text "Item" ]
+          th []
+          th [ colSpan 2; text "Item" ]
           th "Price"
           th "x"
           th "Quantity"
@@ -428,9 +435,16 @@ module SummaryTable =
 
       fragment (summaries |> Array.map (fun summary ->
         fragment [
-          tbody [ fertilizerBoughtRow false summary.Fertilizer summary.FertilizerPrice 1.0 ]
-          fragment (summary.CropSummaries |> Array.map (cropProfitSummaryBody data settings summary.Fertilizer summary.FertilizerPrice))
-        ]))
+          tbody [
+            fertilizerBoughtRow false summary.Fertilizer summary.FertilizerPrice 1.0
+            |> ofOption (fun row -> tr [ td []; fragment row ])
+          ]
+
+          summary.CropSummaries
+          |> Array.map (cropProfitSummaryBody data settings summary.Fertilizer summary.FertilizerPrice)
+          |> fragment
+        ]
+      ))
 
       footer
     ]
@@ -515,6 +529,14 @@ module SummaryTable =
       regrowHarvests
       |> Option.toArray
       |> Array.append cropHarvests
+      |> Array.fold (fun list (crop, harvests) ->
+        match list with
+        | (lastCrop, lastHarvests) :: list when Crop.seed lastCrop = Crop.seed crop ->
+          (crop, harvests + lastHarvests) :: list
+        | list -> (crop, harvests) :: list)
+        []
+      |> Array.ofList
+      |> Array.rev
       |> Query.Solver.profitSummary data settings solution.Fertilizer)
 
     let numCrops = solutions |> Array.sumBy (fun summary ->
@@ -524,9 +546,8 @@ module SummaryTable =
       if numCrops = 1 then none else
       tfoot [
         tr [
-          td [ colSpan 8; text "Total" ]
-          td (goldFormat2 total)
           td []
+          fragment (rowWithContent none (ofStr "Total") none none (total |> goldFormat2 |> ofStr) none)
         ]
       ]
 
