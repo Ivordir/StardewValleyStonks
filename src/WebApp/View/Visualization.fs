@@ -363,12 +363,13 @@ module SummaryTable =
 
     unknownRow inputsCell (ofStr "???") false 0.0 0.0
 
-  let footerCells profit seeds = rowCells none (ofStr "Total") none none profit seeds
+  let private footerCells profit seeds = rowCells none (ofStr "Total") none none profit seeds
 
-  let private cropProfitSummaryFooterRow settings profit =
+  let private cropProfitSummaryFooterRow showSeeds settings profit =
     let profit = profit |> Option.defaultOrMap "???" gold2 |> ofStr
     let seeds =
       match settings.Profit.SeedStrategy with
+      | _ when not showSeeds -> none
       | IgnoreSeeds -> none
       | StockpileSeeds -> ofStr (float2 1.0)
       | BuyFirstSeed -> ofStr (float2 0.0)
@@ -388,6 +389,7 @@ module SummaryTable =
 
   let private cropProfitSummaryBody
     collapsible
+    oneCrop
     data
     settings
     fertilizer
@@ -407,7 +409,7 @@ module SummaryTable =
       summary.SoldItems |> Array.choose (soldItemRow data)
       summary.SoldProducts |> Array.choose (soldProductRow data)
       fertilizerBoughtRow true fertilizer fertilizerPrice summary.ReplacedFertilizer |> Option.toArray
-      [| cropProfitSummaryFooterRow settings summary.NetProfit |]
+      [| if not oneCrop then cropProfitSummaryFooterRow true settings summary.NetProfit |]
     |]
 
     if collapsible then
@@ -416,17 +418,10 @@ module SummaryTable =
     else
       tbody (body |> Array.map rowFromCells)
 
-  let private normalizationFooter valueFormat roi timeNorm normDivisor value =
-    if roi || normDivisor = 1.0 then none else
-    tfoot [
-      let divisor =
-        match timeNorm with
-          | TotalPeriod -> assert false; none
-          | PerDay -> ofStr $"/ {normDivisor} days"
-          | PerSeason ->
-            let value = round2 normDivisor
-            let seasons = pluralize value "season"
-            ofStr $"/ {value} {seasons}"
+  let private normalizationFooter valueFormat timeNorm normDivisor value =
+    if normDivisor = 1.0 then none else
+    fragment [
+      let divisor = ofStr $"/ {round2 normDivisor} {TimeNormalization.unit timeNorm |> pluralize normDivisor}"
 
       rowWithCells none none none divisor none
 
@@ -457,7 +452,9 @@ module SummaryTable =
       ]
     ]
 
-  let private profitSummary collapsible data settings (footer: ReactElement) (summaries: Query.ProfitSummary array) =
+  let private profitSummary collapsible data settings timeNorm total (summaries: Query.ProfitSummary array) =
+    let oneCrop = summaries |> Array.sumBy (fun summary -> summary.CropSummaries.Length) = 1
+
     table [
       summaryHeader "Item" "Price" "Quantity" "Profit" (Some "Seeds")
 
@@ -467,15 +464,23 @@ module SummaryTable =
           |> ofOption (rowFromCells >> Array.singleton >> tbody)
 
           summary.CropSummaries
-          |> Array.map (cropProfitSummaryBody collapsible data settings summary.Fertilizer summary.FertilizerPrice)
+          |> Array.map (cropProfitSummaryBody collapsible oneCrop data settings summary.Fertilizer summary.FertilizerPrice)
           |> fragment
         ]
       ))
 
-      footer
+      tfoot [
+        cropProfitSummaryFooterRow oneCrop settings total |> rowFromCells
+
+        if timeNorm <> TotalPeriod then
+          assert (summaries.Length = 1)
+          normalizationFooter gold2 timeNorm summaries[0].TimeNormalization summaries[0].NetProfit
+      ]
     ]
 
-  let private xpSummary data (footer: ReactElement) (summaries: Query.XpSummary array) =
+  let private xpSummary data timeNorm total (summaries: Query.XpSummary array) =
+    let oneCrop = summaries |> Array.sumBy (fun summary -> summary.CropSummaries.Length) = 1
+
     table [
       summaryHeader "Crop" "XP" "Quantity" "Total XP" None
 
@@ -494,7 +499,13 @@ module SummaryTable =
             none)
       ))
 
-      footer
+      tfoot [
+        if not oneCrop then footerCells (total |> round2 |> xpFloat |> ofStr) none |> rowFromCells
+
+        if timeNorm <> TotalPeriod then
+          assert (summaries.Length = 1)
+          normalizationFooter xp2 timeNorm summaries[0].TimeNormalization (Some summaries[0].Xp)
+      ]
     ]
 
   // TODO
@@ -512,19 +523,7 @@ module SummaryTable =
       ]
       match roi with
       | Some roi when profitSummary.TimeNormalization <> 1.0 ->
-        div [
-          ofStr "/ "
-          match timeNorm with
-          | PerDay ->
-            ofFloat profitSummary.TimeNormalization
-            ofStr " days"
-          | PerSeason ->
-            let value = round2 profitSummary.TimeNormalization
-            ofFloat value
-            ofStr " "
-            ofStr (pluralize value "season")
-          | TotalPeriod -> ofInt 1
-        ]
+        div $"/ {round2 profitSummary.TimeNormalization} {TimeNormalization.unit timeNorm |> pluralize profitSummary.TimeNormalization}"
         div [
           float2 (roi / profitSummary.TimeNormalization) |> ofStr
           match timeNorm with
@@ -539,8 +538,7 @@ module SummaryTable =
     match Query.Ranker.profitSummary data settings timeNorm fertilizer crop with
     | Some summary ->
       div [ Class.breakdownTable; children [
-        let footer = normalizationFooter gold2 roi timeNorm summary.TimeNormalization summary.NetProfit
-        profitSummary false data settings footer [| summary |]
+        profitSummary false data settings (if roi then TotalPeriod else timeNorm) summary.NetProfit [| summary |]
         if roi then rankerRoi settings timeNorm summary
       ]]
     | None -> noHarvestsMessage settings crop
@@ -549,8 +547,7 @@ module SummaryTable =
     match Query.Ranker.xpSummary data settings timeNorm fertilizer crop with
     | Ok summary ->
       div [ Class.breakdownTable; children [
-        let footer = normalizationFooter xp2 false timeNorm summary.TimeNormalization (Some summary.Xp)
-        xpSummary data footer [| summary |]
+        xpSummary data timeNorm summary.Xp [| summary |]
       ]]
     | Error e -> invalidReasons settings crop e
 
@@ -569,30 +566,17 @@ module SummaryTable =
     |> Array.ofList
     |> Array.rev
 
-  let private solverSummary
-    (summaryTable: _ -> _ -> ReactElement)
-    summaries
-    totalFormat
-    total
-    (solutions: Solver.FertilizerDateSpan array)
-    =
+  let private solverSummary summaryTable summaries data settings total (solutions: Solver.FertilizerDateSpan array) =
     let summaries = solutions |> Array.map (fun solution ->
-      mergeCropHarvests solution |> summaries solution.Fertilizer)
+      mergeCropHarvests solution |> summaries data settings solution.Fertilizer)
 
-    let numCrops = solutions |> Array.sumBy (fun summary ->
-      Array.length summary.CropHarvests + if summary.RegrowCrop.IsSome then 1 else 0)
-
-    let footer =
-      if numCrops = 1 then none else
-      tfoot [ rowFromCells (footerCells (total |> totalFormat |> ofStr) none) ]
-
-    div [ Class.breakdownTable; children (summaryTable footer summaries) ]
+    div [ Class.breakdownTable; children (summaryTable TotalPeriod total summaries: ReactElement) ]
 
   let solverProfit data settings total solutions =
-    solverSummary (profitSummary true data settings) (Query.Solver.profitSummary data settings) gold2 total solutions
+    solverSummary (profitSummary true data settings) Query.Solver.profitSummary data settings (Some total) solutions
 
   let solverXp data settings total solutions =
-    solverSummary (xpSummary data) (Query.Solver.xpSummary data settings) (round2 >> xpFloat) total solutions
+    solverSummary (xpSummary data) Query.Solver.xpSummary data settings total solutions
 
   let private tooltipProfitRow bought (icon: ReactElement) price amount =
     match price with
@@ -645,7 +629,8 @@ module SummaryTable =
         rowFromCells (footerCells (profitSummary.NetProfit |> Option.defaultOrMap "???" gold2 |> ofStr) none)
       ]
 
-      normalizationFooter gold2 roi timeNorm profitSummary.TimeNormalization profitSummary.NetProfit
+      if roi then none else
+        normalizationFooter gold2 timeNorm profitSummary.TimeNormalization profitSummary.NetProfit
     ]
 
 
@@ -1152,7 +1137,7 @@ let private solverSummary data settings mode solution =
       | MaximizeXP -> SummaryTable.solverXp data settings total solution
       div [
         Class.calendar
-        children (solution |> Seq.collect (GrowthCalendar.solver settings))
+        children (solution |> Array.collect (GrowthCalendar.solver settings))
       ]
     | None -> ofStr "Loading..."
   ]
