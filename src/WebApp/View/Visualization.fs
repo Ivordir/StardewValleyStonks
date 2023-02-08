@@ -1154,35 +1154,42 @@ let private workerQueue, private workerSubscribe =
   let queue, subscribe = Solver.createWorker ()
   debouncer 200 (fun (data, settings, mode) -> queue data settings mode), subscribe
 
+let private solverSummary data settings mode solution =
+  fragment [
+    match solution with
+    | Some (solution, total) ->
+      match mode with
+      | MaximizeGold -> SummaryTable.solverProfit data settings total solution
+      | MaximizeXP -> SummaryTable.solverXp data settings total solution
+      div [
+        Class.calendar
+        children (solution |> Seq.collect (GrowthCalendar.solver settings))
+      ]
+    | None -> ofStr "Loading..."
+  ]
+
 let [<ReactComponent>] Solver (props: {|
     Data: GameData
     Settings: Settings
     SolverMode: SolverMode
   |}) =
-  let (solution, settings, solving), setState = useState ((None, props.Settings, false))
+  let data = props.Data
+  let settings = props.Settings
+  let mode = props.SolverMode
 
-  workerSubscribe (fun solution -> setState (Some solution, props.Settings, false))
+  let (solution, solving), setState = useState ((None, false))
+
+  useEffect ((fun () -> workerSubscribe (fun solution -> setState (Some solution, false))), [||])
 
   useEffect ((fun () ->
-    setState (solution, settings, true)
-    workerQueue (props.Data, props.Settings, props.SolverMode)
-  ), [| box props.Data; box props.Settings; props.SolverMode |])
+    setState (solution, true)
+    workerQueue (data, settings, mode)
+  ), [| box data; settings; mode |])
 
-  match solution with
-  | Some (solution, total) ->
-    div [
-      if solving then className "disabled"
-      children [
-        match props.SolverMode with
-        | MaximizeGold -> SummaryTable.solverProfit props.Data settings total solution
-        | MaximizeXP -> SummaryTable.solverXp props.Data settings total solution
-        div [
-          Class.calendar
-          children (solution |> Seq.collect (GrowthCalendar.solver settings))
-        ]
-      ]
-    ]
-  | None -> div "Loading..."
+  div [
+    if solving then className "disabled"
+    children (Elmish.React.Common.lazyView (solverSummary data settings mode) solution)
+  ]
 
 let section app dispatch =
   let settings, ui = app.State
