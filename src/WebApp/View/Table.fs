@@ -60,8 +60,9 @@ let sortTable columns displayItem setSort (sortCol, ascending) items =
 let [<ReactComponent>] private CollapsibleTableBody (props: {|
     CollapsedRowCells: ReactElement array
     BodyCells: ReactElement array array
+    Collapsed: bool
   |}) =
-  let collapsed, setCollapsed = useState true
+  let collapsed, setCollapsed = useState props.Collapsed
 
   fragment [
     if collapsed then
@@ -89,7 +90,8 @@ let [<ReactComponent>] private CollapsibleTableBody (props: {|
     ]
   ]
 
-let collapsibleBody collapsedRow rows = CollapsibleTableBody {|
+let collapsibleBody collapsed collapsedRow rows = CollapsibleTableBody {|
   CollapsedRowCells = collapsedRow
   BodyCells = rows
+  Collapsed = collapsed
 |}
