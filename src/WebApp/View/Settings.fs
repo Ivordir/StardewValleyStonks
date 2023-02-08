@@ -51,7 +51,7 @@ module Skills =
       div [ Class.cropQualitiesProbs; children (mapQualities (fun prob ->
         if prob = 0.0
         then none
-        else ofStr (percent2Decimal prob)))
+        else ofStr (percent2 prob)))
       ]
     ]]
 
