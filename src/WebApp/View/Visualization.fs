@@ -372,7 +372,7 @@ module SummaryTable =
 
     rowWithContent none itemCell none none profit none
 
-  let private cropProfitSummaryBody data settings fertilizer fertilizerPrice summary =
+  let private cropProfitSummaryBody collapsed data settings fertilizer fertilizerPrice summary =
     let row = cropProfitSummaryCollapsedRow data summary
 
     let crop = summary.Crop
@@ -391,7 +391,7 @@ module SummaryTable =
       [| cropProfitSummaryFooterRow settings summary.NetProfit |]
     |]
 
-    Table.collapsibleBody row body
+    Table.collapsibleBody collapsed row body
 
   let private normalizationFooter colSpan roi timeNorm (profitSummary: Query.ProfitSummary) =
     if roi || profitSummary.TimeNormalization = 1.0 then none else
@@ -419,19 +419,28 @@ module SummaryTable =
       ]
     ]
 
-  let private profitSummary data settings (footer: ReactElement) (summaries: Query.ProfitSummary array) =
-    table [
-      thead [
-        tr [
-          th []
-          th [ colSpan 2; text "Item" ]
-          th "Price"
-          th "x"
-          th "Quantity"
-          th "Profit"
-          th [ if settings.Profit.SeedStrategy <> IgnoreSeeds then ofStr "Seeds" ]
-        ]
+  let private summaryHeader
+    (item: string)
+    (unitValue: string)
+    (quantity: string)
+    (value: string)
+    (seeds: string option)
+    =
+    thead [
+      tr [
+        th []
+        th [ colSpan 2; text item ]
+        th unitValue
+        th "x"
+        th quantity
+        th value
+        th (seeds |> ofOption ofStr)
       ]
+    ]
+
+  let private profitSummary collapsed data settings (footer: ReactElement) (summaries: Query.ProfitSummary array) =
+    table [
+      summaryHeader "Item" "Price" "Quantity" "Profit" (Some "Seeds")
 
       fragment (summaries |> Array.map (fun summary ->
         fragment [
@@ -441,7 +450,7 @@ module SummaryTable =
           ]
 
           summary.CropSummaries
-          |> Array.map (cropProfitSummaryBody data settings summary.Fertilizer summary.FertilizerPrice)
+          |> Array.map (cropProfitSummaryBody collapsed data settings summary.Fertilizer summary.FertilizerPrice)
           |> fragment
         ]
       ))
@@ -492,7 +501,7 @@ module SummaryTable =
     | None -> noHarvestsMessage settings crop
     | Some summary ->
       div [ Class.breakdownTable; children [
-        profitSummary data settings (normalizationFooter 8 roi timeNorm summary) [| summary |]
+        profitSummary false data settings (normalizationFooter 8 roi timeNorm summary) [| summary |]
         if roi then rankerRoi settings timeNorm summary
       ]]
 
@@ -551,7 +560,7 @@ module SummaryTable =
         ]
       ]
 
-    div [ Class.breakdownTable; children (profitSummary data settings footer summaries) ]
+    div [ Class.breakdownTable; children (profitSummary true data settings footer summaries) ]
 
   // TODO
   let solverXp data settings total (solutions: Solver.FertilizerDateSpan array) =
