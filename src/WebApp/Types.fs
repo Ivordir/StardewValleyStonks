@@ -272,6 +272,18 @@ type TimeNormalization =
   | [<CompiledName ("Per Day")>] PerDay
   | [<CompiledName ("Per Season")>] PerSeason
 
+[<RequireQualifiedAccess>]
+module TimeNormalization =
+  let unit = function
+    | TotalPeriod -> ""
+    | PerDay -> "day"
+    | PerSeason -> "season"
+
+  let description = function
+    | TotalPeriod -> "The total value within the specified dates."
+    | PerDay -> "The total value divided by the number of days requiring watering."
+    | PerSeason -> "The total value divided by the number of days the crop is in season."
+
 type Ranker = {
   RankItem: RankItem
   RankMetric: RankMetric

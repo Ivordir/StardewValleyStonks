@@ -677,6 +677,28 @@ let private emptyPairData (pairData: PairData) =
     if Array.isEmpty pairData.Fertilizers then ofStr "No fertilizers selected!"
   ]
 
+let rankBy labelText metric timeNorm dispatchMetric dispatchTimeNorm =
+  fragment [
+    ofStr labelText
+
+    Select.options (length.rem 4) (fun metric ->
+      div [
+        text (string metric)
+        title (RankMetric.fullName metric)
+      ])
+      unitUnionCases
+      metric
+      dispatchMetric
+
+    Select.options (length.rem 7) (fun timeNorm ->
+      div [
+        text (string timeNorm)
+        title (TimeNormalization.description timeNorm)
+      ])
+      unitUnionCases
+      timeNorm
+      dispatchTimeNorm
+  ]
 
 module Ranker =
   open Fable.Core.JsInterop
@@ -876,20 +898,6 @@ module Ranker =
       ])
     ]
 
-  let rankBy labelText ranker dispatch =
-    fragment [
-      ofStr labelText
-      Select.options (length.rem 4) (fun metric ->
-        div [
-          prop.text (string metric)
-          title (RankMetric.fullName metric)
-        ])
-        unitUnionCases<RankMetric>
-        ranker.RankMetric
-        (SetRankMetric >> dispatch)
-      Select.unitUnion (length.rem 7) ranker.TimeNormalization (SetTimeNormalization >> dispatch)
-    ]
-
   let ranker ranker (data, settings) dispatch =
     let pairData = pairData ranker.RankMetric ranker.TimeNormalization data settings
     if Array.isEmpty pairData.Pairs then emptyPairData pairData else
@@ -939,11 +947,16 @@ module Ranker =
                 | RankFertilizers -> "Pick the best crop for each fertilizer."
               )
             ])
-            unitUnionCases<RankItem>
+            unitUnionCases
             ranker.RankItem
             (SetRankItem >> dispatch)
 
-          rankBy "By" ranker dispatch
+          rankBy
+            "By"
+            ranker.RankMetric
+            ranker.TimeNormalization
+            (SetRankMetric >> dispatch)
+            (SetTimeNormalization >> dispatch)
 
           checkboxText "Show Invalid" ranker.ShowInvalid (SetShowInvalid >> dispatch)
         ]]
@@ -1083,18 +1096,13 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
             dispatch (SetSelectedCropAndFertilizer (Some (seed, fert))))
       ]
 
-      div [
-        ofStr "Show "
-        Select.options (length.rem 4) (fun metric ->
-          div [
-            text (string metric)
-            title (RankMetric.fullName metric)
-          ])
-          unitUnionCases<RankMetric>
+      div
+        (rankBy
+          "Show "
           metric
+          timeNorm
           (fun metric -> setState (metric, timeNorm))
-        Select.unitUnion (length.rem 7) timeNorm (fun timeNorm -> setState (metric, timeNorm))
-      ]
+          (fun timeNorm -> setState (metric, timeNorm)))
     ]]
 
     match crop, fert with

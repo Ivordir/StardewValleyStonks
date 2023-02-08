@@ -278,8 +278,8 @@ let viewTabsWith toString tabs currentTab dispatch =
     viewTab toString tab currentTab dispatch))
   ]
 
-let inline viewTabs (current: 'tab) dispatch =
-  viewTabsWith Reflection.getCaseName unitUnionCases<'tab> current dispatch
+let inline viewTabs current dispatch =
+  viewTabsWith Reflection.getCaseName unitUnionCases current dispatch
 
 
 let animatedDetails open' (summary': ReactElement) (children': ReactElement) dispatch =
