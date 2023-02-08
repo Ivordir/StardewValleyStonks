@@ -229,7 +229,7 @@ module SummaryTable =
     let seeds = if seeds = 0.0 then none else ofStr (float2 seeds)
     rowCells inputs itemCell none quantity profit seeds
 
-  let inputsCell consumedItemQuantities data =
+  let inputsCell data consumedItemQuantities =
     let inputRows = consumedItemQuantities |> Array.choose (fun (item, quantity) ->
       let quantity = round2 quantity
       if quantity = 0.0
@@ -306,27 +306,30 @@ module SummaryTable =
       significantRow none (Image.Icon.itemQuality' data item quality) None amount amount)
 
   let private seedMakerRows data crop item (amounts: _ Qualities) =
-    let inputs =
+    let inputsCell =
       amounts
       |> Qualities.indexed
       |> Array.map (fun (quality, amount) -> (item, quality), amount)
+      |> inputsCell data
 
     let seed = Crop.seed crop
     let seedAmount = Qualities.sum amounts * Processor.seedMakerExpectedQuantity seed
 
-    significantRow (inputsCell inputs data) (Image.Icon.seed data seed) None seedAmount seedAmount |> Option.toArray
-
-  let private forageSeedsItemAmounts items amount =
-    let itemAmount = amount / float ForageCrop.forageSeedsPerCraft
-    items |> Array.map (fun item -> (item, Quality.Normal), itemAmount)
+    significantRow inputsCell (Image.Icon.seed data seed) None seedAmount seedAmount |> Option.toArray
 
   let private forageSeedsRows data settings items (seed: SeedId) amountSold amountUsed =
     if amountSold = 0.0 && amountUsed = 0.0 then Array.empty else
+    let inputsCell amount =
+      let itemAmount = amount / float ForageCrop.forageSeedsPerCraft
+      items
+      |> Array.map (fun item -> (item, Quality.Normal), itemAmount)
+      |> inputsCell data
+
     let itemCell = Image.Icon.seed data seed
     let price = Game.seedItemSellPrice data settings.Game seed
     Array.choose id [|
-      significantRow (inputsCell (forageSeedsItemAmounts items amountUsed) data) itemCell None amountUsed amountUsed
-      significantRow (inputsCell (forageSeedsItemAmounts items amountSold) data) itemCell (Some (price, false)) amountSold 0.0
+      significantRow (inputsCell amountUsed) itemCell None amountUsed amountUsed
+      significantRow (inputsCell amountSold) itemCell (Some (price, false)) amountSold 0.0
     |]
 
   let private seedAmountsRows data crop seedAmounts =
@@ -345,19 +348,22 @@ module SummaryTable =
 
   let private soldProductRow data (summary: Query.SoldProductSummary) =
     significantRow
-      (inputsCell summary.ConsumedItemQuantities data)
+      (inputsCell data summary.ConsumedItemQuantities)
       (Image.Icon.productQuality data summary.Product summary.Quality)
       (Some (summary.Price, false))
       summary.Quantity
       0.0
 
   let private unsoldItemRow data (item, quantities: float Qualities) =
-    let inputs =
+    let inputsCell =
       quantities
       |> Qualities.indexed
       |> Array.map (fun (quality, amount) -> (item, quality), amount)
+      |> inputsCell data
 
-    unknownRow (inputsCell inputs data) (ofStr "???") false 0.0 0.0
+    unknownRow inputsCell (ofStr "???") false 0.0 0.0
+
+  let footerCells profit seeds = rowCells none (ofStr "Total") none none profit seeds
 
   let private cropProfitSummaryFooterRow settings profit =
     let profit = profit |> Option.defaultOrMap "???" gold2 |> ofStr
@@ -367,7 +373,7 @@ module SummaryTable =
       | StockpileSeeds -> ofStr (float2 1.0)
       | BuyFirstSeed -> ofStr (float2 0.0)
 
-    rowCells none (ofStr "Total") none none profit seeds
+    footerCells profit seeds
 
   let private cropProfitSummaryCollapsedRow data (summary: Query.CropProfitSummary) =
     let itemCell = fragment [
@@ -578,7 +584,7 @@ module SummaryTable =
 
     let footer =
       if numCrops = 1 then none else
-      tfoot [ rowWithCells (ofStr "Total") none none (total |> totalFormat |> ofStr) none ]
+      tfoot [ rowFromCells (footerCells (total |> totalFormat |> ofStr) none) ]
 
     div [ Class.breakdownTable; children (summaryTable footer summaries) ]
 
@@ -593,22 +599,10 @@ module SummaryTable =
     | Some price ->
       let profit = round2 (float price * amount * if bought then -1.0 else 1.0)
       if profit = 0.0 then none else
-      tr [
-        td icon
-        td (gold price)
-        td "x"
-        td (toPrecision amount)
-        td (gold2 profit)
-      ]
+      rowWithCells icon (price |> gold |> ofStr) (amount |> toPrecision |> ofStr) (profit |> gold2 |> ofStr) none
     | None ->
       if amount = 0.0 then none else
-      tr [
-        td icon
-        td (ofStr "???")
-        td "x"
-        td (toPrecision amount)
-        td (ofStr "???")
-      ]
+      rowFromCells (unknownRow none icon true amount 0.0)
 
   let inline private tooltipBoughtRow icon price amount = tooltipProfitRow true icon price amount
   let inline private tooltipSoldRow icon price amount = tooltipProfitRow false icon (Some price) amount
@@ -617,15 +611,7 @@ module SummaryTable =
     let summary = profitSummary.CropSummaries[0]
     let seed = Crop.seed summary.Crop
     table [
-      thead [
-        tr [
-          th "Item"
-          th "Price"
-          th "x"
-          th "Quantity"
-          th "Profit"
-        ]
-      ]
+      summaryHeader "Item" "Price" "Quantity" "Profit" None
 
       tbody [
         profitSummary.FertilizerPrice |> ofOption (fun price ->
@@ -656,10 +642,7 @@ module SummaryTable =
             summary.Price
             summary.Quantity))
 
-        tr [
-          td [ colSpan 4; text "Total" ]
-          td (profitSummary.NetProfit |> Option.defaultOrMap "???" gold2)
-        ]
+        rowFromCells (footerCells (profitSummary.NetProfit |> Option.defaultOrMap "???" gold2 |> ofStr) none)
       ]
 
       normalizationFooter gold2 roi timeNorm profitSummary.TimeNormalization profitSummary.NetProfit
@@ -755,9 +738,9 @@ module Ranker =
           assert
             roi || profitSummary.NetProfit |> Option.exists (fun x ->
               abs (x / profitSummary.TimeNormalization - profit) < 1e-5)
-
-          SummaryTable.tooltipProfit data settings timeNorm roi profitSummary
+          none
         | Error e -> invalidReasons settings crop e
+        SummaryTable.tooltipProfit data settings timeNorm roi profitSummary
       | None ->
         div [
           Image.Icon.crop data crop
