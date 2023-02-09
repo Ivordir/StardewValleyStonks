@@ -903,49 +903,49 @@ module Ranker =
       if ranker.ShowInvalid then pairs else
       pairs |> Array.filter (snd >> Result.isOk)
 
-    if Array.isEmpty pairs then
-      div "No valid items found"
-    else
-      let pairData =
-        pairs
-        |> Array.indexed
-        |> Array.map (fun (i, (_, profit)) -> i, profit)
+    let pairData =
+      pairs
+      |> Array.indexed
+      |> Array.map (fun (i, (_, profit)) -> i, profit)
 
-      let pairs = pairs |> Array.map fst
+    let pairs = pairs |> Array.map fst
 
-      pairData |> Array.sortInPlaceWith (fun a b ->
-        match snd a, snd b with
-        | Ok a, Ok b -> compare b a
-        | Ok _, Error _ -> -1
-        | Error _, Ok _ -> 1
-        | Error a, Error b -> Enum.bitSetOrder (int a) (int b))
+    pairData |> Array.sortInPlaceWith (fun a b ->
+      match snd a, snd b with
+      | Ok a, Ok b -> compare b a
+      | Ok _, Error _ -> -1
+      | Error _, Ok _ -> 1
+      | Error a, Error b -> Enum.bitSetOrder (int a) (int b))
 
-      fragment [
-        div [ Class.graphControls; children [
-          ofStr "Rank"
-          Select.options (length.rem 6) (fun rankby ->
-            div [
-              prop.text (string rankby)
-              title (
-                match rankby with
-                | RankCropsAndFertilizers -> "All pairs of crops and fertilizers."
-                | RankCrops -> "Pick the best fertilizer for each crop."
-                | RankFertilizers -> "Pick the best crop for each fertilizer."
-              )
-            ])
-            unitUnionCases
-            ranker.RankItem
-            (SetRankItem >> dispatch)
+    fragment [
+      div [ Class.graphControls; children [
+        ofStr "Rank"
+        Select.options (length.rem 6) (fun rankby ->
+          div [
+            prop.text (string rankby)
+            title (
+              match rankby with
+              | RankCropsAndFertilizers -> "All pairs of crops and fertilizers."
+              | RankCrops -> "Pick the best fertilizer for each crop."
+              | RankFertilizers -> "Pick the best crop for each fertilizer."
+            )
+          ])
+          unitUnionCases
+          ranker.RankItem
+          (SetRankItem >> dispatch)
 
-          rankBy
-            "By"
-            ranker.RankMetric
-            ranker.TimeNormalization
-            (SetRankMetric >> dispatch)
-            (SetTimeNormalization >> dispatch)
+        rankBy
+          "By"
+          ranker.RankMetric
+          ranker.TimeNormalization
+          (SetRankMetric >> dispatch)
+          (SetTimeNormalization >> dispatch)
 
-          checkboxText "Show Invalid" ranker.ShowInvalid (SetShowInvalid >> dispatch)
-        ]]
+        checkboxText "Show Invalid" ranker.ShowInvalid (SetShowInvalid >> dispatch)
+      ]]
+      if Array.isEmpty pairs then
+        div "No valid pairs of crops and fertilizers!"
+      else
         div [
           Class.graph
           children [
@@ -957,7 +957,7 @@ module Ranker =
               dispatch
           ]
         ]
-      ]
+    ]
 
 
 let private selectSpecificOrBest name toString (viewItem: _ -> ReactElement) items selected dispatch =
