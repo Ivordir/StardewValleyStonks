@@ -8,12 +8,12 @@ specifiers:
   parcel-reporter-static-files-copy: ^1.5.0
   preact: ^10.12.0
   process: ^0.11.10
-  recharts: 2.3.0
+  recharts: ^2.4.0
   yalps: ^0.3.0
 
 dependencies:
   preact: 10.12.0
-  recharts: 2.3.0
+  recharts: 2.4.0
   yalps: 0.3.0
 
 devDependencies:
@@ -1999,8 +1999,8 @@ packages:
       decimal.js-light: 2.5.1
     dev: false
 
-  /recharts/2.3.0:
-    resolution: {integrity: sha512-E6a0zmZTSFR32H08mEtZotDNmcP4M4p2hc9NBx9m6fmHIGNIFMfcrQIJEYUFWs8PRU8ej7cnSQoqpKSmrbh4JQ==}
+  /recharts/2.4.0:
+    resolution: {integrity: sha512-Aukj4jWPfkHNXQ9qdL15XWNACd/t6mK0UdkSmgEyeajMerzdq7UGteK48DhZ44qu+YA2tT7wBp8xVravTK6m5Q==}
     engines: {node: '>=12'}
     peerDependencies:
       prop-types: ^15.6.0

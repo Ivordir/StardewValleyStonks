@@ -855,6 +855,7 @@ module Ranker =
         barChart.children [
           Recharts.yAxis [
             yAxis.unit (RankMetric.unit ranker.RankMetric)
+            yAxis.domain (domain.constant 0, domain.auto)
             yAxis.width 60
           ]
           Recharts.tooltip [
