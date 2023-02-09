@@ -165,6 +165,20 @@ module GrowthCalendar =
         children (fromDateSpan settings true span)
       ]
 
+let private fertilizerAndCropHarvests data fertilizer crop (harvests: nat) =
+  div [
+    Image.Icon.crop data crop
+
+    fertilizer |> ofOption (fun fertilizer ->
+      fragment [
+        ofStr " with "
+        Image.Icon.fertilizer fertilizer
+      ])
+
+    if harvests = 0u then none else
+      let unit = "harvest" |> pluralizeTo (float harvests)
+      ofStr $" ({harvests} {unit})"
+  ]
 
 module SummaryTable =
   let private toPrecision (value: float) =
@@ -253,11 +267,7 @@ module SummaryTable =
       elif Crop.regrows crop then 1u
       else harvests
 
-    let itemCell = fragment [
-      Image.Icon.crop data crop
-      let harvestStr = pluralize (float harvests) "harvest"
-      ofStr $" ({harvests} {harvestStr})"
-    ]
+    let itemCell = fertilizerAndCropHarvests data None crop harvests
 
     significantRow none itemCell None 0.0 (-float seeds) |> Option.toArray
 
@@ -377,12 +387,7 @@ module SummaryTable =
     footerCells profit seeds
 
   let private cropProfitSummaryCollapsedRow data (summary: Query.CropProfitSummary) =
-    let itemCell = fragment [
-      Image.Icon.crop data summary.Crop
-      let harvestStr = pluralize (float summary.Harvests) "harvest"
-      ofStr $" ({summary.Harvests} {harvestStr})"
-    ]
-
+    let itemCell = fertilizerAndCropHarvests data None summary.Crop summary.Harvests
     let profit = summary.NetProfit |> Option.defaultOrMap "???" gold2 |> ofStr
 
     rowCells none itemCell none none profit none
@@ -421,7 +426,7 @@ module SummaryTable =
   let private normalizationFooter valueFormat timeNorm normDivisor value =
     if normDivisor = 1.0 then none else
     fragment [
-      let divisor = ofStr $"/ {round2 normDivisor} {TimeNormalization.unit timeNorm |> pluralize normDivisor}"
+      let divisor = ofStr $"/ {round2 normDivisor} {TimeNormalization.unit timeNorm |> pluralizeTo normDivisor}"
 
       rowWithCells none none none divisor none
 
@@ -486,13 +491,8 @@ module SummaryTable =
 
       tbody (summaries |> Array.collect (fun summary ->
         summary.CropSummaries |> Array.map (fun summary ->
-          let itemCell = fragment [
-            Image.Icon.crop data summary.Crop
-            let harvestStr = pluralize (float summary.Harvests) "harvest"
-            ofStr $" ({summary.Harvests} {harvestStr})"
-          ]
           rowWithCells
-            itemCell
+            (fertilizerAndCropHarvests data None summary.Crop summary.Harvests)
             (summary.XpPerItem |> xp |> ofStr)
             (summary.ItemQuantity |> round2 |> ofFloat)
             ((float summary.XpPerItem * summary.ItemQuantity) |> round2 |> xpFloat |> ofStr)
@@ -518,20 +518,17 @@ module SummaryTable =
         ofStr (investment |> Option.defaultOrMap "???" gold)
       ]
       div [
-        ofStr "ROI: "
-        ofStr (roi |> Option.defaultOrMap "???" (sprintf "%.2f%%"))
+        let roi = roi |> Option.defaultOrMap "???" percent2
+        ofStr $"ROI: {roi}"
       ]
-      match roi with
-      | Some roi when profitSummary.TimeNormalization <> 1.0 ->
-        div $"/ {round2 profitSummary.TimeNormalization} {TimeNormalization.unit timeNorm |> pluralize profitSummary.TimeNormalization}"
-        div [
-          float2 (roi / profitSummary.TimeNormalization) |> ofStr
-          match timeNorm with
-          | TotalPeriod -> ofStr "%"
-          | PerDay -> ofStr "%/day"
-          | PerSeason -> ofStr "%/season"
-        ]
-      | _ -> none
+
+      if profitSummary.TimeNormalization <> 1.0 then
+        div $"/ {round2 profitSummary.TimeNormalization} {TimeNormalization.unit timeNorm |> pluralizeTo profitSummary.TimeNormalization}"
+
+        let roi = roi |> Option.defaultOrMap "???" (fun roi ->
+          $"{percent2 (roi / profitSummary.TimeNormalization)} / {TimeNormalization.unit timeNorm}")
+
+        div $"ROI {timeNorm}: {roi}"
     ]
 
   let rankerProfit roi data settings timeNorm fertilizer crop =
@@ -730,16 +727,7 @@ module Ranker =
       match Query.Ranker.profitSummary data settings timeNorm fertilizer crop with
       | Some profitSummary ->
         let summary = profitSummary.CropSummaries[0]
-        let harvestDesc = pluralize (float summary.Harvests) "harvest"
-        div [
-          Image.Icon.crop data crop
-          match fertilizer with
-          | None -> none
-          | Some fert ->
-            ofStr " with "
-            Image.Icon.fertilizer fert
-          ofStr $" ({summary.Harvests} {harvestDesc})"
-        ]
+        fertilizerAndCropHarvests data fertilizer crop summary.Harvests
         match profit with
         | Ok profit ->
           assert
@@ -749,14 +737,7 @@ module Ranker =
         | Error e -> invalidReasons settings crop e
         SummaryTable.tooltipProfit data settings timeNorm roi profitSummary
       | None ->
-        div [
-          Image.Icon.crop data crop
-          match fertilizer with
-          | None -> none
-          | Some fert ->
-            ofStr " with "
-            Image.Icon.fertilizer fert
-        ]
+        fertilizerAndCropHarvests data fertilizer crop 0u
         match profit with
         | Ok _ -> assert false; none
         | Error e -> invalidReasons settings crop e
