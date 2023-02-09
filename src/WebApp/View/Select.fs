@@ -50,7 +50,7 @@ let selectControl initialState inputRef (props: _ Props) (state: _ State) setSta
           placeholder " "
           value state.Search
           onChange (fun (str: string) ->
-            let lower = str.ToLower ()
+            let lower = str.ToLower()
             let options = props.Options |> Array.filter (fun opt -> (toString opt).ToLower().Contains lower)
             setState {|
               state with

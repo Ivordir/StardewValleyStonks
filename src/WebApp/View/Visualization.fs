@@ -461,7 +461,12 @@ module SummaryTable =
     let oneCrop = summaries |> Array.sumBy (fun summary -> summary.CropSummaries.Length) = 1
 
     table [
-      summaryHeader "Item" "Price" "Quantity" "Profit" (Some "Seeds")
+      let seeds =
+        if settings.Profit.SeedStrategy = IgnoreSeeds
+        then None
+        else Some "Seeds"
+
+      summaryHeader "Item" "Price" "Quantity" "Profit" seeds
 
       fragment (summaries |> Array.map (fun summary ->
         fragment [
@@ -483,33 +488,8 @@ module SummaryTable =
       ]
     ]
 
-  let private xpSummary data timeNorm total (summaries: Query.XpSummary array) =
-    let oneCrop = summaries |> Array.sumBy (fun summary -> summary.CropSummaries.Length) = 1
-
-    table [
-      summaryHeader "Crop" "XP" "Quantity" "Total XP" None
-
-      tbody (summaries |> Array.collect (fun summary ->
-        summary.CropSummaries |> Array.map (fun summary ->
-          rowWithCells
-            (fertilizerAndCropHarvests data None summary.Crop summary.Harvests)
-            (summary.XpPerItem |> xp |> ofStr)
-            (summary.ItemQuantity |> round2 |> ofFloat)
-            ((float summary.XpPerItem * summary.ItemQuantity) |> round2 |> xpFloat |> ofStr)
-            none)
-      ))
-
-      tfoot [
-        if not oneCrop then footerCells (total |> round2 |> xpFloat |> ofStr) none |> rowFromCells
-
-        if timeNorm <> TotalPeriod then
-          assert (summaries.Length = 1)
-          normalizationFooter xp2 timeNorm summaries[0].TimeNormalization (Some summaries[0].Xp)
-      ]
-    ]
-
   // TODO
-  let rankerRoi settings timeNorm (profitSummary: Query.ProfitSummary) =
+  let roiSummary settings timeNorm (profitSummary: Query.ProfitSummary) =
     let investment = profitSummary.Investment (settings.Profit.SeedStrategy = BuyFirstSeed)
     let roi = investment |> Option.bind profitSummary.ROI
     div [
@@ -536,19 +516,11 @@ module SummaryTable =
     | Some summary ->
       div [ Class.breakdownTable; children [
         profitSummary false data settings (if roi then TotalPeriod else timeNorm) summary.NetProfit [| summary |]
-        if roi then rankerRoi settings timeNorm summary
+        if roi then roiSummary settings timeNorm summary
       ]]
     | None -> noHarvestsMessage settings crop
 
-  let rankerXp data settings timeNorm fertilizer crop =
-    match Query.Ranker.xpSummary data settings timeNorm fertilizer crop with
-    | Ok summary ->
-      div [ Class.breakdownTable; children [
-        xpSummary data timeNorm summary.Xp [| summary |]
-      ]]
-    | Error e -> invalidReasons settings crop e
-
-  let private mergeCropHarvests (solution: Solver.FertilizerDateSpan) =
+  let mergeCropHarvests (solution: Solver.FertilizerDateSpan) =
     let regrowHarvests = solution.RegrowCrop |> Option.map (fun (_, crop, harvests) -> FarmCrop crop, harvests)
     let cropHarvests = solution.CropHarvests |> Array.map (fun (crop, harvests, _) -> crop, harvests)
     regrowHarvests
@@ -572,21 +544,16 @@ module SummaryTable =
   let solverProfit data settings total solutions =
     solverSummary (profitSummary true data settings) Query.Solver.profitSummary data settings (Some total) solutions
 
-  let solverXp data settings total solutions =
-    solverSummary (xpSummary data) Query.Solver.xpSummary data settings total solutions
-
-  let private tooltipProfitRow bought (icon: ReactElement) price amount =
+  let private tooltipRow bought (icon: ReactElement) price amount =
     match price with
     | Some price ->
-      let profit = round2 (float price * amount * if bought then -1.0 else 1.0)
-      if profit = 0.0 then none else
-      rowWithCells icon (price |> gold |> ofStr) (amount |> toPrecision |> ofStr) (profit |> gold2 |> ofStr) none
+      significantRow none icon (Some (price, bought)) amount 0.0 |> Option.defaultOrMap none rowFromCells
     | None ->
       if amount = 0.0 then none else
       rowFromCells (unknownRow none icon true amount 0.0)
 
-  let inline private tooltipBoughtRow icon price amount = tooltipProfitRow true icon price amount
-  let inline private tooltipSoldRow icon price amount = tooltipProfitRow false icon (Some price) amount
+  let inline private tooltipBoughtRow icon price amount = tooltipRow true icon price amount
+  let inline private tooltipSoldRow icon price amount = tooltipRow false icon (Some price) amount
 
   let tooltipProfit data settings timeNorm roi (profitSummary: Query.ProfitSummary) =
     let summary = profitSummary.CropSummaries[0]
@@ -626,9 +593,94 @@ module SummaryTable =
         rowFromCells (footerCells (profitSummary.NetProfit |> Option.defaultOrMap "???" gold2 |> ofStr) none)
       ]
 
-      if roi then none else
-        normalizationFooter gold2 timeNorm profitSummary.TimeNormalization profitSummary.NetProfit
+      if roi
+      then none
+      else normalizationFooter gold2 timeNorm profitSummary.TimeNormalization profitSummary.NetProfit
     ]
+
+  module XP =
+    let private keyValueRowWithOperation (operation: string option) (key: string) (valueCell: ReactElement) =
+      tr [
+        td (key + ":")
+        td (operation |> ofOption ofStr)
+        td valueCell
+      ]
+
+    let private keyValueRowOperation key operation value = keyValueRowWithOperation (Some operation) key value
+
+    let private keyValueRow key value = keyValueRowWithOperation None key value
+
+    let private verticalSummary timeNorm (xpSummary: Query.XpSummary) =
+      let summary = xpSummary.CropSummaries[0]
+      let timeNormUnit = TimeNormalization.unit timeNorm |> pluralize
+      table [
+        tbody [
+          keyValueRow "XP" (summary.XpPerItem |> xp |> ofStr)
+          keyValueRowOperation "Quantity" "x" (summary.ItemQuantity |> round2 |> ofFloat)
+          keyValueRow "Total XP" (xpSummary.Xp |> round2 |> xpFloat |> ofStr)
+
+          if xpSummary.TimeNormalization <> 1.0 then
+            keyValueRowOperation
+              $"{upperFirstChar timeNormUnit}"
+              "/"
+              (ofStr $"{round2 xpSummary.TimeNormalization} {timeNormUnit}")
+
+            keyValueRow
+              $"XP {(string timeNorm).ToLower()}"
+              ((xpSummary.Xp / xpSummary.TimeNormalization) |> round2 |> xpFloat |> ofStr)
+        ]
+      ]
+
+    let rankerAndTooltip data settings timeNorm fertilizer crop =
+      fragment [
+        match Query.Ranker.xpSummary data settings timeNorm fertilizer crop with
+        | Ok summary ->
+          fertilizerAndCropHarvests data fertilizer crop summary.CropSummaries[0].Harvests
+          verticalSummary timeNorm summary
+        | Error e ->
+          fertilizerAndCropHarvests data fertilizer crop 0u
+          invalidReasons settings crop e
+      ]
+
+    let private tableSummary data total (summaries: Query.XpSummary array) =
+      table [
+        thead [
+          th "Fertilizer"
+          th "Crop"
+          th "Harvests"
+          th "XP"
+          th "x"
+          th "Quantity"
+          th "Total XP"
+        ]
+
+        tbody (summaries |> Array.collect (fun xpSummary ->
+          let fertilizer = xpSummary.Fertilizer |> ofOption Image.Icon.fertilizer
+          xpSummary.CropSummaries |> Array.map (fun summary ->
+            tr [
+              td fertilizer
+              td (Image.Icon.crop data summary.Crop)
+              td (ofNat summary.Harvests)
+              td (summary.XpPerItem |> xp |> ofStr)
+              td "x"
+              td (summary.ItemQuantity |> round2 |> ofFloat)
+              td (xpSummary.Xp |> round2 |> xpFloat |> ofStr)
+            ])
+        ))
+
+        tfoot [
+          tr [
+            td [ colSpan 6; text "Total" ]
+            td (total |> round2 |> xpFloat |> ofStr)
+          ]
+        ]
+      ]
+
+    let solver data settings total fertilizerSpans =
+      fertilizerSpans
+      |> Array.map (fun solution ->
+        mergeCropHarvests solution |> Query.Solver.xpSummary data settings solution.Fertilizer)
+      |> tableSummary data total
 
 
 type PairData = {
@@ -752,7 +804,7 @@ module Ranker =
       let fertilizer = Option.map data.Fertilizers.Find fertilizer
       match rankItem with
       | Gold | ROI -> chartProfitTooltip data settings timeNorm (rankItem = ROI) fertilizer crop result
-      | XP -> none // TODO
+      | XP -> SummaryTable.XP.rankerAndTooltip data settings timeNorm fertilizer crop
     | _ -> none
 
   let private svgRectPath x y width height =
@@ -1079,7 +1131,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
         (ofStr "Summary")
         (match metric with
           | Gold -> SummaryTable.rankerProfit false data settings timeNorm fert crop
-          | XP -> SummaryTable.rankerXp data settings timeNorm fert crop
+          | XP -> SummaryTable.XP.rankerAndTooltip data settings timeNorm fert crop
           | ROI -> SummaryTable.rankerProfit true data settings timeNorm fert crop)
         (curry SetDetailsOpen OpenDetails.RankerSummary >> appDispatch)
 
@@ -1116,7 +1168,7 @@ let private solverSummary data settings mode solution =
     | Some (solution, total) ->
       match mode with
       | MaximizeGold -> SummaryTable.solverProfit data settings total solution
-      | MaximizeXP -> SummaryTable.solverXp data settings total solution
+      | MaximizeXP -> SummaryTable.XP.solver data settings total solution
       div [
         Class.calendar
         children (solution |> Array.collect (GrowthCalendar.solver settings))

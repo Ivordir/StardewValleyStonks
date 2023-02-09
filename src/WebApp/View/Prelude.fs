@@ -37,6 +37,8 @@ let percent2 value = sprintf "%.2f%%" value
 let toPercent value = percent (value * 100.0)
 let toPercent2 value = percent2 (value * 100.0)
 
+let upperFirstChar (text: string) = text[0..0].ToUpper() + text[1..]
+
 let pluralize text = text + "s"
 let pluralizeTo x text = if x = 1.0 then text else pluralize text
 

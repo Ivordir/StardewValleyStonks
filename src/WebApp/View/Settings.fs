@@ -785,7 +785,7 @@ module Misc =
       labeled "Profit Margin:"
         (Select.options
           (length.rem 5)
-          (fun margin -> ofStr (if margin = 1.0 then "Normal" else percent margin))
+          (fun margin -> ofStr (if margin = 1.0 then "Normal" else toPercent margin))
           [| 1.0..(-0.25)..0.25 |]
           multipliers.ProfitMargin
           (SetProfitMargin >> dispatch))
