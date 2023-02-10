@@ -1,0 +1,81 @@
+{
+  "Fertilizers": [
+    {
+      "Name": "Basic Fertilizer",
+      "Quality": 1
+    },
+    {
+      "Name": "Quality Fertilizer",
+      "Quality": 2
+    },
+    {
+      "Name": "Deluxe Fertilizer",
+      "Quality": 3
+    },
+    {
+      "Name": "Speed-Gro",
+      "Speed": 0.1
+    },
+    {
+      "Name": "Deluxe Speed-Gro",
+      "Speed": 0.25
+    },
+    {
+      "Name": "Hyper Speed-Gro",
+      "Speed": 0.33
+    }
+  ],
+
+  "FertilizerPrices": {
+    "Basic Fertilizer": { "Pierre": 100 },
+    "Quality Fertilizer": { "Pierre": 150 },
+    "Speed-Gro": { "Pierre": 100 },
+    "Deluxe Speed-Gro": { "Pierre": 150, "Oasis": 80 }
+  },
+
+  "GenerateSeedPrices": {
+    "Pierre": [
+      273, 299, 301, 302, 425, 427, 429, 453, 455, 472,
+      473, 474, 475, 476, 477, 479, 480, 481, 482, 483,
+      484, 485, 487, 488, 489, 490, 491, 492, 493
+    ],
+    "Joja": [
+      299, 301, 302, 425, 427, 429, 453, 455, 472, 473,
+      474, 475, 477, 479, 480, 482, 483, 484, 487, 488,
+      490, 491, 492, 493
+    ],
+    "Oasis": [
+      478, 486, 494
+    ]
+  },
+
+  "SeedPrices": {
+    "347": [
+      { "Vendor": "Traveling Cart", "Price": 1000, "Type": "Fixed" }
+    ],
+    "431": [
+      { "Vendor": "Joja", "Price": 100, "Type": "Scaling" },
+      { "Vendor": "Pierre", "Price": 200, "Type": "Scaling" }
+    ],
+    "433": [
+      { "Vendor": "Traveling Cart", "Price": 2500, "Type": "Fixed" }
+    ],
+    "493": [
+      { "Vendor": "Pierre", "Price": 240, "Type": "Scaling" },
+      { "Vendor": "Joja", "Price": 240, "Type": "Scaling" }
+    ],
+    "745": [
+      { "Vendor": "Pierre", "Price": 100, "Type": "Fixed" }
+    ],
+    "802": [
+      { "Vendor": "Oasis", "Price": 150, "Type": "Scaling" }
+    ]
+  },
+
+  "ProcessorUnlockLevel": {
+    "Preserves Jar": 4,
+    "Keg": 8,
+    "Seed Maker": 9,
+    "Oil Maker": 9
+  }
+}

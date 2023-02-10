@@ -11,7 +11,7 @@ open Thoth.Json.Net
 #endif
 
 let private extractedData: JsonValue = importDefault "../../public/data/Extracted.json"
-let private supplementalData: JsonValue = importDefault "../../public/data/Supplemental.json5"
+let private supplementalData: JsonValue = importDefault "../../public/data/Supplemental.json"
 
 let private load json decoder =
   json
@@ -67,9 +67,7 @@ assert // forage crops have a number of items in the supported range
 assert // valid ratios (no zeros)
   gameData.Products.Values
   |> Seq.collect Table.values
-  |> Seq.forall (function
-    | { Ratio = Some (i, o) } -> i > 0u && o > 0u
-    | _ -> true)
+  |> Seq.forall (ProcessedItem.ratio >> Option.forall (fun (i, o) -> i > 0u && o > 0u))
 
 
 let private settingsCoders =
