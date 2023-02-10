@@ -728,18 +728,24 @@ type ProfitSummary = {
   NetProfit: float option
   TimeNormalization: float
 } with
-  member inline this.Investment buyFirstSeed =
+  member inline this.InvestmentAndROI buyFirstSeed =
     let fertPrice = this.FertilizerPrice |> Option.defaultOrMap (Some 0u) (Option.map snd)
     let seedPrice =
       if buyFirstSeed
       then this.CropSummaries[0].SeedPrice |> Option.map snd
       else Some 0u
-    Option.map2 (+) fertPrice seedPrice
-  member inline this.ROI investment =
-    this.NetProfit |> Option.bind (fun net ->
-      if investment = 0u
-      then None
-      else Some (net / float investment))
+
+    match this.NetProfit, fertPrice, seedPrice with
+    | Some net, Some fertPrice, Some seedPrice ->
+      let investment = fertPrice + seedPrice
+      let roi =
+        if investment = 0u
+        then None
+        else Some (net / float investment)
+
+      Some investment, roi
+
+    | _ -> None, None
 
 module private ProfitSummary =
   open YALPS

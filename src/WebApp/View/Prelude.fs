@@ -38,7 +38,6 @@ let percent2 value = sprintf "%.2f%%" (value * 100.0)
 let upperFirstChar (text: string) = text[0..0].ToUpper() + text[1..]
 
 let pluralize text = text + "s"
-let pluralizeTo x text = if x = 1.0 then text else pluralize text
 
 let debouncer timeout (f : _ -> unit) =
   let mutable last = None

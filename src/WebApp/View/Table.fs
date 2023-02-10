@@ -58,40 +58,69 @@ let sortTable columns displayItem setSort (sortCol, ascending) items =
 
 
 let [<ReactComponent>] private CollapsibleTableBody (props: {|
-    CollapsedRowCells: ReactElement array
-    BodyCells: ReactElement array array
+    key: string
+    Header: ReactElement
+    Rows: ReactElement array
+    AllCollapsed: bool
+    Collapsed: bool
+  |}) =
+  let collapsed, setCollapsed = useState props.Collapsed
+
+  useEffect ((fun () ->
+    setCollapsed props.AllCollapsed
+  ), [| box props.AllCollapsed |])
+
+  fragment [
+    tbody [
+      onClick (fun _ -> setCollapsed (not collapsed))
+      children [
+        tr [
+          td []
+          props.Header
+        ]
+      ]
+    ]
+
+    tbody [
+      if collapsed then style [ style.visibility.collapse ]
+      children (props.Rows |> Array.map (fun row -> tr [ td []; row ]))
+    ]
+  ]
+
+let [<ReactComponent>] private CollapsibleTable (props: {|
+    Header: ReactElement
+    Bodies: (string * ReactElement * ReactElement array) array
     Collapsed: bool
   |}) =
   let collapsed, setCollapsed = useState props.Collapsed
 
   fragment [
-    if collapsed then
-      tbody [
-        onClick (fun _ -> setCollapsed false)
-        children [
-          tr [
-            td []
-            fragment props.CollapsedRowCells
-          ]
+    thead [
+      tr [
+        th [
+          onClick (fun _ -> setCollapsed (not collapsed))
+          text "v"
         ]
+        props.Header
       ]
-
-    tbody [
-      if collapsed then style [ style.visibility.collapse ]
-      children (props.BodyCells |> Seq.mapi (fun i row ->
-        tr [
-          if i = 0 then onClick (fun _ -> setCollapsed true)
-          children [
-            td []
-            fragment row
-          ]
-        ]
-      ))
     ]
+
+    fragment (props.Bodies |> Array.map (fun (key, header, body) ->
+      if body.Length = 0 then
+        tbody [ tr [ td []; header ]]
+      else
+        CollapsibleTableBody {|
+          key = key
+          Header = header
+          Rows = body
+          AllCollapsed = collapsed
+          Collapsed = props.Collapsed
+        |}
+      ))
   ]
 
-let collapsibleBody collapsed collapsedRow rows = CollapsibleTableBody {|
-  CollapsedRowCells = collapsedRow
-  BodyCells = rows
+let collapsibleHeaderAndBodies collapsed header bodies = CollapsibleTable {|
+  Header = header
+  Bodies = bodies
   Collapsed = collapsed
 |}
