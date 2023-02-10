@@ -889,6 +889,7 @@ module Ranker =
           Recharts.yAxis [
             yAxis.unit (RankMetric.unit ranker.RankMetric)
             yAxis.domain (domain.constant 0, domain.auto)
+            if ranker.RankMetric = ROI then Interop.mkYAxisAttr "tickFormatter" (fun x -> x * 100.0)
             yAxis.width 60
           ]
           Recharts.tooltip [

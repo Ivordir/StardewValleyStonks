@@ -665,10 +665,10 @@ module private Profit =
       let fertCost = fertilizerCostOpt data settings (Fertilizer.Opt.name fertilizer)
       match growthSpan, seedPriceAndProfit, fertCost with
       | Some span, Some (seedPrice, profit), Some fertCost ->
-        let fertilizerCost = float fertCost * (1.0 + float (span.Harvests - 1u) * replacedFertilizerPerHarvest settings crop)
+        let replacementCost = float fertCost * float (span.Harvests - 1u) * replacedFertilizerPerHarvest settings crop
         let divisor = timeNormalizationDivisor span crop timeNormalization
         let profit = profit fertilizer span.Harvests
-        Ok (profit, float seedPrice + fertilizerCost, divisor)
+        Ok (profit - replacementCost, seedPrice + fertCost, divisor)
       | _ -> invalidReasons growthSpan.IsSome fertCost.IsSome seedPriceAndProfit.IsSome
 
     data >> mapping
@@ -736,10 +736,10 @@ type ProfitSummary = {
       else Some 0u
     Option.map2 (+) fertPrice seedPrice
   member inline this.ROI investment =
-    this.NetProfit |> Option.bind (fun total ->
+    this.NetProfit |> Option.bind (fun net ->
       if investment = 0u
       then None
-      else Some ((total - float investment) / float investment * 100.0))
+      else Some (net / float investment))
 
 module private ProfitSummary =
   open YALPS
@@ -1103,12 +1103,12 @@ let private cropXpSummary data settings crop harvests =
 
 module Ranker =
   let profit = Profit.mapData (Result.map (fun (profit, investment, timeNorm) ->
-    (profit - investment) / timeNorm))
+    (profit - float investment) / timeNorm))
 
   let roi = Profit.mapData (Result.bind (fun (profit, investment, timeNorm) ->
-    if investment = 0.0
+    if investment = 0u
     then Error IR.NoInvestment
-    else Ok ((profit - investment) / investment * 100.0 / timeNorm)))
+    else Ok ((profit - float investment) / float investment / timeNorm)))
 
   let xp data settings timeNorm crop =
     let enoughSeeds = canMakeEnoughSeeds data settings crop

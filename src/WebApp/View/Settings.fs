@@ -51,7 +51,7 @@ module Skills =
       div [ Class.cropQualitiesProbs; children (mapQualities (fun prob ->
         if prob = 0.0
         then none
-        else ofStr (toPercent2 prob)))
+        else ofStr (percent2 prob)))
       ]
     ]]
 
@@ -640,7 +640,7 @@ module Fertilizers =
                     (curry SetSelected name >> SelectFertilizers >> selectDispatch))
                 td (Image.Icon.fertilizer fertilizer)
                 td (viewPrice price)
-                td (fertilizer.Speed |> toPercent |> ofStr)
+                td (fertilizer.Speed |> percent |> ofStr)
                 td (Skills.farmCropQualitiesWith (Some fertilizer) settings.Game.Skills |> Skills.cropQualities)
               ]
             ])
@@ -785,7 +785,7 @@ module Misc =
       labeled "Profit Margin:"
         (Select.options
           (length.rem 5)
-          (fun margin -> ofStr (if margin = 1.0 then "Normal" else toPercent margin))
+          (fun margin -> ofStr (if margin = 1.0 then "Normal" else percent margin))
           [| 1.0..(-0.25)..0.25 |]
           multipliers.ProfitMargin
           (SetProfitMargin >> dispatch))

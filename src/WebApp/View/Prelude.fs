@@ -32,10 +32,8 @@ let xpFloat (xp: float) = string xp + "xp"
 let xp (xp: nat) = string xp + "xp"
 let xp2 = sprintf "%.2fxp"
 
-let percent value = sprintf "%.0f%%" value
-let percent2 value = sprintf "%.2f%%" value
-let toPercent value = percent (value * 100.0)
-let toPercent2 value = percent2 (value * 100.0)
+let percent value = sprintf "%.0f%%" (value * 100.0)
+let percent2 value = sprintf "%.2f%%" (value * 100.0)
 
 let upperFirstChar (text: string) = text[0..0].ToUpper() + text[1..]
 
