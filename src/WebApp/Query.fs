@@ -668,7 +668,8 @@ module private Profit =
         let replacementCost = float fertCost * float (span.Harvests - 1u) * replacedFertilizerPerHarvest settings crop
         let divisor = timeNormalizationDivisor span crop timeNormalization
         let profit = profit fertilizer span.Harvests
-        Ok (profit - replacementCost, seedPrice + fertCost, divisor)
+        let investment = seedPrice + fertCost
+        Ok (profit - replacementCost - float investment, investment, divisor)
       | _ -> invalidReasons growthSpan.IsSome fertCost.IsSome seedPriceAndProfit.IsSome
 
     data >> mapping
@@ -1108,13 +1109,12 @@ let private cropXpSummary data settings crop harvests =
   }
 
 module Ranker =
-  let profit = Profit.mapData (Result.map (fun (profit, investment, timeNorm) ->
-    (profit - float investment) / timeNorm))
+  let profit = Profit.mapData (Result.map (fun (net, _, timeNorm) -> net / timeNorm))
 
-  let roi = Profit.mapData (Result.bind (fun (profit, investment, timeNorm) ->
+  let roi = Profit.mapData (Result.bind (fun (net, investment, timeNorm) ->
     if investment = 0u
     then Error IR.NoInvestment
-    else Ok ((profit - float investment) / float investment / timeNorm)))
+    else Ok (net / float investment / timeNorm)))
 
   let xp data settings timeNorm crop =
     let enoughSeeds = canMakeEnoughSeeds data settings crop
