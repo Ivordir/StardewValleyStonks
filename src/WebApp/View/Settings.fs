@@ -33,8 +33,7 @@ module Skills =
       ]
     ]
 
-  let private qualityClasses = Enum.values |> Array.map (fun quality ->
-    className ((Quality.name quality).ToLower ()))
+  let private qualityClasses = Enum.values |> Array.map (Quality.name >> lowerCase >> className)
 
   let cropQualities (qualities: float Qualities) =
     let qualities = Qualities.toArray qualities
@@ -518,7 +517,7 @@ module Crops =
     let filters = List.choose id [
       if filters.NameSearch = ""
       then None
-      else Some (fun crop -> (Crop.name data.Items.Find crop).ToLower().Contains (filters.NameSearch.ToLower()))
+      else Some (fun crop -> (crop |> Crop.name data.Items.Find |> lowerCase).Contains (lowerCase filters.NameSearch))
       Some (if filters.InSeason then Game.cropIsInSeason settings.Game else Crop.growsInSeasons filters.Seasons)
       filters.Regrows |> optionFilter Crop.regrows
       filters.Giant |> optionFilter Crop.giant

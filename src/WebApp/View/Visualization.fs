@@ -209,7 +209,7 @@ module SummaryTable =
         (formatNormalizationDivisor timeNorm normDivisor |> ofStr)
 
       keyValueRow
-        $"{key} {(string timeNorm).ToLower()}"
+        $"{key} {timeNorm |> string |> lowerCase}"
         (value |> formatNormalizedValue valueFormat normDivisor |> ofStr)
     ]
 
@@ -448,7 +448,7 @@ module SummaryTable =
           td $"/ {formatNormalizationDivisor timeNorm normDivisor}"
         ]
         tr [
-          td [ colSpan 4; text $"Total {(string timeNorm).ToLower()}" ]
+          td [ colSpan 4; text $"Total {timeNorm |> string |> lowerCase}" ]
           td (profit |> formatNormalizedValue gold2 normDivisor)
         ]
     ]

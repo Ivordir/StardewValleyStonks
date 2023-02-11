@@ -10,6 +10,8 @@ module internal Util =
   [<Emit "new Error($0, { cause: $1 })">]
   let errorWithMessage (msg: string) (error: exn): exn = jsNative
 
+  let inline lowerCase (str: string) = str.ToLower ()
+
   let inline konst x _ = x
   let inline curry f a b = f (a, b)
 

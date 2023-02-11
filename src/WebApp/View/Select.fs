@@ -49,9 +49,9 @@ let selectControl initialState inputRef (props: _ Props) (state: _ State) setSta
           prop.type'.text
           placeholder " "
           value state.Search
-          onChange (fun (str: string) ->
-            let lower = str.ToLower()
-            let options = props.Options |> Array.filter (fun opt -> (toString opt).ToLower().Contains lower)
+          onChange (fun str ->
+            let lower = lowerCase str
+            let options = props.Options |> Array.filter (fun opt -> (opt |> toString |> lowerCase).Contains lower)
             setState {|
               state with
                 Search = str
