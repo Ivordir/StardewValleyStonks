@@ -40,18 +40,21 @@ assert // no negative speeds
 assert // all seed items have the Seeds category
   gameData.Crops.Values |> Seq.forall (Crop.seedItem >> gameData.Items.Find >> Item.category >> (=) Seeds)
 
-assert // no zero growth stages
+assert // non-zero growth stages
   gameData.Crops.Values |> Seq.forall (Crop.stages >> Array.contains 0u >> not)
 
-assert // no zero regrow times
+assert // non-zero total growth times
+  gameData.Crops.Values |> Seq.forall (Crop.growthTime >> (<>) 0u)
+
+assert // non-zero regrow times
   gameData.FarmCrops.Values |> Seq.forall (FarmCrop.regrowTime >> Option.contains 0u >> not)
 
-assert // supported/valid extra item amounts
+assert // supported/valid extra item quantities
   gameData.FarmCrops.Values |> Seq.forall (fun crop ->
-    crop.ExtraItem |> Option.forall (fun (item, amount) ->
+    crop.ExtraItem |> Option.forall (fun (item, quantity) ->
       if crop.RegrowTime.IsSome && nat item = nat crop.Seed
-      then amount >= 1.0
-      else amount >= FarmCrop.minExtraItemAmount))
+      then quantity >= 1.0
+      else quantity >= FarmCrop.minExtraItemQuantity))
 
 assert // crop amounts have values in the valid ranges
   gameData.FarmCrops.Values |> Seq.forall (fun crop ->

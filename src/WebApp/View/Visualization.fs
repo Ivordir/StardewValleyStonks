@@ -126,19 +126,19 @@ module GrowthCalendar =
         ]
       ])
 
-  let solver settings span = fromDateSpan settings false span
+  let solver settings dateSpan = fromDateSpan settings false dateSpan
 
   let ranker app fertilizer crop =
     let settings, _ = app.State
     match Query.bestGrowthSpan settings.Game fertilizer crop with
     | None -> noHarvestsMessage settings crop
-    | Some (span: Query.GrowthSpan) ->
+    | Some span ->
       let cropHarvests, regrowCrop =
         match crop with
         | FarmCrop crop when crop.RegrowTime.IsSome -> [||], Some (0, crop, span.Harvests)
         | _ -> [| crop, span.Harvests, false |], None
 
-      let span: Solver.FertilizerDateSpan = {
+      let dateSpan: Solver.FertilizerDateSpan = {
         StartDate = {
           Season = span.StartSeason
           Day =
@@ -160,7 +160,7 @@ module GrowthCalendar =
 
       div [
         Class.calendar
-        children (fromDateSpan settings true span)
+        children (fromDateSpan settings true dateSpan)
       ]
 
 let private fertilizerAndCropHarvests data fertilizer crop =
@@ -303,11 +303,11 @@ module SummaryTable =
 
     fragment [
       table [
-        tbody (inputRows |> Array.map (fun ((item, quality), amount) ->
+        tbody (inputRows |> Array.map (fun ((item, quality), quantity) ->
           tr [
             td (Image.Icon.itemQuality' data item quality)
             td "x"
-            td (float2 amount)
+            td (float2 quantity)
             td Image.rightArrow
           ]
         ))
@@ -315,53 +315,53 @@ module SummaryTable =
       itemCell
     ]
 
-  let private fertilizerBoughtRow itemCellColSpan replacement fertilizer price amount =
+  let private fertilizerBoughtRow itemCellColSpan replacement fertilizer price quantity =
     match fertilizer, price with
     | Some fertilizer, Some price ->
-      boughtRow false itemCellColSpan price amount (fragment [
+      boughtRow false itemCellColSpan price quantity (fragment [
         if replacement then ofStr "Replacement "
         Image.Icon.fertilizer fertilizer
       ])
     | _ -> None
 
-  let private harvestedSeedsRows itemCellColSpan data item (amounts: _ Qualities) =
-    amounts
+  let private harvestedSeedsRows itemCellColSpan data item quantities =
+    quantities
     |> Qualities.indexed
-    |> Array.choose (fun (quality, amount) ->
-      seedRow itemCellColSpan (Image.Icon.itemQuality' data item quality) amount)
+    |> Array.choose (fun (quality, quantity) ->
+      seedRow itemCellColSpan (Image.Icon.itemQuality' data item quality) quantity)
 
-  let private seedMakerRows itemCellColSpan data crop item (amounts: _ Qualities) =
+  let private seedMakerRows itemCellColSpan data crop item quantities =
     let seed = Crop.seed crop
     let itemCell =
-      amounts
+      quantities
       |> Qualities.indexed
-      |> Array.map (fun (quality, amount) -> (item, quality), amount)
+      |> Array.map (fun (quality, quantity) -> (item, quality), quantity)
       |> itemCellWithInputs data (Image.Icon.seed data seed)
 
-    let seedAmount = Qualities.sum amounts * Processor.seedMakerExpectedQuantity seed
+    let seedQuantity = Processor.seedMakerExpectedQuantity seed * Qualities.sum quantities
 
-    seedRow itemCellColSpan itemCell seedAmount |> Option.toArray
+    seedRow itemCellColSpan itemCell seedQuantity |> Option.toArray
 
-  let private forageSeedsRows itemCellColSpan data settings items (seed: SeedId) amountSold amountUsed =
-    if amountSold = 0.0 && amountUsed = 0.0 then Array.empty else
+  let private forageSeedsRows itemCellColSpan data settings items seed quantitySold quantityUsed =
+    if quantitySold = 0.0 && quantityUsed = 0.0 then Array.empty else
     let itemCell = Image.Icon.seed data seed
-    let inputsCell amount =
-      let itemAmount = amount / float ForageCrop.forageSeedsPerCraft
+    let inputsCell quantity =
+      let quantity = quantity / float ForageCrop.forageSeedsPerCraft
       items
-      |> Array.map (fun item -> (item, Quality.Normal), itemAmount)
+      |> Array.map (fun item -> (item, Quality.Normal), quantity)
       |> itemCellWithInputs data itemCell
 
     let price = Game.seedItemSellPrice data settings.Game seed
     Array.collect Option.toArray [|
-      seedRow itemCellColSpan (inputsCell amountUsed) amountUsed
-      profitRow itemCellColSpan (inputsCell amountSold) (price, false) amountSold
+      seedRow itemCellColSpan (inputsCell quantityUsed) quantityUsed
+      profitRow itemCellColSpan (inputsCell quantitySold) (price, false) quantitySold
     |]
 
-  let private unsoldItemRow itemCellColSpan data (item, quantities: float Qualities) =
+  let private unsoldItemRow itemCellColSpan data (item, quantities) =
     let itemCell =
       quantities
       |> Qualities.indexed
-      |> Array.map (fun (quality, amount) -> (item, quality), amount)
+      |> Array.map (fun (quality, quantity) -> (item, quality), quantity)
       |> itemCellWithInputs data (ofStr "???")
 
     rowCells itemCellColSpan itemCell none none none none
@@ -401,7 +401,7 @@ module SummaryTable =
 
       boughtRow true itemCellColSpan summary.SeedPrice summary.SeedsBought (Image.Icon.seed data seed) |> Option.toArray
 
-      summary.SeedAmounts |> Array.collect (fun (item, quantities) ->
+      summary.SeedsUsed |> Array.collect (fun (item, quantities) ->
         if item = Crop.seedItem crop then harvestedSeedsRows itemCellColSpan data item quantities
         elif item = Crop.mainItem crop then seedMakerRows itemCellColSpan data crop item quantities
         else assert false; Array.empty)
@@ -574,9 +574,9 @@ module SummaryTable =
       profitFooter timeNorm profitSummary.TimeNormalization profitSummary.NetProfit none
     ]
 
-  let private mergeCropHarvests (solution: Solver.FertilizerDateSpan) =
-    let regrowHarvests = solution.RegrowCrop |> Option.map (fun (_, crop, harvests) -> FarmCrop crop, harvests)
-    let cropHarvests = solution.CropHarvests |> Array.map (fun (crop, harvests, _) -> crop, harvests)
+  let private mergeCropHarvests (dateSpan: Solver.FertilizerDateSpan) =
+    let regrowHarvests = dateSpan.RegrowCrop |> Option.map (fun (_, crop, harvests) -> FarmCrop crop, harvests)
+    let cropHarvests = dateSpan.CropHarvests |> Array.map (fun (crop, harvests, _) -> crop, harvests)
     regrowHarvests
     |> Option.toArray
     |> Array.append cropHarvests
@@ -598,8 +598,8 @@ module SummaryTable =
     let tooltip = profitTooltip
 
     let solver data settings total dateSpans =
-      let summaries = dateSpans |> Array.map (fun solution ->
-        mergeCropHarvests solution |> Query.Solver.profitSummary data settings solution.Fertilizer)
+      let summaries = dateSpans |> Array.map (fun dateSpan ->
+        mergeCropHarvests dateSpan |> Query.Solver.profitSummary data settings dateSpan.Fertilizer)
 
       solverProfitSummary data settings total summaries
 
@@ -665,10 +665,10 @@ module SummaryTable =
         tfoot [ totalRow 6 (round2 >> xpFloat) (Some total) none ]
       ]
 
-    let solver data settings total fertilizerSpans =
-      fertilizerSpans
-      |> Array.map (fun solution ->
-        mergeCropHarvests solution |> Query.Solver.xpSummary data settings solution.Fertilizer)
+    let solver data settings total dateSpans =
+      dateSpans
+      |> Array.map (fun dateSpan ->
+        mergeCropHarvests dateSpan |> Query.Solver.xpSummary data settings dateSpan.Fertilizer)
       |> tableSummary data total
 
 
@@ -1160,13 +1160,13 @@ let private workerQueue, private workerSubscribe =
 let private solverSummary data settings mode solution =
   fragment [
     match solution with
-    | Some (solution, total) ->
+    | Some (dateSpans, total) ->
       match mode with
-      | MaximizeGold -> SummaryTable.Profit.solver data settings total solution
-      | MaximizeXP -> SummaryTable.XP.solver data settings total solution
+      | MaximizeGold -> SummaryTable.Profit.solver data settings total dateSpans
+      | MaximizeXP -> SummaryTable.XP.solver data settings total dateSpans
       div [
         Class.calendar
-        children (solution |> Array.collect (GrowthCalendar.solver settings))
+        children (dateSpans |> Array.collect (GrowthCalendar.solver settings))
       ]
     | None -> ofStr "Loading..."
   ]

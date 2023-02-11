@@ -232,7 +232,7 @@ module Skills =
         Normal, 1.0
       |]
 
-  let forageCropHarvestAmounts skills =
+  let forageCropHarvestQuantities skills =
     let qualities = forageCropQualities skills
     if skills |> professionActive Gatherer
     then qualities |> Qualities.mult Multiplier.gatherer

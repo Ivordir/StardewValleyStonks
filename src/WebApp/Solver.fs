@@ -236,7 +236,7 @@ let private bridgeRegrowToNextSeason season days nextSeason regrowValues =
 let private createModels startSeason endSeason constraintsAndVariables fertilizerData =
   (constraintsAndVariables, fertilizerData) ||> Array.map2 (fun (constraints, variables) (fert, fertCost) ->
     let variables = Array.concat variables
-    let span = {
+    let request = {
       Start = startSeason
       Stop = endSeason
       Variables = variables |> Array.map fst
@@ -253,7 +253,7 @@ let private createModels startSeason endSeason constraintsAndVariables fertilize
         (Array.ofList constraints)
         (variables |> Array.mapi (fun i (_, var) -> i, var))
 
-    span, model)
+    request, model)
 
 let private fertilizerAndCropData data settings mode (seasons: _ array) =
   let fertilizerFilter, objectiveValue, objectiveValueWithFertilizer, regrowCropData =
@@ -361,31 +361,30 @@ let private createRequests data settings mode =
   |> Seq.concat
   |> Array.concat
 
+let private weightedIntervalSchedule (solvedRequests: (FertilizerSpanRequest * int Solution) array) =
+  let bestDownTo = Array.create (solvedRequests.Length + 1) ([], 0.0)
+  solvedRequests |> Array.sortInPlaceBy (fun (request, _) -> request.Start)
 
-let private weightedIntervalSchedule (spans: (FertilizerSpanRequest * int Solution) array) =
-  let bestDownTo = Array.create (spans.Length + 1) ([], 0.0)
-  spans |> Array.sortInPlaceBy (fun (span, _) -> span.Start)
+  for i = solvedRequests.Length - 1 downto 0 do
+    let request, solution = solvedRequests[i]
 
-  for i = spans.Length - 1 downto 0 do
-    let span, solution = spans[i]
-
-    // spans[j..] |> Array.find (fun (prev, _) -> span.Stop < prev.Start)
+    // solvedRequests[j..] |> Array.find (fun (prev, _) -> request.Stop < prev.Start)
     let mutable j = i + 1
-    while j < spans.Length && span.Stop >= (fst spans[j]).Start do
+    while j < solvedRequests.Length && request.Stop >= (fst solvedRequests[j]).Start do
       j <- j + 1
 
-    let prevSpan, prevValue = bestDownTo[j]
-    let value = solution.result - float span.FertilizerCost + prevValue
-    let span = (span, solution) :: prevSpan
+    let prev, prevValue = bestDownTo[j]
+    let value = solution.result - float request.FertilizerCost + prevValue
+    let next = (request, solution) :: prev
 
-    bestDownTo[i] <- maxBy snd bestDownTo[i + 1] (span, value)
+    bestDownTo[i] <- maxBy snd bestDownTo[i + 1] (next, value)
 
   bestDownTo[0]
 
-let private sortAndPartitionVariables vars span (solution: int Solution) =
+let private sortAndPartitionVariables vars request (solution: int Solution) =
   solution.variables
   |> Array.choose (fun (i, n) ->
-    let season, variable = span.Variables[i]
+    let season, variable = request.Variables[i]
     let cropAndOrder =
       match variable with
       | DayUsedForRegrowCrop
@@ -398,7 +397,7 @@ let private sortAndPartitionVariables vars span (solution: int Solution) =
       | PlantRegrowCropRegrowHarvests crop -> Some (FarmCrop crop, 4)
 
     cropAndOrder |> Option.map (fun (crop, order) ->
-      let growthTime = Game.growthTime vars span.Fertilizer crop
+      let growthTime = Game.growthTime vars request.Fertilizer crop
       (season, order, growthTime), (variable, nat n)))
 
   |> Array.sortBy fst
@@ -408,16 +407,16 @@ let private sortAndPartitionVariables vars span (solution: int Solution) =
     | PlantRegrowCropRegrowHarvests _ -> true
     | _ -> false)
 
-let private mapSolution (vars: GameVariables) (solution: (FertilizerSpanRequest * int Solution) list, totalValue) =
+let private toDateSpans (vars: GameVariables) (solvedRequests: (FertilizerSpanRequest * int Solution) list, totalValue) =
   let seasons = Date.seasonSpan vars.StartDate vars.EndDate
-  let solution = solution |> Seq.map (fun (span, solution) ->
-    let regrowVariables, variables = sortAndPartitionVariables vars span solution
+  let solution = solvedRequests |> Seq.map (fun (request, solution) ->
+    let regrowVariables, variables = sortAndPartitionVariables vars request solution
     let regrowCrop =
       match regrowVariables with
       | [| (season, _, _), (PlantRegrowCropFixedHarvests (crop, harvests), n) |]
       | [| (season, _, _), (PlantRegrowCropFirstHarvests (crop, harvests), n) |] ->
         assert (n = 1u)
-        Some (season - span.Start, crop, harvests)
+        Some (season - request.Start, crop, harvests)
 
       | [|
           (season, _, _), (PlantRegrowCropFirstHarvests (crop, harvests), n)
@@ -425,7 +424,7 @@ let private mapSolution (vars: GameVariables) (solution: (FertilizerSpanRequest 
         |] ->
         assert (n = 1u)
         assert (season = season2 && crop.Seed = crop2.Seed)
-        Some (season - span.Start, crop, harvests + harvests2)
+        Some (season - request.Start, crop, harvests + harvests2)
 
       | regrowVariables ->
         assert (Array.isEmpty regrowVariables)
@@ -444,11 +443,11 @@ let private mapSolution (vars: GameVariables) (solution: (FertilizerSpanRequest 
     let startDate, endDate =
       if vars.Location = Farm then
         {
-          Season = seasons[span.Start]
-          Day = if span.Start = 0 then vars.StartDate.Day else Date.firstDay
+          Season = seasons[request.Start]
+          Day = if request.Start = 0 then vars.StartDate.Day else Date.firstDay
         }, {
-          Season = seasons[span.Stop]
-          Day = if span.Stop = seasons.Length - 1 then vars.EndDate.Day else Date.lastDay
+          Season = seasons[request.Stop]
+          Day = if request.Stop = seasons.Length - 1 then vars.EndDate.Day else Date.lastDay
         }
       else
         vars.StartDate, vars.EndDate
@@ -456,7 +455,7 @@ let private mapSolution (vars: GameVariables) (solution: (FertilizerSpanRequest 
     {
       StartDate = startDate
       EndDate = endDate
-      Fertilizer = span.Fertilizer
+      Fertilizer = request.Fertilizer
       CropHarvests = cropHarvests
       RegrowCrop = regrowCrop
     })
@@ -476,8 +475,8 @@ let createWorker () =
   let mutable nextRequest = None
 
   let postWorker data settings mode =
-    let spans, models = Array.unzip (createRequests data settings mode)
-    inProgressRequest <- Some (settings, spans)
+    let requests, models = Array.unzip (createRequests data settings mode)
+    inProgressRequest <- Some (settings, requests)
     worker.postMessage (models: Worker.Input)
 
   let queue data settings mode =
@@ -488,7 +487,7 @@ let createWorker () =
   let subscribe dispatch =
     worker.onmessage <- (fun e ->
       match e.data, inProgressRequest with
-      | :? Worker.Output as solutions, Some (settings, spans) ->
+      | :? Worker.Output as solutions, Some (settings, requests) ->
         match nextRequest with
         | Some (data, settings, mode) ->
           // old request finished solving, ignore and send most recent request to worker
@@ -499,14 +498,14 @@ let createWorker () =
           inProgressRequest <- None
 
           solutions
-          |> Array.zip spans
-          |> Array.filter (fun (span, solution) ->
+          |> Array.zip requests
+          |> Array.filter (fun (request, solution) ->
             // The nature of the problem should prevent unbounded solutions.
             // Also, only spans with multiple seasons should be able to be infeasible.
-            assert (solution.status = Optimal || (solution.status = Infeasible && span.Start <> span.Stop))
+            assert (solution.status = Optimal || (solution.status = Infeasible && request.Start <> request.Stop))
             solution.status = Optimal)
           |> weightedIntervalSchedule
-          |> mapSolution settings.Game
+          |> toDateSpans settings.Game
           |> dispatch
 
       | _ -> assert false)
