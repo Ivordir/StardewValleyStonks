@@ -297,6 +297,16 @@ let fertilizerCost data settings fertilizer =
 
 let fertilizerCostOpt data settings = Option.defaultOrMap (Some 0u) (fertilizerCost data settings)
 
+let private fertilizerRelevantVendorAndPrice data settings fertilizer =
+  match fertilizer with
+  | None -> None
+  | Some _ when not settings.Profit.PayForFertilizer -> None
+  | Some fertilizer ->
+    fertilizer
+    |> Fertilizer.name
+    |> Price.fertilizerMinVendorAndPrice data settings
+    |> Some
+
 [<System.Flags>]
 type InvalidReasons =
   | None              = 0b0000
@@ -1134,22 +1144,16 @@ module Ranker =
     | XP -> xp
 
   let profitSummary data settings timeNormalization fertilizer crop =
-    let harvestsSummary =
-      match settings.Profit.SeedStrategy with
-      | IgnoreSeeds -> ProfitSummary.ignoreSeeds
-      | StockpileSeeds -> ProfitSummary.stockpileSeeds
-      | BuyFirstSeed -> ProfitSummary.buyFirstSeed
-
     bestGrowthSpan settings.Game fertilizer crop |> Option.map (fun span ->
-      let fertilizerVendorAndPrice, fertCost =
-        match fertilizer with
-        | None -> None, Some 0u
-        | Some _ when not settings.Profit.PayForFertilizer -> None, Some 0u
-        | Some fertilizer ->
-          let vendorAndPrice = fertilizer |> Fertilizer.name |> Price.fertilizerMinVendorAndPrice data settings
-          Some vendorAndPrice, vendorAndPrice |> Option.map snd
+      let fertilizerVendorAndPrice = fertilizerRelevantVendorAndPrice data settings fertilizer
+      let fertCost = fertilizerVendorAndPrice |> Option.flatten |> Option.map snd
 
-      let summary = harvestsSummary data settings fertCost fertilizer true crop span.Harvests
+      let summary =
+        match settings.Profit.SeedStrategy with
+        | IgnoreSeeds -> ProfitSummary.ignoreSeeds data settings fertCost fertilizer true crop span.Harvests
+        | StockpileSeeds -> ProfitSummary.stockpileSeeds data settings fertCost fertilizer true crop span.Harvests
+        | BuyFirstSeed -> ProfitSummary.buyFirstSeed data settings fertCost fertilizer true crop span.Harvests
+
       let net = (summary.NetProfit, fertCost) ||> Option.map2 (fun profit fertCost -> profit - float fertCost)
 
       {
@@ -1184,13 +1188,8 @@ module Solver =
   let regrowCropXpData = XP.regrowCropXpData
 
   let profitSummary data settings fertilizer cropHarvests =
-    let fertilizerVendorAndPrice, fertCost =
-      match fertilizer with
-      | None -> None, Some 0u
-      | Some _ when not settings.Profit.PayForFertilizer -> None, Some 0u
-      | Some fertilizer ->
-        let vendorAndPrice = fertilizer |> Fertilizer.name |> Price.fertilizerMinVendorAndPrice data settings
-        Some vendorAndPrice, vendorAndPrice |> Option.map snd
+    let fertilizerVendorAndPrice = fertilizerRelevantVendorAndPrice data settings fertilizer
+    let fertCost = fertilizerVendorAndPrice |> Option.flatten |> Option.map snd
 
     let harvestSummary =
       match settings.Profit.SeedStrategy with
