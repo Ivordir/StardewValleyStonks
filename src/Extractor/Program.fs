@@ -1,4 +1,4 @@
-module StardewValleyStonks.Extractor
+﻿module StardewValleyStonks.Extractor
 
 open System.IO
 open Thoth.Json.Net
@@ -101,7 +101,9 @@ module Decode =
         ForageCropData =
           field
             (nameof u.ForageCropData)
-            (Decode.tableParse (Season.TryParse >> function true, s -> Some s | _ -> None) (Decode.Auto.generateDecoder ()))
+            (Decode.tableParse
+              (Season.TryParse >> function true, s -> Some s | _ -> None)
+              (Decode.Auto.generateDecoder ()))
         DataOutputPath = field (nameof u.DataOutputPath) Decode.string
         CropImageOutputPath = field (nameof u.CropImageOutputPath) Decode.string
         ItemImageOutputPath = field (nameof u.ItemImageOutputPath) Decode.string
@@ -131,15 +133,15 @@ let parseItem overrrides itemData itemId =
     let splitted = str.Split '/'
     if splitted.Length < 5 then failwith $"Unexpected item data format for item {itemId}: {str}"
 
-    let o = overrrides |> Table.tryFind itemId |> Option.defaultValue ItemOverride.none
+    let overrides = overrrides |> Table.tryFind itemId |> Option.defaultValue ItemOverride.none
 
     let sellPrice =
-      match o.SellPrice with
+      match overrides.SellPrice with
       | Some price -> price
       | None -> nat splitted[1]
 
     let category =
-      match o.Category with
+      match overrides.Category with
       | Some category -> category
       | None ->
         match splitted[3] with
@@ -242,7 +244,8 @@ let parseCrop farmCropOverrides forageCropData seedId (data: string) =
         | Some data -> data
         | None -> failwith $"No data was provided for {Season.name season} Forage in the config."
 
-      if data.Items[0] <> itemId then failwith "The main item provided for {Season.name season} Forage does not match {itemId}."
+      if data.Items[0] <> itemId then
+        failwith "The main item provided for {Season.name season} Forage does not match {itemId}."
 
       ForageCrop {
         Season = season
@@ -286,7 +289,7 @@ let saveSubTexture name graphics x y width height (texture: Texture2D) =
   use file = File.OpenWrite (name + ".png")
   subtexture.SaveAsPng (file, width, height)
 
-let saveStageImages graphics outputPath cropSpriteSheet crop (spriteSheetRow: uint) =
+let saveStageImages graphics outputPath cropSpriteSheet crop spriteSheetRow =
   let path = Path.Combine (outputPath, string (Crop.seed crop))
   Directory.CreateDirectory path |> ignore
 
@@ -367,7 +370,11 @@ let main args =
     (tryLoad (name + " data") path: Dictionary<int,_>)
     |> Seq.map (fun (KeyValue (k, v)) -> k |> nat |> convertUnit, v)
 
-  let cropData = tryLoadData "crop" cropDataPath |> Seq.filter (fst >> config.SkipCrops.Contains >> not) |> Array.ofSeq
+  let cropData =
+    tryLoadData "crop" cropDataPath
+    |> Seq.filter (fst >> config.SkipCrops.Contains >> not)
+    |> Array.ofSeq
+
   let itemData = tryLoadData "item" itemDataPath |> Table.ofSeq
 
   let inline tryLoadSpriteSheet name path: Texture2D = tryLoad (name + " spritesheet") path
@@ -381,7 +388,7 @@ let main args =
 
   let items =
     [|
-      config.Products.Values |> Seq.collect (Seq.map (fun p -> p.Item))
+      config.Products.Values |> Seq.collect (Seq.map ProcessedItem.item)
       crops |> Seq.collect (snd >> Crop.items)
       crops |> Seq.map (snd >> Crop.seedItem)
     |]
@@ -402,7 +409,8 @@ let main args =
 
   try
     Directory.CreateDirectory config.CropImageOutputPath |> ignore
-    crops |> Array.iter (fun (spriteSheetRow, crop) -> saveStageImages graphics config.CropImageOutputPath cropSpriteSheet crop spriteSheetRow)
+    crops |> Array.iter (fun (spriteSheetRow, crop) ->
+      saveStageImages graphics config.CropImageOutputPath cropSpriteSheet crop spriteSheetRow)
   with _ -> printfn "Error writing the crop images."; reraise ()
 
   let dataStr =
