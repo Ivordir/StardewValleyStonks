@@ -232,7 +232,11 @@ module Decode =
       {
         MinCropYield = field (nameof u.MinCropYield) Decode.uint32 CropAmount.singleAmount.MinCropYield
         MaxCropYield = field (nameof u.MaxCropYield) Decode.uint32 CropAmount.singleAmount.MaxCropYield
-        FarmLevelsPerYieldIncrease = field (nameof u.FarmLevelsPerYieldIncrease) Decode.uint32 CropAmount.singleAmount.FarmLevelsPerYieldIncrease
+        FarmLevelsPerYieldIncrease =
+          field
+            (nameof u.FarmLevelsPerYieldIncrease)
+            Decode.uint32
+            CropAmount.singleAmount.FarmLevelsPerYieldIncrease
         ExtraCropChance = field (nameof u.ExtraCropChance) Decode.float CropAmount.singleAmount.ExtraCropChance
         CanDouble = field (nameof u.CanDouble) Decode.bool CropAmount.singleAmount.CanDouble
         FarmingQualities = field (nameof u.FarmingQualities) Decode.bool CropAmount.singleAmount.FarmingQualities

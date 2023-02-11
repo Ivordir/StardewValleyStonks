@@ -35,7 +35,7 @@ module Skills =
 
   let private qualityClasses = Enum.values |> Array.map (Quality.name >> lowerCase >> className)
 
-  let cropQualities (qualities: float Qualities) =
+  let cropQualities qualities =
     let qualities = Qualities.toArray qualities
     let mapQualities (text: _ -> ReactElement) =
       (qualityClasses, qualities) ||> Array.map2 (fun class' prob ->
@@ -132,13 +132,15 @@ let custom
   key
   dispatch
   =
+  let value = selection.Values.TryFind key
+
   fragment [
-    let value = selection.Values.TryFind key
-    match value with
-    | Some value ->
-      checkbox (selection.Selected.Contains key) (curry SetSelected key >> SelectCustom >> dispatch)
-      viewValue value
-    | None -> none
+    value |> ofOption (fun value ->
+      fragment [
+        checkbox (selection.Selected.Contains key) (curry SetSelected key >> SelectCustom >> dispatch)
+        viewValue value
+      ])
+
     Dialog.toggleEdit
       title
       (if value.IsSome then "Edit" else "Add")
@@ -182,7 +184,8 @@ module Crops =
     sortTable [
       Column.header (columnCheckbox (crops |> Seq.map Crop.seed |> Set.ofSeq) settings.Selected.Crops selectDispatch)
       ofStr "Crop" |> Column.withSort (compareBy (Crop.name data.Items.Find))
-      ofStr "Lowest Seed Price" |> Column.withSort (Option.noneMaxCompareBy (Crop.seed >> Query.Price.seedMinPrice data settings))
+      ofStr "Lowest Seed Price"
+      |> Column.withSort (Option.noneMaxCompareBy (Crop.seed >> Query.Price.seedMinPrice data settings))
       ofStr "Growth Time" |> Column.withSort (compareBy (Game.growthTime settings.Game None))
       ofStr "Regrow Time" |> Column.withSort (Option.noneMaxCompareBy Crop.regrowTime)
       ofStr "Seasons" |> Column.withSort (fun c1 c2 ->
@@ -220,8 +223,7 @@ module Crops =
   let private productsItemRow data settings quality showNormalizedPrices dispatch mainCrop forage seed item =
     tr [
       td [
-        if not mainCrop then
-          ofStr "|__"
+        if not mainCrop then ofStr "|__"
         Image.Icon.item' data item
       ]
       td [
@@ -653,8 +655,6 @@ module Fertilizers =
     let uiDispatch = SetUI >> dispatch
     let dispatch = SetSettings >> dispatch
     let selectDispatch = SetSelections >> dispatch
-
-    let fertilizerVendors = fertilizerVendors data
     let keys = Set.ofSeq data.Fertilizers.Keys
 
     animatedDetails
@@ -679,7 +679,7 @@ module Fertilizers =
         sortTable [
           ofStr "Fertilizer" |> Column.withSort (compareBy Fertilizer.name)
 
-          yield! fertilizerVendors |> Array.map (fun vendor ->
+          yield! fertilizerVendors data |> Array.map (fun vendor ->
             Column.withSort
               (Option.noneMaxCompareBy (Fertilizer.name >> data.FertilizerPrices.Find >> Table.tryFind vendor))
               (fragment [
@@ -706,7 +706,7 @@ module Fertilizers =
             let name = fert.Name
             tr [ key (string name); children [
               td (Image.Icon.fertilizer fert)
-              fragment (fertilizerVendors |> Array.map (fun vendor ->
+              fragment (fertilizerVendors data |> Array.map (fun vendor ->
                 td (data.FertilizerPrices[name].TryFind vendor |> ofOption (fun price ->
                   fragment [
                     checkbox
@@ -944,7 +944,10 @@ module LoadSave =
         ])
 
   let nuclearReset dispatch =
-    Dialog.confirmAction "Nuclear Reset" "Nuclear Reset" (fun () -> dispatch NuclearReset)
+    Dialog.confirmAction
+      "Nuclear Reset"
+      "Nuclear Reset"
+      (fun () -> dispatch NuclearReset)
       (p "Note: This will reset Stardew Valley Stonks to its default settings, deleting all custom presets in the process.")
 
   let tab app dispatch =

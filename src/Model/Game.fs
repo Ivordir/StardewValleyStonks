@@ -17,7 +17,8 @@ type SupplementalData = {
   ProcessorUnlockLevel: Table<Processor, nat>
 }
 
-// The model type for all of Stardew Valley's relevant game data/content. (I.e., this does not include save game data.)
+// The model type for all of Stardew Valley's relevant game data/content.
+// (I.e., this does not include save game data.)
 type GameData = {
   Fertilizers: Table<FertilizerName, Fertilizer>
   FertilizerPrices: Table<FertilizerName, Table<Vendor, nat>>

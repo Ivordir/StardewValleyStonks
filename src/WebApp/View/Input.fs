@@ -72,7 +72,7 @@ let [<ReactComponent>] private NumberInput (props: {|
       | _ -> ())
   ]
 
-let natWith width (min: nat option) (max: nat option) (value: nat) dispatch =
+let natWith width min max (value: nat) dispatch =
   NumberInput {|
     Width = width
     Min = min |> Option.defaultValue System.UInt32.MinValue |> float |> Some
@@ -85,7 +85,7 @@ let natWith width (min: nat option) (max: nat option) (value: nat) dispatch =
 let inline nat width value dispatch =
   natWith width None None value dispatch
 
-let floatWith width precision min max (value: float) dispatch =
+let floatWith width precision min max value dispatch =
   NumberInput {|
     Width = width
     Min = min

@@ -62,7 +62,7 @@ do
   let borderWidth fontPx divisor = $"{fontPx / float divisor |> ceil}px"
 
   let root = Browser.Dom.document.documentElement
-  let fontSize: string = Browser.Dom.window?getComputedStyle(root)?getPropertyValue("font-size")
+  let fontSize = Browser.Dom.window?getComputedStyle(root)?getPropertyValue("font-size")
   let fontPx = pxToFloat fontSize
   root?style?setProperty("--font-size", fontSize)
   root?style?setProperty("--eighth-border", borderWidth fontPx 8)

@@ -153,9 +153,9 @@ type Selections = {
 
 [<RequireQualifiedAccess>]
 module Selections =
-  let private ensureMapEntries keys (map: Map<_,_>) =
+  let private ensureMapEntries keys map =
     keys
-    |> Seq.map (fun key -> key, map.TryFind key |> Option.defaultValue Set.empty)
+    |> Seq.map (fun key -> key, map |> Map.tryFind key |> Option.defaultValue Set.empty)
     |> Map.ofSeq
 
   let ensureEntries (data: GameData) (selected: Selections) = {
@@ -171,7 +171,7 @@ module Selections =
     |> Seq.map (fun (key, table) -> key, table |> Table.keys |> Set.ofSeq)
     |> Map.ofSeq
 
-  let createAllSelected (data: GameData) =
+  let createAllSelected data =
     let seedItemPairs = GameData.seedItemPairs data
     let forageCrops = Set.ofSeq data.ForageCrops.Keys
     {

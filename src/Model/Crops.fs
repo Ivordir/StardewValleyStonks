@@ -292,7 +292,7 @@ module Growth =
   let stagesAndTime speedBonus stages =
     let total = Array.sum stages
     let stages = Array.copy stages
-    let mutable daysToReduce = (fround speedBonus) * (float total) |> ceil |> nat
+    let mutable daysToReduce = (fround speedBonus * float total) |> ceil |> nat
     let mutable daysReduced = 0u
     let mutable traverses = 0u
 
@@ -328,8 +328,8 @@ module Growth =
 
   let daysNeededFor regrowTime growthTime harvests =
     match regrowTime with
-    | Some time -> growthTime + (harvests - 1u) * time
-    | None -> harvests * growthTime
+    | Some time -> growthTime + time * (harvests - 1u)
+    | None -> growthTime * harvests
 
 
 type FarmCrop = {

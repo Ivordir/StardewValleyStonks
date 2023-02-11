@@ -326,7 +326,6 @@ let ui msg ui =
   | SetFertilizerSort (col, asc) -> { ui with FertilizerSort = col, asc }
   | SetFertilizerPriceSort (col, asc) -> { ui with FertilizerPriceSort = col, asc }
 
-
 let state msg data (oldSettings, oldUI) =
   match msg with
   | SetSettings msg -> oldSettings |> settings data msg, oldUI

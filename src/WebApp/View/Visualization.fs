@@ -22,14 +22,10 @@ let noHarvestsMessage settings crop =
 
 let invalidReasons settings crop (reasons: Query.InvalidReasons) =
   div [
-    if reasons.HasFlag Query.InvalidReasons.NotEnoughDays then
-      noHarvestsMessage settings crop
-    if reasons.HasFlag Query.InvalidReasons.NoFertilizerPrice then
-      ofStr "No fertilizer price!"
-    if reasons.HasFlag Query.InvalidReasons.NotEnoughSeeds then
-      ofStr "No seed source!"
-    if reasons.HasFlag Query.InvalidReasons.NoInvestment then
-      ofStr "No investment!"
+    if reasons.HasFlag Query.InvalidReasons.NotEnoughDays then noHarvestsMessage settings crop
+    if reasons.HasFlag Query.InvalidReasons.NoFertilizerPrice then ofStr "No fertilizer price!"
+    if reasons.HasFlag Query.InvalidReasons.NotEnoughSeeds then ofStr "No seed source!"
+    if reasons.HasFlag Query.InvalidReasons.NoInvestment then ofStr "No investment!"
   ]
 
 
@@ -71,12 +67,14 @@ module GrowthCalendar =
       else [| Date.totalDays span.StartDate span.EndDate |]
 
     let season, remainingDays, stageList =
-      span.RegrowCrop |> Option.defaultOrMap
+      span.RegrowCrop
+      |> Option.defaultOrMap
         (days.Length - 1, Array.last days, stageList)
         (regrowCropCalendarDays settings days span.Fertilizer stageList)
 
     let season, days, stageList =
-      (span.CropHarvests, (season, int remainingDays, stageList)) ||> Array.foldBack (fun (crop, harvests, bridgeCrop) (season, remainingDays, stageList) ->
+      (span.CropHarvests, (season, int remainingDays, stageList))
+      ||> Array.foldBack (fun (crop, harvests, bridgeCrop) (season, remainingDays, stageList) ->
         let seed = Crop.seed crop
         let stages, time = Game.growthTimeAndStages settings.Game span.Fertilizer crop
         let stageImages = stageImages stages seed
@@ -177,13 +175,13 @@ let private fertilizerAndCropHarvests data fertilizer crop =
   ]
 
 module SummaryTable =
-  let private toPrecision (value: float) =
+  let private toPrecision value =
     let rounded = round2 value
     if rounded = 0.0
     then sprintf "%.2e" value
     else float2 rounded
 
-  let private keyValueRowWithOperation (operation: string option) (key: string) (valueCell: ReactElement) =
+  let private keyValueRowWithOperation operation key (valueCell: ReactElement) =
     tr [
       td (key + ":")
       td (operation |> ofOption ofStr)

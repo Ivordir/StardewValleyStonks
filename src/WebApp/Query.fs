@@ -98,7 +98,7 @@ let cropItemsHighestCustomPrice data crop quality = crop |> itemsHighest (fun it
 
 module Selected =
   let private mapSelected (table: Table<_,_>) selected = selected |> Seq.map table.Find
-  let private mapSelectedPrices (prices: Table<_,_>) selected = selected |> Seq.map (fun vendor -> vendor, prices[vendor])
+  let private mapSelectedPrices prices selected = selected |> Seq.map (fun vendor -> vendor, prices |> Table.find vendor)
 
   let fertilizers data settings = settings.Selected.Fertilizers |> mapSelected data.Fertilizers
 
@@ -665,7 +665,7 @@ module private Profit =
       let fertCost = fertilizerCostOpt data settings (Fertilizer.Opt.name fertilizer)
       match growthSpan, seedPriceAndProfit, fertCost with
       | Some span, Some (seedPrice, profit), Some fertCost ->
-        let replacementCost = float fertCost * float (span.Harvests - 1u) * replacedFertilizerPerHarvest settings crop
+        let replacementCost = float fertCost * replacedFertilizerPerHarvest settings crop * float (span.Harvests - 1u)
         let divisor = timeNormalizationDivisor span crop timeNormalization
         let profit = profit fertilizer span.Harvests
         let investment = seedPrice + fertCost

@@ -23,7 +23,7 @@ let inline ofInt (i: int) = Html.text i
 let inline ofFloat (x: float) = Html.text x
 
 let round2 (x: float) = System.Math.Round (x, 2)
-let float2 = sprintf "%.2f"
+let float2 value = sprintf "%.2f" value
 
 let gold (g: nat) = string g + "g"
 let gold2 = sprintf "%.2fg"

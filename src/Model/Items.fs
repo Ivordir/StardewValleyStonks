@@ -80,7 +80,7 @@ module Item =
     |> withMultiplier multiplier
     |> max 1u
 
-  let internal priceCalc multiplier basePrice (quality: Quality) =
+  let internal priceCalc multiplier basePrice quality =
     if basePrice = 0u then 0u else
     basePrice |> sellPriceAfterMultipliers Qualities.multipliers[quality] multiplier
 
