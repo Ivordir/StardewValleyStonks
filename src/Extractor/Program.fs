@@ -1,4 +1,4 @@
-﻿module StardewValleyStonks.Extractor
+module StardewValleyStonks.Extractor
 
 open System.IO
 open Thoth.Json.Net
@@ -163,6 +163,44 @@ let parseItem overrrides itemData itemId =
       Category = category
     }
 
+let parseCropAmount seedId overrides scythe (cropAmount: string) =
+  match cropAmount.Split ' ' with
+  | [| "false" |] ->
+    match overrides with
+    | None -> CropAmount.singleAmount
+    | Some overrides ->
+      let amount = CropAmount.singleAmount
+      { amount with
+          CanDouble = overrides.CanDouble |> Option.defaultValue amount.CanDouble
+          FarmingQualities = overrides.FarmingDistribution |> Option.defaultValue amount.FarmingQualities
+      }
+
+  | [| "true"; minHarvest; maxHarvest; increasePerLevel; extraChance |] ->
+    let overrides = overrides |> Option.defaultValue CropAmountOverride.none
+
+    let minHarvest = uint minHarvest
+    if minHarvest < CropAmount.minYield then
+      failwith $"The minimum harvest for crop {seedId} was below {CropAmount.minYield}."
+
+    let maxHarvest = uint maxHarvest
+    if minHarvest > maxHarvest then
+      failwith $"The min harvest ({minHarvest}) was greater than the max harvest ({maxHarvest}) for crop {seedId}."
+
+    let extraChance = float extraChance
+    if extraChance < CropAmount.minExtraCropChance || CropAmount.maxExtraCropChance < extraChance then
+      failwith $"The extra crop chance for crop {seedId} was not in the range [{CropAmount.minExtraCropChance}, {CropAmount.maxExtraCropChance}]."
+    {
+      MinCropYield = minHarvest
+      MaxCropYield = maxHarvest
+      FarmLevelsPerYieldIncrease = uint increasePerLevel
+      ExtraCropChance = extraChance
+      CanDouble = overrides.CanDouble |> Option.defaultValue scythe
+      FarmingQualities = overrides.FarmingDistribution |> Option.defaultValue true
+    }
+
+  | _ -> failwith $"Unexpected crop amount format for crop {seedId}: {cropAmount}"
+
+
 let parseCrop farmCropOverrides forageCropData seedId (data: string) =
   match data.Split '/' with
   | [| growthStages; seasons; spriteSheetRow; itemId; regrowTime; scythe; cropAmount; _; _ |] ->
@@ -223,37 +261,7 @@ let parseCrop farmCropOverrides forageCropData seedId (data: string) =
         | "1" -> true
         | str -> failwith $"Unexpected scythe value for crop {seedId}: {str}"
 
-      let cropAmount =
-        match cropAmount.Split ' ' with
-        | [| "false" |] ->
-          match overrides.Amount with
-          | None -> CropAmount.singleAmount
-          | Some o ->
-            let amount = CropAmount.singleAmount
-            { amount with
-                CanDouble = o.CanDouble |> Option.defaultValue amount.CanDouble
-                FarmingQualities = o.FarmingDistribution |> Option.defaultValue amount.FarmingQualities
-            }
-
-        | [| "true"; minHarvest; maxHarvest; increasePerLevel; extraChance |] ->
-          let o = overrides.Amount |> Option.defaultValue CropAmountOverride.none
-          let minHarvest = uint minHarvest
-          if minHarvest < CropAmount.minYield then failwith $"The minimum harvest for crop {seedId} was below {CropAmount.minYield}."
-          let maxHarvest = uint maxHarvest
-          if minHarvest > maxHarvest then failwith $"The min harvest ({minHarvest}) was greater than the max harvest ({maxHarvest}) for crop {seedId}."
-          let extraChance = float extraChance
-          if extraChance < CropAmount.minExtraCropChance || CropAmount.maxExtraCropChance < extraChance then
-            failwith $"The extra crop chance for crop {seedId} was not in the range [{CropAmount.minExtraCropChance}, {CropAmount.maxExtraCropChance}]."
-          {
-            MinCropYield = minHarvest
-            MaxCropYield = maxHarvest
-            FarmLevelsPerYieldIncrease = uint increasePerLevel
-            ExtraCropChance = extraChance
-            CanDouble = o.CanDouble |> Option.defaultValue scythe
-            FarmingQualities = o.FarmingDistribution |> Option.defaultValue true
-          }
-
-        | _ -> failwith $"Unexpected crop amount format for crop {seedId}: {cropAmount}"
+      let cropAmount = parseCropAmount seedId overrides.Amount scythe cropAmount
 
       FarmCrop {
         Seasons = overrides.Seasons |> Option.defaultValue seasons
