@@ -348,20 +348,19 @@ let private createRequests data settings mode =
 
     nextSeasonModels totalDays nextSeason endSeason regrowCropsVars regrowValues constraintsAndVariables models
 
-  [
-    for endSeason = seasons.Length - 1 downto 0 do
-      let startingConstraints = [
-        string endSeason <== float (days[endSeason] - 1u)
-        EndingCrop <== 1.0
-      ]
+  Array.init seasons.Length (fun endSeason ->
+    let startingConstraints = [
+      string endSeason <== float (days[endSeason] - 1u)
+      EndingCrop <== 1.0
+    ]
 
-      let constraintsAndVariables = fertilizerData |> Array.map (fun (fert, fertCost) ->
-        startingConstraints, [ unreplacedFertilizerVariables settings endSeason (fert, fertCost) cropData[endSeason] ])
+    let constraintsAndVariables = fertilizerData |> Array.map (fun (fert, fertCost) ->
+      startingConstraints, [ unreplacedFertilizerVariables settings endSeason (fert, fertCost) cropData[endSeason] ])
 
-      nextSeasonModels 0u endSeason endSeason regrowCropData[endSeason] [| EndingCrop, 1.0 |] constraintsAndVariables []
-  ]
+    nextSeasonModels 0u endSeason endSeason regrowCropData[endSeason] [| EndingCrop, 1.0 |] constraintsAndVariables [])
   |> Seq.concat
   |> Array.concat
+
 
 let private weightedIntervalSchedule (spans: (FertilizerSpanRequest * int Solution) array) =
   let bestDownTo = Array.create (spans.Length + 1) ([], 0.0)
