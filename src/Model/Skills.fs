@@ -83,6 +83,10 @@ module Qualities =
   let inline updateQuality (quality: Quality) value qualities =
     qualities |> unwrap |> Array.updateAt (int quality) value |> ByQuality
 
+  let inline addNormal value qualities =
+    let value = value + (qualities |> item Quality.Normal)
+    qualities |> updateQuality Quality.Normal value
+
   let inline map mapping qualities = qualities |> unwrap |> Array.map mapping |> ByQuality
   let inline map2 mapping a b = Array.map2 mapping (unwrap a) (unwrap b) |> ByQuality
 

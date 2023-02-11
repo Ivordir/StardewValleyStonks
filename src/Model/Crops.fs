@@ -210,8 +210,8 @@ module CropAmount =
     let amount = expectedAmount skills settings cropAmount
     // Only the first harvested crop can be of higher quality
     if cropAmount.FarmingQualities
-    then farmingQualities |> Qualities.updateQuality Normal (amount - 1.0 + farmingQualities[Normal])
-    else Qualities.zero |> Qualities.updateQuality Normal amount
+    then farmingQualities |> Qualities.addNormal (amount - 1.0)
+    else Qualities.zero |> Qualities.addNormal amount
 
   let expectedGiantCropsFromShaving (shavingToolLevel: ToolLevel) =
     let damage = float (int shavingToolLevel / 2 + 1)
@@ -236,8 +236,9 @@ module CropAmount =
   let expectedGiantAmountByQuality skills settings amount farmingQualities =
     let noGiantProb = noGiantCropProb settings
     let expectedGiant = (1.0 - noGiantProb) * expectedGiantCropYield settings
-    let farmingAmounts = expectedAmountByQuality skills settings amount farmingQualities |> Qualities.mult noGiantProb
-    farmingAmounts |> Qualities.updateQuality Normal (expectedGiant + farmingAmounts[Normal])
+    expectedAmountByQuality skills settings amount farmingQualities
+    |> Qualities.mult noGiantProb
+    |> Qualities.addNormal expectedGiant
 
 
 type SeedPrice =
