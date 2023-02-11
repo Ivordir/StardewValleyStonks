@@ -255,7 +255,7 @@ let private createModels startSeason endSeason constraintsAndVariables fertilize
 
     span, model)
 
-let private fertilizerSpans data settings mode =
+let private fertilizerAndCropData data settings mode (seasons: _ array) =
   let fertilizerFilter, objectiveValue, objectiveValueWithFertilizer, regrowCropData =
     match mode with
     | MaximizeGold ->
@@ -269,14 +269,6 @@ let private fertilizerSpans data settings mode =
       (fun _ data fertilizer _ -> data fertilizer),
       Query.Solver.nonRegrowCropXpPerHarvest data settings >> Option.map konst,
       Query.Solver.regrowCropXpData data settings >> Option.map konst
-
-  let seasons, days =
-    if settings.Game.Location = Farm then
-      Date.seasonSpan settings.Game.StartDate settings.Game.EndDate,
-      Date.daySpan settings.Game.StartDate settings.Game.EndDate
-    else
-      [| settings.Game.StartDate.Season |],
-      [| Date.totalDays settings.Game.StartDate settings.Game.EndDate |]
 
   let fertilizerData =
     Query.Selected.fertilizersOpt data settings
@@ -313,15 +305,32 @@ let private fertilizerSpans data settings mode =
     else
       [| regrowCropData |]
 
+  fertilizerData, cropData, regrowCropData, objectiveValue
+
+
+let private createRequests data settings mode =
+  let seasons, days =
+    if settings.Game.Location = Farm then
+      Date.seasonSpan settings.Game.StartDate settings.Game.EndDate,
+      Date.daySpan settings.Game.StartDate settings.Game.EndDate
+    else
+      [| settings.Game.StartDate.Season |],
+      [| Date.totalDays settings.Game.StartDate settings.Game.EndDate |]
+
+  let fertilizerData, cropData, regrowCropData, objectiveValue =
+    fertilizerAndCropData data settings mode seasons
+
   let rec nextSeasonModels prevDays startSeason endSeason regrowCropVars regrowValues constraintsAndVariables models =
     let totalDays = prevDays + days[startSeason]
     let regularCropVars = cropData[startSeason]
 
-    let constraintsAndVariables = (constraintsAndVariables, fertilizerData) ||> Array.mapi2 (fun fertIndex (constraints, variables) (fert, fertCost) ->
-      let regularVars = regularCropVariables settings objectiveValue startSeason (fert, fertCost) regularCropVars
-      let constraints, regrowVars = regrowVariablesAndConstraints settings startSeason prevDays totalDays fertIndex fert regrowValues constraints regrowCropVars
-      let variables = regularVars :: regrowVars :: variables
-      constraints, variables)
+    let constraintsAndVariables =
+      (constraintsAndVariables, fertilizerData)
+      ||> Array.mapi2 (fun fertIndex (constraints, variables) (fert, fertCost) ->
+        let regularVars = regularCropVariables settings objectiveValue startSeason (fert, fertCost) regularCropVars
+        let constraints, regrowVars = regrowVariablesAndConstraints settings startSeason prevDays totalDays fertIndex fert regrowValues constraints regrowCropVars
+        let variables = regularVars :: regrowVars :: variables
+        constraints, variables)
 
     let models = createModels startSeason endSeason constraintsAndVariables fertilizerData :: models
 
@@ -468,7 +477,7 @@ let createWorker () =
   let mutable nextRequest = None
 
   let postWorker data settings mode =
-    let spans, models = Array.unzip (fertilizerSpans data settings mode)
+    let spans, models = Array.unzip (createRequests data settings mode)
     inProgressRequest <- Some (settings, spans)
     worker.postMessage (models: Worker.Input)
 
