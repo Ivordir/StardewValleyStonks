@@ -210,9 +210,9 @@ module SummaryTable =
     let investment, roi = profitSummary.InvestmentAndROI (settings.Profit.SeedStrategy = BuyFirstSeed)
 
     dl [
-        keyValue "Investment" (investment |> Option.defaultOrMap "???" gold |> ofStr)
-        keyValue "ROI" (roi |> Option.defaultOrMap "???" percent2 |> ofStr)
-        normalizationRows "ROI" percent2 timeNorm profitSummary.TimeNormalization roi
+      keyValue "Investment" (investment |> Option.defaultOrMap "???" gold |> ofStr)
+      keyValue "ROI" (roi |> Option.defaultOrMap "???" percent2 |> ofStr)
+      normalizationRows "ROI" percent2 timeNorm profitSummary.TimeNormalization roi
     ]
 
   let private rowCells
@@ -435,8 +435,8 @@ module SummaryTable =
 
       if timeNorm = TotalPeriod || normDivisor = 1.0 then none else
         tr [
-          td [ colSpan 4 ]
-          td $"/ {formatNormalizationDivisor timeNorm normDivisor}"
+          td [ colSpan 4; text (TimeNormalization.unit timeNorm |> pluralize |> upperFirstChar) ]
+          td $"{formatNormalizationDivisor timeNorm normDivisor}"
         ]
         tr [
           td [ colSpan 4; text $"Total {timeNorm |> string |> lowerCase}" ]
