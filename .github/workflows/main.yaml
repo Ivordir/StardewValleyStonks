@@ -14,7 +14,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - uses: docker://pandoc/core
 
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v2
@@ -33,6 +32,7 @@ jobs:
         run_install: true
 
     - name: Build App
+      uses: docker://pandoc/core
       run: pnpm build
 
     - name: Deploy to Github Pages
