@@ -707,11 +707,14 @@ let rankBy labelText (metric: RankMetric) (timeNorm: TimeNormalization) dispatch
     Select.unitUnion (length.rem 7) timeNorm dispatchTimeNorm
   ]
 
+
 module Ranker =
   open Fable.Core.JsInterop
   open Feliz.Recharts
 
-  let private selectFromGraph rankItem (pairs: _ array) dispatch i =
+  type private Pairs = (SeedId * FertilizerName option) array
+
+  let private selectFromGraph (pairs: Pairs) rankItem dispatch i =
     let crop, fert = pairs[i]
     (match rankItem with
     | RankCropsAndFertilizers -> (Some crop, Some fert)
@@ -721,9 +724,9 @@ module Ranker =
     |> SetSelectedCropAndFertilizer
     |> dispatch
 
-  let private pairImage (data: GameData) (pairs: (SeedId * string option) array) selectPair (props: IXAxisTickProperties) =
+  let private pairImage (pairs: Pairs) (data: GameData) selectPair (props: IXAxisTickProperties) =
     let index: int = props?payload?value
-    let crop, fert = pairs[index]
+    let seed, fert = pairs[index]
     Svg.svg [
       svg.className "pair-image"
       svg.onClick (fun _ -> selectPair index)
@@ -733,7 +736,7 @@ module Ranker =
       svg.height 40
       svg.children [
         Svg.image [
-          svg.href (Image.itemRoot (Crop.mainItem data.Crops[crop] |> string))
+          svg.href (Image.itemRoot (Crop.mainItem data.Crops[seed] |> string))
           svg.width 20
           svg.height 20
         ]
@@ -747,7 +750,7 @@ module Ranker =
       ]
     ]
 
-  let chartProfitTooltip data settings timeNorm roi fertilizer crop (profit: Result<float, Query.InvalidReasons>) =
+  let private chartProfitTooltip data settings timeNorm roi fertilizer crop profit =
     div [
       match Query.Ranker.profitSummary data settings timeNorm fertilizer crop with
       | Some profitSummary ->
@@ -773,10 +776,10 @@ module Ranker =
         | Error e -> invalidReasons settings crop e
       ]
 
-  let private chartTooltip (data: GameData) settings timeNorm rankItem (pairs: (SeedId * string option) array) props =
+  let private chartTooltip (pairs: Pairs) (data: GameData) settings timeNorm rankItem props =
     match props?payload with
     | Some (payload: _ array) when payload.Length > 0 && props?active ->
-      let (index: int, result: Result<float, Query.InvalidReasons>) = payload[0]?payload
+      let index, result = payload[0]?payload
       let seed, fertilizer = pairs[index]
       let crop = data.Crops[seed]
       let fertilizer = Option.map data.Fertilizers.Find fertilizer
@@ -804,7 +807,7 @@ module Ranker =
       svg.d (svgRectPath x y width height)
     ]
 
-  let private errorBar (pairs: (SeedId * string option) array) props =
+  let private errorBar (pairs: Pairs) props =
     let x: float = props?x
     let y: float = props?y
     let width: float = props?width
@@ -853,14 +856,19 @@ module Ranker =
         ]
       ]
 
-  let private graph ranker data settings pairs (graphData: _ array) dispatch =
+  let private graph ranker data settings pairs dispatch =
+    let pairs, indexedValues =
+      pairs
+      |> Array.mapi (fun i (pair, value) -> pair, (i, value))
+      |> Array.unzip
+
     let barGap = 4.0
-    let selectPair = selectFromGraph ranker.RankItem pairs dispatch
+    let selectPair = selectFromGraph pairs ranker.RankItem dispatch
     Recharts.responsiveContainer [
       responsiveContainer.debounce 200
       responsiveContainer.width (length.percent 100)
       responsiveContainer.chart (Recharts.barChart [
-        barChart.data graphData
+        barChart.data indexedValues
         barChart.barSize 40
         barChart.barGap barGap
         barChart.children [
@@ -871,7 +879,7 @@ module Ranker =
             yAxis.width 60
           ]
           Recharts.tooltip [
-            tooltip.content (chartTooltip data settings ranker.TimeNormalization ranker.RankMetric pairs)
+            tooltip.content (chartTooltip pairs data settings ranker.TimeNormalization ranker.RankMetric)
           ]
           Recharts.bar [
             bar.dataKey (snd >> function Ok y -> y | Error _ -> 0.0)
@@ -881,14 +889,14 @@ module Ranker =
             Interop.mkBarAttr "shape" (errorBar pairs)
           ]
           Recharts.brush [
-            brush.startIndex (ranker.BrushSpan |> fst |> int |> min (graphData.Length - 1) |> max 0)
-            brush.endIndex (ranker.BrushSpan |> snd |> int |> min (graphData.Length - 1) |> max 0)
+            brush.startIndex (ranker.BrushSpan |> fst |> int |> min (pairs.Length - 1) |> max 0)
+            brush.endIndex (ranker.BrushSpan |> snd |> int |> min (pairs.Length - 1) |> max 0)
             brush.height 30
             Interop.mkBrushAttr "onChange" (fun i -> SetBrushSpan (i?startIndex, i?endIndex) |> dispatch)
           ]
           Recharts.xAxis [
             xAxis.dataKey (fst: _ -> int)
-            xAxis.tick (pairImage data pairs selectPair)
+            xAxis.tick (pairImage pairs data selectPair)
             xAxis.interval 0
             xAxis.height 50
           ]
@@ -915,14 +923,7 @@ module Ranker =
       if ranker.ShowInvalid then pairs else
       pairs |> Array.filter (snd >> Result.isOk)
 
-    let pairData =
-      pairs
-      |> Array.indexed
-      |> Array.map (fun (i, (_, profit)) -> i, profit)
-
-    let pairs = pairs |> Array.map fst
-
-    pairData |> Array.sortInPlaceWith (fun a b ->
+    pairs |> Array.sortInPlaceWith (fun a b ->
       match snd a, snd b with
       | Ok a, Ok b -> compare b a
       | Ok _, Error _ -> -1
@@ -949,12 +950,8 @@ module Ranker =
         div [
           Class.graph
           children [
-            Elmish.React.Common.lazyView3With
-              (fun (data1, _) (data2, _) -> data1 = data2)
-              (fun (pairs, pairData) (ranker, data, settings) -> graph ranker data settings pairs pairData)
-              (pairs, pairData)
-              (ranker, data, settings)
-              dispatch
+            // rerender only if computed pairs or RankMetric changes
+            Elmish.React.Common.lazyView2 (fst >> graph ranker data settings) (pairs, ranker.RankMetric) dispatch
           ]
         ]
     ]
