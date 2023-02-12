@@ -1147,7 +1147,7 @@ module Ranker =
   let profitSummary data settings timeNormalization fertilizer crop =
     bestGrowthSpan settings.Game fertilizer crop |> Option.map (fun span ->
       let fertilizerVendorAndPrice = fertilizerRelevantVendorAndPrice data settings fertilizer
-      let fertCost = fertilizerVendorAndPrice |> Option.flatten |> Option.map snd
+      let fertCost = fertilizerVendorAndPrice |> Option.defaultOrMap (Some 0u) (Option.map snd)
 
       let summary =
         match settings.Profit.SeedStrategy with
@@ -1190,7 +1190,7 @@ module Solver =
 
   let profitSummary data settings fertilizer cropHarvests =
     let fertilizerVendorAndPrice = fertilizerRelevantVendorAndPrice data settings fertilizer
-    let fertCost = fertilizerVendorAndPrice |> Option.flatten |> Option.map snd
+    let fertCost = fertilizerVendorAndPrice |> Option.defaultOrMap (Some 0u) (Option.map snd)
 
     let harvestSummary =
       match settings.Profit.SeedStrategy with
