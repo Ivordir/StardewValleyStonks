@@ -181,15 +181,11 @@ module SummaryTable =
     then sprintf "%.2e" value
     else float2 rounded
 
-  let private keyValueRowWithOperation operation key (valueCell: ReactElement) =
-    tr [
-      td (key + ":")
-      td (operation |> ofOption ofStr)
-      td valueCell
+  let private keyValue (key: string) (valueCell: ReactElement) =
+    div [
+      dt key
+      dd valueCell
     ]
-
-  let private keyValueRowOperation key operation value = keyValueRowWithOperation (Some operation) key value
-  let private keyValueRow key value = keyValueRowWithOperation None key value
 
   let private formatNormalizationDivisor timeNorm normDivisor =
     $"{round2 normDivisor} {TimeNormalization.unit timeNorm |> pluralize}"
@@ -201,12 +197,11 @@ module SummaryTable =
     if normDivisor = 1.0 then none else
 
     fragment [
-      keyValueRowOperation
+      keyValue
         (TimeNormalization.unit timeNorm |> pluralize |> upperFirstChar)
-        "/"
         (formatNormalizationDivisor timeNorm normDivisor |> ofStr)
 
-      keyValueRow
+      keyValue
         $"{key} {timeNorm |> string |> lowerCase}"
         (value |> formatNormalizedValue valueFormat normDivisor |> ofStr)
     ]
@@ -214,12 +209,10 @@ module SummaryTable =
   let private roiSummary settings timeNorm (profitSummary: Query.ProfitSummary) =
     let investment, roi = profitSummary.InvestmentAndROI (settings.Profit.SeedStrategy = BuyFirstSeed)
 
-    table [
-      tbody [
-        keyValueRow "Investment" (investment |> Option.defaultOrMap "???" gold |> ofStr)
-        keyValueRow "ROI" (roi |> Option.defaultOrMap "???" percent2 |> ofStr)
+    dl [
+        keyValue "Investment" (investment |> Option.defaultOrMap "???" gold |> ofStr)
+        keyValue "ROI" (roi |> Option.defaultOrMap "???" percent2 |> ofStr)
         normalizationRows "ROI" percent2 timeNorm profitSummary.TimeNormalization roi
-      ]
     ]
 
   let private rowCells
@@ -622,14 +615,12 @@ module SummaryTable =
   module XP =
     let private verticalSummary timeNorm (xpSummary: Query.XpSummary) =
       let summary = xpSummary.CropSummaries[0]
-      table [
-        tbody [
-          keyValueRow "Harvests" (ofNat summary.Harvests)
-          keyValueRow "XP" (summary.XpPerItem |> xp |> ofStr)
-          keyValueRowOperation "Quantity" "x" (summary.ItemQuantity |> round2 |> ofFloat)
-          keyValueRow "Total XP" (xpSummary.Xp |> round2 |> xpFloat |> ofStr)
-          normalizationRows "XP" (round2 >> xpFloat) timeNorm xpSummary.TimeNormalization (Some xpSummary.Xp)
-        ]
+      dl [
+        keyValue "Harvests" (ofNat summary.Harvests)
+        keyValue "XP" (summary.XpPerItem |> xp |> ofStr)
+        keyValue "Quantity" (summary.ItemQuantity |> round2 |> ofFloat)
+        keyValue "Total XP" (xpSummary.Xp |> round2 |> xpFloat |> ofStr)
+        normalizationRows "XP" (round2 >> xpFloat) timeNorm xpSummary.TimeNormalization (Some xpSummary.Xp)
       ]
 
     let ranker data settings timeNorm fertilizer crop =
