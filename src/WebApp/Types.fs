@@ -264,11 +264,6 @@ module RankMetric =
     | ROI -> "%"
     | XP -> "xp"
 
-  let fullName = function
-    | Gold -> "Gold"
-    | ROI -> "Return on Investment"
-    | XP -> "Experience Points"
-
 type TimeNormalization =
   | [<CompiledName ("Total")>] TotalPeriod
   | [<CompiledName ("Per Day")>] PerDay
@@ -280,11 +275,6 @@ module TimeNormalization =
     | TotalPeriod -> ""
     | PerDay -> "day"
     | PerSeason -> "season"
-
-  let description = function
-    | TotalPeriod -> "The total value within the specified dates."
-    | PerDay -> "The total value divided by the number of days requiring watering."
-    | PerSeason -> "The total value divided by the number of days the crop is in season."
 
 type Ranker = {
   RankItem: RankItem

@@ -700,27 +700,11 @@ let private emptyPairData (pairData: PairData) =
     if Array.isEmpty pairData.Fertilizers then ofStr "No fertilizers selected!"
   ]
 
-let rankBy labelText metric timeNorm dispatchMetric dispatchTimeNorm =
+let rankBy labelText (metric: RankMetric) (timeNorm: TimeNormalization) dispatchMetric dispatchTimeNorm =
   fragment [
     ofStr labelText
-
-    Select.options (length.rem 4) (fun metric ->
-      div [
-        text (string metric)
-        title (RankMetric.fullName metric)
-      ])
-      unitUnionCases
-      metric
-      dispatchMetric
-
-    Select.options (length.rem 7) (fun timeNorm ->
-      div [
-        text (string timeNorm)
-        title (TimeNormalization.description timeNorm)
-      ])
-      unitUnionCases
-      timeNorm
-      dispatchTimeNorm
+    Select.unitUnion (length.rem 4) metric dispatchMetric
+    Select.unitUnion (length.rem 7) timeNorm dispatchTimeNorm
   ]
 
 module Ranker =
@@ -948,19 +932,7 @@ module Ranker =
     fragment [
       div [ Class.graphControls; children [
         ofStr "Rank"
-        Select.options (length.rem 6) (fun rankby ->
-          div [
-            prop.text (string rankby)
-            title (
-              match rankby with
-              | RankCropsAndFertilizers -> "All pairs of crops and fertilizers."
-              | RankCrops -> "Pick the best fertilizer for each crop."
-              | RankFertilizers -> "Pick the best crop for each fertilizer."
-            )
-          ])
-          unitUnionCases
-          ranker.RankItem
-          (SetRankItem >> dispatch)
+        Select.unitUnion (length.rem 6) ranker.RankItem (SetRankItem >> dispatch)
 
         rankBy
           "By"
