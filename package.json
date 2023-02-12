@@ -18,8 +18,8 @@
     "build:pandoc": "pandoc -s --toc -M title=Info --template=src/WebApp/Info/template.tpl -o public/info.html src/WebApp/Info/Info.md",
     "build:fable": "dotnet fable src/WebApp -s -o fable",
     "bundle": "parcel build --public-url './'",
-    "build": "pnpm build:* && pnpm bundle",
-    "bundle-report": "pnpm build:* && parcel build --public-url './' --reporter @parcel/reporter-bundle-analyzer"
+    "build": "pnpm build:pandoc && pnpm build:fable && pnpm bundle",
+    "bundle-report": "pnpm build:pandoc && pnpm build:fable && parcel build --public-url './' --reporter @parcel/reporter-bundle-analyzer"
   },
   "dependencies": {
     "preact": "^10.12.0",
