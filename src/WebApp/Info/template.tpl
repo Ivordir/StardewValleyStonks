@@ -10,13 +10,22 @@
 <body>
   <header>Info</header>
   <main>
-    Lorem Ipsum
+    <nav>
+      $toc$
+    </nav>
+    <div id="content">
+      $body$
+    </div>
   </main>
   <footer>
     <span>Stardew Valley v1.5.6 © ConcernedApe</span>
     <span>Stardew Valley Stonks v0.0.1</span>
-    <span>Source code available on <a href="https://www.github.com/Ivordir/StardewValleyStonks">Github</a></span>
-    <span><a href="credits.html">Credits</a></span>
+    <span>
+      Source code available on
+      <a href="https://www.github.com/Ivordir/StardewValleyStonks" target="_blank" rel="noopener noreferrer">
+        Github
+      </a>
+    </span>
   </footer>
 </body>
 </html>

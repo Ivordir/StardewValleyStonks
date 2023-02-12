@@ -12,6 +12,9 @@ dist/
 fable/
 *.fs.js
 
+# Pandoc output
+public/info.html
+
 # Temporary files
 temp/
 

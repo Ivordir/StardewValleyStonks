@@ -4,29 +4,49 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Start",
+      "label": "Watch",
       "command": "pnpm",
-      "args": [ "start" ],
+      "args": [ "watch" ],
       "type": "shell",
       "group": "build",
       "isBackground": true,
       "problemMatcher": {
         "fileLocation": "absolute",
         "background": {
-          "beginsPattern": "(.*)Building(.*)",
-          "endsPattern": "✨ Built in (.*)",
+          "beginsPattern": ".* Building .*",
+          "endsPattern": "✨ Built in .*",
           "activeOnStart": true
         },
         "pattern": {
           "regexp": "^🚨 Build failed$",
         }
       },
-      "dependsOn": ["Watch"]
+      "dependsOn": [ "Pandoc Watch", "Fable Watch" ]
     },
     {
-      "label": "Watch",
+      "label": "Watch JS",
       "command": "pnpm",
       "args": [ "watch" ],
+      "type": "shell",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": {
+        "fileLocation": "absolute",
+        "background": {
+          "beginsPattern": ".* Building .*",
+          "endsPattern": "✨ Built in .*",
+          "activeOnStart": true
+        },
+        "pattern": {
+          "regexp": "^🚨 Build failed$",
+        }
+      },
+      "dependsOn": [ "Fable Watch" ]
+    },
+    {
+      "label": "Fable Watch",
+      "command": "pnpm",
+      "args": [ "watch:fable" ],
       "type": "shell",
       "group": "build",
       "isBackground": true,
@@ -34,8 +54,8 @@
         {
           "fileLocation": "relative",
           "background": {
-            "beginsPattern": "Started Fable compilation...",
-            "endsPattern": "Fable compilation finished in (.*)",
+            "beginsPattern": "Started Fable compilation",
+            "endsPattern": "Fable compilation finished in .*",
             "activeOnStart": true
           },
           "pattern": {
@@ -49,8 +69,8 @@
         {
           "fileLocation": "relative",
           "background": {
-            "beginsPattern": "Started Fable compilation...",
-            "endsPattern": "Fable compilation finished in (.*)",
+            "beginsPattern": "Started Fable compilation",
+            "endsPattern": "Fable compilation finished in .*",
             "activeOnStart": true
           },
           "pattern": {
@@ -67,10 +87,28 @@
       ]
     },
     {
+      "label": "Pandoc Watch",
+      "command": "pnpm",
+      "args": [ "watch:pandoc" ],
+      "type": "shell",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": {
+        "background": {
+          "beginsPattern": "pandoc .*",
+          "endsPattern": "^$",
+          "activeOnStart": false
+        },
+        "pattern": {
+          "regexp": "\\[WARNING\\] .*",
+        }
+      }
+    },
+    {
       "label": "Build Extractor",
       "command": "dotnet",
-      "type": "process",
       "args": [ "build" ],
+      "type": "process",
       "options": {
         "cwd": "${workspaceFolder}/src/Extractor"
       },
