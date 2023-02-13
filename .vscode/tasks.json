@@ -95,7 +95,7 @@
       "isBackground": true,
       "problemMatcher": {
         "background": {
-          "beginsPattern": "pandoc .*",
+          "beginsPattern": "(add)|(change):.*",
           "endsPattern": "^$",
           "activeOnStart": false
         },

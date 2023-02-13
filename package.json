@@ -12,7 +12,7 @@
   },
   "scripts": {
     "postinstall": "dotnet tool restore && dotnet paket install",
-    "watch:pandoc": "cd src/WebApp/Info && ls | entr pnpm build:pandoc",
+    "watch:pandoc": "chokidar --initial src/WebApp/Info/* -c 'pnpm build:pandoc'",
     "watch:fable": "dotnet fable watch src/WebApp --noCache -s -o fable",
     "watch": "parcel",
     "build:pandoc": "pandoc -s --toc -M title=Info --template=src/WebApp/Info/template.tpl -o public/info.html src/WebApp/Info/Info.md",
@@ -30,6 +30,7 @@
     "@parcel/config-default": "^2.8.3",
     "@parcel/reporter-bundle-analyzer": "^2.8.3",
     "@parcel/transformer-sass": "^2.8.3",
+    "chokidar-cli": "^3.0.0",
     "parcel": "^2.8.3",
     "parcel-reporter-static-files-copy": "^1.5.0",
     "process": "^0.11.10"
