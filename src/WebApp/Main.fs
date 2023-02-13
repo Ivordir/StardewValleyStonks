@@ -58,15 +58,31 @@ let localStorageSub dispatch =
   { new System.IDisposable with member _.Dispose () = () }
 
 do
-  let pxToFloat (px: string) = float (px.Substring(0, px.Length - 2))
-  let borderWidth fontPx divisor = $"{fontPx / float divisor |> ceil}px"
-
   let root = Browser.Dom.document.documentElement
-  let fontSize = Browser.Dom.window?getComputedStyle(root)?getPropertyValue("font-size")
-  let fontPx = pxToFloat fontSize
-  root?style?setProperty("--font-size", fontSize)
-  root?style?setProperty("--eighth-border", borderWidth fontPx 8)
-  root?style?setProperty("--sixth-border", borderWidth fontPx 6)
+  let fontSize: string = Browser.Dom.window?getComputedStyle(root)?getPropertyValue("font-size")
+  let setVar (name: string) (px: int) = root?style?setProperty($"--{name}", $"{px}px")
+
+  let fontPx = (fontSize.Substring(0, fontSize.Length - 2)) |> float |> ceil
+
+  setVar "font-size" (int fontPx)
+  setVar "eighth-border" ((fontPx / 8.0) |> ceil |> int)
+  setVar "sixth-border" ((fontPx / 6.0) |> ceil |> int)
+
+  let sp = fontPx / 16.0
+  setVar "min-size" ((sp * 48.0) |> ceil |> int)
+
+  // set icon size to a multiple of 8 pixels,
+  // preferring to upsize instead of downsizing
+  let iconSize =
+    let div = fontPx / 8.0
+    let rem = fontPx % 8.0
+    let unit =
+      if rem <= 2.0
+      then floor div
+      else ceil div
+    int unit * 8
+
+  setVar "icon-size" iconSize
 
 Program.mkSimple Data.LocalStorage.loadApp update view
 |> Program.withErrorHandler (fun (msg, e) -> console.error (errorWithMessage msg e))

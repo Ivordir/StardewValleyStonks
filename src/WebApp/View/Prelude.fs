@@ -228,37 +228,6 @@ module Image =
     let season = Season.name >> nameIsPartofPath seasonRoot
 
 
-let opacityCheckbox checked' dispatch =
-  label [
-    className "qualities-checkbox"
-    children [
-      input [
-        prop.type'.checkbox
-        isChecked checked'
-        onCheckedChange dispatch
-      ]
-      img []
-    ]
-  ]
-
-let checkboxWith children' checked' dispatch =
-  label [
-    className "checkbox-label"
-    onClick (fun e -> e.stopPropagation ())
-    children [
-      input [
-        prop.type'.checkbox
-        isChecked checked'
-        onCheckedChange dispatch
-      ]
-      img []
-      children'
-  ]]
-
-let checkbox = checkboxWith none
-let inline checkboxText str checked' msg = checkboxWith (ofStr str) checked' msg
-
-
 let labeled label element =
   Html.label [
     ofStr label

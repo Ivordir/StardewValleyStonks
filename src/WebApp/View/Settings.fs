@@ -100,12 +100,12 @@ module Skills =
       farming skills dispatch
       foraging skills dispatch
       div [
-        checkboxText
+        Input.checkboxText
           "Ignore Skill Level Unlocks"
           skills.IgnoreSkillLevelRequirements
           (SetIgnoreSkillLevelRequirements >> dispatch)
 
-        checkboxText
+        Input.checkboxText
           "Ignore Profession Conflicts"
           skills.IgnoreProfessionConflicts
           (SetIgnoreProfessionConflicts >> dispatch)
@@ -137,7 +137,7 @@ let custom
   fragment [
     value |> ofOption (fun value ->
       fragment [
-        checkbox (selection.Selected.Contains key) (curry SetSelected key >> SelectCustom >> dispatch)
+        Input.checkboxEnable (selection.Selected.Contains key) (curry SetSelected key >> SelectCustom >> dispatch)
         viewValue value
       ])
 
@@ -182,12 +182,21 @@ module Crops =
     let cropTabDispatch = SetCropTabState >> SetUI >> dispatch
     let selectDispatch = SelectCrops >> SetSelections >> SetSettings >> dispatch
     sortTable [
-      Column.header (columnCheckbox (crops |> Seq.map Crop.seed |> Set.ofSeq) settings.Selected.Crops selectDispatch)
+      columnSelectCheckbox
+        (crops |> Seq.map Crop.seed |> Set.ofSeq)
+        settings.Selected.Crops
+        selectDispatch
+      |> Column.header
+
       ofStr "Crop" |> Column.withSort (compareBy (Crop.name data.Items.Find))
+
       ofStr "Lowest Seed Price"
       |> Column.withSort (Option.noneMaxCompareBy (Crop.seed >> Query.Price.seedMinPrice data settings))
+
       ofStr "Growth Time" |> Column.withSort (compareBy (Game.growthTime settings.Game None))
+
       ofStr "Regrow Time" |> Column.withSort (Option.noneMaxCompareBy Crop.regrowTime)
+
       ofStr "Seasons" |> Column.withSort (fun c1 c2 ->
         match Crop.seasons c1, Crop.seasons c2 with
         | Seasons.None, Seasons.None -> 0
@@ -203,7 +212,10 @@ module Crops =
           key (string seed)
           if not enoughSeeds || not (Game.cropIsInSeason settings.Game crop) then Class.disabled
           children [
-            td (checkbox (settings.Selected.Crops.Contains seed) (curry SetSelected seed >> selectDispatch))
+            td
+              (Input.checkboxSelect
+                (settings.Selected.Crops.Contains seed)
+                (curry SetSelected seed >> selectDispatch))
             td (Image.Icon.crop data crop)
             td (viewPrice price)
             td (Game.growthTime settings.Game None crop |> ofNat)
@@ -227,7 +239,7 @@ module Crops =
         Image.Icon.item' data item
       ]
       td [
-        checkbox
+        Input.checkboxEnable
           (settings.Selected.SellRaw.Contains (seed, item))
           (curry SetSelected (seed, item) >> SelectSellRaw >> dispatch)
 
@@ -239,7 +251,7 @@ module Crops =
           td [
             if not (Game.processorUnlocked data settings.Game processor) then Class.disabled
             children [
-              checkbox
+              Input.checkboxEnable
                 (settings.Selected.Products[seed, item].Contains processor)
                 (curry SetSelected (seed, item) >> curry SelectProducts processor >> dispatch)
 
@@ -257,7 +269,10 @@ module Crops =
           (fun (price, preserveQuality) setState ->
             fragment [
               Input.nat (length.rem 2) price (fun price -> setState (price, preserveQuality))
-              checkboxText "Scale with quality" preserveQuality (fun preserveQuality -> setState (price, preserveQuality))
+              Input.checkboxText
+                "Scale with quality"
+                preserveQuality
+                (fun preserveQuality -> setState (price, preserveQuality))
             ])
           (0u, false)
           "Custom Sell Price"
@@ -282,7 +297,7 @@ module Crops =
       Column.withSort
         (compareBy (fun crop -> Query.cropItemsHighestRawPrice data settings.Game crop productQuality))
         (fragment [
-          columnCheckbox seedItemPairs settings.Selected.SellRaw (SelectSellRaw >> dispatch)
+          columnEnableCheckbox seedItemPairs settings.Selected.SellRaw (SelectSellRaw >> dispatch)
           ofStr "Raw Crop"
         ])
 
@@ -299,7 +314,8 @@ module Crops =
             GameData.product data item processor |> Option.isSome)
 
           children [
-            checkbox
+            Input.checkbox
+              "Enable All"
               (keys |> Set.forall (fun (seed, item) -> settings.Selected.Products[seed, item].Contains processor))
               (curry SetManySelected keys >> curry SelectProducts processor >> dispatch)
 
@@ -316,7 +332,7 @@ module Crops =
             Class.disabled
 
           children [
-            columnCheckbox
+            columnEnableCheckbox
               (crops |> Seq.choose (function | ForageCrop crop -> Some crop.Seed | FarmCrop _ -> None) |> Set.ofSeq)
               settings.Selected.SellForageSeeds
               (SelectSellForageSeeds >> dispatch)
@@ -328,7 +344,7 @@ module Crops =
       Column.withSort
         (compareBy (fun crop -> Query.cropItemsHighestCustomPrice settings.Selected crop productQuality))
         (fragment [
-          columnCheckbox
+          columnEnableCheckbox
             (seedItemPairs |> Set.filter settings.Selected.CustomSellPrices.Values.ContainsKey)
             settings.Selected.CustomSellPrices.Selected
             (SelectCustom >> SetCustomSellPrice >> dispatch)
@@ -349,7 +365,7 @@ module Crops =
     fragment [
       labeled "View with quality: " (Select.enum (length.rem 5) productQuality (SetProductQuality >> cropTabDispatch))
 
-      checkboxText "Normalize Prices" showNormalizedPrices (SetShowNormalizedProductPrices >> cropTabDispatch)
+      Input.checkboxText "Normalize Prices" showNormalizedPrices (SetShowNormalizedProductPrices >> cropTabDispatch)
 
       sortTable
         (productsColumns data settings showNormalizedPrices productQuality crops selectDispatch)
@@ -367,7 +383,7 @@ module Crops =
                 td [
                   if not (ForageCrop.seedRecipeUnlocked settings.Game.Skills crop) then Class.disabled
                   children [
-                    checkbox
+                    Input.checkboxEnable
                       (settings.Selected.SellForageSeeds.Contains seed)
                       (curry SetSelected seed >> SelectSellForageSeeds >> selectDispatch)
 
@@ -393,7 +409,7 @@ module Crops =
           (Option.noneMaxCompareBy (Crop.seed >> Query.seedPriceValueFromVendor data settings vendor))
           (fragment [
             let keys = seeds |> Set.filter (data.SeedPrices.Find >> Table.containsKey vendor)
-            checkbox
+            Input.checkboxEnable
               (keys |> Set.forall (fun seed -> settings.Selected.SeedPrices[seed].Contains vendor))
               (curry SetManySelected keys >> curry SelectSeedPrices vendor >> dispatch)
 
@@ -411,7 +427,7 @@ module Crops =
               else None)
             |> Set.ofSeq
 
-          columnCheckbox keys settings.Selected.UseSeedMaker (SelectUseSeedMaker >> dispatch)
+          columnEnableCheckbox keys settings.Selected.UseSeedMaker (SelectUseSeedMaker >> dispatch)
 
           Image.Icon.processor Processor.seedMaker
         ]
@@ -426,7 +442,7 @@ module Crops =
             else None)
           |> Set.ofSeq
 
-        columnCheckbox keys settings.Selected.UseHarvestedSeeds (SelectUseHarvestedSeeds >> dispatch)
+        columnEnableCheckbox keys settings.Selected.UseHarvestedSeeds (SelectUseHarvestedSeeds >> dispatch)
 
         ofStr "Raw Seeds"
       ])
@@ -434,7 +450,7 @@ module Crops =
       Column.header (div [
         if not (data.ForageCrops.Values |> Seq.exists (ForageCrop.seedRecipeUnlocked settings.Game.Skills)) then Class.disabled
         children [
-          columnCheckbox
+          columnEnableCheckbox
             (seeds |> Set.filter data.ForageCrops.ContainsKey)
             settings.Selected.UseForageSeeds
             (SelectUseForageSeeds >> dispatch)
@@ -446,7 +462,7 @@ module Crops =
       Column.withSort
         (Option.noneMaxCompareBy (Crop.seed >> settings.Selected.CustomSeedPrices.Values.TryFind))
         (fragment [
-          columnCheckbox
+          columnEnableCheckbox
             (seeds |> Set.filter settings.Selected.CustomSeedPrices.Values.ContainsKey)
             settings.Selected.CustomSeedPrices.Selected
             (SelectCustom >> SetCustomSeedPrice >> dispatch)
@@ -460,7 +476,7 @@ module Crops =
     let selectDispatch = SetSelections >> settingsDispatch
 
     fragment [
-      checkboxText
+      Input.checkboxText
         "Joja Membership"
         settings.Game.JojaMembership
         (SetJojaMembership >> SetGameVariables >> settingsDispatch)
@@ -480,7 +496,7 @@ module Crops =
             fragment (seedVendors data |> Array.map (fun vendor ->
               td (data.SeedPrices[seed].TryFind vendor |> ofOption (fun price ->
                 fragment [
-                  checkbox
+                  Input.checkboxEnable
                     (settings.Selected.SeedPrices[seed].Contains vendor)
                     (curry SetSelected seed >> curry SelectSeedPrices vendor >> selectDispatch)
 
@@ -492,14 +508,14 @@ module Crops =
               if not (Game.processorUnlocked data settings.Game Processor.seedMaker) then Class.disabled
               children [
                 if Crop.canGetOwnSeedsFromSeedMaker crop then
-                  checkbox
+                  Input.checkboxEnable
                     (settings.Selected.UseSeedMaker.Contains seed)
                     (curry SetSelected seed >> SelectUseSeedMaker >> selectDispatch)
               ]
             ]
             td [
               if Crop.makesOwnSeeds crop then
-                checkbox
+                Input.checkboxEnable
                   (settings.Selected.UseHarvestedSeeds.Contains seed)
                   (curry SetSelected seed >> SelectUseHarvestedSeeds >> selectDispatch)
             ]
@@ -509,7 +525,7 @@ module Crops =
               td [
                 if not (ForageCrop.seedRecipeUnlocked settings.Game.Skills crop) then Class.disabled
                 children [
-                  checkbox
+                  Input.checkboxEnable
                     (settings.Selected.UseForageSeeds.Contains seed)
                     (curry SetSelected seed >> SelectUseForageSeeds >> selectDispatch)
                 ]
@@ -577,11 +593,11 @@ module Crops =
       ]
 
       div [
-        checkboxText "In Season" filters.InSeason (SetInSeason >> dispatch)
+        Input.checkboxText "In Season" filters.InSeason (SetInSeason >> dispatch)
         Html.span [
           if filters.InSeason then Class.disabled
           children (Enum.values |> Array.map (fun season ->
-            checkboxWith
+            Input.checkboxWith
               (Image.Icon.season season)
               (filters.Seasons |> Seasons.contains season)
               (toggleSeason season >> SetSeasons >> dispatch)))
@@ -627,14 +643,14 @@ module Fertilizers =
       open'
       (ofStr "Fertilizers")
       (fragment [
-        checkboxText "Allow No Fertilizer" settings.Selected.NoFertilizer (SelectNoFertilizer >> selectDispatch)
+        Input.checkboxText "Allow No Fertilizer" settings.Selected.NoFertilizer (SelectNoFertilizer >> selectDispatch)
 
         sortTable [
-          Column.header
-            (columnCheckbox
-              (Set.ofSeq data.Fertilizers.Keys)
-              settings.Selected.Fertilizers
-              (SelectFertilizers >> selectDispatch))
+          columnSelectCheckbox
+            (Set.ofSeq data.Fertilizers.Keys)
+            settings.Selected.Fertilizers
+            (SelectFertilizers >> selectDispatch)
+          |> Column.header
 
           ofStr "Fertilizer" |> Column.withSort (compareBy Fertilizer.name)
 
@@ -653,7 +669,7 @@ module Fertilizers =
               if settings.Profit.PayForFertilizer && price = None then Class.disabled
               children [
                 td
-                  (checkbox
+                  (Input.checkboxSelect
                     (settings.Selected.Fertilizers.Contains name)
                     (curry SetSelected name >> SelectFertilizers >> selectDispatch))
                 td (Image.Icon.fertilizer fertilizer)
@@ -678,7 +694,7 @@ module Fertilizers =
       open'
       (ofStr "Prices")
       (fragment [
-        checkboxText
+        Input.checkboxText
           "Pay for Fertilizer"
           settings.Profit.PayForFertilizer
           (SetPayForFertilizer >> SetProfit >> dispatch)
@@ -686,7 +702,7 @@ module Fertilizers =
         Html.span [
           if not settings.Profit.PayForFertilizer then Class.disabled
           children [
-            checkboxText
+            Input.checkboxText
               "Replace Lost Fertilizer"
               settings.Profit.ReplaceLostFertilizer
               (SetReplaceLostFertilizer >> SetProfit >> dispatch)
@@ -701,7 +717,8 @@ module Fertilizers =
               (Option.noneMaxCompareBy (Fertilizer.name >> data.FertilizerPrices.Find >> Table.tryFind vendor))
               (fragment [
                 let keys = keys |> Set.filter (data.FertilizerPrices.Find >> Table.containsKey vendor)
-                checkbox
+                Input.checkbox
+                  "Enable All"
                   (keys |> Set.forall (fun key -> settings.Selected.FertilizerPrices[key].Contains vendor))
                   (curry SetManySelected keys >> curry SelectFertilizerPrices vendor >> selectDispatch)
 
@@ -711,7 +728,7 @@ module Fertilizers =
           Column.withSort
             (Option.noneMaxCompareBy (Fertilizer.name >> settings.Selected.CustomFertilizerPrices.Values.TryFind))
             (fragment [
-              columnCheckbox
+              columnEnableCheckbox
                 (keys |> Set.filter settings.Selected.CustomFertilizerPrices.Values.ContainsKey)
                 settings.Selected.CustomFertilizerPrices.Selected
                 (SelectCustom >> SetCustomFertilizerPrice >> selectDispatch)
@@ -726,7 +743,7 @@ module Fertilizers =
               fragment (fertilizerVendors data |> Array.map (fun vendor ->
                 td (data.FertilizerPrices[name].TryFind vendor |> ofOption (fun price ->
                   fragment [
-                    checkbox
+                    Input.checkboxEnable
                       (settings.Selected.FertilizerPrices[name].Contains vendor)
                       (curry SetSelected name >> curry SelectFertilizerPrices vendor >> selectDispatch)
 
@@ -796,7 +813,7 @@ module Misc =
 
   let multipliers multipliers dispatch =
     div [
-      checkboxText "Bear's Knowledge" multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
+      Input.checkboxText "Bear's Knowledge" multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
 
       labeled "Profit Margin:"
         (Select.options
@@ -806,7 +823,7 @@ module Misc =
           multipliers.ProfitMargin
           (SetProfitMargin >> dispatch))
 
-      checkboxText
+      Input.checkboxText
         "Apply Tiller to Foraged Grapes and Blackberries"
         multipliers.TillerForForagedFruit
         (SetTillerForForagedFruit >> dispatch)
@@ -840,7 +857,7 @@ module Misc =
           settings.ShavingToolLevel
           (SetShavingToolLevel >> dispatch))
 
-      checkboxText "Special Charm" settings.SpecialCharm (SetSpecialCharm >> dispatch)
+      Input.checkboxText "Special Charm" settings.SpecialCharm (SetSpecialCharm >> dispatch)
       label [
         ofStr "Luck Buff:"
         Input.natWith (length.rem 2) None (Some CropAmount.maxLuckBuff) settings.LuckBuff (SetLuckBuff >> dispatch)
@@ -852,7 +869,7 @@ module Misc =
       (ofStr "Mods")
       (fragment [
         let dispatch = SetModData >> SetGameVariables >> SetSettings >> dispatch
-        checkboxText "Quality Products" modData.QualityProducts (SetQualityProducts >> dispatch)
+        Input.checkboxText "Quality Products" modData.QualityProducts (SetQualityProducts >> dispatch)
         ul [
           if not modData.QualityProducts then Class.disabled
           children
@@ -860,7 +877,7 @@ module Misc =
             |> Array.filter ((<>) Processor.seedMaker)
             |> Array.map (fun processor ->
               li [
-                checkboxWith
+                Input.checkboxWith
                   (Image.Icon.processor processor)
                   (modData.QualityProcessors |> Set.contains processor)
                   (curry SetQualityProcessors processor >> dispatch)
@@ -880,7 +897,7 @@ module Misc =
       ]]
       multipliers settings.Multipliers (SetMultipliers >> dispatch)
       cropAmountSettings settings.CropAmount (SetCropAmount >> dispatch)
-      div (checkboxText "Irrigated" settings.Irrigated (SetIrrigated >> dispatch))
+      div (Input.checkboxText "Irrigated" settings.Irrigated (SetIrrigated >> dispatch))
       mods data modsOpen settings.ModData appDispatch
     ]]
 

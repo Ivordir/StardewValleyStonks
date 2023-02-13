@@ -944,7 +944,7 @@ module Ranker =
           (SetRankMetric >> dispatch)
           (SetTimeNormalization >> dispatch)
 
-        checkboxText "Show Invalid" ranker.ShowInvalid (SetShowInvalid >> dispatch)
+        Input.checkboxText "Show Invalid" ranker.ShowInvalid (SetShowInvalid >> dispatch)
       ]]
       if Array.isEmpty pairs then
         div "No valid pairs of crops and fertilizers!"
