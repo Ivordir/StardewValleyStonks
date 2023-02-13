@@ -36,14 +36,17 @@ ul
   padding: 0
   margin: 0
 
-dt, dd
-  display: inline
+dl
+  display: grid
+  grid-template-columns: auto auto
+  justify-content: start
+  gap: 0 0.5em
 
 dt:after
   content: ":"
 
 dd
-  margin-left: 1em
+  margin: 0
 
 
 button
@@ -690,7 +693,6 @@ footer
 
     & > div
       @extend %crop-qualities-inline
-      width: min-content
-      flex-basis: 0
+      flex-basis: min-content
       text-align: center
       color: var(--quality-color)

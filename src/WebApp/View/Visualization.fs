@@ -182,7 +182,7 @@ module SummaryTable =
     else float2 rounded
 
   let private keyValue (key: string) (valueCell: ReactElement) =
-    div [
+    fragment [
       dt key
       dd valueCell
     ]
