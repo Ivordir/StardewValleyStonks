@@ -23,21 +23,24 @@ let inline ofInt (i: int) = Html.text i
 let inline ofFloat (x: float) = Html.text x
 
 let round2 (x: float) = System.Math.Round (x, 2)
-let float2 value = sprintf "%.2f" value
 
 let gold (g: nat) = string g + "g"
 let gold2 = sprintf "%.2fg"
 
 let xpFloat (xp: float) = string xp + "xp"
 let xp (xp: nat) = string xp + "xp"
-let xp2 = sprintf "%.2fxp"
 
 let percent value = sprintf "%.0f%%" (value * 100.0)
 let percent2 value = sprintf "%.2f%%" (value * 100.0)
 
+let inline lowerCase (str: string) = str.ToLower ()
 let upperFirstChar (text: string) = text[0..0].ToUpper() + text[1..]
 
 let pluralize text = text + "s"
+let pluralizeTo value text =
+  if value = 1u
+  then text
+  else pluralize text
 
 let debouncer timeout (f : _ -> unit) =
   let mutable last = None
@@ -142,7 +145,7 @@ module Image =
   let fertilizer' (fertilizer: FertilizerName) = fertilizer |> fertilizerRoot |> at
   let fertilizer = Fertilizer.name >> fertilizer'
   let skill = skillRoot >> at
-  let profession (profession: Profession) = string profession |> skill
+  let profession (profession: Profession) = profession |> string |> skill
   let vendor (VendorName vendor) = vendor |> vendorRoot |> at
   let processor = function
     | ProcessorName "Mill" -> "Mill" |> processorRoot |> withClass Class.iconProcessorLarge
@@ -184,7 +187,7 @@ module Image =
 
     let skill = nameIsPartofPath skillRoot
 
-    let profession (profession: Profession) = string profession |> skill
+    let profession (profession: Profession) = profession |> string |> skill
 
     let fertilizer = Fertilizer.name >> nameIsPartofPath fertilizerRoot
 

@@ -179,19 +179,332 @@ module SummaryTable =
     let rounded = round2 value
     if rounded = 0.0
     then sprintf "%.2e" value
-    else float2 rounded
-
-  let private keyValue (key: string) (valueCell: ReactElement) =
-    fragment [
-      dt key
-      dd valueCell
-    ]
+    else string rounded
 
   let private formatNormalizationDivisor timeNorm normDivisor =
     $"{round2 normDivisor} {TimeNormalization.unit timeNorm |> pluralize}"
 
   let private formatNormalizedValue format normDivisor value =
     value |> Option.defaultOrMap "???" (fun value -> format (value / normDivisor))
+
+  let private rowCells
+    (itemCell: ReactElement)
+    (unitValue: ReactElement)
+    (quantity: ReactElement)
+    (value: ReactElement)
+    (seeds: ReactElement)
+    =
+    [|
+      th [ scope "row"; children itemCell ]
+      td unitValue
+      if quantity = none then
+        td []
+        td []
+      else
+        td "x"
+        td quantity
+      td value
+      td seeds
+    |]
+
+  let private significantRow seeds itemCell (price: (nat * bool) option) quantity =
+    let profit = price |> Option.defaultOrMap 0.0 (fun (price, bought) ->
+      round2 (float price * quantity * if bought then -1.0 else 1.0))
+
+    if profit = 0.0 && round2 quantity = 0.0 then None else
+
+    let price = price |> ofOption (fst >> gold >> ofStr)
+    let quantity = if quantity = 0.0 then none else ofStr (toPrecision quantity)
+    let profit = if profit = 0.0 then none else ofStr (gold2 profit)
+    let seeds = if seeds then quantity else none
+
+    Some (rowCells itemCell price quantity profit seeds)
+
+  let private seedRow itemCell quantity = significantRow true itemCell None quantity
+  let private profitRow itemCell price quantity = significantRow false itemCell (Some price) quantity
+
+  let private unknownProfitRow seeds itemCell quantity =
+    if quantity = 0.0 then None else
+    let quantity = quantity |> toPrecision |> ofStr
+    rowCells
+      itemCell
+      none
+      quantity
+      (ofStr "???")
+      (if seeds then quantity else none)
+    |> Some
+
+  let private boughtRow seeds priceAndVendor quantity (icon: ReactElement) =
+    match priceAndVendor with
+    | Some (vendor, price) ->
+      let itemCell = fragment [
+        icon
+        match vendor with
+        | NonCustom vendor ->
+          ofStr " from "
+          Image.Icon.vendor vendor
+        | Custom () -> ofStr " (Custom)"
+      ]
+      significantRow seeds itemCell (Some (price, true)) quantity
+
+    | None ->
+      let itemCell = fragment [
+        icon
+        ofStr " from ???"
+      ]
+      unknownProfitRow seeds itemCell quantity
+
+  let private itemCellWithInputs data itemCell inputs =
+    let inputRows = inputs |> Array.choose (fun (item, quantity) ->
+      let quantity = round2 quantity
+      if quantity = 0.0
+      then None
+      else Some (item, quantity))
+
+    fragment [
+      table [
+        tbody (inputRows |> Array.map (fun ((item, quality), quantity) ->
+          tr [
+            td (Image.Icon.itemQuality' data item quality)
+            td "x"
+            td (ofFloat quantity)
+          ]
+        ))
+      ]
+
+      Image.rightArrow
+
+      itemCell
+    ]
+
+  let private fertilizerBoughtRow replacement fertilizer price quantity =
+    match fertilizer, price with
+    | Some fertilizer, Some price ->
+      boughtRow false price quantity (fragment [
+        if replacement then ofStr "Replacement "
+        Image.Icon.fertilizer fertilizer
+      ])
+    | _ -> None
+
+  let private harvestedSeedsRows data item quantities =
+    quantities
+    |> Qualities.indexed
+    |> Array.choose (fun (quality, quantity) ->
+      seedRow (Image.Icon.itemQuality' data item quality) quantity)
+
+  let private seedMakerRows data crop item quantities =
+    let seed = Crop.seed crop
+    let itemCell =
+      quantities
+      |> Qualities.indexed
+      |> Array.map (fun (quality, quantity) -> (item, quality), quantity)
+      |> itemCellWithInputs data (Image.Icon.seed data seed)
+
+    let seedQuantity = Processor.seedMakerExpectedQuantity seed * Qualities.sum quantities
+
+    seedRow itemCell seedQuantity |> Option.toArray
+
+  let private forageSeedsRows data settings items seed quantitySold quantityUsed =
+    if quantitySold = 0.0 && quantityUsed = 0.0 then Array.empty else
+    let itemCell = Image.Icon.seed data seed
+    let inputsCell quantity =
+      let quantity = quantity / float ForageCrop.forageSeedsPerCraft
+      items
+      |> Array.map (fun item -> (item, Quality.Normal), quantity)
+      |> itemCellWithInputs data itemCell
+
+    let price = Game.seedItemSellPrice data settings.Game seed
+    Array.collect Option.toArray [|
+      seedRow (inputsCell quantityUsed) quantityUsed
+      profitRow (inputsCell quantitySold) (price, false) quantitySold
+    |]
+
+  let private unsoldItemRow data (item, quantities) =
+    let itemCell =
+      quantities
+      |> Qualities.indexed
+      |> Array.map (fun (quality, quantity) -> (item, quality), quantity)
+      |> itemCellWithInputs data (ofStr "???")
+
+    rowCells itemCell none none none none
+
+  let private soldItemRow data (summary: Query.SoldItemSummary) =
+    let itemCell = fragment [
+      Image.Icon.itemQuality' data summary.Item summary.Quality
+      if summary.Custom then ofStr " (Custom)"
+    ]
+
+    profitRow itemCell (summary.Price, false) summary.Quantity
+
+  let private soldProductRow data (summary: Query.SoldProductSummary) =
+    let itemCell =
+      itemCellWithInputs
+        data
+        (Image.Icon.productQuality data summary.Product summary.Quality)
+        summary.ConsumedItemQuantities
+
+    profitRow itemCell (summary.Price, false) summary.Quantity
+
+  let private cropProfitSummaryRows
+    data
+    settings
+    fertilizer
+    fertilizerPrice
+    (summary: Query.CropProfitSummary)
+    =
+    let crop = summary.Crop
+    let seed = Crop.seed crop
+
+    [|
+      if settings.Profit.SeedStrategy <> IgnoreSeeds then
+        let seeds = -int (if Crop.regrows crop then 1u else summary.Harvests)
+        let unit = "harvest" |> pluralizeTo summary.Harvests
+        [| rowCells (ofStr $"{summary.Harvests} {unit}") none none none (ofInt seeds) |]
+
+      boughtRow true summary.SeedPrice summary.SeedsBought (Image.Icon.seed data seed) |> Option.toArray
+
+      summary.SeedsUsed |> Array.collect (fun (item, quantities) ->
+        if item = Crop.seedItem crop then harvestedSeedsRows data item quantities
+        elif item = Crop.mainItem crop then seedMakerRows data crop item quantities
+        else assert false; Array.empty)
+
+      forageSeedsRows data settings (Crop.items crop) seed summary.ForageSeedsSold summary.ForageSeedsUsed
+
+      summary.UnsoldItems |> Array.map (unsoldItemRow data)
+      summary.SoldItems |> Array.choose (soldItemRow data)
+      summary.SoldProducts |> Array.choose (soldProductRow data)
+
+      fertilizerBoughtRow true fertilizer fertilizerPrice summary.ReplacedFertilizer |> Option.toArray
+    |]
+    |> Array.concat
+    |> Array.map fragment
+
+  let private totalRow totalColSpan totalFormat total (seeds: ReactElement) =
+    tr [
+      th [
+        colSpan totalColSpan
+        scope "row"
+        text "Total"
+      ]
+      td (total |> Option.defaultOrMap "???" totalFormat |> ofStr)
+      td seeds
+    ]
+
+  let private thColWith (cell: ReactElement) = th [ scope "col"; children cell ]
+  let private thCol = ofStr >> thColWith
+
+  let private profitHeaderCells itemCell seeds =
+    fragment [
+      thCol itemCell
+      thCol "Price"
+      thCol "x"
+      thCol "Quantity"
+      thCol "Profit"
+      thColWith (if seeds then ofStr "Seeds" else none)
+    ]
+
+  let private profitHeader itemCell seeds = thead [ tr [ profitHeaderCells itemCell seeds ] ]
+
+  let private profitFooter timeNorm normDivisor profit seeds =
+    tfoot [
+      totalRow 4 gold2 profit seeds
+
+      if timeNorm = TotalPeriod || normDivisor = 1.0 then none else
+        tr [
+          th [
+            colSpan 4
+            scope "row"
+            text (TimeNormalization.unit timeNorm |> pluralize |> upperFirstChar)
+          ]
+          td $"{formatNormalizationDivisor timeNorm normDivisor}"
+          td []
+        ]
+        tr [
+          th [
+            colSpan 4
+            scope "row"
+            text $"Total {timeNorm |> string |> lowerCase}"
+          ]
+          td (profit |> formatNormalizedValue gold2 normDivisor)
+          td []
+        ]
+    ]
+
+  let private rankerProfitSummary data settings timeNorm (profitSummary: Query.ProfitSummary) =
+    table [
+      profitHeader "Item" (settings.Profit.SeedStrategy <> IgnoreSeeds)
+
+      fertilizerBoughtRow false profitSummary.Fertilizer profitSummary.FertilizerPrice 1.0
+      |> ofOption (tr >> Array.singleton >> tbody)
+
+      profitSummary.CropSummaries[0]
+      |> cropProfitSummaryRows data settings profitSummary.Fertilizer profitSummary.FertilizerPrice
+      |> Array.map (Array.singleton >> tr)
+      |> tbody
+
+      let seeds =
+        if settings.Profit.SeedStrategy = IgnoreSeeds
+        then none
+        else ofNat 0u
+
+      profitFooter timeNorm profitSummary.TimeNormalization profitSummary.NetProfit seeds
+    ]
+
+  let private solverProfitSummary data settings total (summaries: Query.ProfitSummary array) =
+    let header = profitHeaderCells "Crop / Item" (settings.Profit.SeedStrategy <> IgnoreSeeds)
+
+    // A key is needed for each collapsible table body to preserve the collapsed state across new solutions/renders.
+    // However, crops may appear multiple times across dateSpans,
+    // or possibly multiple times within the same dateSpan,
+    // so a unique id is needed for each instance of the same crop.
+    // This does not ensure proper preservation the collapsed state between different instances of the same crop,
+    // but does between different crops -- good enough.
+    let getCount =
+      let counts = Dictionary ()
+      fun seed ->
+        let count =
+          match counts.TryGetValue seed with
+          | true, value -> value
+          | _ -> 0
+        counts[seed] <- count + 1
+        count
+
+    let bodies = summaries |> Array.collect (fun profitSummary -> Array.concat [|
+      fertilizerBoughtRow false profitSummary.Fertilizer profitSummary.FertilizerPrice 1.0
+      |> Option.map (fun row -> "", fragment row, [||])
+      |> Option.toArray
+
+      profitSummary.CropSummaries |> Array.map (fun summary ->
+        let key =
+          let seed = Crop.seed summary.Crop
+          let count = getCount seed
+          string seed + "@" + string count
+
+        let row =
+          rowCells
+            (fertilizerAndCropHarvests data profitSummary.Fertilizer summary.Crop)
+            none
+            (ofNat summary.Harvests)
+            (summary.NetProfit |> ofOption (gold2 >> ofStr))
+            none
+          |> fragment
+
+        let body = cropProfitSummaryRows data settings profitSummary.Fertilizer profitSummary.FertilizerPrice summary
+
+        key, row, body)
+    |])
+
+    table [
+      Table.collapsibleHeaderAndBodies true header bodies
+
+      tfoot [ totalRow 5 gold2 (Some total) none ]
+    ]
+
+  let private keyValue (key: string) (valueCell: ReactElement) =
+    fragment [
+      dt key
+      dd valueCell
+    ]
 
   let private normalizationRows key valueFormat timeNorm normDivisor value =
     if normDivisor = 1.0 then none else
@@ -215,330 +528,19 @@ module SummaryTable =
       normalizationRows "ROI" percent2 timeNorm profitSummary.TimeNormalization roi
     ]
 
-  let private rowCells
-    itemCellColSpan
-    (itemCell: ReactElement)
-    (unitValue: ReactElement)
-    (quantity: ReactElement)
-    (value: ReactElement)
-    (seeds: ReactElement)
-    =
-    [|
-      td [ colSpan itemCellColSpan; children itemCell ]
-      td unitValue
-      if quantity = none then
-        td []
-        td []
-      else
-        td "x"
-        td quantity
-      td value
-      td seeds
-    |]
-
-  let private significantRow seeds itemCellColSpan itemCell (price: (nat * bool) option) quantity =
-    let profit = price |> Option.defaultOrMap 0.0 (fun (price, bought) ->
-      round2 (float price * quantity * if bought then -1.0 else 1.0))
-
-    if profit = 0.0 && round2 quantity = 0.0 then None else
-
-    let price = price |> ofOption (fst >> gold >> ofStr)
-    let quantity = if quantity = 0.0 then none else ofStr (toPrecision quantity)
-    let profit = if profit = 0.0 then none else ofStr (gold2 profit)
-    let seeds = if seeds then quantity else none
-
-    Some (rowCells itemCellColSpan itemCell price quantity profit seeds)
-
-  let private seedRow itemCellColSpan itemCell quantity =
-    significantRow true itemCellColSpan itemCell None quantity
-
-  let private profitRow itemCellColSpan itemCell price quantity =
-    significantRow false itemCellColSpan itemCell (Some price) quantity
-
-  let private unknownProfitRow seeds itemCellColSpan itemCell quantity =
-    if quantity = 0.0 then None else
-    let quantity = quantity |> toPrecision |> ofStr
-    rowCells
-      itemCellColSpan
-      itemCell
-      none
-      quantity
-      (ofStr "???")
-      (if seeds then quantity else none)
-    |> Some
-
-  let private boughtRow seeds itemCellColSpan priceAndVendor quantity (icon: ReactElement) =
-    match priceAndVendor with
-    | Some (vendor, price) ->
-      let itemCell = fragment [
-        icon
-        match vendor with
-        | NonCustom vendor ->
-          ofStr " from "
-          Image.Icon.vendor vendor
-        | Custom () -> ofStr " (Custom)"
-      ]
-      significantRow seeds itemCellColSpan itemCell (Some (price, true)) quantity
-
-    | None ->
-      let itemCell = fragment [
-        icon
-        ofStr " from ???"
-      ]
-      unknownProfitRow seeds itemCellColSpan itemCell quantity
-
-  let private itemCellWithInputs data itemCell inputs =
-    let inputRows = inputs |> Array.choose (fun (item, quantity) ->
-      let quantity = round2 quantity
-      if quantity = 0.0
-      then None
-      else Some (item, quantity))
-
-    fragment [
-      table [
-        tbody (inputRows |> Array.map (fun ((item, quality), quantity) ->
-          tr [
-            td (Image.Icon.itemQuality' data item quality)
-            td "x"
-            td (float2 quantity)
-            td Image.rightArrow
-          ]
-        ))
-      ]
-      itemCell
-    ]
-
-  let private fertilizerBoughtRow itemCellColSpan replacement fertilizer price quantity =
-    match fertilizer, price with
-    | Some fertilizer, Some price ->
-      boughtRow false itemCellColSpan price quantity (fragment [
-        if replacement then ofStr "Replacement "
-        Image.Icon.fertilizer fertilizer
-      ])
-    | _ -> None
-
-  let private harvestedSeedsRows itemCellColSpan data item quantities =
-    quantities
-    |> Qualities.indexed
-    |> Array.choose (fun (quality, quantity) ->
-      seedRow itemCellColSpan (Image.Icon.itemQuality' data item quality) quantity)
-
-  let private seedMakerRows itemCellColSpan data crop item quantities =
-    let seed = Crop.seed crop
-    let itemCell =
-      quantities
-      |> Qualities.indexed
-      |> Array.map (fun (quality, quantity) -> (item, quality), quantity)
-      |> itemCellWithInputs data (Image.Icon.seed data seed)
-
-    let seedQuantity = Processor.seedMakerExpectedQuantity seed * Qualities.sum quantities
-
-    seedRow itemCellColSpan itemCell seedQuantity |> Option.toArray
-
-  let private forageSeedsRows itemCellColSpan data settings items seed quantitySold quantityUsed =
-    if quantitySold = 0.0 && quantityUsed = 0.0 then Array.empty else
-    let itemCell = Image.Icon.seed data seed
-    let inputsCell quantity =
-      let quantity = quantity / float ForageCrop.forageSeedsPerCraft
-      items
-      |> Array.map (fun item -> (item, Quality.Normal), quantity)
-      |> itemCellWithInputs data itemCell
-
-    let price = Game.seedItemSellPrice data settings.Game seed
-    Array.collect Option.toArray [|
-      seedRow itemCellColSpan (inputsCell quantityUsed) quantityUsed
-      profitRow itemCellColSpan (inputsCell quantitySold) (price, false) quantitySold
-    |]
-
-  let private unsoldItemRow itemCellColSpan data (item, quantities) =
-    let itemCell =
-      quantities
-      |> Qualities.indexed
-      |> Array.map (fun (quality, quantity) -> (item, quality), quantity)
-      |> itemCellWithInputs data (ofStr "???")
-
-    rowCells itemCellColSpan itemCell none none none none
-
-  let private soldItemRow itemCellColSpan data (summary: Query.SoldItemSummary) =
-    let itemCell = fragment [
-      Image.Icon.itemQuality' data summary.Item summary.Quality
-      if summary.Custom then ofStr " (Custom)"
-    ]
-
-    profitRow itemCellColSpan itemCell (summary.Price, false) summary.Quantity
-
-  let private soldProductRow itemCellColSpan data (summary: Query.SoldProductSummary) =
-    let itemCell =
-      itemCellWithInputs
-        data
-        (Image.Icon.productQuality data summary.Product summary.Quality)
-        summary.ConsumedItemQuantities
-
-    profitRow itemCellColSpan itemCell (summary.Price, false) summary.Quantity
-
-  let private cropProfitSummaryRows
-    itemCellColSpan
-    data
-    settings
-    fertilizer
-    fertilizerPrice
-    (summary: Query.CropProfitSummary)
-    =
-    let crop = summary.Crop
-    let seed = Crop.seed crop
-
-    [|
-      if settings.Profit.SeedStrategy <> IgnoreSeeds then
-        let harvests = (-float (if Crop.regrows crop then 1u else summary.Harvests)) |> float2 |> ofStr
-        [| rowCells itemCellColSpan (ofStr $"{summary.Harvests} harvests") none none none harvests |]
-
-      boughtRow true itemCellColSpan summary.SeedPrice summary.SeedsBought (Image.Icon.seed data seed) |> Option.toArray
-
-      summary.SeedsUsed |> Array.collect (fun (item, quantities) ->
-        if item = Crop.seedItem crop then harvestedSeedsRows itemCellColSpan data item quantities
-        elif item = Crop.mainItem crop then seedMakerRows itemCellColSpan data crop item quantities
-        else assert false; Array.empty)
-
-      forageSeedsRows itemCellColSpan data settings (Crop.items crop) seed summary.ForageSeedsSold summary.ForageSeedsUsed
-
-      summary.UnsoldItems |> Array.map (unsoldItemRow itemCellColSpan data)
-      summary.SoldItems |> Array.choose (soldItemRow itemCellColSpan data)
-      summary.SoldProducts |> Array.choose (soldProductRow itemCellColSpan data)
-
-      fertilizerBoughtRow itemCellColSpan true fertilizer fertilizerPrice summary.ReplacedFertilizer |> Option.toArray
-    |]
-    |> Array.concat
-    |> Array.map fragment
-
-  let private totalRow totalColSpan totalFormat total (seeds: ReactElement) =
-    tr [
-      td [ colSpan totalColSpan; text "Total" ]
-      td (total |> Option.defaultOrMap "???" totalFormat |> ofStr)
-      td seeds
-    ]
-
-  let private profitHeader seeds =
-    thead [
-      tr [
-        th "Item"
-        th "Price"
-        th "x"
-        th "Quantity"
-        th "Profit"
-        th (if seeds then ofStr "Seeds" else none)
-      ]
-    ]
-
-  let private profitFooter timeNorm normDivisor profit seeds =
-    tfoot [
-      totalRow 4 gold2 profit seeds
-
-      if timeNorm = TotalPeriod || normDivisor = 1.0 then none else
-        tr [
-          td [ colSpan 4; text (TimeNormalization.unit timeNorm |> pluralize |> upperFirstChar) ]
-          td $"{formatNormalizationDivisor timeNorm normDivisor}"
-        ]
-        tr [
-          td [ colSpan 4; text $"Total {timeNorm |> string |> lowerCase}" ]
-          td (profit |> formatNormalizedValue gold2 normDivisor)
-        ]
-    ]
-
-  let private rankerProfitSummary data settings timeNorm (profitSummary: Query.ProfitSummary) =
-    table [
-      profitHeader (settings.Profit.SeedStrategy <> IgnoreSeeds)
-
-      fertilizerBoughtRow 1 false profitSummary.Fertilizer profitSummary.FertilizerPrice 1.0
-      |> ofOption (tr >> Array.singleton >> tbody)
-
-      profitSummary.CropSummaries[0]
-      |> cropProfitSummaryRows 1 data settings profitSummary.Fertilizer profitSummary.FertilizerPrice
-      |> Array.map (Array.singleton >> tr)
-      |> tbody
-
-      let seeds =
-        if settings.Profit.SeedStrategy = IgnoreSeeds
-        then none
-        else ofStr (float2 0.0)
-
-      profitFooter timeNorm profitSummary.TimeNormalization profitSummary.NetProfit seeds
-    ]
-
-  let private solverHeader seeds (unitValue: string) (value: string) =
-    fragment [
-      th "Fertilizer"
-      th "Crop"
-      th "Harvests"
-      th unitValue
-      th "x"
-      th "Quantity"
-      th value
-      th (if seeds then ofStr "Seeds" else none)
-    ]
-
-  let private solverProfitSummary data settings total (summaries: Query.ProfitSummary array) =
-    let header = solverHeader (settings.Profit.SeedStrategy <> IgnoreSeeds) "Price" "Profit"
-
-    // A key is needed for each collapsible table body to preserve the collapsed state across new solutions/renders.
-    // However, crops may appear multiple times across dateSpans,
-    // or possibly multiple times within the same dateSpan,
-    // so a unique id is needed for each instance of the same crop.
-    // This does not ensure proper preservation the collapsed state between different instances of the same crop,
-    // but does between different crops -- good enough.
-    let getCount =
-      let counts = Dictionary ()
-      fun seed ->
-        let count =
-          match counts.TryGetValue seed with
-          | true, value -> value
-          | _ -> 0
-        counts[seed] <- count + 1
-        count
-
-    let bodies = summaries |> Array.collect (fun profitSummary -> Array.concat [|
-      fertilizerBoughtRow 3 false profitSummary.Fertilizer profitSummary.FertilizerPrice 1.0
-      |> Option.map (fun row -> "", fragment row, [||])
-      |> Option.toArray
-
-      profitSummary.CropSummaries |> Array.map (fun summary ->
-        let key =
-          let seed = Crop.seed summary.Crop
-          let count = getCount seed
-          string seed + "@" + string count
-
-        let row = fragment [
-          td (profitSummary.Fertilizer |> ofOption Image.Icon.fertilizer)
-          td (Image.Icon.crop data summary.Crop)
-          td (ofNat summary.Harvests)
-          td [ colSpan 3 ]
-          td (summary.NetProfit |> ofOption (gold2 >> ofStr))
-          td []
-        ]
-
-        let body = cropProfitSummaryRows 3 data settings profitSummary.Fertilizer profitSummary.FertilizerPrice summary
-
-        key, row, body)
-    |])
-
-    table [
-      Table.collapsibleHeaderAndBodies true header bodies
-
-      tfoot [ totalRow 7 gold2 (Some total) none ]
-    ]
-
   let private tooltipBoughtRow itemCell price quantity =
     match price with
-    | Some (_, price) -> profitRow 1 itemCell (price, true) quantity
-    | None -> unknownProfitRow false 1 itemCell quantity
+    | Some (_, price) -> profitRow itemCell (price, true) quantity
+    | None -> unknownProfitRow false itemCell quantity
     |> ofOption tr
 
-  let private tooltipProfitRow itemCell price quantity = profitRow 1 itemCell (price, false) quantity |> ofOption tr
+  let private tooltipProfitRow itemCell price quantity = profitRow itemCell (price, false) quantity |> ofOption tr
 
   let private profitTooltip data settings timeNorm (profitSummary: Query.ProfitSummary) =
     let summary = profitSummary.CropSummaries[0]
     let seed = Crop.seed summary.Crop
     table [
-      profitHeader false
+      profitHeader "Item" false
 
       tbody [
         profitSummary.FertilizerPrice |> ofOption (fun price ->
@@ -636,14 +638,22 @@ module SummaryTable =
 
     let private tableSummary data total (summaries: Query.XpSummary array) =
       table [
-        thead [ tr [ solverHeader false "XP" "Total XP" ]]
+        thead [
+          tr [
+            thCol "Crop"
+            thCol "Harvests"
+            thCol "XP"
+            thCol "x"
+            thCol "Quantity"
+            thCol "Total XP"
+            thColWith none
+          ]
+        ]
 
         tbody (summaries |> Array.collect (fun xpSummary ->
-          let fertilizer = xpSummary.Fertilizer |> ofOption Image.Icon.fertilizer
           xpSummary.CropSummaries |> Array.map (fun summary ->
             tr [
-              td fertilizer
-              td (Image.Icon.crop data summary.Crop)
+              th [ scope "row"; children (fertilizerAndCropHarvests data xpSummary.Fertilizer summary.Crop) ]
               td (ofNat summary.Harvests)
               td (summary.XpPerItem |> xp |> ofStr)
               td "x"
@@ -653,7 +663,7 @@ module SummaryTable =
             ])
         ))
 
-        tfoot [ totalRow 6 (round2 >> xpFloat) (Some total) none ]
+        tfoot [ totalRow 5 (round2 >> xpFloat) (Some total) none ]
       ]
 
     let solver data settings total dateSpans =
@@ -747,7 +757,8 @@ module Ranker =
       | Some profitSummary ->
         let summary = profitSummary.CropSummaries[0]
         fertilizerAndCropHarvests data fertilizer crop
-        ofStr $" ({summary.Harvests} harvests)"
+        let unit = "harvest" |> pluralizeTo summary.Harvests
+        ofStr $" ({summary.Harvests} {unit})"
         match profit with
         | Ok profit ->
           assert
