@@ -142,8 +142,8 @@ let custom
       ])
 
     Dialog.toggleEdit
-      title
       (if value.IsSome then "Edit" else "Add")
+      title
       (value |> Option.defaultValue defaultValue)
       (curry (if value.IsSome then EditCustom else AddCustom) key >> dispatch)
       editValue
@@ -936,8 +936,8 @@ module LoadSave =
 
   let importSave presets dispatch =
     Dialog.toggleEdit
-      "Import Save Game"
       "Import Save"
+      "Import Save Game"
       None
       (Option.bind snd >> Option.iter (fst >> LoadSaveGame >> dispatch))
       (fun save setSave ->
@@ -978,7 +978,7 @@ module LoadSave =
             onClick (fun _ -> loadDispatch preset.Settings)
             text "Load"
           ]
-          Dialog.toggleEdit "Rename" "Edit" preset.Name (curry RenamePreset i >> saveDispatch) Input.text
+          Dialog.toggleEdit "Edit" "Rename" preset.Name (curry RenamePreset i >> saveDispatch) Input.text
           button [
             onClick (fun _ -> saveDispatch (DeletePreset i))
             text "x"
@@ -994,8 +994,8 @@ module LoadSave =
         ]
         children [
           Dialog.toggleEdit
-            "Save Current Settings As"
             "Save Current Settings"
+            "Save Current Settings As"
             "Untitled Settings"
             (fun name -> SavePreset (name, fst app.State) |> saveDispatch)
             Input.text
@@ -1004,7 +1004,7 @@ module LoadSave =
 
           button [
             onClick (fun _ -> loadDispatch Data.defaultSettings)
-            text "Reset Settings to Default"
+            text "Reset Settings"
           ]
 
           nuclearReset dispatch

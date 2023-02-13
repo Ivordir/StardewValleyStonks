@@ -25,7 +25,7 @@ let [<ReactComponent>] private Dialog (props: {|
   dialog [
     Interop.mkAttr "onClose" (fun _ -> props.Close false)
     prop.ref ref
-    prop.children [
+    children [
       h1 props.Title
       props.Children
       div [
@@ -44,7 +44,7 @@ let [<ReactComponent>] private Dialog (props: {|
 
 let [<ReactComponent>] private EditDialogToggle (props: {|
     Title: string
-    ToggleText: string
+    Toggle: ReactElement
     State: 'a
     Dispatch: 'a -> unit
     Children: 'a -> ('a -> unit) -> ReactElement
@@ -54,7 +54,7 @@ let [<ReactComponent>] private EditDialogToggle (props: {|
   fragment [
     button [
       onClick (fun _ -> setState (Some props.State))
-      text props.ToggleText
+      children props.Toggle
     ]
 
     state |> ofOption (fun state -> Dialog {|
@@ -74,13 +74,19 @@ let create title close children = Dialog {|
   Children = children
 |}
 
-let toggleEdit title toggleText state dispatch children = EditDialogToggle {|
+let toggleEditWith buttonContent title state dispatch children = EditDialogToggle {|
   Title = title
-  ToggleText = toggleText
+  Toggle = buttonContent
   State = state
   Dispatch = dispatch
   Children = children
 |}
 
-let confirmAction title actionText dispatch children =
-  toggleEdit title actionText () dispatch (fun () _ -> children)
+let toggleEdit buttonText title state dispatch children =
+  toggleEditWith (ofStr buttonText) title state dispatch children
+
+let confirmActionWith buttonContent title dispatch children =
+  toggleEditWith buttonContent title () dispatch (fun () _ -> children)
+
+let confirmAction buttonContent title dispatch children =
+  confirmActionWith (ofStr buttonContent) title dispatch children
