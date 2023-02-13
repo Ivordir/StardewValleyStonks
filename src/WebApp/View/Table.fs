@@ -119,8 +119,9 @@ let [<ReactComponent>] private CollapsibleTable (props: {|
       ))
   ]
 
-let collapsibleHeaderAndBodies collapsed header bodies = CollapsibleTable {|
-  Header = header
-  Bodies = bodies
-  Collapsed = collapsed
-|}
+let collapsibleHeaderAndBodies collapsed header bodies =
+  CollapsibleTable {|
+    Header = header
+    Bodies = bodies
+    Collapsed = collapsed
+  |}

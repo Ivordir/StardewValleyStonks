@@ -57,14 +57,15 @@ let [<ReactComponent>] private EditDialogToggle (props: {|
       children props.Toggle
     ]
 
-    state |> ofOption (fun state -> Dialog {|
-      Cancel = true
-      Title = props.Title
-      Close = fun ok ->
-        if ok then props.Dispatch state
-        setState None
-      Children = props.Children state (Some >> setState)
-    |})
+    state |> ofOption (fun state ->
+      Dialog {|
+        Cancel = true
+        Title = props.Title
+        Close = fun ok ->
+          if ok then props.Dispatch state
+          setState None
+        Children = props.Children state (Some >> setState)
+      |})
   ]
 
 let create title close children = Dialog {|
@@ -74,13 +75,14 @@ let create title close children = Dialog {|
   Children = children
 |}
 
-let toggleEditWith buttonContent title state dispatch children = EditDialogToggle {|
-  Title = title
-  Toggle = buttonContent
-  State = state
-  Dispatch = dispatch
-  Children = children
-|}
+let toggleEditWith buttonContent title state dispatch children =
+  EditDialogToggle {|
+    Title = title
+    Toggle = buttonContent
+    State = state
+    Dispatch = dispatch
+    Children = children
+  |}
 
 let toggleEdit buttonText title state dispatch children =
   toggleEditWith (ofStr buttonText) title state dispatch children

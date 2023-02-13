@@ -214,23 +214,25 @@ let [<ReactComponent>] private Select (props: _ Props) =
     ]
   ]
 
-let search width toString display options selected dispatch = Select {|
-  Width = width
-  ToString = Some toString
-  Display = display
-  Options = options
-  Selected = selected
-  Dispatch = dispatch
-|}
+let search width toString display options selected dispatch =
+  Select {|
+    Width = width
+    ToString = Some toString
+    Display = display
+    Options = options
+    Selected = selected
+    Dispatch = dispatch
+  |}
 
-let options width display options selected dispatch = Select {|
-  Width = width
-  ToString = None
-  Display = display
-  Options = options
-  Selected = selected
-  Dispatch = dispatch
-|}
+let options width display options selected dispatch =
+  Select {|
+    Width = width
+    ToString = None
+    Display = display
+    Options = options
+    Selected = selected
+    Dispatch = dispatch
+  |}
 
 let inline unitUnion width selected dispatch =
   options width (Reflection.getCaseName >> ofStr) unitUnionCases selected dispatch
