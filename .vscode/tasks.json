@@ -21,7 +21,7 @@
           "regexp": "^🚨 Build failed$",
         }
       },
-      "dependsOn": [ "Pandoc Watch", "Fable Watch" ]
+      "dependsOn": [ "Pandoc", "Fable" ]
     },
     {
       "label": "Watch JS",
@@ -41,10 +41,10 @@
           "regexp": "^🚨 Build failed$",
         }
       },
-      "dependsOn": [ "Fable Watch" ]
+      "dependsOn": [ "Fable" ]
     },
     {
-      "label": "Fable Watch",
+      "label": "Fable",
       "command": "pnpm",
       "args": [ "watch:fable" ],
       "type": "shell",
@@ -87,7 +87,7 @@
       ]
     },
     {
-      "label": "Pandoc Watch",
+      "label": "Pandoc",
       "command": "pnpm",
       "args": [ "watch:pandoc" ],
       "type": "shell",
