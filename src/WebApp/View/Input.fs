@@ -105,19 +105,6 @@ let text (value: string) (dispatch: string -> unit) =
   ]
 
 
-let opacityCheckbox value dispatch =
-  label [
-    className "qualities-checkbox"
-    children [
-      input [
-        prop.type'.checkbox
-        isChecked value
-        onCheckedChange dispatch
-      ]
-      img [ ariaHidden true ]
-    ]
-  ]
-
 let checkboxWith children value dispatch =
   label [
     className "checkbox-label-text"
@@ -152,6 +139,3 @@ let checkbox labelText value dispatch =
       img [ alt "" ]
     ]
   ]
-
-let checkboxEnable value dispatch = checkbox "Enable" value dispatch
-let checkboxSelect value dispatch = checkbox "Select" value dispatch

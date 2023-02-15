@@ -1159,7 +1159,7 @@ let [<ReactComponent>] Solver (props: {|
   ), [| box data; settings; mode |])
 
   div [
-    if solving then className "disabled"
+    if solving then Class.disabled
     children (Elmish.React.Common.lazyView (solverSummary data settings mode) solution)
   ]
 

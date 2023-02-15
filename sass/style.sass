@@ -6,10 +6,8 @@
 
 $phi: math.div(1 + math.sqrt(5), 2)
 
-$line-height: 1.25
-
 :root
-  font: var(--font-size, 100%) / $line-height Stardew Valley Stonks, Nunito, sans
+  font: var(--font-size, 100%) / 1.25 Stardew Valley Stonks, Nunito, sans
   --space-width: calc(3rem / 13)
   --icon-size: calc(var(--icon-scale) * 16px)
 
@@ -28,7 +26,7 @@ body
   background-repeat: repeat-x
   margin: 0
 
-  > span // noscript
+  & > span // noscript
     text-align: center
     margin-top: 1rem
 
@@ -264,7 +262,7 @@ img
   fill: transparent
 
 
-%checkbox
+.checkbox-label-none
   cursor: pointer
 
   & > input
@@ -278,14 +276,11 @@ img
   &:hover > input + img
     transform: scale(1.1)
 
-.checkbox-label-none
-  @extend %checkbox
-
   & > input + img
     @extend .pixel
     content: url("../public/img/Checkbox.png")
-    width: var(--icon-size)
-    height: var(--icon-size)
+    width: calc(var(--icon-scale) * 18px)
+    height: calc(var(--icon-scale) * 18px)
 
   & > input:checked + img
     content: url("../public/img/Checkedbox.png")
@@ -295,19 +290,6 @@ img
 
   & > input + img
     margin-right: var(--space-width)
-
-.qualities-checkbox
-  @extend %checkbox
-
-  & > input + img
-    @extend .pixel
-    content: url("../public/static/img/Qualities/All.png")
-    width: 2rem
-    height: 1rem
-    @extend .disabled
-
-  & > input:checked + img
-    opacity: 1
 
 
 .breakdown-table
