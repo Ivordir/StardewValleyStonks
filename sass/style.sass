@@ -656,11 +656,6 @@ footer
   text-align: center
 
 
-%crop-qualities-inline
-  display: inline-block
-  height: 100%
-  transition: flex-grow 0.75s
-
 .iridium
   --quality-color: purple
 
@@ -674,6 +669,8 @@ footer
   --quality-color: white
 
 .crop-qualities
+  $transition: flex-grow 0.75s
+
   width: 100%
 
   &-bars
@@ -681,7 +678,7 @@ footer
     display: flex
 
     & > div
-      @extend %crop-qualities-inline
+      transition: $transition
       background-color: var(--quality-color)
 
   &-probs
@@ -689,7 +686,7 @@ footer
     display: flex
 
     & > div
-      @extend %crop-qualities-inline
+      transition: $transition
       flex-basis: min-content
       text-align: center
       color: var(--quality-color)
