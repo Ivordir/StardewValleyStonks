@@ -583,26 +583,33 @@ module Fertilizers =
 
 
 module Misc =
-  let private date min max (date: Date) dispatch =
+  let private date (otherDate: Date) clamp (date: Date) dispatch =
+    let clamp season day =
+      if season = otherDate.Season
+      then day |> clamp otherDate.Day
+      else day
+
     div [ Class.date; children [
       Select.enum
         (length.rem 6)
         date.Season
-        (fun season -> dispatch { date with Season = season })
+        (fun season -> dispatch {
+          Season = season
+          Day = date.Day |> clamp season
+        })
 
       Input.natWith
         (length.rem 2)
-        (Some min)
-        (Some max)
+        (Date.firstDay |> clamp date.Season |> Some)
+        (Date.lastDay |> clamp date.Season |> Some)
         date.Day
         (fun day -> dispatch { date with Day = day })
     ]]
 
   let dates (startDate: Date) (endDate: Date) dispatch =
-    let sameSeason = startDate.Season = endDate.Season
     fragment [
-      date Date.firstDay (if sameSeason then endDate.Day else Date.lastDay) startDate (SetStartDate >> dispatch)
-      date (if sameSeason then startDate.Day else Date.firstDay) Date.lastDay endDate (SetEndDate >> dispatch)
+      date endDate min startDate (SetStartDate >> dispatch)
+      date startDate max endDate (SetEndDate >> dispatch)
     ]
 
   let multipliers multipliers dispatch =
