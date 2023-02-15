@@ -370,11 +370,11 @@ type App = {
 }
 
 type Version = {
-  String: string
   Major: nat
   Minor: nat
   Patch: nat
-}
+} with
+  override this.ToString() = $"{this.Major}.{this.Minor}.{this.Patch}"
 
 [<RequireQualifiedAccess>]
 module Version =
@@ -387,7 +387,6 @@ module Version =
     match str.Split '.' with
     | [| Nat major; Nat minor; Nat patch |] ->
       Some {
-        String = str
         Major = major
         Minor = minor
         Patch = patch
