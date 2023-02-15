@@ -636,3 +636,40 @@ th.sortable
   &[aria-sort=descending]::after
     background-image: url("../public/img/Arrow Down.png")
 
+th.collapsible
+  cursor: pointer
+
+  &::before
+    display: block
+    content: ""
+    @extend %pixel
+    background-size: cover
+
+  &[aria-pressed=false]::before
+    width: calc(var(--icon-scale) * 11px)
+    height: calc(var(--icon-scale) * 10px)
+    background-image: url("../public/img/Arrow Right.png")
+
+  &[aria-pressed=true]::before
+    width: calc(var(--icon-scale) * 10px)
+    height: calc(var(--icon-scale) * 11px)
+    background-image: url("../public/img/Arrow Down.png")
+
+tbody.collapsible
+  cursor: pointer
+
+  & > tr:first-child > td:first-child::before
+    display: block
+    content: ""
+    @extend %pixel
+    background-size: cover
+
+  &[aria-pressed=false] > tr:first-child > td:first-child::before
+    width: calc(var(--icon-scale) * 11px)
+    height: calc(var(--icon-scale) * 10px)
+    background-image: url("../public/img/Arrow Right.png")
+
+  &[aria-pressed=true] > tr:first-child > td:first-child::before
+    width: calc(var(--icon-scale) * 10px)
+    height: calc(var(--icon-scale) * 11px)
+    background-image: url("../public/img/Arrow Down.png")

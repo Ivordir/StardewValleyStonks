@@ -167,6 +167,10 @@ let [<ReactComponent>] private CollapsibleTableBody (props: {|
 
   fragment [
     tbody [
+      className "collapsible"
+      role ("rowgroup", "button")
+      tabIndex 0
+      ariaPressed (not collapsed)
       onClick (fun _ -> setCollapsed (not collapsed))
       children [
         tr [
@@ -193,8 +197,12 @@ let [<ReactComponent>] private CollapsibleTable (props: {|
     thead [
       tr [
         th [
+          scope "col"
+          className "collapsible"
+          role ("columnheader", "button")
+          tabIndex 0
+          ariaPressed (not collapsed)
           onClick (fun _ -> setCollapsed (not collapsed))
-          text "v"
         ]
         props.Header
       ]
