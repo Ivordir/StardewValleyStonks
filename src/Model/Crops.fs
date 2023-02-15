@@ -495,3 +495,6 @@ module Crop =
   let canGetOwnSeedsFromSeedMaker crop = seedItem crop <> mainItem crop
 
   let makesOwnSeeds crop = crop |> items |> Array.contains (seedItem crop)
+
+  let chooseSeeds predicate crops = crops |> Seq.choose (fun crop ->
+    if predicate crop then Some (seed crop) else None)

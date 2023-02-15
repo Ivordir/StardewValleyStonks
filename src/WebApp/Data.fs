@@ -73,15 +73,7 @@ assert // valid ratios (no zeros)
   |> Seq.forall (ProcessedItem.ratio >> Option.forall (fun (i, o) -> i > 0u && o > 0u))
 
 
-let private settingsCoders =
-  Extra.empty
-  |> Extra.withCustom Encode.date Decode.date
-  |> Extra.withCustom
-    (Encode.mapObj string (Encode.mapSeq Encode.vendor): Map<SeedId, Vendor Set> -> _)
-    (Decode.mapObjParse Decode.parseSeedId (Decode.set Decode.vendor))
-  |> Extra.withCustom
-    (Encode.mapObj string Encode.uint32: Map<SeedId, nat> -> _)
-    (Decode.mapObjParse Decode.parseSeedId Decode.uint32)
+let private settingsCoders = Extra.empty |> Extra.withCustom Encode.date Decode.date
 
 let private encodeCropFilters filters = Encode.object [
   nameof filters.NameSearch, Encode.string filters.NameSearch

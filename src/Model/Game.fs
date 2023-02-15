@@ -35,18 +35,9 @@ type GameData = {
 
 [<RequireQualifiedAccess>]
 module GameData =
-  let seedItemPairsFrom crops =
-    crops
-    |> Seq.map (fun crop ->
-      let seed = Crop.seed crop
-      Crop.items crop |> Array.map (fun item -> seed, item))
-    |> Array.concat
-
-  let seedItemPairs data = seedItemPairsFrom data.Crops.Values
-
   let private implicitProduct data item processor =
     let itemId = item.Id
-    match Item.category item, processor with
+    match item.Category, processor with
     | Fruit, ProcessorName "Preserves Jar" -> Some (Jam itemId)
     | Fruit, ProcessorName "Keg" -> Some (Wine itemId)
     | Vegetable, ProcessorName "Preserves Jar" -> Some (Pickles itemId)
@@ -54,7 +45,7 @@ module GameData =
     | _, ProcessorName "Seed Maker" -> data.Seed.TryFind itemId |> Option.map (convertUnit >> SeedsFromSeedMaker)
     | _ -> None
 
-  let product data item processor =
+  let product data processor item =
     match data.Products.TryFind item |> Option.bind (Table.tryFind processor) with
     | Some product -> Some (Processed product)
     | None -> implicitProduct data data.Items[item] processor
@@ -73,13 +64,11 @@ module GameData =
         then None
         else implicitProduct data item processor)
 
-    match products with
-    | Some products ->
+    (implicit, products) ||> Option.fold (fun implicit products ->
       products.Values
       |> Seq.map Processed
       |> Array.ofSeq
-      |> Array.append implicit
-    | None -> implicit
+      |> Array.append implicit)
 
   let fromExtractedAndSupplementalData (extracted: ExtractedData) (supplemental: SupplementalData) =
     let items = extracted.Items |> Table.ofValues Item.id

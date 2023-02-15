@@ -57,9 +57,8 @@ type SelectionsMessage =
   | SelectFertilizers of FertilizerName SelectionMessage
   | SelectFertilizerPrices of Vendor * FertilizerName SelectionMessage
 
-  | SelectSellRaw of (SeedId * ItemId) SelectionMessage
-  | SelectProducts of Processor * (SeedId * ItemId) SelectionMessage
-  | SelectSellForageSeeds of SeedId SelectionMessage
+  | SelectSellRaw of ItemId SelectionMessage
+  | SelectProducts of Processor * ItemId SelectionMessage
 
   | SelectUseHarvestedSeeds of SeedId SelectionMessage
   | SelectUseSeedMaker of SeedId SelectionMessage
@@ -67,7 +66,7 @@ type SelectionsMessage =
 
   | SetCustomFertilizerPrice of CustomMessage<FertilizerName, nat>
   | SetCustomSeedPrice of CustomMessage<SeedId, nat>
-  | SetCustomSellPrice of CustomMessage<SeedId * ItemId, nat * bool>
+  | SetCustomSellPrice of CustomMessage<ItemId, nat * bool>
 
 type ProfitMessage =
   | SetSeedStrategy of SeedStrategy
@@ -242,9 +241,9 @@ let selections data msg (selection: Selections) =
   | SelectSellRaw msg -> { selection with SellRaw = selection.SellRaw |> select msg }
   | SelectProducts (processor, msg) ->
     { selection with
-        Products = selection.Products |> mapSelectWith (fun (_, item) processor ->
-          GameData.product data item processor |> Option.isSome) processor msg }
-  | SelectSellForageSeeds msg -> { selection with SellForageSeeds = selection.SellForageSeeds |> select msg }
+        Products = selection.Products |> mapSelectWith (fun item processor ->
+          GameData.product data processor item |> Option.isSome) processor msg
+    }
 
   | SelectUseHarvestedSeeds msg -> { selection with UseHarvestedSeeds = selection.UseHarvestedSeeds |> select msg }
   | SelectUseSeedMaker msg -> { selection with UseSeedMaker = selection.UseSeedMaker |> select msg }

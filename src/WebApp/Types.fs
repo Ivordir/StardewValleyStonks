@@ -136,9 +136,8 @@ type Selections = {
   Fertilizers: FertilizerName Set
   FertilizerPrices: Map<FertilizerName, Vendor Set>
 
-  SellRaw: (SeedId * ItemId) Set
-  Products: Map<SeedId * ItemId, Processor Set>
-  SellForageSeeds: SeedId Set
+  SellRaw: ItemId Set
+  Products: Map<ItemId, Processor Set>
 
   UseHarvestedSeeds: SeedId Set
   UseSeedMaker: SeedId Set
@@ -146,7 +145,7 @@ type Selections = {
 
   CustomSeedPrices: Selection<SeedId, nat>
   CustomFertilizerPrices: Selection<FertilizerName, nat>
-  CustomSellPrices: Selection<SeedId * ItemId, nat * bool>
+  CustomSellPrices: Selection<ItemId, nat * bool>
 }
 
 [<RequireQualifiedAccess>]
@@ -160,7 +159,7 @@ module Selections =
     selected with
       SeedPrices = selected.SeedPrices |> ensureMapEntries data.Crops.Keys
       FertilizerPrices = selected.FertilizerPrices |> ensureMapEntries data.Fertilizers.Keys
-      Products = selected.Products |> ensureMapEntries (GameData.seedItemPairs data)
+      Products = selected.Products |> ensureMapEntries data.Items.Keys
   }
 
   let private mapOfSets table =
@@ -169,9 +168,13 @@ module Selections =
     |> Seq.map (fun (key, table) -> key, table |> Table.keys |> Set.ofSeq)
     |> Map.ofSeq
 
-  let createAllSelected data =
-    let seedItemPairs = GameData.seedItemPairs data
-    let forageCrops = Set.ofSeq data.ForageCrops.Keys
+  let createAllSelected (data: GameData) =
+    let items =
+      data.Crops.Values
+      |> Array.ofSeq
+      |> Array.collect Crop.items
+      |> Array.append (data.ForageCrops.Keys |> Seq.map convertUnit |> Array.ofSeq)
+
     {
       Crops = Set.ofSeq data.Crops.Keys
       SeedPrices = mapOfSets data.SeedPrices
@@ -180,38 +183,29 @@ module Selections =
       Fertilizers = Set.ofSeq data.Fertilizers.Keys
       FertilizerPrices = mapOfSets data.FertilizerPrices
 
-      SellRaw = Set.ofArray seedItemPairs
+      SellRaw = Set.ofArray items
 
       Products =
-        seedItemPairs
-        |> Seq.map (fun (seed, item) ->
-          (seed, item),
+        items
+        |> Seq.map (fun item ->
+          item,
           item
           |> GameData.products data
-          |> Seq.map Product.processor
-          |> Set.ofSeq)
+          |> Array.map Product.processor
+          |> Set.ofArray)
         |> Map.ofSeq
 
-      SellForageSeeds = forageCrops
-
       UseHarvestedSeeds =
-        seedItemPairs
-        |> Seq.choose (fun (seed, item) ->
-          if nat seed = nat item
-          then Some seed
-          else None)
+        data.Crops.Values
+        |> Crop.chooseSeeds Crop.makesOwnSeeds
         |> Set.ofSeq
 
       UseSeedMaker =
-        data.Crops
-        |> Table.toSeq
-        |> Seq.choose (fun (seed, crop) ->
-          if Crop.canGetOwnSeedsFromSeedMaker crop
-          then Some seed
-          else None)
+        data.Crops.Values
+        |> Crop.chooseSeeds Crop.canGetOwnSeedsFromSeedMaker
         |> Set.ofSeq
 
-      UseForageSeeds = forageCrops
+      UseForageSeeds = Set.ofSeq data.ForageCrops.Keys
 
       CustomSeedPrices = Selection.empty
       CustomFertilizerPrices = Selection.empty

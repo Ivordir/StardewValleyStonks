@@ -28,8 +28,6 @@ module Encode =
     #endif
     |> Encode.object
 
-  let mapObj keyString encodeValue map = map |> Map.toSeq |> keyValues keyString encodeValue
-
   let table keyString encodeValue table = table |> Table.toSeq |> keyValues keyString encodeValue
 
   let vendor (VendorName vendor) = Encode.string vendor
@@ -176,9 +174,6 @@ module Decode =
 
   let table keyWrap decodeValue = wrapKeys Table.ofSeq keyWrap decodeValue
   let tableParse parseKey decodeValue = parseKeysWith Table.ofSeq parseKey decodeValue
-
-  let mapObj keyWrap decodeValue = wrapKeys Map.ofSeq keyWrap decodeValue
-  let mapObjParse parseKey decodeValue = parseKeysWith Map.ofSeq parseKey decodeValue
 
   let fertilizer =
     let u = Unchecked.defaultof<Fertilizer>
