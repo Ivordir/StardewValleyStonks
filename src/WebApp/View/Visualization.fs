@@ -213,9 +213,9 @@ module SummaryTable =
 
     if profit = 0.0 && round2 quantity = 0.0 then None else
 
+    let profit = if price.IsNone then none else ofStr (gold2 profit)
     let price = price |> ofOption (fst >> gold >> ofStr)
     let quantity = if quantity = 0.0 then none else ofStr (toPrecision quantity)
-    let profit = if profit = 0.0 then none else ofStr (gold2 profit)
     let seeds = if seeds then quantity else none
 
     Some (rowCells itemCell price quantity profit seeds)
@@ -1007,22 +1007,20 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
 
     let metricValue = Query.Ranker.rankValue metric
 
-    let bestCrop =
-      match fertName with
-      | Some fert' ->
-        let fert = Option.map data.Fertilizers.Find fert'
-        if Array.isEmpty pairData.Crops then None else
-        pairData.Crops |> Array.maxBy (fun crop -> metricValue data settings timeNorm crop fert |> Option.ofResult) |> Some
-      | None -> bestCrop
+    let bestCrop = fertName |> Option.defaultOrMap bestCrop (fun fert ->
+      let fert = Option.map data.Fertilizers.Find fert
+      if Array.isEmpty pairData.Crops then None else
+      pairData.Crops
+      |> Array.maxBy (fun crop -> metricValue data settings timeNorm crop fert |> Option.ofResult)
+      |> Some)
 
-    let bestFert =
-      match seed with
-      | Some seed ->
-        let crop = data.Crops[seed]
-        if Array.isEmpty pairData.Fertilizers then None else
-        let profit = metricValue data settings timeNorm crop
-        pairData.Fertilizers |> Array.maxBy (profit >> Option.ofResult) |> Some
-      | None -> bestFert
+    let bestFert = seed |> Option.defaultOrMap bestFert (fun seed ->
+      let crop = data.Crops[seed]
+      if Array.isEmpty pairData.Fertilizers then None else
+      let profit = metricValue data settings timeNorm crop
+      pairData.Fertilizers
+      |> Array.maxBy (profit >> Option.ofResult)
+      |> Some)
 
     Choice2Of2 bestCrop, Choice2Of2 bestFert
 
