@@ -11,6 +11,7 @@ $line-height: 1.25
 :root
   font: var(--font-size, 100%) / $line-height Stardew Valley Stonks, Nunito, sans
   --space-width: calc(3rem / 13)
+  --icon-size: calc(var(--icon-scale) * 16px)
 
 body
   --app-min-height: 80vh
@@ -40,9 +41,9 @@ dl
   display: grid
   grid-template-columns: auto auto
   justify-content: start
-  gap: 0 0.5em
+  gap: 0 0.5rem
 
-dt:after
+dt::after
   content: ":"
 
 dd
@@ -293,7 +294,7 @@ img
   @extend .checkbox-label-none
 
   & > input + img
-    margin-right: 0.25em
+    margin-right: var(--space-width)
 
 .qualities-checkbox
   @extend %checkbox
@@ -307,17 +308,6 @@ img
 
   & > input:checked + img
     opacity: 1
-
-
-.right-arrow
-  display: flex
-  justify-content: center
-  justify-items: center
-  flex-direction: row
-  height: 100%
-
-  & > img
-    width: 1rem
 
 
 .breakdown-table
@@ -530,55 +520,44 @@ img
 
 
 .select
-  $border-color: #5b2b2a
+  $padding: 0.25rem
 
   position: relative
 
   &-container
-    // border-width = ceil(1rem / 6)
-    --height: calc(var(--sixth-border) * 11)
-    // height = 1rem * line-height + 2 * padding + 2 * border-width = ceil(1rem / 6) * 11
-    // => 1rem * line-height + 2 * padding = ceil(1rem / 6) * 9
-    // => padding = (ceil(1rem / 6) * 9 - 1rem * line-height) / 2
-    // But since line-height = 1.25, the horizontal padding should be more.
-    // Multiplying by 2 seems "about right".
-    --padding: calc(var(--sixth-border) * 9 - var(--font-size) * #{$line-height})
+    --border: #5b2b2a solid var(--sixth-border)
 
     position: relative
     display: inline-flex
-    height: var(--height)
-    background-color: $border-color
 
-    &::after
-      content: ""
-      width: calc(var(--height) - var(--sixth-border))
-      height: 100%
-      @extend .pixel
-      background-image: url("../public/img/Select Spinner.png")
-      background-size: cover
+  &-spinner
+    content: url("../public/img/Select Spinner.png")
+    height: calc(max(24px, 2rem + 4px)) // eyeball css
+    border: var(--border)
+    border-left: none
+    box-sizing: border-box
 
   &-control
     position: relative
     height: 100%
     box-sizing: border-box
-    border: $border-color solid var(--sixth-border)
+    border: var(--border)
     background: #f9ba66
-    padding: 0 var(--padding)
+    padding: 0 $padding
 
     display: flex
-    align-items: end
+    align-items: center
 
   &-value
     overflow: hidden
     text-overflow: ellipsis
     white-space: nowrap
-    padding-bottom: calc(var(--padding) / 4)
 
     & img
-      height: 1rem
-      width: 1rem
+      height: var(--icon-size)
+      width: var(--icon-size)
       margin-right: var(--space-width)
-      vertical-align: top
+      vertical-align: baseline
 
   &-input
     &-search
@@ -587,7 +566,7 @@ img
       border: none
       position: absolute
       padding: 0
-      width: calc(100% - 2 * var(--padding))
+      width: calc(100% - 2 * #{$padding})
       height: 100%
 
       &:not(:placeholder-shown) + .select-value
@@ -606,14 +585,14 @@ img
     top: 100%
     width: 100%
     z-index: 1
-    border: $border-color solid var(--sixth-border)
+    border: var(--border)
     border-top: none
     background: #f9ba66
     box-sizing: border-box
     overflow: auto
 
     & > ul > li
-      padding: var(--padding)
+      padding: $padding
 
       &.hover
         background-color: #f5deb3
@@ -625,6 +604,20 @@ img
   &:focus-within
     // border: 1px solid cyan
 
+.arrow-right
+  content: url("../public/img/Arrow Right.png")
+  @extend .pixel
+  width: calc(var(--icon-scale) * 11px)
+
+.arrow-up
+  content: url("../public/img/Arrow Up.png")
+  @extend .pixel
+  width: calc(var(--icon-scale) * 10px)
+
+.arrow-down
+  content: url("../public/img/Arrow Down.png")
+  @extend .pixel
+  width: calc(var(--icon-scale) * 10px)
 
 
 .quality

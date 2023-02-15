@@ -60,29 +60,31 @@ let localStorageSub dispatch =
 do
   let root = Browser.Dom.document.documentElement
   let fontSize: string = Browser.Dom.window?getComputedStyle(root)?getPropertyValue("font-size")
-  let setVar (name: string) (px: int) = root?style?setProperty($"--{name}", $"{px}px")
+  let setVar (name: string) (value: string) = root?style?setProperty($"--{name}", value)
+  let setValue (name: string) (value: float) = setVar name (string value)
+  let setPx (name: string) px = setVar name $"{ceil px}px"
 
   let fontPx = (fontSize.Substring(0, fontSize.Length - 2)) |> float |> ceil
 
-  setVar "font-size" (int fontPx)
-  setVar "eighth-border" ((fontPx / 8.0) |> ceil |> int)
-  setVar "sixth-border" ((fontPx / 6.0) |> ceil |> int)
+  setPx "font-size" fontPx
+  setPx "eighth-border" (fontPx / 8.0)
+  setPx "sixth-border" (fontPx / 6.0)
 
   let sp = fontPx / 16.0
-  setVar "min-size" ((sp * 48.0) |> ceil |> int)
+  setPx "min-size" (sp * 48.0)
 
   // set icon size to a multiple of 8 pixels,
   // preferring to upsize instead of downsizing
-  let iconSize =
+  let iconScale =
     let div = fontPx / 8.0
     let rem = fontPx % 8.0
-    let unit =
+    let num8 =
       if rem <= 2.0
       then floor div
       else ceil div
-    int unit * 8
+    max 1.0 (num8 / 2.0) // scale back to 16px
 
-  setVar "icon-size" iconSize
+  setValue "icon-scale" iconScale
 
 Program.mkSimple Data.LocalStorage.loadApp update view
 |> Program.withErrorHandler (fun (msg, e) -> console.error (errorWithMessage msg e))

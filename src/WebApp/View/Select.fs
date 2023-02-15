@@ -65,6 +65,7 @@ let selectControl initialState inputRef (props: _ Props) (state: _ State) setSta
 
       Html.span [
         className "select-value"
+        style [ style.width props.Width ]
         children (props.Display props.Selected)
       ]
     ]
@@ -203,14 +204,11 @@ let [<ReactComponent>] private Select (props: _ Props) =
       | _ -> ())
 
     children [
-      div [
-        className "select"
-        style [ style.width props.Width ]
-        children [
-          selectControl initialState inputRef props state setState
-          state.Hover |> ofOption (selectList listRef clearHover props state setState)
-        ]
-      ]
+      div [ className "select"; children [
+        selectControl initialState inputRef props state setState
+        state.Hover |> ofOption (selectList listRef clearHover props state setState)
+      ]]
+      img [ className "select-spinner"; alt "" ]
     ]
   ]
 

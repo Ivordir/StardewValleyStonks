@@ -167,7 +167,10 @@ module Image =
   let productQuality = product >> withQuality
 
   let allQualities = at (qualityRoot "All")
-  let rightArrow = at (uiRoot "Right Arrow")
+  let rightArrow = img [ className "arrow-right"; alt "" ]
+  let upArrow = img [ className "arrow-up"; alt "" ]
+  let downArrow = img [ className "arrow-down"; alt "" ]
+
 
   [<RequireQualifiedAccess>]
   module Icon =
