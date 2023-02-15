@@ -220,12 +220,12 @@ details > div.open
   transition: opacity 0.5s, transform 0.5s
 
 
-.pixel
+%pixel
   image-rendering: pixelated
   image-rendering: crisp-edges
 
 img
-  @extend .pixel
+  @extend %pixel
 
 .icon
   &-processor
@@ -277,7 +277,6 @@ img
     transform: scale(1.1)
 
   & > input + img
-    @extend .pixel
     content: url("../public/img/Checkbox.png")
     width: calc(var(--icon-scale) * 18px)
     height: calc(var(--icon-scale) * 18px)
@@ -347,12 +346,6 @@ img
         visibility: hidden
         position: absolute
 
-
-
-
-.checkbox-hidden
-  width: 1rem
-  height: 0.5rem
 
 .season-slot
   display: inline-block
@@ -448,7 +441,7 @@ img
 .input-box
   outline: none
   background: none
-  @extend .pixel
+  @extend %pixel
   border-image-source: url("../public/img/Input Box.png")
   border-image-slice: 3 fill
   border-image-width: 0.5rem
@@ -548,19 +541,17 @@ img
   &:focus-within
     // border: 1px solid cyan
 
+
 .arrow-right
   content: url("../public/img/Arrow Right.png")
-  @extend .pixel
   width: calc(var(--icon-scale) * 11px)
 
 .arrow-up
   content: url("../public/img/Arrow Up.png")
-  @extend .pixel
   width: calc(var(--icon-scale) * 10px)
 
 .arrow-down
   content: url("../public/img/Arrow Down.png")
-  @extend .pixel
   width: calc(var(--icon-scale) * 10px)
 
 
@@ -584,13 +575,6 @@ img
 
 .disabled
   opacity: 0.5
-
-.open
-  opacity: 1
-  visibility: visible
-
-.hidden
-  display: none
 
 footer
   background-color: white
@@ -641,7 +625,7 @@ th.sortable
   &::after
     float: right
     content: ""
-    @extend .pixel
+    @extend %pixel
     width: calc(var(--icon-scale) * 10px)
     height: calc(var(--icon-scale) * 11px)
     background-size: cover

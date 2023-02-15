@@ -64,8 +64,6 @@ open Core.ExtraTopLevelOperators
 
 [<RequireQualifiedAccess>]
 module Class =
-  let checkboxLabel = className "checkbox-label"
-  let checkboxImg = className "checkbox-img"
   let iconProcessor = className "icon-processor"
   let iconProcessorLarge = className "icon-processor-large"
 
