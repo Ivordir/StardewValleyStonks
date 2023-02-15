@@ -63,50 +63,6 @@ open Core.Operators
 open Core.ExtraTopLevelOperators
 
 [<RequireQualifiedAccess>]
-module Class =
-  let iconProcessor = className "icon-processor"
-  let iconProcessorLarge = className "icon-processor-large"
-
-  let fileInput = className "file-input"
-
-  let active = className "active"
-  let hover = className "hover"
-  let disabled = className "disabled"
-  let open' = className "open"
-  let tabs = className "tabs"
-
-  let select = className "select"
-  let selectControl = className "select-control"
-  let selectList = className "select-list"
-  let selectListHidden = className "select-list-hidden"
-  let selectInput = className "select-input"
-  let selectInputHidden = className "select-input-hidden"
-
-  let cropQualities = className "crop-qualities"
-  let cropQualitiesBars = className "crop-qualities-bars"
-  let cropQualitiesProbs = className "crop-qualities-probs"
-
-  let professions = className "professions"
-  let skills = className "skills"
-
-  let calendar = className "calendar"
-  let calendarSeason = className "calendar-season"
-  let calendarHeader = className "calendar-header"
-  let calendarDays = className "calendar-days"
-
-  let quality = className "quality"
-  let seasonSlot = className "season-slot"
-  let date = className "date"
-
-  let breakdownTable = className "breakdown-table"
-
-  let graph = className "graph"
-  let graphControls = className "controls"
-  let auditGraph = className "audit-graph"
-  let auditGraphSelect = className "audit-graph-select"
-
-
-[<RequireQualifiedAccess>]
 module Image =
   let path = sprintf "img/%s/%s.png"
   let skillRoot = path "Skills"

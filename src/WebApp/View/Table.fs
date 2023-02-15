@@ -172,10 +172,7 @@ let [<ReactComponent>] private CollapsibleTableBody (props: {|
       tabIndex 0
       ariaPressed (not collapsed)
       onClick (fun _ -> setCollapsed (not collapsed))
-      children [
-        td []
-        props.Header
-      ]
+      children [ td []; props.Header ]
     ]
 
     fragment (props.Rows |> Array.map (fun row -> tr [ td []; row ]))

@@ -57,34 +57,6 @@ let localStorageSub dispatch =
   Data.LocalStorage.subscribe (SyncPresets >> dispatch)
   { new System.IDisposable with member _.Dispose () = () }
 
-do
-  let root = Browser.Dom.document.documentElement
-  let fontSize: string = Browser.Dom.window?getComputedStyle(root)?getPropertyValue("font-size")
-  let setVar (name: string) (value: string) = root?style?setProperty($"--{name}", value)
-  let setValue (name: string) (value: float) = setVar name (string value)
-  let setPx (name: string) px = setVar name $"{ceil px}px"
-
-  let fontPx = (fontSize.Substring(0, fontSize.Length - 2)) |> float |> ceil
-
-  setPx "font-size" fontPx
-  setPx "eighth-border" (fontPx / 8.0)
-  setPx "sixth-border" (fontPx / 6.0)
-
-  let sp = fontPx / 16.0
-  setPx "min-size" (sp * 48.0)
-
-  // set icon size to a multiple of 8 pixels,
-  // preferring to upsize instead of downsizing
-  let iconScale =
-    let div = fontPx / 8.0
-    let rem = fontPx % 8.0
-    let num8 =
-      if rem <= 2.0
-      then floor div
-      else ceil div
-    max 1.0 (num8 / 2.0) // scale back to 16px
-
-  setValue "icon-scale" iconScale
 
 Program.mkSimple Data.LocalStorage.loadApp update view
 |> Program.withErrorHandler (fun (msg, e) -> console.error (errorWithMessage msg e))
