@@ -192,11 +192,13 @@ module Image =
 
     let profession (profession: Profession) = profession |> string |> skill
 
-    let fertilizer = Fertilizer.name >> nameIsPartofPath fertilizerRoot
+
+    let fertilizerName = nameIsPartofPath fertilizerRoot
+    let fertilizer = Fertilizer.name >> fertilizerName
 
     let item (item: Item) = at (itemPath item.Id) item.Name
-    let item' (data: GameData) = data.Items.Find >> item
-    let seed data (seed: SeedId) = seed |> convertUnit |> item' data
+    let itemId (data: GameData) = data.Items.Find >> item
+    let seed data (seed: SeedId) = seed |> convertUnit |> itemId data
 
     let private withQuality path name quality =
       fragment [

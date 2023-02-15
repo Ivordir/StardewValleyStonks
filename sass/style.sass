@@ -379,44 +379,6 @@ img
   & img
     width: 100%
 
-.table
-  display: flex
-  flex-direction: column
-
-  &-filters
-    height: var(--table-filters-height)
-
-  %table-style
-    table-layout: fixed
-    border-collapse: collapse
-
-  &-header
-    @extend %table-style
-    width: 100%
-    background-color: lavender
-
-    & > thead
-      & > tr
-        & > th
-          cursor: auto
-
-  &-body
-    @extend %table-style
-
-    &-container
-      overflow: auto
-
-    & > tbody
-      & > tr
-        cursor: pointer
-
-        &:hover
-          background-color: blue
-
-        & > td
-          padding: 0
-          overflow: visible
-
 .crop-tabs
   display: flex
   flex-direction: row
@@ -543,7 +505,7 @@ img
     box-sizing: border-box
     border: var(--border)
     background: #f9ba66
-    padding: 0 $padding
+    padding: 0 (2 * $padding)
 
     display: flex
     align-items: center
@@ -690,3 +652,21 @@ footer
       flex-basis: min-content
       text-align: center
       color: var(--quality-color)
+
+th.sortable
+  cursor: pointer
+
+  &::after
+    float: right
+    content: ""
+    @extend .pixel
+    width: calc(var(--icon-scale) * 10px)
+    height: calc(var(--icon-scale) * 11px)
+    background-size: cover
+
+  &[aria-sort=ascending]::after
+    background-image: url("../public/img/Arrow Up.png")
+
+  &[aria-sort=descending]::after
+    background-image: url("../public/img/Arrow Down.png")
+

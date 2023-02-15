@@ -202,7 +202,7 @@ module Skills =
     assert (abs (Array.sum dist - 1.0) < 1e-10)
     Qualities.wrap dist
 
-  let private farmCropQualitiesCalc fertQuality skills =
+  let farmCropQualitiesFrom fertQuality skills =
     let buffLevel = Skill.buffedLevel skills.Farming
     let gold = 0.01 + 0.2 * (float buffLevel / 10.0 + float fertQuality * float (buffLevel + 2u) / 12.0)
     let probabilities =
@@ -217,7 +217,7 @@ module Skills =
       |]
     ifElseDistribution probabilities
 
-  let farmCropQualitiesWith fertilizer skills = farmCropQualitiesCalc (Fertilizer.Opt.quality fertilizer) skills
+  let farmCropQualitiesWith fertilizer skills = farmCropQualitiesFrom (Fertilizer.Opt.quality fertilizer) skills
 
   let inline farmCropQualities skills = farmCropQualitiesWith None skills
 

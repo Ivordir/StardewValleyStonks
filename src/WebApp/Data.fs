@@ -247,7 +247,7 @@ let defaultCropTabState = {
   ProductSort = 0u, true
   SeedSort = 0u, true
   ProductQuality = Quality.Normal
-  ShowNormalizedProductPrices = false
+  NormalizeProductPrices = false
 }
 
 let defaultUI = {

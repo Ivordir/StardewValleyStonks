@@ -94,7 +94,7 @@ type CropTabMessage =
   | SetProductSort of TableSort
   | SetSeedSort of TableSort
   | SetProductQuality of Quality
-  | SetShowNormalizedProductPrices of bool
+  | SetNormalizeProductPrices of bool
 
 type RankerMessage =
   | SetRankItem of RankItem
@@ -284,7 +284,7 @@ let cropTab msg state =
   | SetProductSort (col, asc) -> { state with ProductSort = col, asc }
   | SetSeedSort (col, asc) -> { state with SeedSort = col, asc }
   | SetProductQuality quality -> { state with ProductQuality = quality }
-  | SetShowNormalizedProductPrices value -> { state with ShowNormalizedProductPrices = value }
+  | SetNormalizeProductPrices value -> { state with NormalizeProductPrices = value }
 
 let ranker msg ranker =
   match msg with

@@ -19,6 +19,10 @@ module internal Util =
   let inline resizeToArray (resize: 'a ResizeArray) = unbox<'a array> resize
 
   let compareBy projection a b = compare (projection a) (projection b)
+  let compareByDirection projection ascending =
+    if ascending
+    then fun a b -> compareBy projection a b
+    else fun a b -> compareBy projection b a
 
   let inline unitUnionCases<'a> =
     typeof<'a>
@@ -332,7 +336,7 @@ type CropTabState = {
   ProductSort: TableSort
   SeedSort: TableSort
   ProductQuality: Quality
-  ShowNormalizedProductPrices: bool
+  NormalizeProductPrices: bool
 }
 
 type UIState = {
