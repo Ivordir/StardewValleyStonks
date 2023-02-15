@@ -165,25 +165,20 @@ let [<ReactComponent>] private CollapsibleTableBody (props: {|
     setCollapsed props.AllCollapsed
   ), [| box props.AllCollapsed |])
 
-  fragment [
-    tbody [
+  tbody [
+    tr [
       className "collapsible"
-      role ("rowgroup", "button")
+      role ("row", "button")
       tabIndex 0
       ariaPressed (not collapsed)
       onClick (fun _ -> setCollapsed (not collapsed))
       children [
-        tr [
-          td []
-          props.Header
-        ]
+        td []
+        props.Header
       ]
     ]
 
-    tbody [
-      if collapsed then style [ style.visibility.collapse ]
-      children (props.Rows |> Array.map (fun row -> tr [ td []; row ]))
-    ]
+    fragment (props.Rows |> Array.map (fun row -> tr [ td []; row ]))
   ]
 
 let [<ReactComponent>] private CollapsibleTable (props: {|

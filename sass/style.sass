@@ -10,6 +10,8 @@ $phi: math.div(1 + math.sqrt(5), 2)
   font: var(--font-size, 100%) / 1.25 Stardew Valley Stonks, Nunito, sans
   --space-width: calc(3rem / 13)
   --icon-size: calc(var(--icon-scale) * 16px)
+  --arrow-length: calc(var(--icon-scale) * 11px)
+  --arrow-width: calc(var(--icon-scale) * 10px)
 
 body
   --app-min-height: 80vh
@@ -406,7 +408,7 @@ img
       justify-content: center
       outline: var(--eighth-border) solid black
       padding: 10%
-      --counter-offset: 2.5%
+      $counter-offset: 2.5%
 
       & > img
         width: 50%
@@ -418,8 +420,8 @@ img
         counter-increment: day
         content: counter(day)
         position: absolute
-        top: var(--counter-offset)
-        left: calc(var(--counter-offset) + 0.25rem)
+        top: $counter-offset
+        left: calc(#{$counter-offset} + 0.25rem)
 
 
 
@@ -544,15 +546,38 @@ img
 
 .arrow-right
   content: url("../public/img/Arrow Right.png")
-  width: calc(var(--icon-scale) * 11px)
+  width: var(--arrow-length)
 
 .arrow-up
   content: url("../public/img/Arrow Up.png")
-  width: calc(var(--icon-scale) * 10px)
+  width: var(--arrow-width)
 
 .arrow-down
   content: url("../public/img/Arrow Down.png")
-  width: calc(var(--icon-scale) * 10px)
+  width: var(--arrow-width)
+
+%arrow
+  content: ""
+  @extend %pixel
+  background-size: cover
+
+%arrow-right
+  @extend %arrow
+  background-image: url("../public/img/Arrow Right.png")
+  width: var(--arrow-length)
+  height: var(--arrow-width)
+
+%arrow-up
+  @extend %arrow
+  background-image: url("../public/img/Arrow Up.png")
+  width: var(--arrow-width)
+  height: var(--arrow-length)
+
+%arrow-down
+  @extend %arrow
+  background-image: url("../public/img/Arrow Down.png")
+  width: var(--arrow-width)
+  height: var(--arrow-length)
 
 
 .quality
@@ -619,57 +644,48 @@ footer
       text-align: center
       color: var(--quality-color)
 
+
 th.sortable
   cursor: pointer
 
   &::after
     float: right
-    content: ""
-    @extend %pixel
-    width: calc(var(--icon-scale) * 10px)
-    height: calc(var(--icon-scale) * 11px)
-    background-size: cover
 
   &[aria-sort=ascending]::after
-    background-image: url("../public/img/Arrow Up.png")
+    @extend %arrow-up
 
   &[aria-sort=descending]::after
-    background-image: url("../public/img/Arrow Down.png")
+    @extend %arrow-down
+
 
 th.collapsible
   cursor: pointer
+  width: var(--arrow-length)
 
   &::before
     display: block
-    content: ""
-    @extend %pixel
-    background-size: cover
 
   &[aria-pressed=false]::before
-    width: calc(var(--icon-scale) * 11px)
-    height: calc(var(--icon-scale) * 10px)
-    background-image: url("../public/img/Arrow Right.png")
+    @extend %arrow-right
 
   &[aria-pressed=true]::before
-    width: calc(var(--icon-scale) * 10px)
-    height: calc(var(--icon-scale) * 11px)
-    background-image: url("../public/img/Arrow Down.png")
+    @extend %arrow-down
 
-tbody.collapsible
+
+tr.collapsible
   cursor: pointer
 
-  & > tr:first-child > td:first-child::before
-    display: block
-    content: ""
-    @extend %pixel
-    background-size: cover
+  & > td:first-child
+    width: var(--arrow-length)
 
-  &[aria-pressed=false] > tr:first-child > td:first-child::before
-    width: calc(var(--icon-scale) * 11px)
-    height: calc(var(--icon-scale) * 10px)
-    background-image: url("../public/img/Arrow Right.png")
+    &::before
+      display: block
 
-  &[aria-pressed=true] > tr:first-child > td:first-child::before
-    width: calc(var(--icon-scale) * 10px)
-    height: calc(var(--icon-scale) * 11px)
-    background-image: url("../public/img/Arrow Down.png")
+  &[aria-pressed=false] > td:first-child::before
+    @extend %arrow-right
+
+  &[aria-pressed=true] > td:first-child::before
+    @extend %arrow-down
+
+  &[aria-pressed=false] ~ tr
+    visibility: collapse
