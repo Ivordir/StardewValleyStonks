@@ -14,19 +14,14 @@ module Values =
 
   let fontSize = int fontPx
 
-  // set icon size to a multiple of 8 pixels,
+  // set icon size to a multiple of 16 pixels,
   // preferring to upsize instead of downsizing
   let iconScale =
-    let div = fontPx / 8.0
-    let rem = fontPx % 8.0
-    let num8 =
-      if rem <= 2.0
-      then floor div
-      else ceil div
-
-    max 1.0 (num8 / 2.0) // scale to 16px
-
-  let iconSize = int (iconScale * 16.0)
+    let div = fontPx / 16.0
+    let rem = fontPx % 16.0
+    if rem < 4.0
+    then floor div
+    else ceil div
 
   do
     setPx "font-size" fontPx
@@ -34,8 +29,7 @@ module Values =
     setPx "sixth-border" (fontPx / 6.0)
     let sp = fontPx / 16.0
     setPx "min-size" (sp * 48.0)
-    setValue "icon-scale" iconScale
-    setPx "icon-size" iconSize
+    setValue "icon-base-scale" iconScale
 
 
 

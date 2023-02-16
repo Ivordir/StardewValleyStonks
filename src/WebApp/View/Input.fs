@@ -107,7 +107,7 @@ let text (value: string) (dispatch: string -> unit) =
 
 let checkboxWith children value dispatch =
   label [
-    className "checkbox-label-text"
+    className [ "checkbox"; "label" ]
     onClick (fun e -> e.stopPropagation ())
     prop.children [
       input [
@@ -126,7 +126,7 @@ let inline checkboxText str value msg = checkboxWith (ofStr str) value msg
 
 let checkbox labelText value dispatch =
   label [
-    className "checkbox-label-none"
+    className "checkbox"
     onClick (fun e -> e.stopPropagation ())
     children [
       input [

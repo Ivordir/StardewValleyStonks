@@ -19,8 +19,8 @@ module Skills =
   let profession skills profession dispatch =
     let selected = skills.Professions.Contains profession
     label [
-      classes [
-        if selected then "active"
+      className [
+        "profession"
         if not (skills |> Skills.professionUnlocked profession) then "disabled"
       ]
       children [

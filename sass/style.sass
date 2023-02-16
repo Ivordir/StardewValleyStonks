@@ -9,11 +9,18 @@ $phi: math.div(1 + math.sqrt(5), 2)
 @function ui-img($file)
   @return url("/public/img/UI/#{$file}.png")
 
+
+@function icon-size($px)
+  @return calc(var(--icon-scale) * #{$px}px)
+
+$icon-size: #{icon-size(16)}
+
 :root
   font: var(--font-size, 100%) / 1.25 Stardew Valley Stonks, Nunito, sans
   --space-width: calc(3rem / 13)
-  --arrow-length: calc(var(--icon-scale) * 11px)
-  --arrow-width: calc(var(--icon-scale) * 10px)
+  --icon-scale: calc(max(1, var(--icon-base-scale)))
+  --arrow-length: #{icon-size(11)}
+  --arrow-width: #{icon-size(10)}
 
 body
   --app-min-height: 80vh
@@ -267,14 +274,24 @@ img
   cursor: pointer
   fill: transparent
 
+%hidden-checkbox
+  transform: scale(0)
+  opacity: 0
+  position: absolute
 
-.checkbox-label-none
+.checkbox
   cursor: pointer
 
   & > input
-    transform: scale(0)
-    opacity: 0
-    position: absolute
+    @extend %hidden-checkbox
+
+  & > input + img
+    content: ui-img("Checkbox")
+    width: #{icon-size(18)}
+    height: #{icon-size(18)}
+
+  & > input:checked + img
+    content: ui-img("Checkedbox")
 
   & > input:focus + img
     outline: 2px solid cyan
@@ -282,41 +299,25 @@ img
   &:hover > input + img
     transform: scale(1.1)
 
-  & > input + img
-    content: ui-img("Checkbox")
-    width: calc(var(--icon-scale) * 18px)
-    height: calc(var(--icon-scale) * 18px)
+.label > input + img
+  margin-right: var(--space-width)
 
-  & > input:checked + img
-    content: ui-img("Checkedbox")
+.profession
+  display: block
+  width: 100%
+  height: 2.5rem
 
-.checkbox-label-text
-  @extend .checkbox-label-none
+  & > input
+    @extend %hidden-checkbox
 
-  & > input + img
-    margin-right: var(--space-width)
+  & > input:checked + *
+    color: green
 
+  & > input:focus + *
+    outline: 2px solid cyan
 
-.breakdown-table
-  margin: auto
-  width: max-content
-
-  & td
-    vertical-align: bottom
-    text-align: right
-
-
-.skills
-  & > div
-    display: flex
-    flex-direction: column
-
-    & > span
-      text-align: center
-
-    & > label
-      color: brown
-      text-align: left
+  &:hover
+    background: white
 
 .professions
   display: flex
@@ -330,19 +331,25 @@ img
     width: 50%
     align-items: center
 
+.skills
+  & > div
+    display: flex
+    flex-direction: column
+
+    & > span
+      text-align: center
+
     & > label
-      display: block
-      width: 100%
-      height: 2.5rem
-      color: purple
-      border-radius: 10px
+      color: brown
+      text-align: left
 
-      &.active
-        color: green
+.breakdown-table
+  margin: auto
+  width: max-content
 
-      & > input
-        visibility: hidden
-        position: absolute
+  & td
+    vertical-align: bottom
+    text-align: right
 
 
 .calendar
