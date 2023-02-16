@@ -165,7 +165,7 @@ let parseItem overrrides itemData itemId =
       Category = category
     }
 
-let parseCropAmount seedId overrides scythe (cropAmount: string) =
+let parseCropAmount seed overrides scythe (cropAmount: string) =
   match cropAmount.Split ' ' with
   | [| "false" |] ->
     match overrides with
@@ -182,15 +182,15 @@ let parseCropAmount seedId overrides scythe (cropAmount: string) =
 
     let minHarvest = uint minHarvest
     if minHarvest < CropAmount.minYield then
-      failwith $"The minimum harvest for crop {seedId} was below {CropAmount.minYield}."
+      failwith $"The minimum harvest for crop {seed} was below {CropAmount.minYield}."
 
     let maxHarvest = uint maxHarvest
     if minHarvest > maxHarvest then
-      failwith $"The min harvest ({minHarvest}) was greater than the max harvest ({maxHarvest}) for crop {seedId}."
+      failwith $"The min harvest ({minHarvest}) was greater than the max harvest ({maxHarvest}) for crop {seed}."
 
     let extraChance = float extraChance
     if extraChance < CropAmount.minExtraCropChance || CropAmount.maxExtraCropChance < extraChance then
-      failwith $"The extra crop chance for crop {seedId} was not in the range [{CropAmount.minExtraCropChance}, {CropAmount.maxExtraCropChance}]."
+      failwith $"The extra crop chance for crop {seed} was not in the range [{CropAmount.minExtraCropChance}, {CropAmount.maxExtraCropChance}]."
     {
       MinCropYield = minHarvest
       MaxCropYield = maxHarvest
@@ -200,10 +200,10 @@ let parseCropAmount seedId overrides scythe (cropAmount: string) =
       FarmingQualities = overrides.FarmingDistribution |> Option.defaultValue true
     }
 
-  | _ -> failwith $"Unexpected crop amount format for crop {seedId}: {cropAmount}"
+  | _ -> failwith $"Unexpected crop amount format for crop {seed}: {cropAmount}"
 
 
-let parseCrop farmCropOverrides forageCropData seedId (data: string) =
+let parseCrop farmCropOverrides forageCropData seed (data: string) =
   match data.Split '/' with
   | [| growthStages; seasons; spriteSheetRow; itemId; regrowTime; scythe; cropAmount; _; _ |] ->
     let spriteSheetRow = uint spriteSheetRow
@@ -211,9 +211,9 @@ let parseCrop farmCropOverrides forageCropData seedId (data: string) =
 
     let growthStages =
       let splitted = growthStages.Split ' '
-      if Array.isEmpty splitted then failwith $"The crop {seedId} had no growth stages." else
+      if Array.isEmpty splitted then failwith $"The crop {seed} had no growth stages." else
       let stages = splitted |> Array.map uint
-      if stages |> Array.contains 0u then failwith $"The crop {seedId} had a growth stage of 0."
+      if stages |> Array.contains 0u then failwith $"The crop {seed} had a growth stage of 0."
       stages
 
     let seasons =
@@ -223,7 +223,7 @@ let parseCrop farmCropOverrides forageCropData seedId (data: string) =
 
     let regrowTime =
       match regrowTime with
-      | "0" -> failwith $"The crop {seedId} had a regrow time of 0."
+      | "0" -> failwith $"The crop {seed} had a regrow time of 0."
       | "-1" -> None
       | time -> Some (uint time)
 
@@ -235,9 +235,9 @@ let parseCrop farmCropOverrides forageCropData seedId (data: string) =
         | Seasons.Summer -> Season.Summer
         | Seasons.Fall -> Season.Fall
         | Seasons.Winter -> Season.Winter
-        | _ -> failwith $"Forage crop {seedId} does not grow in a single season."
+        | _ -> failwith $"Forage crop {seed} does not grow in a single season."
 
-      if regrowTime.IsSome then failwith $"Forage crop {seedId} regrows."
+      if regrowTime.IsSome then failwith $"Forage crop {seed} regrows."
 
       let data =
         match forageCropData |> Table.tryFind season with
@@ -250,21 +250,21 @@ let parseCrop farmCropOverrides forageCropData seedId (data: string) =
       ForageCrop {
         Season = season
         Stages = growthStages
-        Seed = seedId
+        Seed = seed
         Items = data.Items
         SeedRecipeUnlockLevel = data.SeedRecipeUnlockLevel
       }
 
     else
-      let overrides = farmCropOverrides |> Table.tryFind seedId |> Option.defaultValue FarmCropOverride.none
+      let overrides = farmCropOverrides |> Table.tryFind seed |> Option.defaultValue FarmCropOverride.none
 
       let scythe =
         match scythe with
         | "0" -> false
         | "1" -> true
-        | str -> failwith $"Unexpected scythe value for crop {seedId}: {str}"
+        | str -> failwith $"Unexpected scythe value for crop {seed}: {str}"
 
-      let cropAmount = parseCropAmount seedId overrides.Amount scythe cropAmount
+      let cropAmount = parseCropAmount seed overrides.Amount scythe cropAmount
 
       FarmCrop {
         Seasons = overrides.Seasons |> Option.defaultValue seasons
@@ -272,13 +272,13 @@ let parseCrop farmCropOverrides forageCropData seedId (data: string) =
         RegrowTime = regrowTime
         Paddy = overrides.Paddy |> Option.defaultValue false
         Giant = overrides.Giant |> Option.defaultValue false
-        Seed = seedId
+        Seed = seed
         Amount = cropAmount
         Item = itemId
         ExtraItem = overrides.ExtraItem
       }
 
-  | _ -> failwith $"Unexpected crop data format for crop {seedId}: {data}"
+  | _ -> failwith $"Unexpected crop data format for crop {seed}: {data}"
 
 
 let saveSubTexture name graphics x y width height (texture: Texture2D) =
@@ -382,8 +382,8 @@ let main args =
   let cropSpriteSheet = tryLoadSpriteSheet "crop" cropSpriteSheetPath
   let itemSpriteSheet = tryLoadSpriteSheet "item" itemSpriteSheetPath
 
-  let crops = cropData |> Array.map (fun (seedId, data) ->
-    parseCrop config.FarmCropOverrides config.ForageCropData seedId data)
+  let crops = cropData |> Array.map (fun (seed, data) ->
+    parseCrop config.FarmCropOverrides config.ForageCropData seed data)
   crops |> Array.sortInPlaceBy (snd >> Crop.seed)
 
   let items =
