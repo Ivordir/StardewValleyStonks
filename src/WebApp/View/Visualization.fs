@@ -104,7 +104,7 @@ module GrowthCalendar =
       |> Option.map (Crop.seed >> stageImage 0)
       |> Option.toArray
 
-    Array.create (int (settings.Game.StartDate.Day - 1u)) (div [ Class.disabled ])
+    Array.create (int (span.StartDate.Day - 1u)) (div [ Class.disabled ])
     :: Array.create (days - 1) (div [])
     :: firstStage
     :: stageList
