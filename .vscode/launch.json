@@ -5,7 +5,7 @@
       "name": "Debug with Chrome",
       "type": "chrome",
       "request": "launch",
-      "preLaunchTask": "Start",
+      "preLaunchTask": "Watch",
       "url": "http://localhost:1234",
       "webRoot": "${workspaceFolder}",
       "sourceMaps": true,
@@ -17,7 +17,7 @@
       "name": "Debug with Firefox",
       "type": "firefox",
       "request": "launch",
-      "preLaunchTask": "Start",
+      "preLaunchTask": "Watch",
       "url": "http://localhost:1234",
       "webRoot": "${workspaceFolder}",
       "pathMappings": [
