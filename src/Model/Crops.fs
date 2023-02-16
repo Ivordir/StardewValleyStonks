@@ -407,7 +407,7 @@ module ForageCrop =
 
   let xpPerHarvest skills = float xpPerItem * xpItemsPerHarvest skills
 
-  let name crop = Season.name crop.Season + " Forage"
+  let name item crop = item (toItem crop.Seed) |> Item.name
 
 
 type Crop =
@@ -418,7 +418,7 @@ type Crop =
 module Crop =
   let name item = function
     | FarmCrop crop -> FarmCrop.name item crop
-    | ForageCrop crop -> ForageCrop.name crop
+    | ForageCrop crop -> ForageCrop.name item crop
 
   let seasons = function
     | FarmCrop crop -> FarmCrop.seasons crop

@@ -159,7 +159,7 @@ module Icon =
 
   let crop data = function
     | FarmCrop crop -> crop.Item |> itemId data
-    | ForageCrop crop -> fromPathAndName (crop.Seed |> toItem |> Path.item) (ForageCrop.name crop)
+    | ForageCrop crop -> crop.Seed |> seed data
 
   let vendorNoText (VendorName name) = fromPathAndAlt (Path.vendor name) name
   let vendor (VendorName name) = fromPathAndName (Path.vendor name) name
