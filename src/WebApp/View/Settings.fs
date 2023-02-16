@@ -29,7 +29,7 @@ module Skills =
           isChecked selected
           onCheckedChange (curry SetProfession profession >> dispatch)
         ]
-        Image.Icon.profession profession
+        Icon.profession profession
       ]
     ]
 
@@ -56,7 +56,7 @@ module Skills =
 
   let skill name skill dispatch =
     fragment [
-      Html.span (Image.Icon.skill name)
+      Html.span (Icon.skill name)
 
       label [
         ofStr "Level:"
@@ -118,7 +118,7 @@ let viewPrice price =
     | Some (source, price) ->
       ofNat price
       match source with
-      | NonCustom vendor -> Image.vendor vendor
+      | NonCustom vendor -> Icon.vendorNoText vendor
       | Custom () -> none
     | None -> ofStr "???"
   ]
@@ -184,7 +184,7 @@ module Crops =
       cropSort
       (SetCropSort >> SetCropTabState >> SetUI >> dispatch)
       [|
-        Column.sortable (ofStr "Crop") (Image.Icon.crop data) (Crop.name data.Items.Find)
+        Column.sortable (ofStr "Crop") (Icon.crop data) (Crop.name data.Items.Find)
         |> Column.withSelect (settings.Selected.Crops.Contains >> Some) selectDispatch
         |> Column.markAsKey
 
@@ -200,12 +200,12 @@ module Crops =
         Column.createWith
           (ofStr "Seasons")
           (fun crop ->
-            fragment (Enum.values |> Array.map (fun season ->
-              Html.span [ Class.seasonSlot; children [
-                if Crop.growsInSeason season crop then
-                  Image.season season
-              ]]
-            )))
+            Html.span [ Class.seasons; children (Enum.values |> Array.map (fun season ->
+              if Crop.growsInSeason season crop
+              then Icon.seasonNoText season
+              else div []
+            ))
+          ])
           (Some (fun ascending ->
             let compare c1 c2 =
               match Crop.seasons c1, Crop.seasons c2 with
@@ -256,7 +256,7 @@ module Crops =
         cropTab.ProductSort
         (SetProductSort >> cropTabDispatch)
         [|
-          Column.sortable (ofStr "Item") Image.Icon.item Item.name |> Column.markAsKey
+          Column.sortable (ofStr "Item") Icon.item Item.name |> Column.markAsKey
 
           Column.valueSortable
             (ofStr "Raw")
@@ -269,7 +269,7 @@ module Crops =
 
           yield! processors data |> Array.map (fun processor ->
             Column.valueOptSortable
-              (Image.Icon.processor processor)
+              (Icon.processor processor)
               (Item.id >> GameData.product data processor >> Option.map price)
               (ofOption ofFloat)
             |> Column.withSelect
@@ -320,12 +320,12 @@ module Crops =
         seedSort
         (SetSeedSort >> SetCropTabState >> SetUI >> dispatch)
         [|
-          Column.sortable (ofStr "Crop") (Image.Icon.crop data) (Crop.name data.Items.Find)
+          Column.sortable (ofStr "Crop") (Icon.crop data) (Crop.name data.Items.Find)
           |> Column.markAsKey
 
           yield! seedVendors data |> Array.map (fun vendor ->
             Column.valueOptSortable
-              (Image.Icon.vendor vendor)
+              (Icon.vendor vendor)
               (Crop.seed >> Query.seedPriceValueFromVendor data settings vendor)
               (ofOption ofNat)
             |> Column.withSelect
@@ -341,7 +341,7 @@ module Crops =
             settings.Selected.CustomSeedPrices
             (SetCustomSeedPrice >> selectDispatch)
 
-          Column.create (Image.Icon.processor Processor.seedMaker) (konst none)
+          Column.create (Icon.processor Processor.seedMaker) (konst none)
           |> Column.withSelect
             (fun seed ->
               if Crop.canGetOwnSeedsFromSeedMaker data.Crops[seed]
@@ -426,7 +426,7 @@ module Crops =
           if filters.InSeason then Class.disabled
           children (Enum.values |> Array.map (fun season ->
             Input.checkboxWith
-              (Image.Icon.season season)
+              (Icon.season season)
               (filters.Seasons |> Seasons.contains season)
               (toggleSeason season >> SetSeasons >> dispatch)))
         ]
@@ -483,7 +483,7 @@ module Fertilizers =
             Column.valueSortable
               (ofStr "Fertilizer")
               Fertilizer.name
-              Image.Icon.fertilizerName
+              Icon.fertilizerName
             |> Column.withSelect
               (settings.Selected.Fertilizers.Contains >> Some)
               (SelectFertilizers >> selectDispatch)
@@ -535,12 +535,12 @@ module Fertilizers =
           fertPriceSort
           (SetFertilizerPriceSort >> uiDispatch)
           [|
-            Column.valueSortable (ofStr "Fertilizer") id Image.Icon.fertilizerName
+            Column.valueSortable (ofStr "Fertilizer") id Icon.fertilizerName
             |> Column.markAsKey
 
             yield! fertilizerVendors data |> Array.map (fun vendor ->
               Column.valueOptSortable
-                (Image.Icon.vendor vendor)
+                (Icon.vendor vendor)
                 (data.FertilizerPrices.Find >> Table.tryFind vendor)
                 (ofOption ofNat)
               |> Column.withSelect
@@ -679,7 +679,7 @@ module Misc =
             |> Array.map (fun processor ->
               li [
                 Input.checkboxWith
-                  (Image.Icon.processor processor)
+                  (Icon.processor processor)
                   (modData.QualityProcessors |> Set.contains processor)
                   (curry SetQualityProcessors processor >> dispatch)
               ]

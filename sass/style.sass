@@ -2,14 +2,16 @@
 
 @font-face
   font-family: Stardew Valley Stonks
-  src: url('../public/Stardew Valley Stonks.otf')
+  src: url("/public/Stardew Valley Stonks.otf")
 
 $phi: math.div(1 + math.sqrt(5), 2)
+
+@function ui-img($file)
+  @return url("/public/img/UI/#{$file}.png")
 
 :root
   font: var(--font-size, 100%) / 1.25 Stardew Valley Stonks, Nunito, sans
   --space-width: calc(3rem / 13)
-  --icon-size: calc(var(--icon-scale) * 16px)
   --arrow-length: calc(var(--icon-scale) * 11px)
   --arrow-width: calc(var(--icon-scale) * 10px)
 
@@ -23,7 +25,7 @@ body
 
   min-height: 100vh
 
-  background-image: url("../public/img/Gradient.png")
+  background-image: ui-img("Gradient")
   background-size: contain
   background-repeat: repeat-x
   margin: 0
@@ -49,6 +51,8 @@ dt::after
 dd
   margin: 0
 
+tbody th
+  text-align: left
 
 button
   font-family: inherit
@@ -88,7 +92,7 @@ input[type=range]
     height: 32px
     width: 16px
     image-rendering: pixelated
-    background: url("../public/img/Range Thumb.png")
+    background: ui-img("Range Thumb")
     background-size: contain
     background-repeat: no-repeat
     background-position: center
@@ -105,7 +109,7 @@ input[type=range]
     height: 32px
     width: 16px
     image-rendering: crisp-edges
-    background: url("../public/img/Range Thumb.png")
+    background: ui-img("Range Thumb")
     background-size: contain
     background-repeat: no-repeat
     background-position: center
@@ -229,12 +233,12 @@ details > div.open
 img
   @extend %pixel
 
-.icon
-  &-processor
+.icon-processor
+  width: 1.25rem
+
+  &-large
     width: 1.25rem
-    &-large
-      width: 1.25rem
-      image-rendering: unset
+    image-rendering: unset
 
 // svg
   // @extend .pixel
@@ -279,12 +283,12 @@ img
     transform: scale(1.1)
 
   & > input + img
-    content: url("../public/img/Checkbox.png")
+    content: ui-img("Checkbox")
     width: calc(var(--icon-scale) * 18px)
     height: calc(var(--icon-scale) * 18px)
 
   & > input:checked + img
-    content: url("../public/img/Checkedbox.png")
+    content: ui-img("Checkedbox")
 
 .checkbox-label-text
   @extend .checkbox-label-none
@@ -309,10 +313,6 @@ img
 
     & > span
       text-align: center
-
-      & > img
-        width: 1rem
-        height: 1rem
 
     & > label
       color: brown
@@ -340,42 +340,9 @@ img
       &.active
         color: green
 
-      & > img
-        width: 1rem
-        height: 1rem
-
       & > input
         visibility: hidden
         position: absolute
-
-
-.season-slot
-  display: inline-block
-  width: 25%
-
-  & img
-    width: 100%
-
-.crop-tabs
-  display: flex
-  flex-direction: row
-
-  & > li
-    flex-grow: 1
-    background-color: white
-    cursor: pointer
-    text-align: center
-
-    &.active
-      color: magenta
-
-    &:hover
-      transform: scale(1.1)
-
-
-.seasons
-  display: flex
-  flex-direction: row
 
 
 .calendar
@@ -389,10 +356,6 @@ img
     align-items: center
     font-size: 2rem
     margin-bottom: 0.25rem
-
-    & > img
-      height: 1rem
-      margin-right: 0.5rem
 
   &-days
     display: grid
@@ -445,7 +408,7 @@ img
   outline: none
   background: none
   @extend %pixel
-  border-image-source: url("../public/img/Input Box.png")
+  border-image-source: ui-img("Input Box")
   border-image-slice: 3 fill
   border-image-width: 0.5rem
   padding: 0.5rem
@@ -457,6 +420,37 @@ img
   -moz-appearance: textfield
 
 
+.icon
+  width: var(--icon-size)
+
+  &-text > :first-child
+    margin-right: var(--space-width)
+
+@mixin icon-img($name, $folder)
+  .#{to-lower-case($name)}
+    @extend .icon
+    content: url("/public/img/#{$folder}/#{$name}.png")
+
+@each $skill in Farming Tiller Artisan Agriculturist Foraging Gatherer Botanist
+  @include icon-img($skill, "Skills")
+
+@each $product in Jam Pickles Wine Juice
+  @include icon-img($product, "Products")
+
+%season
+  height: var(--icon-size)
+
+@mixin season($name)
+  .#{to-lower-case($name)}
+    @extend %season
+    content: url("/public/img/Seasons/#{$name}.png")
+
+@each $season in Spring Summer Fall Winter
+  @include season($season)
+
+.seasons
+  display: grid
+  grid-template-columns: repeat(4, 1fr)
 
 
 .select
@@ -471,7 +465,7 @@ img
     display: inline-flex
 
   &-spinner
-    content: url("../public/img/Select Spinner.png")
+    content: ui-img("Select Spinner")
     height: calc(max(24px, 2rem + 4px)) // eyeball css
     border: var(--border)
     border-left: none
@@ -544,17 +538,18 @@ img
   &:focus-within
     // border: 1px solid cyan
 
-
+// with pixelated image rendering, rotating distorts the image on some browsers
+// instead, let's create a class for each direction
 .arrow-right
-  content: url("../public/img/Arrow Right.png")
+  content: ui-img("Arrow Right")
   width: var(--arrow-length)
 
 .arrow-up
-  content: url("../public/img/Arrow Up.png")
+  content: ui-img("Arrow Up")
   width: var(--arrow-width)
 
 .arrow-down
-  content: url("../public/img/Arrow Down.png")
+  content: ui-img("Arrow Down")
   width: var(--arrow-width)
 
 %arrow
@@ -564,19 +559,19 @@ img
 
 %arrow-right
   @extend %arrow
-  background-image: url("../public/img/Arrow Right.png")
+  background-image: ui-img("Arrow Right")
   width: var(--arrow-length)
   height: var(--arrow-width)
 
 %arrow-up
   @extend %arrow
-  background-image: url("../public/img/Arrow Up.png")
+  background-image: ui-img("Arrow Up")
   width: var(--arrow-width)
   height: var(--arrow-length)
 
 %arrow-down
   @extend %arrow
-  background-image: url("../public/img/Arrow Down.png")
+  background-image: ui-img("Arrow Down")
   width: var(--arrow-width)
   height: var(--arrow-length)
 
@@ -584,14 +579,10 @@ img
 .quality
   display: inline-block
   position: relative
-  width: 1.5rem
-  height: 1.5rem
-
-  & > img:first-child
-    width: 100%
-    height: 100%
+  height: var(--icon-size)
 
   & > img:last-child
+    content: var(--img)
     position: absolute
     left: 0
     bottom: 0
@@ -610,17 +601,15 @@ footer
   text-align: center
 
 
-.iridium
-  --quality-color: purple
+@mixin quality($name, $color)
+  .#{to-lower-case(#{$name})}
+    --color: #{$color}
+    --img: url("/public/img/Qualities/#{$name}.png")
 
-.gold
-  --quality-color: gold
-
-.silver
-  --quality-color: silver
-
-.normal
-  --quality-color: white
+@include quality(Iridium, purple)
+@include quality(Gold, gold)
+@include quality(Silver, silver)
+@include quality(Normal, white)
 
 .crop-qualities
   $transition: flex-grow 0.75s
@@ -633,7 +622,7 @@ footer
 
     & > div
       transition: $transition
-      background-color: var(--quality-color)
+      background-color: var(--color)
 
   &-probs
     height: 1rem
@@ -643,7 +632,7 @@ footer
       transition: $transition
       flex-basis: min-content
       text-align: center
-      color: var(--quality-color)
+      color: var(--color)
 
 
 th.sortable

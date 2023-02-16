@@ -63,128 +63,117 @@ open Core.Operators
 open Core.ExtraTopLevelOperators
 
 [<RequireQualifiedAccess>]
-module Image =
-  let path = sprintf "img/%s/%s.png"
-  let skillRoot = path "Skills"
-  let fertilizerRoot = path "Fertilizers"
-  let cropRoot = path "Crops"
-  let itemRoot = path "Items"
-  let itemPath (item: ItemId) = item |> string |> itemRoot
-  let vendorRoot = path "Vendors"
-  let processorRoot = path "Processors"
-  let uiRoot = path "UI"
-  let seasonRoot = path "Seasons"
-  let qualityRoot = path "Qualities"
-  let productRoot = path "Products"
+module Icon =
+  module Path =
+    let crop (seed: SeedId) (file: string) = $"img/Crops/{seed}/{file}.png"
+    let at (folder: string) (file: string) = $"img/{folder}/{file}.png"
+    let fertilizer = at "Fertilizers"
+    let item (itemId: ItemId) = itemId |> string |> at "Items"
+    let processor = at "Processors"
+    let vendor = at "Vendors"
 
-  let withClass class' path = img [ class'; src path ]
+  let private fromClassNameAndAlt (name: string) altText =
+    img [
+      className (lowerCase name)
+      alt altText
+    ]
 
-  let at path = img [ src path ]
+  let private fromClassName name = fromClassNameAndAlt name ""
 
-  let season = Season.name >> seasonRoot >> at
-  let item' = itemPath >> at
-  let item = Item.id >> item'
-  let private withQuality (img: ReactElement) quality =
-    div [ Class.quality; children [
+  let private fromImageAndText img text =
+    Html.span [ className "icon-text"; children [
       img
-      at (qualityRoot (Quality.name quality))
+      ofStr text
     ]]
-  let itemQuality' = item' >> withQuality
-  let crop = function
-    | FarmCrop crop -> at (crop.Item |> string |> itemRoot)
-    | ForageCrop crop -> at (crop.Seed |> string |> itemRoot)
-  let growthStage (i: int) (seed: SeedId) = at (cropRoot $"{seed}/{i}")
-  let regrowStage (seed: SeedId) = at (cropRoot $"{seed}/Regrow")
 
-  let fertilizer' (fertilizer: FertilizerName) = fertilizer |> fertilizerRoot |> at
-  let fertilizer = Fertilizer.name >> fertilizer'
-  let skill = skillRoot >> at
-  let profession (profession: Profession) = profession |> string |> skill
-  let vendor (VendorName vendor) = vendor |> vendorRoot |> at
+  let private fromClassAndName = fromClassName >> fromImageAndText
+
+  let private fromClassIsName name = fromClassAndName name name
+
+  let private fromPathAndAlt path altText =
+    img [
+      className "icon"
+      src path
+      alt altText
+    ]
+
+  let private fromPath path = fromPathAndAlt path ""
+
+  let private fromPathAndName = fromPath >> fromImageAndText
+
+  let growthStage (i: int) seed = fromPath (Path.crop seed (string i))
+  let regrowStage seed = fromPath (Path.crop seed "Regrow")
+
+  let rightArrow = fromClassName "arrow-right"
+  let upArrow = fromClassName "arrow-up"
+  let downArrow = fromClassName "arrow-down"
+
+  let seasonNoText season =
+    let name = Season.name season
+    fromClassNameAndAlt name name
+
+  let season = Season.name >> fromClassIsName
+
+  let profession (profession: Profession) = profession |> string |> fromClassIsName
+  let skill name = fromClassIsName name
+
+  let itemIdNoText itemId = fromPath (Path.item itemId)
+  let item item = fromPathAndName (Path.item item.Id) item.Name
+  let itemId (data: GameData) itemId = item data.Items[itemId]
+  let seed data (seed: SeedId) = seed |> convertUnit |> itemId data
+
+  let private qualities = Qualities.init (Quality.name >> fromClassName)
+
+  let itemQuality item quality =
+    let img =
+      div [ Class.quality; children [
+        fromPath (Path.item item.Id)
+        qualities[quality]
+      ]]
+
+    fromImageAndText img item.Name
+
+  let itemIdQuality (data: GameData) item quality = itemQuality data.Items[item] quality
+
+  let product data product =
+    match product with
+    | SeedsFromSeedMaker item
+    | Processed { Item = item } -> itemId data item
+    | product -> fromClassAndName (Reflection.getCaseName product) (Product.name data.Items.Find product)
+
+  let productQuality data product quality =
+    match product with
+    | SeedsFromSeedMaker item
+    | Processed { Item = item } -> itemIdQuality data item quality
+    | product ->
+      let img =
+        div [ Class.quality; children [
+          product |> Reflection.getCaseName |> fromClassName
+          qualities[quality]
+        ]]
+
+      fromImageAndText img (Product.name data.Items.Find product)
+
+  let fertilizerName name = fromPathAndName (Path.fertilizer name) name
+  let fertilizer = Fertilizer.name >> fertilizerName
+
+  let crop data = function
+    | FarmCrop crop -> crop.Item |> itemId data
+    | ForageCrop crop -> fromPathAndName (crop.Seed |> convertUnit |> Path.item) (ForageCrop.name crop)
+
+  let vendorNoText (VendorName name) = fromPathAndAlt (Path.vendor name) name
+  let vendor (VendorName name) = fromPathAndName (Path.vendor name) name
+
+  let private withClass css path name =
+    fragment [
+      img [ css; src path; alt "" ]
+      ofStr name
+    ]
+
   let processor = function
-    | ProcessorName "Mill" -> "Mill" |> processorRoot |> withClass Class.iconProcessorLarge
-    | ProcessorName processor -> processor |> processorRoot |> withClass Class.iconProcessor
+    | ProcessorName "Mill" -> withClass Class.iconProcessorLarge (Path.processor "Mill") "Mill"
+    | ProcessorName processor -> withClass Class.iconProcessor (Path.processor processor) processor
 
-  let private productPath = function
-    | Jam _ -> productRoot (nameof Jam)
-    | Pickles _ -> productRoot (nameof Pickles)
-    | Wine _ -> productRoot (nameof Wine)
-    | Juice _ -> productRoot (nameof Juice)
-    | SeedsFromSeedMaker seed -> itemPath seed
-    | Processed product -> itemPath product.Item
-
-  let product = function
-    | SeedsFromSeedMaker seed -> item' seed
-    | Processed product -> item' product.Item
-    | product -> at (productPath product)
-
-  let productQuality = product >> withQuality
-
-  let allQualities = at (qualityRoot "All")
-  let rightArrow = img [ className "arrow-right"; alt "" ]
-  let upArrow = img [ className "arrow-up"; alt "" ]
-  let downArrow = img [ className "arrow-down"; alt "" ]
-
-
-  [<RequireQualifiedAccess>]
-  module Icon =
-    let withClass css path name =
-      fragment [
-        withClass css path
-        ofStr name
-      ]
-
-    let at path name =
-      fragment [
-        at path
-        ofStr name
-      ]
-
-    let private nameIsPartofPath path name = at (path name) name
-
-    let skill = nameIsPartofPath skillRoot
-
-    let profession (profession: Profession) = profession |> string |> skill
-
-
-    let fertilizerName = nameIsPartofPath fertilizerRoot
-    let fertilizer = Fertilizer.name >> fertilizerName
-
-    let item (item: Item) = at (itemPath item.Id) item.Name
-    let itemId (data: GameData) = data.Items.Find >> item
-    let seed data (seed: SeedId) = seed |> convertUnit |> itemId data
-
-    let private withQuality path name quality =
-      fragment [
-        withQuality (img [ src path ]) quality
-        ofStr name
-      ]
-
-    let itemQuality item quality = withQuality (itemPath item.Id) item.Name quality
-
-    let itemQuality' (data: GameData) = data.Items.Find >> itemQuality
-
-    let crop (data: GameData) = function
-      | FarmCrop crop -> at (crop.Item |> string |> itemRoot) (FarmCrop.name data.Items.Find crop)
-      | ForageCrop crop -> at (crop.Seed |> string |> itemRoot) (ForageCrop.name crop)
-
-    let vendor (VendorName name) = nameIsPartofPath vendorRoot name
-
-    let processor = function
-      | ProcessorName "Mill" -> withClass Class.iconProcessorLarge (processorRoot "Mill") "Mill"
-      | ProcessorName processor -> withClass Class.iconProcessor (processorRoot processor) processor
-
-    let product (data: GameData) product =
-      let name = Product.name data.Items.Find product
-      let path = productPath product
-      at path name
-
-    let productQuality (data: GameData) product quality =
-      let name = Product.name data.Items.Find product
-      let path = productPath product
-      withQuality path name quality
-
-    let season = Season.name >> nameIsPartofPath seasonRoot
 
 
 let labeled label element =

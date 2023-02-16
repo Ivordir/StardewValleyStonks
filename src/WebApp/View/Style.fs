@@ -8,30 +8,35 @@ module Values =
   let private setValue (name: string) (value: float) = setVar name (string value)
   let private setPx (name: string) px = setVar name $"{ceil px}px"
 
-  let fontPx =
+  let private fontPx =
     let fontSize: string = Browser.Dom.window?getComputedStyle(root)?getPropertyValue("font-size")
-    (fontSize.Substring(0, fontSize.Length - 2)) |> float |> ceil |> int
+    (fontSize.Substring(0, fontSize.Length - 2)) |> float |> ceil
+
+  let fontSize = int fontPx
+
+  // set icon size to a multiple of 8 pixels,
+  // preferring to upsize instead of downsizing
+  let iconScale =
+    let div = fontPx / 8.0
+    let rem = fontPx % 8.0
+    let num8 =
+      if rem <= 2.0
+      then floor div
+      else ceil div
+
+    max 1.0 (num8 / 2.0) // scale to 16px
+
+  let iconSize = int (iconScale * 16.0)
 
   do
-    let fontPx = float fontPx
     setPx "font-size" fontPx
     setPx "eighth-border" (fontPx / 8.0)
     setPx "sixth-border" (fontPx / 6.0)
     let sp = fontPx / 16.0
     setPx "min-size" (sp * 48.0)
-
-    // set icon size to a multiple of 8 pixels,
-    // preferring to upsize instead of downsizing
-    let iconScale =
-      let div = fontPx / 8.0
-      let rem = fontPx % 8.0
-      let num8 =
-        if rem <= 2.0
-        then floor div
-        else ceil div
-      max 1.0 (num8 / 2.0) // scale back to 16px
-
     setValue "icon-scale" iconScale
+    setPx "icon-size" iconSize
+
 
 
 [<RequireQualifiedAccess>]
@@ -44,7 +49,6 @@ module Class =
   let fileInput = className "file-input"
 
   let active = className "active"
-  let hover = className "hover"
   let disabled = className "disabled"
   let open' = className "open"
   let tabs = className "tabs"
@@ -69,7 +73,7 @@ module Class =
   let calendarDays = className "calendar-days"
 
   let quality = className "quality"
-  let seasonSlot = className "season-slot"
+  let seasons = className "seasons"
   let date = className "date"
 
   let breakdownTable = className "breakdown-table"

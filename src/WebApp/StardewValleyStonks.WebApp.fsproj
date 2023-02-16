@@ -11,7 +11,7 @@
     <Compile Include="Solver.fs" />
     <Compile Include="Data.fs" />
     <Compile Include="Update.fs" />
-    <Compile Include="View/Class.fs" />
+    <Compile Include="View/Style.fs" />
     <Compile Include="View/Prelude.fs" />
     <Compile Include="View/Input.fs" />
     <Compile Include="View/Dialog.fs" />

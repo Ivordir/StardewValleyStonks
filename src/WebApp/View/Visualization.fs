@@ -35,7 +35,7 @@ module GrowthCalendar =
     then list
     else repeatCons (n - 1u) items (items :: list)
 
-  let stageImage stage seed = div (Image.growthStage stage seed)
+  let stageImage stage seed = div (Icon.growthStage stage seed)
 
   let stageImages stages seed =
     stages
@@ -49,9 +49,9 @@ module GrowthCalendar =
     let usedDays = Growth.daysNeededFor crop.RegrowTime time harvests
     let stageImages = stageImages stages crop.Seed
 
-    let harvestItem = div (Image.item' crop.Item)
+    let harvestItem = div (Icon.itemIdNoText crop.Item)
     let firstHarvest = Array.append stageImages [| harvestItem |]
-    let regrow = Array.create (int crop.RegrowTime.Value) (div (Image.regrowStage crop.Seed))
+    let regrow = Array.create (int crop.RegrowTime.Value) (div (Icon.regrowStage crop.Seed))
     regrow[regrow.Length - 1] <- harvestItem
     let filler = max 0 (int totalDays - int usedDays)
     let stageList = Array.create filler (div []) :: stageList
@@ -78,7 +78,7 @@ module GrowthCalendar =
         let seed = Crop.seed crop
         let stages, time = Game.growthTimeAndStages settings.Game span.Fertilizer crop
         let stageImages = stageImages stages seed
-        let harvestItem = [| div (Image.item' (Crop.mainItem crop)) |]
+        let harvestItem = [| div (Icon.itemIdNoText (Crop.mainItem crop)) |]
         if bridgeCrop then
           let filler = max 0 (int remainingDays - int time)
           let days = int remainingDays + int days[season] - int time - filler
@@ -117,7 +117,7 @@ module GrowthCalendar =
         children [
           div [
             Class.calendarHeader
-            children (Image.Icon.season season)
+            children (Icon.season season)
           ]
           div [
             Class.calendarDays
@@ -165,12 +165,12 @@ module GrowthCalendar =
 
 let private fertilizerAndCropHarvests data fertilizer crop =
   div [
-    Image.Icon.crop data crop
+    Icon.crop data crop
 
     fertilizer |> ofOption (fun fertilizer ->
       fragment [
         ofStr " with "
-        Image.Icon.fertilizer fertilizer
+        Icon.fertilizer fertilizer
       ])
   ]
 
@@ -242,7 +242,7 @@ module SummaryTable =
         match vendor with
         | NonCustom vendor ->
           ofStr " from "
-          Image.Icon.vendor vendor
+          Icon.vendor vendor
         | Custom () -> ofStr " (Custom)"
       ]
       significantRow seeds itemCell (Some (price, true)) quantity
@@ -265,14 +265,14 @@ module SummaryTable =
       table [
         tbody (inputRows |> Array.map (fun ((item, quality), quantity) ->
           tr [
-            td (Image.Icon.itemQuality' data item quality)
+            td (Icon.itemIdQuality data item quality)
             td "x"
             td (ofFloat quantity)
           ]
         ))
       ]
 
-      Image.rightArrow
+      Icon.rightArrow
 
       itemCell
     ]
@@ -282,7 +282,7 @@ module SummaryTable =
     | Some fertilizer, Some price ->
       boughtRow false price quantity (fragment [
         if replacement then ofStr "Replacement "
-        Image.Icon.fertilizer fertilizer
+        Icon.fertilizer fertilizer
       ])
     | _ -> None
 
@@ -290,7 +290,7 @@ module SummaryTable =
     quantities
     |> Qualities.indexed
     |> Array.choose (fun (quality, quantity) ->
-      seedRow (Image.Icon.itemQuality' data item quality) quantity)
+      seedRow (Icon.itemIdQuality data item quality) quantity)
 
   let private seedMakerRows data crop item quantities =
     let seed = Crop.seed crop
@@ -298,7 +298,7 @@ module SummaryTable =
       quantities
       |> Qualities.indexed
       |> Array.map (fun (quality, quantity) -> (item, quality), quantity)
-      |> itemCellWithInputs data (Image.Icon.seed data seed)
+      |> itemCellWithInputs data (Icon.seed data seed)
 
     let seedQuantity = Processor.seedMakerExpectedQuantity seed * Qualities.sum quantities
 
@@ -306,7 +306,7 @@ module SummaryTable =
 
   let private forageSeedsRows data settings items seed quantitySold quantityUsed =
     if quantitySold = 0.0 && quantityUsed = 0.0 then Array.empty else
-    let itemCell = Image.Icon.seed data seed
+    let itemCell = Icon.seed data seed
     let inputsCell quantity =
       let quantity = quantity / float ForageCrop.forageSeedsPerCraft
       items
@@ -330,7 +330,7 @@ module SummaryTable =
 
   let private soldItemRow data (summary: Query.SoldItemSummary) =
     let itemCell = fragment [
-      Image.Icon.itemQuality' data summary.Item summary.Quality
+      Icon.itemIdQuality data summary.Item summary.Quality
       if summary.Custom then ofStr " (Custom)"
     ]
 
@@ -340,7 +340,7 @@ module SummaryTable =
     let itemCell =
       itemCellWithInputs
         data
-        (Image.Icon.productQuality data summary.Product summary.Quality)
+        (Icon.productQuality data summary.Product summary.Quality)
         summary.ConsumedItemQuantities
 
     profitRow itemCell (summary.Price, false) summary.Quantity
@@ -361,7 +361,7 @@ module SummaryTable =
         let unit = "harvest" |> pluralizeTo summary.Harvests
         [| rowCells (ofStr $"{summary.Harvests} {unit}") none none none (ofInt seeds) |]
 
-      boughtRow true summary.SeedPrice summary.SeedsBought (Image.Icon.seed data seed) |> Option.toArray
+      boughtRow true summary.SeedPrice summary.SeedsBought (Icon.seed data seed) |> Option.toArray
 
       summary.SeedsUsed |> Array.collect (fun (item, quantities) ->
         if item = Crop.seedItem crop then harvestedSeedsRows data item quantities
@@ -545,23 +545,23 @@ module SummaryTable =
       tbody [
         profitSummary.FertilizerPrice |> ofOption (fun price ->
           tooltipBoughtRow
-            (profitSummary.Fertilizer |> ofOption Image.Icon.fertilizer)
+            (profitSummary.Fertilizer |> ofOption Icon.fertilizer)
             price
             (1.0 + summary.ReplacedFertilizer))
 
-        tooltipBoughtRow (Image.Icon.seed data seed) summary.SeedPrice summary.SeedsBought
+        tooltipBoughtRow (Icon.seed data seed) summary.SeedPrice summary.SeedsBought
 
         tooltipProfitRow
-          (Image.Icon.seed data seed)
+          (Icon.seed data seed)
           (Game.seedItemSellPrice data settings.Game seed)
           summary.ForageSeedsSold
 
         fragment (summary.SoldItems |> Array.map (fun summary ->
-          tooltipProfitRow (Image.Icon.itemQuality' data summary.Item summary.Quality) summary.Price summary.Quantity))
+          tooltipProfitRow (Icon.itemIdQuality data summary.Item summary.Quality) summary.Price summary.Quantity))
 
         fragment (summary.SoldProducts |> Array.map (fun summary ->
           tooltipProfitRow
-            (Image.Icon.productQuality data summary.Product summary.Quality)
+            (Icon.productQuality data summary.Product summary.Quality)
             summary.Price
             summary.Quantity))
       ]
@@ -737,13 +737,13 @@ module Ranker =
       svg.height 40
       svg.children [
         Svg.image [
-          svg.href (Image.itemRoot (Crop.mainItem data.Crops[seed] |> string))
+          svg.href (Icon.Path.item (Crop.mainItem data.Crops[seed]))
           svg.width 20
           svg.height 20
         ]
         fert |> ofOption (fun fert ->
           Svg.image [
-            svg.href (Image.fertilizerRoot fert)
+            svg.href (Icon.Path.fertilizer fert)
             svg.width 20
             svg.height 20
             svg.y 20
@@ -839,18 +839,18 @@ module Ranker =
           if flags.HasFlag Query.InvalidReasons.NoFertilizerPrice then
             fert |> ofOption (fun fert ->
               Svg.image [
-                svg.href (Image.fertilizerRoot fert)
+                svg.href (Icon.Path.fertilizer fert)
                 svg.height width
               ])
           if flags.HasFlag Query.InvalidReasons.NotEnoughSeeds then
             Svg.image [
-              svg.href (Image.itemRoot (string crop))
+              svg.href (Icon.Path.item (convertUnit crop))
               svg.height width
               svg.y width
             ]
           if flags.HasFlag Query.InvalidReasons.NotEnoughDays then
             Svg.image [
-              svg.href (Image.uiRoot "Time")
+              svg.href "img/Time.png"
               svg.width width
               svg.height width
               svg.y (width * 2.0)
@@ -878,7 +878,7 @@ module Ranker =
             yAxis.unit (RankMetric.unit ranker.RankMetric)
             yAxis.domain (domain.constant 0, domain.auto)
             if ranker.RankMetric = ROI then Interop.mkYAxisAttr "tickFormatter" (fun x -> x * 100.0)
-            yAxis.width (Values.fontPx * 5)
+            yAxis.width (Values.fontSize * 5)
           ]
           Recharts.tooltip [
             tooltip.content (chartTooltip pairs data settings ranker.TimeNormalization ranker.RankMetric)
@@ -1053,7 +1053,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
         selectSpecificOrBest
           "Crop"
           (Crop.name data.Items.Find)
-          (Image.Icon.crop data)
+          (Icon.crop data)
           cropOptions
           crop
           (fun opt ->
@@ -1068,7 +1068,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
         selectSpecificOrBest
           "Fertilizer"
           Fertilizer.Opt.displayName
-          (Option.defaultOrMap (ofStr "No Fertilizer") Image.Icon.fertilizer)
+          (Option.defaultOrMap (ofStr "No Fertilizer") Icon.fertilizer)
           fertilizerOptions
           fert
           (fun opt ->
