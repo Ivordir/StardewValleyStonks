@@ -35,23 +35,28 @@ module GrowthCalendar =
     then list
     else repeatCons (n - 1u) items (items :: list)
 
-  let stageImage stage seed = div (Icon.growthStage stage seed)
+  let private nameItem = function
+    | FarmCrop crop -> crop.Item
+    | ForageCrop crop -> toItem crop.Seed
 
-  let stageImages stages seed =
+  let stageImage seed item stage = div (Icon.growthStage seed item stage)
+
+  let stageImages seed item stages =
     stages
-    |> Array.mapi (fun i stage -> Array.create (int stage) (stageImage i seed))
+    |> Array.mapi (fun i stage -> Array.create (int stage) (stageImage seed item i))
     |> Array.concat
     |> Array.tail
 
-  let private regrowCropCalendarDays settings (days: nat array) fertilizer stageList (season, crop, harvests) =
+  let private regrowCropCalendarDays (data: GameData) settings (days: nat array) fertilizer stageList (season, crop, harvests) =
     let totalDays = Array.sum days[(season + 1)..]
     let stages, time = Game.growthTimeAndStages settings.Game fertilizer (FarmCrop crop)
     let usedDays = Growth.daysNeededFor crop.RegrowTime time harvests
-    let stageImages = stageImages stages crop.Seed
+    let item = data.Items[crop.Item]
+    let stageImages = stages |> stageImages crop.Seed item
 
-    let harvestItem = div (Icon.itemIdNoText crop.Item)
+    let harvestItem = div (Icon.itemNoText item)
     let firstHarvest = Array.append stageImages [| harvestItem |]
-    let regrow = Array.create (int crop.RegrowTime.Value) (div (Icon.regrowStage crop.Seed))
+    let regrow = Array.create (int crop.RegrowTime.Value) (div (Icon.regrowStage crop.Seed item))
     regrow[regrow.Length - 1] <- harvestItem
     let filler = max 0 (int totalDays - int usedDays)
     let stageList = Array.create filler (div []) :: stageList
@@ -59,7 +64,7 @@ module GrowthCalendar =
     let stageList = firstHarvest :: stageList
     season, totalDays + days[season] - usedDays - nat filler, stageList
 
-  let private fromDateSpan settings single (span: Solver.FertilizerDateSpan) =
+  let private fromDateSpan data settings single (span: Solver.FertilizerDateSpan) =
     let stageList = [ Array.create (int (Date.daysInSeason - span.EndDate.Day)) (div [ Class.disabled ]) ]
     let days =
       if not single && settings.Game.Location = Farm
@@ -70,21 +75,23 @@ module GrowthCalendar =
       span.RegrowCrop
       |> Option.defaultOrMap
         (days.Length - 1, Array.last days, stageList)
-        (regrowCropCalendarDays settings days span.Fertilizer stageList)
+        (regrowCropCalendarDays data settings days span.Fertilizer stageList)
 
     let season, days, stageList =
       (span.CropHarvests, (season, int remainingDays, stageList))
       ||> Array.foldBack (fun (crop, harvests, bridgeCrop) (season, remainingDays, stageList) ->
         let seed = Crop.seed crop
+        let item = data.Items[nameItem crop]
+
         let stages, time = Game.growthTimeAndStages settings.Game span.Fertilizer crop
-        let stageImages = stageImages stages seed
-        let harvestItem = [| div (Icon.itemIdNoText (Crop.mainItem crop)) |]
+        let stageImages = stageImages seed item stages
+        let harvestItem = [| div (Icon.itemIdNoText data (Crop.mainItem crop)) |]
         if bridgeCrop then
           let filler = max 0 (int remainingDays - int time)
           let days = int remainingDays + int days[season] - int time - filler
           let stageList =
             stageImages
-            :: Array.create filler (stageImage stages.Length seed)
+            :: Array.create filler (stageImage seed item stages.Length)
             :: harvestItem
             :: stageList
           season - 1, days, stageList
@@ -101,7 +108,7 @@ module GrowthCalendar =
         span.RegrowCrop |> Option.map (fun (_, crop, _) -> FarmCrop crop)
       |]
       |> Array.tryPick id
-      |> Option.map (Crop.seed >> stageImage 0)
+      |> Option.map (fun crop -> stageImage (Crop.seed crop) data.Items[nameItem crop] 0)
       |> Option.toArray
 
     Array.create (int (span.StartDate.Day - 1u)) (div [ Class.disabled ])
@@ -126,7 +133,7 @@ module GrowthCalendar =
         ]
       ])
 
-  let solver settings dateSpan = fromDateSpan settings false dateSpan
+  let solver data settings dateSpan = fromDateSpan data settings false dateSpan
 
   let ranker app fertilizer crop =
     let settings, _ = app.State
@@ -160,7 +167,7 @@ module GrowthCalendar =
 
       div [
         Class.calendar
-        children (fromDateSpan settings true dateSpan)
+        children (fromDateSpan app.Data settings true dateSpan)
       ]
 
 let private fertilizerAndCropHarvests data fertilizer crop =
@@ -272,7 +279,7 @@ module SummaryTable =
         ))
       ]
 
-      Icon.rightArrow
+      Icon.arrowInto
 
       itemCell
     ]
@@ -1135,7 +1142,7 @@ let private solverSummary data settings mode solution =
       | MaximizeXP -> SummaryTable.XP.solver data settings total dateSpans
       div [
         Class.calendar
-        children (dateSpans |> Array.collect (GrowthCalendar.solver settings))
+        children (dateSpans |> Array.collect (GrowthCalendar.solver data settings))
       ]
     | None -> ofStr "Loading..."
   ]

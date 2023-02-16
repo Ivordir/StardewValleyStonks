@@ -88,7 +88,7 @@ let private tableHeader key columns items sortCol ascending sortDispatch =
           if column.Sort.IsSome then
             onClick (fun _ -> sortDispatch (i, if active then not ascending else true))
             role ("columnheader", "button")
-            classes [
+            className [
               "sortable"
               if column.Disabled then "disabled"
             ]

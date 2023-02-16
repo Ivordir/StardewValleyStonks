@@ -363,6 +363,7 @@ img
     align-items: center
     font-size: 2rem
     margin-bottom: 0.25rem
+    --icon-scale: calc(max(1, var(--icon-base-scale) * 2))
 
   &-days
     display: grid
@@ -383,6 +384,7 @@ img
 
       & > img
         width: 50%
+        height: unset
 
       &:nth-child(28n + 1)
         counter-reset: day
@@ -427,39 +429,6 @@ img
   -moz-appearance: textfield
 
 
-.icon
-  width: var(--icon-size)
-
-  &-text > :first-child
-    margin-right: var(--space-width)
-
-@mixin icon-img($name, $folder)
-  .#{to-lower-case($name)}
-    @extend .icon
-    content: url("/public/img/#{$folder}/#{$name}.png")
-
-@each $skill in Farming Tiller Artisan Agriculturist Foraging Gatherer Botanist
-  @include icon-img($skill, "Skills")
-
-@each $product in Jam Pickles Wine Juice
-  @include icon-img($product, "Products")
-
-%season
-  height: var(--icon-size)
-
-@mixin season($name)
-  .#{to-lower-case($name)}
-    @extend %season
-    content: url("/public/img/Seasons/#{$name}.png")
-
-@each $season in Spring Summer Fall Winter
-  @include season($season)
-
-.seasons
-  display: grid
-  grid-template-columns: repeat(4, 1fr)
-
-
 .select
   $padding: 0.25rem
 
@@ -493,12 +462,6 @@ img
     overflow: hidden
     text-overflow: ellipsis
     white-space: nowrap
-
-    & img
-      height: var(--icon-size)
-      width: var(--icon-size)
-      margin-right: var(--space-width)
-      vertical-align: baseline
 
   &-input
     &-search
@@ -550,14 +513,17 @@ img
 .arrow-right
   content: ui-img("Arrow Right")
   width: var(--arrow-length)
+  height: var(--arrow-width)
 
 .arrow-up
   content: ui-img("Arrow Up")
   width: var(--arrow-width)
+  height: var(--arrow-length)
 
 .arrow-down
   content: ui-img("Arrow Down")
   width: var(--arrow-width)
+  height: var(--arrow-length)
 
 %arrow
   content: ""
@@ -582,31 +548,42 @@ img
   width: var(--arrow-width)
   height: var(--arrow-length)
 
+%season
+  width: #{icon-size(24)}
+  height: $icon-size
 
-.quality
-  display: inline-block
-  position: relative
-  height: var(--icon-size)
+@mixin season($name)
+  .#{to-lower-case($name)}
+    @extend %season
+    content: url("/public/img/Seasons/#{$name}.png")
 
-  & > img:last-child
-    content: var(--img)
-    position: absolute
-    left: 0
-    bottom: 0
-    width: 40%
-    height: 40%
+@each $season in Spring Summer Fall Winter
+  @include season($season)
 
+.seasons
+  display: grid
+  grid-template-columns: repeat(4, 1fr)
 
-.disabled
-  opacity: 0.5
+.icon
+  width: $icon-size
+  height: $icon-size
 
-footer
-  background-color: white
-  display: flex
-  align-items: center
-  justify-content: space-evenly
-  text-align: center
+  &-text
+    display: inline-block
 
+    & > :first-child
+      margin-right: var(--space-width)
+
+@mixin icon-img($name, $folder)
+  .#{to-lower-case($name)}
+    @extend .icon
+    content: url("/public/img/#{$folder}/#{$name}.png")
+
+@each $skill in Farming Tiller Artisan Agriculturist Foraging Gatherer Botanist
+  @include icon-img($skill, "Skills")
+
+@each $product in Jam Pickles Wine Juice
+  @include icon-img($product, "Products")
 
 @mixin quality($name, $color)
   .#{to-lower-case(#{$name})}
@@ -641,6 +618,30 @@ footer
       text-align: center
       color: var(--color)
 
+.quality
+  display: inline-block
+  position: relative
+  width: $icon-size
+  height: $icon-size
+
+  & > img:last-child
+    content: var(--img)
+    position: absolute
+    left: 0
+    bottom: 0
+    width: #{icon-size(8)}
+    height: #{icon-size(8)}
+
+
+.disabled
+  opacity: 0.5
+
+footer
+  background-color: white
+  display: flex
+  align-items: center
+  justify-content: space-evenly
+  text-align: center
 
 th.sortable
   cursor: pointer

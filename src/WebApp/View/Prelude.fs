@@ -72,6 +72,18 @@ module Icon =
     let processor = at "Processors"
     let vendor = at "Vendors"
 
+  let growthStage seed item (stage: int) =
+    img [
+      alt $"{Item.name item} Stage {stage}"
+      src (Path.crop seed (string stage))
+    ]
+
+  let regrowStage seed item =
+    img [
+      alt $"{Item.name item} Regrow Stage"
+      src (Path.crop seed "Regrow")
+    ]
+
   let private fromClassNameAndAlt (name: string) altText =
     img [
       className (lowerCase name)
@@ -101,12 +113,7 @@ module Icon =
 
   let private fromPathAndName = fromPath >> fromImageAndText
 
-  let growthStage (i: int) seed = fromPath (Path.crop seed (string i))
-  let regrowStage seed = fromPath (Path.crop seed "Regrow")
-
-  let rightArrow = fromClassName "arrow-right"
-  let upArrow = fromClassName "arrow-up"
-  let downArrow = fromClassName "arrow-down"
+  let arrowInto = fromClassNameAndAlt "arrow-right" "into"
 
   let seasonNoText season =
     let name = Season.name season
@@ -117,22 +124,28 @@ module Icon =
   let profession (profession: Profession) = profession |> string |> fromClassIsName
   let skill name = fromClassIsName name
 
-  let itemIdNoText itemId = fromPath (Path.item itemId)
+  let itemNoText item = fromPathAndAlt (Path.item item.Id) item.Name
+  let itemIdNoText (data: GameData) itemId = itemNoText data.Items[itemId]
   let item item = fromPathAndName (Path.item item.Id) item.Name
   let itemId (data: GameData) itemId = item data.Items[itemId]
   let seed data seed = seed |> toItem |> itemId data
 
-  let private qualities = Qualities.init (Quality.name >> fromClassName)
+  let private withQuality quality name img =
+    let qualityName = Quality.name quality
+    let alt =
+      if quality = Quality.Normal
+      then ""
+      else $"{qualityName} quality"
 
-  let itemQuality item quality =
     let img =
       div [ Class.quality; children [
-        fromPath (Path.item item.Id)
-        qualities[quality]
+        img
+        fromClassNameAndAlt qualityName alt
       ]]
 
-    fromImageAndText img item.Name
+    fromImageAndText img name
 
+  let itemQuality item quality = item.Id |> Path.item |> fromPath |> withQuality quality item.Name
   let itemIdQuality (data: GameData) item quality = itemQuality data.Items[item] quality
 
   let product data product =
@@ -146,13 +159,10 @@ module Icon =
     | SeedsFromSeedMaker item
     | Processed { Item = item } -> itemIdQuality data item quality
     | product ->
-      let img =
-        div [ Class.quality; children [
-          product |> Reflection.getCaseName |> fromClassName
-          qualities[quality]
-        ]]
-
-      fromImageAndText img (Product.name data.Items.Find product)
+      product
+      |> Reflection.getCaseName
+      |> fromClassName
+      |> withQuality quality (Product.name data.Items.Find product)
 
   let fertilizerName name = fromPathAndName (Path.fertilizer name) name
   let fertilizer = Fertilizer.name >> fertilizerName
