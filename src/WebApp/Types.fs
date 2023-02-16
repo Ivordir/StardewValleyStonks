@@ -177,7 +177,7 @@ module Selections =
       data.Crops.Values
       |> Array.ofSeq
       |> Array.collect Crop.items
-      |> Array.append (data.ForageCrops.Keys |> Seq.map convertUnit |> Array.ofSeq)
+      |> Array.append (data.ForageCrops.Keys |> Seq.map toItem |> Array.ofSeq)
 
     {
       Crops = Set.ofSeq data.Crops.Keys

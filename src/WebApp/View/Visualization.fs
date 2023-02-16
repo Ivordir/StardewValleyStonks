@@ -827,7 +827,7 @@ module Ranker =
         svg.d (svgRectPath x y width height)
       ]
     | Error (flags: Query.InvalidReasons) ->
-      let crop, fert = pairs[fst props?payload]
+      let seed, fert = pairs[fst props?payload]
       let maxHeight = width * 3.0
       let y: float = props?background?height - maxHeight
       Svg.svg [
@@ -844,7 +844,7 @@ module Ranker =
               ])
           if flags.HasFlag Query.InvalidReasons.NotEnoughSeeds then
             Svg.image [
-              svg.href (Icon.Path.item (convertUnit crop))
+              svg.href (Icon.Path.item (toItem seed))
               svg.height width
               svg.y width
             ]

@@ -347,7 +347,7 @@ module FarmCrop =
 
   let regrowTime crop = crop.RegrowTime
   let seed crop = crop.Seed
-  let seedItem crop: ItemId = crop |> seed |> convertUnit
+  let seedItem crop = crop |> seed |> toItem
   let item crop = crop.Item
   let amount crop = crop.Amount
   let extraItem crop = crop.ExtraItem
@@ -390,7 +390,7 @@ module ForageCrop =
   let [<Literal>] maxItems = forageSeedsPerCraft
 
   let seed crop = crop.Seed
-  let seedItem crop: ItemId = crop |> seed |> convertUnit
+  let seedItem crop = crop |> seed |> toItem
   let items crop = crop.Items
   let seedRecipeUnlockLevel crop = crop.SeedRecipeUnlockLevel
 

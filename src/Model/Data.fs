@@ -133,7 +133,7 @@ module Encode =
 module Decode =
   let inline private tryParseNat<[<Measure>] ^u> (str: string): uint<'u> option =
     match System.UInt32.TryParse str with
-    | true, value -> value |> convertUnit |> Some
+    | true, value -> Some (value * 1u<_>)
     | _ -> None
 
   let parseItemId = tryParseNat<ItemNum>

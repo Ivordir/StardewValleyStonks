@@ -25,6 +25,11 @@ type [<Measure>] ItemNum
 
 type ItemId = uint<ItemNum>
 
+[<AutoOpen>]
+module MeasureConverions =
+  let inline toSeed (item: ItemId): SeedId = item * 1u<_>
+  let inline toItem (seed: SeedId): ItemId = seed * 1u<_>
+
 
 type Multipliers = {
   ProfitMargin: float // 0.25 | 0.5 | 0.75 | 1.0
@@ -231,7 +236,7 @@ module Product =
 
   let quantityPerInput product =
     match product with
-    | SeedsFromSeedMaker seed -> seed |> convertUnit |> Processor.seedMakerExpectedQuantity
+    | SeedsFromSeedMaker seed -> seed |> toSeed |> Processor.seedMakerExpectedQuantity
     | Processed { Ratio = Some (i, o) } -> float o / float i
     | _ -> 1.0
 

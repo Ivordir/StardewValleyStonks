@@ -120,7 +120,7 @@ module Icon =
   let itemIdNoText itemId = fromPath (Path.item itemId)
   let item item = fromPathAndName (Path.item item.Id) item.Name
   let itemId (data: GameData) itemId = item data.Items[itemId]
-  let seed data (seed: SeedId) = seed |> convertUnit |> itemId data
+  let seed data seed = seed |> toItem |> itemId data
 
   let private qualities = Qualities.init (Quality.name >> fromClassName)
 
@@ -159,7 +159,7 @@ module Icon =
 
   let crop data = function
     | FarmCrop crop -> crop.Item |> itemId data
-    | ForageCrop crop -> fromPathAndName (crop.Seed |> convertUnit |> Path.item) (ForageCrop.name crop)
+    | ForageCrop crop -> fromPathAndName (crop.Seed |> toItem |> Path.item) (ForageCrop.name crop)
 
   let vendorNoText (VendorName name) = fromPathAndAlt (Path.vendor name) name
   let vendor (VendorName name) = fromPathAndName (Path.vendor name) name

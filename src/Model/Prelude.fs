@@ -5,9 +5,6 @@ type nat = uint
 [<AutoOpen>]
 module Prelude =
   let inline nat value = uint value
-
-  let inline convertUnit x = x * 1u<_>
-
   let inline withMultiplier multiplier (value: nat) = nat (multiplier * float value)
 
 
