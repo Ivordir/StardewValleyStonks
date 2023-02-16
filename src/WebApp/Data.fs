@@ -243,7 +243,7 @@ let defaultRanker = {
 let defaultCropTabState = {
   Tab = CropsTable
   Filters = CropFilters.empty
-  CropSort = 5u, true
+  CropSort = 4u, true
   ProductSort = 0u, true
   SeedSort = 0u, true
   ProductQuality = Quality.Normal
@@ -261,7 +261,7 @@ let defaultUI = {
     OpenDetails.RankerGrowthCalendar
   |]
   CropTab = defaultCropTabState
-  FertilizerSort = 4u, true
+  FertilizerSort = 0u, true
   FertilizerPriceSort = 0u, true
 }
 
