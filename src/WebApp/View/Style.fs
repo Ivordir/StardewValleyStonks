@@ -33,7 +33,6 @@ module Values =
     setValue "icon-base-scale" iconScale
 
 
-
 [<RequireQualifiedAccess>]
 module Class =
   let [<Literal>] active = "active"

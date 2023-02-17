@@ -23,14 +23,11 @@ $icon-size: #{icon-size(16)}
   --arrow-width: #{icon-size(10)}
 
 body
-  --app-min-height: 80vh
-  --chart-min-width: 250px
-  --chart-min-height: 250px
-
   display: flex
   flex-direction: column
 
   min-height: 100vh
+  max-height: 100vh
 
   background-image: ui-img("Gradient")
   background-size: contain
@@ -143,80 +140,76 @@ input[type=range]
     // background: #367ebd
 
 
-
-
-
-.tabs
-  display: flex
-
-
 main
   flex-grow: 1
-
-#app
   display: flex
   flex-flow: row
-  min-height: var(--app-min-height)
+  overflow: hidden
 
   & > section
-    // transition: flex-basis 0.1s
-    flex-basis: 50%
+    min-width: 50%
+    display: flex
+    flex-direction: column
+    overflow: hidden
 
-
-#visualization
-  display: flex
-  flex-direction: column
-
-  // flex-basis: 50%
-  // // flex-basis: 50%
-
-  // & + #settings
-  //   flex-basis: 50%
-
-
-  &-graph
-    // flex-basis: 60%
-
-    // & + #settings
-    //   flex-basis: 40%
-
-    @extend #visualization
-    min-width: var(--chart-min-width)
-    min-height: var(--chart-min-height)
-    max-height: var(--app-min-height)
-
-    & > .controls
+    & > [role=tabpanel]
+      flex-grow: 1
       display: flex
+      flex-direction: column
+      overflow: auto
+
+.graph
+  flex-grow: 1
+  overflow: hidden
+
+  &-controls
+    display: flex
+    justify-content: center
+    align-items: center
+
+// svg
+  // @extend .pixel
+
+.recharts-wrapper
+  overflow: hidden
+
+.recharts-bar-rectangle
+  cursor: pointer
+
+.pair-image
+  cursor: pointer
+
+.pair-select
+  cursor: pointer
+  fill: transparent
+
+.summary
+
+  &-controls
+    display: flex
+    flex-direction: column
+    align-items: center
+
+    & > div
+      display: flex
+      width: 100%
       justify-content: center
       align-items: center
 
-#settings
+.settings-group
   display: flex
   flex-direction: column
-
-  & > :last-child
-    flex-grow: 1
-    overflow-y: auto
-
-  & > .tabs
-    justify-content: end
-
 
 @media (max-aspect-ratio: 1)
-  #app
+  body
+    max-height: unset
+
+  main
     display: block
 
-  #visualization-graph
-    height: calc(var(--app-min-height) / 2)
+  .graph
+    height: 50vh
 
-
-#misc
-  display: flex
-  flex-direction: column
-
-#misc > div
-  display: flex
-  flex-direction: column
 
 details > div
   opacity: 0
@@ -247,32 +240,6 @@ img
     width: 1.25rem
     image-rendering: unset
 
-// svg
-  // @extend .pixel
-
-// .graph-wrapper
-//   flex-grow: 1
-//   display: flex
-//   flex-direction: column
-
-.graph
-  flex-grow: 1
-  flex-basis: 0
-  overflow-y: hidden
-  color: #000000
-
-.recharts-wrapper
-  overflow: hidden
-
-.recharts-bar-rectangle
-  cursor: pointer
-
-.pair-image
-  cursor: pointer
-
-.pair-select
-  cursor: pointer
-  fill: transparent
 
 %hidden-checkbox
   transform: scale(0)
@@ -396,21 +363,6 @@ img
         top: $counter-offset
         left: calc(#{$counter-offset} + 0.25rem)
 
-
-
-
-.audit-graph
-
-  &-select
-    display: flex
-    flex-direction: column
-    align-items: center
-
-    & > div
-      display: flex
-      width: 100%
-      justify-content: center
-      align-items: center
 
 
 .input-box

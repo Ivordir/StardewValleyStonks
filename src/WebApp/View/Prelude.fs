@@ -197,24 +197,62 @@ let labeled label element =
   ]
 
 
-let viewTab toString tab currentTab dispatch =
-  li [
-    if currentTab = tab then className Class.active
-    children [
-      button [
-        onClick (fun _ -> dispatch tab)
-        text (toString tab: string)
-      ]
+let private tabId label tab = $"{lowerCase label}-tab-{Reflection.getCaseTag tab}"
+
+let [<ReactComponent>] Tabs (props: {|
+    Tabs: 'a array
+    Label: string
+    Current: 'a
+    Dispatch: 'a -> unit
+    Panel: 'a -> ReactElement
+  |}) =
+  let tabs = props.Tabs
+  let current = props.Current
+  let dispatch = props.Dispatch
+  let label = props.Label
+
+  let tabRefs = useRef (Array.create tabs.Length (None: Browser.Types.HTMLElement option))
+
+  fragment [
+    div [
+      role "tablist"
+      ariaLabel $"{label} Tabs"
+      children (tabs |> Array.mapi (fun i tab ->
+        let active = current = tab
+        button [
+          role "tab"
+          Interop.mkAttr "ref" (fun ref -> tabRefs.current[i] <- ref)
+          prop.id (tabId label tab)
+          ariaSelected active
+          tabIndex (if active then 0 else -1)
+          onClick (fun _ -> dispatch tab)
+          onKeyDown (fun e ->
+            match e.key with
+            | "ArrowRight" -> Some (if i = tabs.Length - 1 then 0 else i + 1)
+            | "ArrowLeft" -> Some (if i = 0 then tabs.Length - 1 else i - 1)
+            | _ -> None
+            |> Option.iter (fun i ->
+              tabRefs.current[i] |> Option.iter (fun elm -> elm.focus ())
+              dispatch tabs[i]))
+
+          text (Reflection.getCaseName tab)
+        ]))
+    ]
+    div [
+      role "tabpanel"
+      ariaLabelledBy (tabId label current)
+      children (props.Panel current)
     ]
   ]
 
-let viewTabsWith toString tabs currentTab dispatch =
-  ul [ className Class.tabs; children (tabs |> Array.map (fun tab ->
-    viewTab toString tab currentTab dispatch))
-  ]
-
-let inline viewTabs current dispatch =
-  viewTabsWith Reflection.getCaseName unitUnionCases current dispatch
+let inline tabs label current dispatch tabpanel =
+  Tabs {|
+    Tabs = unitUnionCases
+    Label = label
+    Current = current
+    Dispatch = dispatch
+    Panel = tabpanel
+  |}
 
 
 let animatedDetails open' (summary': ReactElement) (children': ReactElement) dispatch =

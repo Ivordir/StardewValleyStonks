@@ -1173,18 +1173,16 @@ let section app dispatch =
   let settings, ui = app.State
   let uiDispatch = SetUI >> dispatch
 
-  section [
-    prop.id (if ui.Mode = Ranker && ui.Ranker.SelectedCropAndFertilizer.IsNone then "visualization-graph" else "visualization")
-    children [
-      viewTabs ui.Mode (SetAppMode >> uiDispatch)
-      match ui.Mode with
+  section [ prop.id "visualization"; children [
+    tabs "Visualization" ui.Mode (SetAppMode >> uiDispatch) (function
       | Ranker -> rankerOrSummary app uiDispatch
       | Solver ->
-        labeled "Maximize: " (Select.unitUnion (length.rem 5) ui.SolverMode (SetSolverMode >> uiDispatch))
-        Solver {|
-          Data = app.Data
-          Settings = settings
-          SolverMode = ui.SolverMode
-        |}
-    ]
-  ]
+        fragment [
+          labeled "Maximize: " (Select.unitUnion (length.rem 5) ui.SolverMode (SetSolverMode >> uiDispatch))
+          Solver {|
+            Data = app.Data
+            Settings = settings
+            SolverMode = ui.SolverMode
+          |}
+        ])
+  ]]

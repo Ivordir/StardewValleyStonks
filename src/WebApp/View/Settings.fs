@@ -449,15 +449,13 @@ module Crops =
     let cropTabDispatch = SetCropTabState >> SetUI >> dispatch
     let crops = filteredCrops app |> Array.sortBy (sortKey data)
 
-    div [
+    fragment [
       cropFilter cropTab.Filters (SetCropFilters >> cropTabDispatch)
 
-      viewTabs cropTab.Tab (SetCropTab >> cropTabDispatch)
-
-      match cropTab.Tab with
-      | CropsTable -> table data settings cropTab.CropSort crops dispatch
-      | ProductsTable -> products data settings cropTab crops dispatch
-      | SeedsTable -> seeds data settings cropTab.SeedSort crops dispatch
+      tabs "Crop" cropTab.Tab (SetCropTab >> cropTabDispatch) (function
+        | CropsTable -> table data settings cropTab.CropSort crops dispatch
+        | ProductsTable -> products data settings cropTab crops dispatch
+        | SeedsTable -> seeds data settings cropTab.SeedSort crops dispatch)
     ]
 
 
@@ -563,7 +561,7 @@ module Fertilizers =
     let data = app.Data
     let settings, ui = app.State
     let fertilizers = data.Fertilizers.Values |> Seq.sortBy Fertilizer.name |> Array.ofSeq
-    div [ prop.id "fertilizer-tab"; children [
+    fragment [
       table
         data
         settings
@@ -579,7 +577,7 @@ module Fertilizers =
         (ui.OpenDetails.Contains OpenDetails.FertilizerPrices)
         fertilizers
         dispatch
-    ]]
+    ]
 
 
 module Misc =
@@ -788,7 +786,7 @@ module LoadSave =
   let tab app dispatch =
     let saveDispatch = SetPresets >> dispatch
     let loadDispatch = LoadSettings >> SetState >> dispatch
-    div [
+    fragment [
       ul (app.Presets |> List.mapi (fun i preset ->
         li [
           ofStr preset.Name
@@ -835,11 +833,10 @@ let section app dispatch =
   let dispatch = SetState >> dispatch
   let settings, ui = app.State
   section [ prop.id "settings"; children [
-    viewTabs ui.SettingsTab (SetSettingsTab >> SetUI >> dispatch)
-    match ui.SettingsTab with
-    | Skills -> Skills.tab settings.Game.Skills (SetSkills >> SetGameVariables >> SetSettings >> dispatch)
-    | Crops -> Crops.tab app dispatch
-    | Fertilizers -> Fertilizers.tab app dispatch
-    | Misc -> Misc.tab (ui.OpenDetails.Contains OpenDetails.Mod) app.Data settings.Game dispatch
-    | SettingsTab.LoadSettings -> LoadSave.tab app appDispatch
+    tabs "Settings" ui.SettingsTab (SetSettingsTab >> SetUI >> dispatch) (function
+      | Skills -> Skills.tab settings.Game.Skills (SetSkills >> SetGameVariables >> SetSettings >> dispatch)
+      | Crops -> Crops.tab app dispatch
+      | Fertilizers -> Fertilizers.tab app dispatch
+      | Misc -> Misc.tab (ui.OpenDetails.Contains OpenDetails.Mod) app.Data settings.Game dispatch
+      | SettingsTab.LoadSettings -> LoadSave.tab app appDispatch)
   ]]
