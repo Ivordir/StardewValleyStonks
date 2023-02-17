@@ -708,11 +708,11 @@ let private emptyPairData (pairData: PairData) =
     if Array.isEmpty pairData.Fertilizers then ofStr "No fertilizers selected!"
   ]
 
-let rankBy labelText (metric: RankMetric) (timeNorm: TimeNormalization) dispatchMetric dispatchTimeNorm =
+let rankBy label (metric: RankMetric) (timeNorm: TimeNormalization) dispatchMetric dispatchTimeNorm =
   fragment [
-    ofStr labelText
-    Select.unitUnion (length.rem 3) metric dispatchMetric
-    Select.unitUnion (length.rem 6) timeNorm dispatchTimeNorm
+    ofStr label
+    Select.unitUnionWith (ariaLabel "Metric") (length.rem 3) metric dispatchMetric
+    Select.unitUnionWith (ariaLabel "Time Normalization") (length.rem 6) timeNorm dispatchTimeNorm
   ]
 
 
@@ -897,8 +897,8 @@ module Ranker =
             Interop.mkBarAttr "shape" (errorBar pairs)
           ]
           Recharts.brush [
-            brush.startIndex (ranker.BrushSpan |> fst |> int |> min (pairs.Length - 1) |> max 0)
-            brush.endIndex (ranker.BrushSpan |> snd |> int |> min (pairs.Length - 1) |> max 0)
+            brush.startIndex (ranker.BrushSpan |> fst |> int |> clampIndex pairs)
+            brush.endIndex (ranker.BrushSpan |> snd |> int |> clampIndex pairs)
             brush.height 30
             Interop.mkBrushAttr "onChange" (fun i -> SetBrushSpan (i?startIndex, i?endIndex) |> dispatch)
           ]
@@ -940,8 +940,7 @@ module Ranker =
 
     fragment [
       div [ className Class.graphControls; children [
-        ofStr "Rank"
-        Select.unitUnion (length.rem 5) ranker.RankItem (SetRankItem >> dispatch)
+        Select.unitUnion "Rank" (length.rem 5) ranker.RankItem (SetRankItem >> dispatch)
 
         rankBy
           "By"
@@ -966,7 +965,8 @@ module Ranker =
 
 
 let private selectSpecificOrBest name toString (viewItem: _ -> ReactElement) items selected dispatch =
-  Select.search
+  Select.searchWith
+    (ariaLabel name)
     (length.rem 15)
     (function
       | Choice1Of2 item
@@ -1087,7 +1087,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
 
       div
         (rankBy
-          "Show "
+          "Show"
           metric
           timeNorm
           (fun metric -> setState (metric, timeNorm))
@@ -1178,7 +1178,7 @@ let section app dispatch =
       | Ranker -> rankerOrSummary app uiDispatch
       | Solver ->
         fragment [
-          labeled "Maximize: " (Select.unitUnion (length.rem 3) ui.SolverMode (SetSolverMode >> uiDispatch))
+          Select.unitUnion "Maximize" (length.rem 3) ui.SolverMode (SetSolverMode >> uiDispatch)
           Solver {|
             Data = app.Data
             Settings = settings

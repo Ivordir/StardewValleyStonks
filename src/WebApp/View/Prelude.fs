@@ -52,6 +52,7 @@ let internal handleEvent (event: Browser.Types.Event) =
   event.stopPropagation ()
   event.preventDefault ()
 
+let clampIndex array index = index |> min (Array.length array - 1) |> max 0
 
 open Fable.Core
 

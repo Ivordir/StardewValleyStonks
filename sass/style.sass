@@ -241,7 +241,7 @@ img
     image-rendering: unset
 
 
-%hidden-checkbox
+%hidden-input
   transform: scale(0)
   opacity: 0
   position: absolute
@@ -250,7 +250,7 @@ img
   cursor: pointer
 
   & > input
-    @extend %hidden-checkbox
+    @extend %hidden-input
 
   & > input + img
     content: ui-img("Checkbox")
@@ -275,7 +275,7 @@ img
   height: 2.5rem
 
   & > input
-    @extend %hidden-checkbox
+    @extend %hidden-input
 
   & > input:checked + *
     color: green
@@ -385,14 +385,13 @@ img
   $padding: 0.25rem
   --border: #5b2b2a solid var(--sixth-border)
 
-  position: relative
   display: inline-flex
+
+  &:focus-within
+    // border: 1px solid cyan
 
   & > div
     position: relative
-
-    &:focus-within
-      // border: 1px solid cyan
 
   & > img
     content: ui-img("Select Spinner")
@@ -425,9 +424,7 @@ img
         visibility: hidden
 
     & > input[inputmode=none]
-      position: absolute
-      opacity: 0
-      transform: scale(0)
+      @extend %hidden-input
 
     & span
       display: inline
@@ -448,15 +445,16 @@ img
     box-sizing: border-box
     overflow: auto
 
-    & > ul > li
+    & > li
       padding: $padding
 
-      &.hover
+      &.select-empty
+        text-align: center
+        padding: 2 * $padding
+
+      &[aria-selected=true]
         background-color: #f5deb3
 
-    & > div
-      text-align: center
-      padding: 0.5rem
 
 // with pixelated image rendering, rotating distorts the image on some browsers
 // instead, let's create a class for each direction

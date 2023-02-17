@@ -241,7 +241,7 @@ module Crops =
     let normalizedPrices = cropTab.NormalizeProductPrices
 
     fragment [
-      labeled "View with quality: " (Select.enum (length.rem 4) productQuality (SetProductQuality >> cropTabDispatch))
+      Select.enum "View with quality" (length.rem 4) productQuality (SetProductQuality >> cropTabDispatch)
 
       Input.checkboxText "Normalize Prices" normalizedPrices (SetNormalizeProductPrices >> cropTabDispatch)
 
@@ -308,11 +308,11 @@ module Crops =
         settings.Game.JojaMembership
         (SetJojaMembership >> SetGameVariables >> settingsDispatch)
 
-      labeled "Seed Strategy:"
-        (Select.unitUnion
-          (length.rem 5)
-          settings.Profit.SeedStrategy
-          (SetSeedStrategy >> SetProfit >> settingsDispatch))
+      Select.unitUnion
+        "Seed Strategy"
+        (length.rem 5)
+        settings.Profit.SeedStrategy
+        (SetSeedStrategy >> SetProfit >> settingsDispatch)
 
       tableFromColumms
         Crop.seed
@@ -394,16 +394,16 @@ module Crops =
   let sortKey (data: GameData) = Crop.name data.Items.Find
 
   let private selectFilter name value dispatch =
-    labeled name
-      (Select.options
-        (length.rem 2)
-        (function
-          | Some true -> ofStr "Yes"
-          | Some false -> ofStr "No"
-          | None -> ofStr "Any")
-        [| Some true; Some false; None |]
-        value
-        dispatch)
+    Select.options
+      name
+      (length.rem 2)
+      (function
+        | Some true -> ofStr "Yes"
+        | Some false -> ofStr "No"
+        | None -> ofStr "Any")
+      [| Some true; Some false; None |]
+      value
+      dispatch
 
   let cropFilter filters dispatch =
     let toggleSeason season selected =
@@ -581,14 +581,22 @@ module Fertilizers =
 
 
 module Misc =
-  let private date (otherDate: Date) clamp (date: Date) dispatch =
+  let private date label (otherDate: Date) clamp (date: Date) dispatch =
     let clamp season day =
       if season = otherDate.Season
       then day |> clamp otherDate.Day
       else day
 
+    let labelId = $"{lowerCase label}-date"
+
     div [ className Class.date; children [
-      Select.enum
+      Html.label [
+        prop.id labelId
+        text $"{label} Date"
+      ]
+
+      Select.enumWith
+        (ariaLabelledBy labelId)
         (length.rem 4)
         date.Season
         (fun season -> dispatch {
@@ -606,21 +614,21 @@ module Misc =
 
   let dates (startDate: Date) (endDate: Date) dispatch =
     fragment [
-      date endDate min startDate (SetStartDate >> dispatch)
-      date startDate max endDate (SetEndDate >> dispatch)
+      date "Start" endDate min startDate (SetStartDate >> dispatch)
+      date "End" startDate max endDate (SetEndDate >> dispatch)
     ]
 
   let multipliers multipliers dispatch =
     div [ className Class.settingsGruop; children [
       Input.checkboxText "Bear's Knowledge" multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
 
-      labeled "Profit Margin:"
-        (Select.options
-          (length.rem 4)
-          (fun margin -> ofStr (if margin = 1.0 then "Normal" else percent margin))
-          [| 1.0..(-0.25)..0.25 |]
-          multipliers.ProfitMargin
-          (SetProfitMargin >> dispatch))
+      Select.options
+        "Profit Margin"
+        (length.rem 4)
+        (fun margin -> ofStr (if margin = 1.0 then "Normal" else percent margin))
+        [| 1.0..(-0.25)..0.25 |]
+        multipliers.ProfitMargin
+        (SetProfitMargin >> dispatch)
 
       Input.checkboxText
         "Apply Tiller to Foraged Grapes and Blackberries"
@@ -648,13 +656,13 @@ module Misc =
           (SetGiantChecksPerTile >> dispatch)
       ]
 
-      labeled "Shaving Enchantment: "
-        (Select.options
-          (length.rem 4)
-          (Option.defaultOrMap "None" ToolLevel.name >> ofStr)
-          (Enum.values |> Array.map Some |> Array.append [| None |])
-          settings.ShavingToolLevel
-          (SetShavingToolLevel >> dispatch))
+      Select.options
+        "Shaving Enchantment"
+        (length.rem 4)
+        (Option.defaultOrMap "None" ToolLevel.name >> ofStr)
+        (Enum.values |> Array.map Some |> Array.append [| None |])
+        settings.ShavingToolLevel
+        (SetShavingToolLevel >> dispatch)
 
       Input.checkboxText "Special Charm" settings.SpecialCharm (SetSpecialCharm >> dispatch)
       label [
@@ -691,7 +699,7 @@ module Misc =
     let dispatch = SetGameVariables >> SetSettings >> dispatch
     fragment [
       div [ className Class.date; children [
-        labeled "Location: " (Select.unitUnion (length.rem 6) settings.Location (SetLocation >> dispatch))
+        Select.unitUnion "Location" (length.rem 6) settings.Location (SetLocation >> dispatch)
         dates settings.StartDate settings.EndDate dispatch
       ]]
       multipliers settings.Multipliers (SetMultipliers >> dispatch)
