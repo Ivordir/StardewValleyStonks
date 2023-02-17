@@ -65,7 +65,7 @@ module GrowthCalendar =
     season, totalDays + days[season] - usedDays - nat filler, stageList
 
   let private fromDateSpan data settings single (span: Solver.FertilizerDateSpan) =
-    let stageList = [ Array.create (int (Date.daysInSeason - span.EndDate.Day)) (div [ Class.disabled ]) ]
+    let stageList = [ Array.create (int (Date.daysInSeason - span.EndDate.Day)) (div [ className Class.disabled ]) ]
     let days =
       if not single && settings.Game.Location = Farm
       then Date.daySpan span.StartDate span.EndDate
@@ -111,7 +111,7 @@ module GrowthCalendar =
       |> Option.map (fun crop -> stageImage (Crop.seed crop) data.Items[nameItem crop] 0)
       |> Option.toArray
 
-    Array.create (int (span.StartDate.Day - 1u)) (div [ Class.disabled ])
+    Array.create (int (span.StartDate.Day - 1u)) (div [ className Class.disabled ])
     :: Array.create (days - 1) (div [])
     :: firstStage
     :: stageList
@@ -120,14 +120,14 @@ module GrowthCalendar =
     |> Array.zip (Date.seasonSpan span.StartDate span.EndDate)
     |> Array.map (fun (season, days) ->
       div [
-        Class.calendarSeason
+        className Class.calendarSeason
         children [
           div [
-            Class.calendarHeader
+            className Class.calendarHeader
             children (Icon.season season)
           ]
           div [
-            Class.calendarDays
+            className Class.calendarDays
             children days
           ]
         ]
@@ -166,7 +166,7 @@ module GrowthCalendar =
       }
 
       div [
-        Class.calendar
+        className Class.calendar
         children (fromDateSpan app.Data settings true dateSpan)
       ]
 
@@ -736,7 +736,7 @@ module Ranker =
     let index: int = props?payload?value
     let seed, fert = pairs[index]
     Svg.svg [
-      svg.className "pair-image"
+      svg.className Class.pairImage
       svg.onClick (fun _ -> selectPair index)
       svg.x (props.x - 10.0)
       svg.y props.y
@@ -807,7 +807,7 @@ module Ranker =
     let height: float = props?height
     let i: int = fst props?payload
     Svg.path [
-      svg.className "pair-select"
+      svg.className Class.pairSelect
       svg.onClick (fun _ -> selectPair i)
       svg.x x
       svg.y y
@@ -824,7 +824,6 @@ module Ranker =
     match snd props?payload with
     | Ok _ ->
       Svg.path [
-        // svg.className "recharts-rectangle"
         svg.fill "blue"
         svg.radius 0
         svg.x x
@@ -940,7 +939,7 @@ module Ranker =
       | Error a, Error b -> Enum.bitSetOrder (int a) (int b))
 
     fragment [
-      div [ Class.graphControls; children [
+      div [ className Class.graphControls; children [
         ofStr "Rank"
         Select.unitUnion (length.rem 6) ranker.RankItem (SetRankItem >> dispatch)
 
@@ -957,7 +956,7 @@ module Ranker =
         div "No valid pairs of crops and fertilizers!"
       else
         div [
-          Class.graph
+          className Class.graph
           children [
             // rerender only if computed pairs or RankMetric changes
             Elmish.React.Common.lazyView2 (fst >> graph ranker data settings) (pairs, ranker.RankMetric) dispatch
@@ -1049,13 +1048,13 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
   let crop = seed |> Option.defaultOrMap bestCrop (data.Crops.Find >> Choice1Of2)
   let fert = fertName |> Option.defaultOrMap bestFert (Option.map data.Fertilizers.Find >> Choice1Of2)
 
-  div [ Class.auditGraph; children [
+  div [ className Class.summary; children [
     button [
       onClick (fun _ -> SetSelectedCropAndFertilizer None |> dispatch)
       text "Back"
     ]
 
-    div [ Class.auditGraphSelect; children [
+    div [ className Class.summaryControls; children [
       div [
         selectSpecificOrBest
           "Crop"
@@ -1141,7 +1140,7 @@ let private solverSummary data settings mode solution =
       | MaximizeGold -> SummaryTable.Profit.solver data settings total dateSpans
       | MaximizeXP -> SummaryTable.XP.solver data settings total dateSpans
       div [
-        Class.calendar
+        className Class.calendar
         children (dateSpans |> Array.collect (GrowthCalendar.solver data settings))
       ]
     | None -> ofStr "Loading..."
@@ -1166,7 +1165,7 @@ let [<ReactComponent>] Solver (props: {|
   ), [| box data; settings; mode |])
 
   div [
-    if solving then Class.disabled
+    if solving then className Class.disabled
     children (Elmish.React.Common.lazyView (solverSummary data settings mode) solution)
   ]
 

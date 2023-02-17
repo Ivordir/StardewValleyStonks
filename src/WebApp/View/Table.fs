@@ -79,7 +79,7 @@ let private tableHeader key columns items sortCol ascending sortDispatch =
 
           th [
             scope "col"
-            if column.Disabled then Class.disabled
+            if column.Disabled then className Class.disabled
             children (Input.checkbox "Select All" allSelected (curry SetManySelected keys >> dispatch))
           ])
 
@@ -90,14 +90,14 @@ let private tableHeader key columns items sortCol ascending sortDispatch =
             role ("columnheader", "button")
             className [
               "sortable"
-              if column.Disabled then "disabled"
+              if column.Disabled then Class.disabled
             ]
             tabIndex 0
             ariaPressed active
             if active then
               Interop.mkAttr "aria-sort" (if ascending then "ascending" else "descending")
           elif column.Disabled then
-            Class.disabled
+            className Class.disabled
 
           children column.Header
         ]
@@ -110,12 +110,12 @@ let private tableBody key columns items rowDisabled =
     let key = key item
     tr [
       prop.key (string key)
-      if rowDisabled item then Class.disabled
+      if rowDisabled item then className Class.disabled
       children (columns |> Array.map (fun column ->
         fragment [
           column.Select |> ofOption (fun (selected, dispatch) ->
             td [
-              if column.Disabled then Class.disabled
+              if column.Disabled then className Class.disabled
               children (selected key |> ofOption (fun selected ->
                 Input.checkbox "Select" selected (curry SetSelected key >> dispatch)))
             ])
@@ -123,12 +123,12 @@ let private tableBody key columns items rowDisabled =
           if column.Key then
             th [
               scope "row"
-              if column.Disabled then Class.disabled
+              if column.Disabled then className Class.disabled
               children (column.Display item)
             ]
           else
             td [
-              if column.Disabled then Class.disabled
+              if column.Disabled then className Class.disabled
               children (column.Display item)
             ]
         ]
@@ -167,7 +167,7 @@ let [<ReactComponent>] private CollapsibleTableBody (props: {|
 
   tbody [
     tr [
-      className "collapsible"
+      className Class.collapsible
       role ("row", "button")
       tabIndex 0
       ariaPressed (not collapsed)
@@ -190,7 +190,7 @@ let [<ReactComponent>] private CollapsibleTable (props: {|
       tr [
         th [
           scope "col"
-          className "collapsible"
+          className Class.collapsible
           role ("columnheader", "button")
           tabIndex 0
           ariaPressed (not collapsed)

@@ -25,7 +25,7 @@ let inline ofFloat (x: float) = Html.text x
 let round2 (x: float) = System.Math.Round (x, 2)
 
 let gold (g: nat) = string g + "g"
-let gold2 = sprintf "%.2fg"
+let gold2 gold = sprintf "%.2fg" gold
 
 let xpFloat (xp: float) = string xp + "xp"
 let xp (xp: nat) = string xp + "xp"
@@ -93,7 +93,7 @@ module Icon =
   let private fromClassName name = fromClassNameAndAlt name ""
 
   let private fromImageAndText img text =
-    Html.span [ className "icon-text"; children [
+    Html.span [ className Class.iconText; children [
       img
       ofStr text
     ]]
@@ -104,7 +104,7 @@ module Icon =
 
   let private fromPathAndAlt path altText =
     img [
-      className "icon"
+      className Class.icon
       src path
       alt altText
     ]
@@ -138,7 +138,7 @@ module Icon =
       else $"{qualityName} quality"
 
     let img =
-      div [ Class.quality; children [
+      div [ className Class.quality; children [
         img
         fromClassNameAndAlt qualityName alt
       ]]
@@ -174,9 +174,13 @@ module Icon =
   let vendorNoText (VendorName name) = fromPathAndAlt (Path.vendor name) name
   let vendor (VendorName name) = fromPathAndName (Path.vendor name) name
 
-  let private withClass css path name =
+  let private withClass (css: string) path name =
     fragment [
-      img [ css; src path; alt "" ]
+      img [
+        className css
+        src path
+        alt ""
+      ]
       ofStr name
     ]
 
@@ -195,7 +199,7 @@ let labeled label element =
 
 let viewTab toString tab currentTab dispatch =
   li [
-    if currentTab = tab then Class.active
+    if currentTab = tab then className Class.active
     children [
       button [
         onClick (fun _ -> dispatch tab)
@@ -205,7 +209,7 @@ let viewTab toString tab currentTab dispatch =
   ]
 
 let viewTabsWith toString tabs currentTab dispatch =
-  ul [ Class.tabs; children (tabs |> Array.map (fun tab ->
+  ul [ className Class.tabs; children (tabs |> Array.map (fun tab ->
     viewTab toString tab currentTab dispatch))
   ]
 
@@ -220,7 +224,7 @@ let animatedDetails open' (summary': ReactElement) (children': ReactElement) dis
     children [
       summary summary'
       div [
-        if open' then Class.open'
+        if open' then className Class.open'
         children children'
       ]
     ]

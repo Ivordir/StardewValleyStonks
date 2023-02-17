@@ -12,8 +12,6 @@ open type React
 
 open Core.Operators
 
-let private class' = className "input-box"
-
 let floatRange (precision: float) (min: float) (max: float) (value: float) (dispatch: float -> unit) =
   input [
     prop.type'.range
@@ -46,7 +44,7 @@ let [<ReactComponent>] private NumberInput (props: {|
   ), [| box props.Value |])
 
   input [
-    class'
+    className Class.inputBox
     style [ style.width props.Width ]
     prop.type'.number
     if props.Min.IsSome then prop.min props.Min.Value
@@ -98,7 +96,7 @@ let floatWith width precision min max value dispatch =
 
 let text (value: string) (dispatch: string -> unit) =
   input [
-    class'
+    className Class.inputBox
     prop.type'.text
     prop.value value
     onChange dispatch
@@ -107,7 +105,7 @@ let text (value: string) (dispatch: string -> unit) =
 
 let checkboxWith children value dispatch =
   label [
-    className [ "checkbox"; "label" ]
+    className [ Class.checkbox; Class.label ]
     onClick (fun e -> e.stopPropagation ())
     prop.children [
       input [
@@ -126,7 +124,7 @@ let inline checkboxText str value msg = checkboxWith (ofStr str) value msg
 
 let checkbox labelText value dispatch =
   label [
-    className "checkbox"
+    className Class.checkbox
     onClick (fun e -> e.stopPropagation ())
     children [
       input [

@@ -22,6 +22,7 @@ module Values =
     if rem < 4.0
     then floor div
     else ceil div
+    |> max 1.0
 
   do
     setPx "font-size" fontPx
@@ -35,44 +36,52 @@ module Values =
 
 [<RequireQualifiedAccess>]
 module Class =
-  let inline private className (name: string) = Feliz.prop.className name
+  let [<Literal>] active = "active"
+  let [<Literal>] tabs = "tabs"
+  let [<Literal>] open' = "open"
 
-  let iconProcessor = className "icon-processor"
-  let iconProcessorLarge = className "icon-processor-large"
+  let [<Literal>] settingsGruop = "settings-group"
 
-  let fileInput = className "file-input"
+  let [<Literal>] icon = "icon"
+  let [<Literal>] iconText = "icon-text"
+  let [<Literal>] iconProcessor = "icon-processor"
+  let [<Literal>] iconProcessorLarge = "icon-processor-large"
 
-  let active = className "active"
-  let disabled = className "disabled"
-  let open' = className "open"
-  let tabs = className "tabs"
+  let [<Literal>] fileInput = "file-input"
+  let [<Literal>] fileDropzone = "file-dropzone"
+  let [<Literal>] inputBox = "input-box"
+  let [<Literal>] checkbox = "checkbox"
+  let [<Literal>] label = "label"
 
-  let select = className "select"
-  let selectControl = className "select-control"
-  let selectList = className "select-list"
-  let selectListHidden = className "select-list-hidden"
-  let selectInput = className "select-input"
-  let selectInputHidden = className "select-input-hidden"
+  let [<Literal>] disabled = "disabled"
 
-  let cropQualities = className "crop-qualities"
-  let cropQualitiesBars = className "crop-qualities-bars"
-  let cropQualitiesProbs = className "crop-qualities-probs"
+  let [<Literal>] cropQualities = "crop-qualities"
+  let [<Literal>] cropQualitiesBars = "crop-qualities-bars"
+  let [<Literal>] cropQualitiesProbs = "crop-qualities-probs"
 
-  let professions = className "professions"
-  let skills = className "skills"
+  let [<Literal>] professions = "professions"
+  let [<Literal>] skills = "skills"
 
-  let calendar = className "calendar"
-  let calendarSeason = className "calendar-season"
-  let calendarHeader = className "calendar-header"
-  let calendarDays = className "calendar-days"
+  let [<Literal>] calendar = "calendar"
+  let [<Literal>] calendarSeason = "calendar-season"
+  let [<Literal>] calendarHeader = "calendar-header"
+  let [<Literal>] calendarDays = "calendar-days"
 
-  let quality = className "quality"
-  let seasons = className "seasons"
-  let date = className "date"
+  let [<Literal>] quality = "quality"
+  let [<Literal>] seasons = "seasons"
+  let [<Literal>] date = "date"
 
-  let breakdownTable = className "breakdown-table"
+  let [<Literal>] breakdownTable = "breakdown-table"
+  let [<Literal>] collapsible = "collapsible"
 
-  let graph = className "graph"
-  let graphControls = className "controls"
-  let auditGraph = className "audit-graph"
-  let auditGraphSelect = className "audit-graph-select"
+  let [<Literal>] graph = "graph"
+  let [<Literal>] graphControls = "graph-controls"
+  let [<Literal>] pairImage = "pair-image"
+  let [<Literal>] pairSelect = "pair-select"
+  let [<Literal>] summary = "summary"
+  let [<Literal>] summaryControls = "summary-controls"
+
+  let [<Literal>] select = "select"
+  let [<Literal>] selectControl = "select-control"
+  let [<Literal>] selectList = "select-list"
+  let [<Literal>] hover = "hover"

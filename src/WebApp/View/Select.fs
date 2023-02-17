@@ -36,7 +36,7 @@ let private tryScroll (list: Browser.Types.HTMLElement) (index: int) (mode: stri
 
 let selectControl initialState inputRef (props: _ Props) (state: _ State) setState =
   div [
-    className "select-control"
+    className Class.selectControl
     children [
       input [
         onFocus (fun _ -> setState {| state with Focused = true |})
@@ -45,8 +45,7 @@ let selectControl initialState inputRef (props: _ Props) (state: _ State) setSta
 
         match props.ToString with
         | Some toString ->
-          className "select-input-search"
-          prop.type'.text
+          prop.type'.search
           placeholder " "
           value state.Search
           onChange (fun str ->
@@ -59,12 +58,10 @@ let selectControl initialState inputRef (props: _ Props) (state: _ State) setSta
                 Options = options
             |})
         | None ->
-          className "select-input-hidden"
           prop.inputMode.none
       ]
 
       Html.span [
-        className "select-value"
         style [ style.width props.Width ]
         children (props.Display props.Selected)
       ]
@@ -73,7 +70,7 @@ let selectControl initialState inputRef (props: _ Props) (state: _ State) setSta
 
 let selectList listRef clearHover (props: _ Props) (state: _ State) setState hover =
   div [
-    className "select-list"
+    className Class.selectList
     tabIndex -1
     onMouseDown handleEvent
     children [
@@ -98,7 +95,7 @@ let selectList listRef clearHover (props: _ Props) (state: _ State) setState hov
                       Scroll = false
                   |})
 
-              if hover = i then className "hover"
+              if hover = i then className Class.hover
 
               children (props.Display opt)
             ]
@@ -161,7 +158,7 @@ let [<ReactComponent>] private Select (props: _ Props) =
     setState {| initialState with Focused = true |}
 
   div [
-    className "select-container"
+    className Class.select
 
     onMouseDown (fun e ->
       if e.button = 0 then
@@ -204,11 +201,11 @@ let [<ReactComponent>] private Select (props: _ Props) =
       | _ -> ())
 
     children [
-      div [ className "select"; children [
+      div [
         selectControl initialState inputRef props state setState
         state.Hover |> ofOption (selectList listRef clearHover props state setState)
-      ]]
-      img [ className "select-spinner"; alt "" ]
+      ]
+      img [ alt "" ]
     ]
   ]
 

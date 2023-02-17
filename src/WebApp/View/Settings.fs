@@ -45,9 +45,9 @@ module Skills =
           children (text prob)
         ])
 
-    div [ Class.cropQualities; children [
-      div [ Class.cropQualitiesBars; children (mapQualities (konst none)) ]
-      div [ Class.cropQualitiesProbs; children (mapQualities (fun prob ->
+    div [ className Class.cropQualities; children [
+      div [ className Class.cropQualitiesBars; children (mapQualities (konst none)) ]
+      div [ className Class.cropQualitiesProbs; children (mapQualities (fun prob ->
         if prob = 0.0
         then none
         else ofStr (percent2 prob)))
@@ -74,7 +74,7 @@ module Skills =
     let farming = skills.Farming
     div [
       skill "Farming" farming (SetFarming >> dispatch)
-      div [ Class.professions; children [
+      div [ className Class.professions; children [
         div (profession skills Tiller dispatch)
         div [
           profession skills Artisan dispatch
@@ -88,7 +88,7 @@ module Skills =
     let foraging = skills.Foraging
     div [
       skill "Foraging" foraging (SetForaging >> dispatch)
-      div [ Class.professions; children [
+      div [ className Class.professions; children [
         div (profession skills Gatherer dispatch)
         div (profession skills Botanist dispatch)
       ]]
@@ -96,7 +96,7 @@ module Skills =
     ]
 
   let tab skills dispatch =
-    div [ Class.skills; children [
+    div [ className Class.skills; children [
       farming skills dispatch
       foraging skills dispatch
       div [
@@ -200,7 +200,7 @@ module Crops =
         Column.createWith
           (ofStr "Seasons")
           (fun crop ->
-            Html.span [ Class.seasons; children (Enum.values |> Array.map (fun season ->
+            Html.span [ className Class.seasons; children (Enum.values |> Array.map (fun season ->
               if Crop.growsInSeason season crop
               then Icon.seasonNoText season
               else div []
@@ -413,7 +413,7 @@ module Crops =
 
     div [
       input [
-        className "input-box"
+        className Class.inputBox
         placeholder "Search..."
         prop.type'.text
         prop.value filters.NameSearch
@@ -423,7 +423,7 @@ module Crops =
       div [
         Input.checkboxText "In Season" filters.InSeason (SetInSeason >> dispatch)
         Html.span [
-          if filters.InSeason then Class.disabled
+          if filters.InSeason then className Class.disabled
           children (Enum.values |> Array.map (fun season ->
             Input.checkboxWith
               (Icon.season season)
@@ -520,7 +520,7 @@ module Fertilizers =
           (SetPayForFertilizer >> SetProfit >> dispatch)
 
         Html.span [
-          if not settings.Profit.PayForFertilizer then Class.disabled
+          if not settings.Profit.PayForFertilizer then className Class.disabled
           children [
             Input.checkboxText
               "Replace Lost Fertilizer"
@@ -589,7 +589,7 @@ module Misc =
       then day |> clamp otherDate.Day
       else day
 
-    div [ Class.date; children [
+    div [ className Class.date; children [
       Select.enum
         (length.rem 6)
         date.Season
@@ -613,7 +613,7 @@ module Misc =
     ]
 
   let multipliers multipliers dispatch =
-    div [
+    div [ className Class.settingsGruop; children [
       Input.checkboxText "Bear's Knowledge" multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
 
       labeled "Profit Margin:"
@@ -628,10 +628,10 @@ module Misc =
         "Apply Tiller to Foraged Grapes and Blackberries"
         multipliers.TillerForForagedFruit
         (SetTillerForForagedFruit >> dispatch)
-    ]
+    ]]
 
   let cropAmountSettings settings dispatch =
-    div [
+    div [ className Class.settingsGruop; children [
       label [
         ofStr "Giant Crop Checks Per Tile:"
         Input.floatWith
@@ -663,7 +663,7 @@ module Misc =
         ofStr "Luck Buff:"
         Input.natWith (length.rem 2) None (Some CropAmount.maxLuckBuff) settings.LuckBuff (SetLuckBuff >> dispatch)
       ]
-    ]
+    ]]
 
   let mods data open' modData dispatch =
     animatedDetails open'
@@ -672,7 +672,7 @@ module Misc =
         let dispatch = SetModData >> SetGameVariables >> SetSettings >> dispatch
         Input.checkboxText "Quality Products" modData.QualityProducts (SetQualityProducts >> dispatch)
         ul [
-          if not modData.QualityProducts then Class.disabled
+          if not modData.QualityProducts then className Class.disabled
           children
             (Crops.processors data
             |> Array.filter ((<>) Processor.seedMaker)
@@ -691,8 +691,8 @@ module Misc =
   let tab modsOpen data settings dispatch =
     let appDispatch = dispatch
     let dispatch = SetGameVariables >> SetSettings >> dispatch
-    div [ prop.id "misc"; children [
-      div [ Class.date; children [
+    fragment [
+      div [ className Class.date; children [
         labeled "Location: " (Select.unitUnion (length.rem 7.5) settings.Location (SetLocation >> dispatch))
         dates settings.StartDate settings.EndDate dispatch
       ]]
@@ -700,7 +700,7 @@ module Misc =
       cropAmountSettings settings.CropAmount (SetCropAmount >> dispatch)
       div (Input.checkboxText "Irrigated" settings.Irrigated (SetIrrigated >> dispatch))
       mods data modsOpen settings.ModData appDispatch
-    ]]
+    ]
 
 
 module LoadSave =
@@ -709,7 +709,7 @@ module LoadSave =
       let loadFile (file: Browser.Types.File) =
         file.text().``then`` (fun text -> Some (file.name, Data.loadSaveGame text) |> setSave) |> ignore
 
-      label [ Class.fileInput; children [
+      label [ className Class.fileInput; children [
         ofStr "Choose Save File"
         input [
           prop.type'.file
@@ -718,7 +718,7 @@ module LoadSave =
       ]]
 
       div [
-        className "file-dropzone"
+        className Class.fileDropzone
         onDrop (fun e ->
           handleEvent e
           if e.dataTransfer.files.length > 0 then

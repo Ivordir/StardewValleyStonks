@@ -18,7 +18,7 @@ $icon-size: #{icon-size(16)}
 :root
   font: var(--font-size, 100%) / 1.25 Stardew Valley Stonks, Nunito, sans
   --space-width: calc(3rem / 13)
-  --icon-scale: calc(max(1, var(--icon-base-scale)))
+  --icon-scale: var(--icon-base-scale)
   --arrow-length: #{icon-size(11)}
   --arrow-width: #{icon-size(10)}
 
@@ -363,7 +363,7 @@ img
     align-items: center
     font-size: 2rem
     margin-bottom: 0.25rem
-    --icon-scale: calc(max(1, var(--icon-base-scale) * 2))
+    --icon-scale: calc(var(--icon-base-scale) * 2)
 
   &-days
     display: grid
@@ -431,16 +431,18 @@ img
 
 .select
   $padding: 0.25rem
+  --border: #5b2b2a solid var(--sixth-border)
 
   position: relative
+  display: inline-flex
 
-  &-container
-    --border: #5b2b2a solid var(--sixth-border)
-
+  & > div
     position: relative
-    display: inline-flex
 
-  &-spinner
+    &:focus-within
+      // border: 1px solid cyan
+
+  & > img
     content: ui-img("Select Spinner")
     height: calc(max(24px, 2rem + 4px)) // eyeball css
     border: var(--border)
@@ -458,13 +460,7 @@ img
     display: flex
     align-items: center
 
-  &-value
-    overflow: hidden
-    text-overflow: ellipsis
-    white-space: nowrap
-
-  &-input
-    &-search
+    & > input[type=search]
       outline: none
       background: transparent
       border: none
@@ -473,14 +469,19 @@ img
       width: calc(100% - 2 * #{$padding})
       height: 100%
 
-      &:not(:placeholder-shown) + .select-value
+      &:not(:placeholder-shown) + *
         visibility: hidden
 
-    &-hidden
+    & > input[inputmode=none]
       position: absolute
       opacity: 0
       transform: scale(0)
 
+    & span
+      display: inline
+      overflow: hidden
+      text-overflow: ellipsis
+      white-space: nowrap
 
   &-list
     max-height: 40vh
@@ -504,9 +505,6 @@ img
     & > div
       text-align: center
       padding: 0.5rem
-
-  &:focus-within
-    // border: 1px solid cyan
 
 // with pixelated image rendering, rotating distorts the image on some browsers
 // instead, let's create a class for each direction
@@ -572,7 +570,7 @@ img
     display: inline-block
 
     & > :first-child
-      margin-right: var(--space-width)
+      margin-right: calc(var(--icon-scale) * var(--space-width))
 
 @mixin icon-img($name, $folder)
   .#{to-lower-case($name)}
