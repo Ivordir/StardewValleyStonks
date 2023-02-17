@@ -241,7 +241,7 @@ module Crops =
     let normalizedPrices = cropTab.NormalizeProductPrices
 
     fragment [
-      labeled "View with quality: " (Select.enum (length.rem 5) productQuality (SetProductQuality >> cropTabDispatch))
+      labeled "View with quality: " (Select.enum (length.rem 4) productQuality (SetProductQuality >> cropTabDispatch))
 
       Input.checkboxText "Normalize Prices" normalizedPrices (SetNormalizeProductPrices >> cropTabDispatch)
 
@@ -310,7 +310,7 @@ module Crops =
 
       labeled "Seed Strategy:"
         (Select.unitUnion
-          (length.rem 8)
+          (length.rem 5)
           settings.Profit.SeedStrategy
           (SetSeedStrategy >> SetProfit >> settingsDispatch))
 
@@ -396,7 +396,7 @@ module Crops =
   let private selectFilter name value dispatch =
     labeled name
       (Select.options
-        (length.rem 3)
+        (length.rem 2)
         (function
           | Some true -> ofStr "Yes"
           | Some false -> ofStr "No"
@@ -589,7 +589,7 @@ module Misc =
 
     div [ className Class.date; children [
       Select.enum
-        (length.rem 6)
+        (length.rem 4)
         date.Season
         (fun season -> dispatch {
           Season = season
@@ -616,7 +616,7 @@ module Misc =
 
       labeled "Profit Margin:"
         (Select.options
-          (length.rem 5)
+          (length.rem 4)
           (fun margin -> ofStr (if margin = 1.0 then "Normal" else percent margin))
           [| 1.0..(-0.25)..0.25 |]
           multipliers.ProfitMargin
@@ -650,7 +650,7 @@ module Misc =
 
       labeled "Shaving Enchantment: "
         (Select.options
-          (length.rem 5)
+          (length.rem 4)
           (Option.defaultOrMap "None" ToolLevel.name >> ofStr)
           (Enum.values |> Array.map Some |> Array.append [| None |])
           settings.ShavingToolLevel
@@ -691,7 +691,7 @@ module Misc =
     let dispatch = SetGameVariables >> SetSettings >> dispatch
     fragment [
       div [ className Class.date; children [
-        labeled "Location: " (Select.unitUnion (length.rem 7.5) settings.Location (SetLocation >> dispatch))
+        labeled "Location: " (Select.unitUnion (length.rem 6) settings.Location (SetLocation >> dispatch))
         dates settings.StartDate settings.EndDate dispatch
       ]]
       multipliers settings.Multipliers (SetMultipliers >> dispatch)

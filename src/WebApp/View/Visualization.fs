@@ -711,8 +711,8 @@ let private emptyPairData (pairData: PairData) =
 let rankBy labelText (metric: RankMetric) (timeNorm: TimeNormalization) dispatchMetric dispatchTimeNorm =
   fragment [
     ofStr labelText
-    Select.unitUnion (length.rem 4) metric dispatchMetric
-    Select.unitUnion (length.rem 7) timeNorm dispatchTimeNorm
+    Select.unitUnion (length.rem 3) metric dispatchMetric
+    Select.unitUnion (length.rem 6) timeNorm dispatchTimeNorm
   ]
 
 
@@ -941,7 +941,7 @@ module Ranker =
     fragment [
       div [ className Class.graphControls; children [
         ofStr "Rank"
-        Select.unitUnion (length.rem 6) ranker.RankItem (SetRankItem >> dispatch)
+        Select.unitUnion (length.rem 5) ranker.RankItem (SetRankItem >> dispatch)
 
         rankBy
           "By"
@@ -1178,7 +1178,7 @@ let section app dispatch =
       | Ranker -> rankerOrSummary app uiDispatch
       | Solver ->
         fragment [
-          labeled "Maximize: " (Select.unitUnion (length.rem 5) ui.SolverMode (SetSolverMode >> uiDispatch))
+          labeled "Maximize: " (Select.unitUnion (length.rem 3) ui.SolverMode (SetSolverMode >> uiDispatch))
           Solver {|
             Data = app.Data
             Settings = settings

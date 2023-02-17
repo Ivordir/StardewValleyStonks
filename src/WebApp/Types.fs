@@ -218,9 +218,9 @@ module Selections =
 
 
 type SeedStrategy =
-  | [<CompiledName ("Buy First Seed")>] BuyFirstSeed
-  | [<CompiledName ("Stockpile Seeds")>] StockpileSeeds
-  | [<CompiledName ("Ignore Seeds")>] IgnoreSeeds
+  | [<CompiledName ("Buy First")>] BuyFirstSeed
+  | [<CompiledName ("Stockpile")>] StockpileSeeds
+  | [<CompiledName ("Ignore")>] IgnoreSeeds
 
 type ProfitSettings = {
   SeedStrategy: SeedStrategy
