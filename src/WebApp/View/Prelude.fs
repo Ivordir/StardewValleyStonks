@@ -190,13 +190,7 @@ module Icon =
     | ProcessorName processor -> withClass Class.iconProcessor (Path.processor processor) processor
 
 
-
-let labeled label element =
-  Html.label [
-    ofStr label
-    element
-  ]
-
+// https://www.w3.org/TR/wai-aria-1.1/#tab
 
 let private tabId label tab = $"{lowerCase label}-tab-{Reflection.getCaseTag tab}"
 
@@ -222,8 +216,8 @@ let [<ReactComponent>] Tabs (props: {|
         let active = current = tab
         button [
           role "tab"
-          Interop.mkAttr "ref" (fun ref -> tabRefs.current[i] <- ref)
           prop.id (tabId label tab)
+          Interop.mkAttr "ref" (Array.set tabRefs.current i)
           ariaSelected active
           tabIndex (if active then 0 else -1)
           onClick (fun _ -> dispatch tab)

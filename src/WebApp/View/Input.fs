@@ -12,8 +12,16 @@ open type React
 
 open Core.Operators
 
-let floatRange (precision: float) (min: float) (max: float) (value: float) (dispatch: float -> unit) =
+let floatRangeWith
+  (label: IReactProperty option)
+  (precision: float)
+  (min: float)
+  (max: float)
+  (value: float)
+  (dispatch: float -> unit)
+  =
   input [
+    if Option.isSome label then label.Value
     prop.type'.range
     prop.min min
     prop.max max
@@ -22,11 +30,16 @@ let floatRange (precision: float) (min: float) (max: float) (value: float) (disp
     onChange dispatch
   ]
 
-let natRange (min: nat) (max: nat) (value: nat) dispatch =
-  floatRange 1.0 (float min) (float max) (float value) (nat >> dispatch)
+let floatRange = floatRangeWith None
+
+let natRangeWith label (min: nat) (max: nat) (value: nat) dispatch =
+  floatRangeWith label 1.0 (float min) (float max) (float value) (nat >> dispatch)
+
+let natRange = natRangeWith None
 
 
 let [<ReactComponent>] private NumberInput (props: {|
+    Label: IReactProperty option
     Width: Styles.ICssUnit
     Min: float option
     Max: float option
@@ -46,6 +59,7 @@ let [<ReactComponent>] private NumberInput (props: {|
   input [
     className Class.inputBox
     style [ style.width props.Width ]
+    if props.Label.IsSome then props.Label.Value
     prop.type'.number
     if props.Min.IsSome then prop.min props.Min.Value
     if props.Max.IsSome then prop.max props.Max.Value
@@ -70,8 +84,9 @@ let [<ReactComponent>] private NumberInput (props: {|
       | _ -> ())
   ]
 
-let natWith width min max (value: nat) dispatch =
+let natWith label width min max (value: nat) dispatch =
   NumberInput {|
+    Label = label
     Width = width
     Min = min |> Option.defaultValue System.UInt32.MinValue |> float |> Some
     Max = max |> Option.defaultValue System.UInt32.MaxValue |> float |> Some
@@ -81,10 +96,11 @@ let natWith width min max (value: nat) dispatch =
   |}
 
 let inline nat width value dispatch =
-  natWith width None None value dispatch
+  natWith None width None None value dispatch
 
-let floatWith width precision min max value dispatch =
+let floatWith label width precision min max value dispatch =
   NumberInput {|
+    Label = label
     Width = width
     Min = min
     Max = max
@@ -93,13 +109,25 @@ let floatWith width precision min max value dispatch =
     Dispatch = dispatch
   |}
 
+let float width = floatWith None width
 
-let text (value: string) (dispatch: string -> unit) =
+
+let textWith (label: IReactProperty option) (value: string) (dispatch: string -> unit) =
   input [
+    if Option.isSome label then label.Value
     className Class.inputBox
     prop.type'.text
     prop.value value
     onChange dispatch
+  ]
+
+let text = textWith None
+
+
+let labeled label element =
+  Html.label [
+    ofStr label
+    element
   ]
 
 

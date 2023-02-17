@@ -89,6 +89,7 @@ input[type=range]
   -webkit-appearance: none
   background: transparent
   margin: 0
+  width: calc(max(100px, 10em))
 
   &::-webkit-slider-thumb
     -webkit-appearance: none
@@ -298,17 +299,18 @@ img
     width: 50%
     align-items: center
 
-.skills
-  & > div
+.skill
+  display: flex
+  flex-direction: column
+
+  & > span:first-child
+    --icon-scale: calc(var(--icon-base-scale) * 2)
+    font-size: 2rem
+    text-align: center
+
+  &-level
     display: flex
     flex-direction: column
-
-    & > span
-      text-align: center
-
-    & > label
-      color: brown
-      text-align: left
 
 .breakdown-table
   margin: auto

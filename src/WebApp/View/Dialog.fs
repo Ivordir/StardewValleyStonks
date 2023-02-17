@@ -23,8 +23,8 @@ let [<ReactComponent>] private Dialog (props: {|
     | _ -> ())
 
   dialog [
-    Interop.mkAttr "onClose" (fun _ -> props.Close false)
     prop.ref ref
+    Interop.mkAttr "onClose" (fun _ -> props.Close false)
     children [
       h1 props.Title
       props.Children

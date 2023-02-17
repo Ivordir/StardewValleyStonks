@@ -54,26 +54,34 @@ module Skills =
       ]
     ]]
 
-  let skill name skill dispatch =
-    fragment [
-      Html.span (Icon.skill name)
+  let skillBuffLevel name skill dispatch =
+    div [ className Class.skillLevel; children [
+      Html.span [
+        let levelId = $"{lowerCase name}-level"
 
-      label [
-        ofStr "Level:"
-        Input.natWith (length.rem 2) None (Some Skill.maxLevel) skill.Level (SetLevel >> dispatch)
-        Input.natRange 0u Skill.maxLevel skill.Level (SetLevel >> dispatch)
+        label [ prop.id levelId; children [
+          ofStr "Level"
+          Input.natWith
+            None
+            (length.rem 2)
+            None
+            (Some Skill.maxLevel)
+            skill.Level
+            (SetLevel >> dispatch)
+        ]]
+
+        Input.natRangeWith (Some (ariaLabelledBy levelId)) 0u Skill.maxLevel skill.Level (SetLevel >> dispatch)
       ]
 
-      label [
-        ofStr "Buff:"
-        Input.nat (length.rem 2) skill.Buff (SetBuff >> dispatch)
-      ]
-    ]
+      Input.nat (length.rem 2) skill.Buff (SetBuff >> dispatch)
+      |> Input.labeled "Buff"
+    ]]
 
   let farming skills dispatch =
     let farming = skills.Farming
-    div [
-      skill "Farming" farming (SetFarming >> dispatch)
+    div [ className Class.skill; children [
+      Icon.skill "Farming"
+      skillBuffLevel "Farming" farming (SetFarming >> dispatch)
       div [ className Class.professions; children [
         div (profession skills Tiller dispatch)
         div [
@@ -82,21 +90,22 @@ module Skills =
         ]
       ]]
       cropQualities (Skills.farmCropQualities skills)
-    ]
+    ]]
 
   let foraging skills dispatch =
     let foraging = skills.Foraging
-    div [
-      skill "Foraging" foraging (SetForaging >> dispatch)
+    div [ className Class.skill; children [
+      Icon.skill "Foraging"
+      skillBuffLevel "Foraging" foraging (SetForaging >> dispatch)
       div [ className Class.professions; children [
         div (profession skills Gatherer dispatch)
         div (profession skills Botanist dispatch)
       ]]
       cropQualities (Skills.forageCropQualities skills)
-    ]
+    ]]
 
   let tab skills dispatch =
-    div [ className Class.skills; children [
+    fragment [
       farming skills dispatch
       foraging skills dispatch
       div [
@@ -110,7 +119,7 @@ module Skills =
           skills.IgnoreProfessionConflicts
           (SetIgnoreProfessionConflicts >> dispatch)
       ]
-    ]]
+    ]
 
 let viewPrice price =
   fragment [
@@ -605,6 +614,7 @@ module Misc =
         })
 
       Input.natWith
+        (Some (ariaLabelledBy labelId))
         (length.rem 2)
         (Date.firstDay |> clamp date.Season |> Some)
         (Date.lastDay |> clamp date.Season |> Some)
@@ -619,7 +629,7 @@ module Misc =
     ]
 
   let multipliers multipliers dispatch =
-    div [ className Class.settingsGruop; children [
+    div [ className Class.settingsGroup; children [
       Input.checkboxText "Bear's Knowledge" multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
 
       Select.options
@@ -637,18 +647,24 @@ module Misc =
     ]]
 
   let cropAmountSettings settings dispatch =
-    div [ className Class.settingsGruop; children [
-      label [
-        ofStr "Giant Crop Checks Per Tile:"
-        Input.floatWith
-          (length.rem 4)
-          10e-4
-          (Some CropAmount.minGiantCropChecks)
-          (Some CropAmount.maxGiantCropChecks)
-          settings.GiantChecksPerTile
-          (SetGiantChecksPerTile >> dispatch)
+    div [ className Class.settingsGroup; children [
+      Html.span [
+        let giantCropChecksId = "giant-crop-checks"
 
-        Input.floatRange
+        label [ prop.id giantCropChecksId; children [
+          ofStr "Giant Crop Checks Per Tile"
+          Input.floatWith
+            None
+            (length.rem 4)
+            10e-4
+            (Some CropAmount.minGiantCropChecks)
+            (Some CropAmount.maxGiantCropChecks)
+            settings.GiantChecksPerTile
+            (SetGiantChecksPerTile >> dispatch)
+        ]]
+
+        Input.floatRangeWith
+          (Some (ariaLabelledBy giantCropChecksId))
           10e-4
           CropAmount.minGiantCropChecks
           CropAmount.maxGiantCropChecks
@@ -665,10 +681,9 @@ module Misc =
         (SetShavingToolLevel >> dispatch)
 
       Input.checkboxText "Special Charm" settings.SpecialCharm (SetSpecialCharm >> dispatch)
-      label [
-        ofStr "Luck Buff:"
-        Input.natWith (length.rem 2) None (Some CropAmount.maxLuckBuff) settings.LuckBuff (SetLuckBuff >> dispatch)
-      ]
+
+      Input.natWith None (length.rem 2) None (Some CropAmount.maxLuckBuff) settings.LuckBuff (SetLuckBuff >> dispatch)
+      |> Input.labeled "Luck Buff"
     ]]
 
   let mods data open' modData dispatch =

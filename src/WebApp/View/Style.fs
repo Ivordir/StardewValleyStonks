@@ -35,11 +35,9 @@ module Values =
 
 [<RequireQualifiedAccess>]
 module Class =
-  let [<Literal>] active = "active"
-  let [<Literal>] tabs = "tabs"
   let [<Literal>] open' = "open"
 
-  let [<Literal>] settingsGruop = "settings-group"
+  let [<Literal>] settingsGroup = "settings-group"
 
   let [<Literal>] icon = "icon"
   let [<Literal>] iconText = "icon-text"
@@ -58,8 +56,9 @@ module Class =
   let [<Literal>] cropQualitiesBars = "crop-qualities-bars"
   let [<Literal>] cropQualitiesProbs = "crop-qualities-probs"
 
+  let [<Literal>] skill = "skill"
+  let [<Literal>] skillLevel = "skill-level"
   let [<Literal>] professions = "professions"
-  let [<Literal>] skills = "skills"
 
   let [<Literal>] calendar = "calendar"
   let [<Literal>] calendarSeason = "calendar-season"
