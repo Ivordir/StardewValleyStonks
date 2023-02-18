@@ -389,12 +389,21 @@ img
 
 .select
   $padding: 0.5rem
+  $background: #f9ba66
+  $background-hover: #f5deb3
   --border: #5b2b2a solid var(--sixth-border)
 
   display: inline-flex
+  cursor: pointer
 
   &:focus-within
     @extend %focus-outline
+
+  &[aria-expanded=true]:focus-within
+    outline: none
+
+  &[aria-expanded=false]:hover > div > .select-control
+    background-color: $background-hover
 
   & > div
     position: relative
@@ -411,7 +420,7 @@ img
     height: 100%
     box-sizing: border-box
     border: var(--border)
-    background: #f9ba66
+    background-color: $background
     padding: 0 $padding
 
     display: flex
@@ -447,7 +456,7 @@ img
     z-index: 1
     border: var(--border)
     border-top: none
-    background: #f9ba66
+    background-color: $background
     box-sizing: border-box
     overflow: auto
 
@@ -456,10 +465,10 @@ img
 
       &.select-empty
         text-align: center
-        padding: 2 * $padding
+        padding: 1.5 * $padding
 
       &[aria-selected=true]
-        background-color: #f5deb3
+        background-color: $background-hover
 
 
 // with pixelated image rendering, rotating distorts the image on some browsers
