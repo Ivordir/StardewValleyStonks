@@ -83,64 +83,57 @@ input
 %focus-outline
   outline: var(--eighth-border) solid #d83700
 
-input[type=range]:focus
-  outline: none
-
 
 input[type=range]
+  $scale: 3
+
   -webkit-appearance: none
   background: transparent
   margin: 0
   width: calc(max(100px, 10em))
+  cursor: pointer
+
+  &:focus
+    @extend %focus-outline
+
+  &:hover, &:active
+    filter: brightness(1.1)
+
+  // css needs to be repeated/inlined for some reason
+  // and cannot be reused across webkit and mozilla
+  @mixin thumb
+    box-shadow: none
+    border: none
+    border-radius: 0
+    width: icon-size(10 * $scale)
+    height: icon-size(6 * $scale)
+    background: ui-img("Range Thumb")
+    background-size: contain
+    background-repeat: no-repeat
+    background-position: center
 
   &::-webkit-slider-thumb
     -webkit-appearance: none
-    border: none
-    height: 32px
-    width: 16px
     image-rendering: pixelated
-    background: ui-img("Range Thumb")
-    background-size: contain
-    background-repeat: no-repeat
-    background-position: center
-    cursor: pointer
-    margin-top: -13px
-    box-shadow: none
-
-    &:hover, &:active
-      // margin-top: -14px
-      // transform: scale(1.25)
+    @include thumb
 
   &::-moz-range-thumb
-    border: none
-    height: 32px
-    width: 16px
     image-rendering: crisp-edges
-    background: ui-img("Range Thumb")
-    background-size: contain
-    background-repeat: no-repeat
-    background-position: center
-    cursor: pointer
+    @include thumb
 
-    &:hover, &:active
-      transform: scale(1.25)
+  @mixin track
+    height: icon-size(6 * $scale)
+    border-image-source: ui-img("Range Track")
+    border-image-slice: 2 fill
+    border-image-width: icon-size(2 * $scale)
 
   &::-webkit-slider-runnable-track
-    height: 6px
-    cursor: pointer
-    background: #b14e05
-
-  // &:focus::-webkit-slider-runnable-track
-  //   background: #367ebd
+    image-rendering: pixelated
+    @include track
 
   &::-moz-range-track
-    // width: 100%
-    height: 6px
-    cursor: pointer
-    background: #b14e05
-
-  // &:focus::-moz-range-track
-    // background: #367ebd
+    image-rendering: crisp-edges
+    @include track
 
 
 main
@@ -150,7 +143,9 @@ main
   overflow: hidden
 
   & > section
-    min-width: 50%
+    min-width: min-content
+    flex-basis: 0
+    flex-grow: 1
     display: flex
     flex-direction: column
     overflow: hidden
