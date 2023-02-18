@@ -13,8 +13,6 @@ $phi: math.div(1 + math.sqrt(5), 2)
 @function icon-size($px)
   @return calc(var(--icon-scale) * #{$px}px)
 
-$icon-size: #{icon-size(16)}
-
 :root
   font: var(--font-size, 100%) / 1.25 Stardew Valley Stonks, Nunito, sans
   --space-base-width: calc(3rem / 13)
@@ -83,7 +81,7 @@ input
 
 
 %focus-outline
-  outline: 2px solid cyan
+  outline: var(--eighth-border) solid #d83700
 
 input[type=range]:focus
   outline: none
@@ -259,8 +257,9 @@ img
 
   & > input + img
     content: ui-img("Checkbox")
-    width: #{icon-size(18)}
-    height: #{icon-size(18)}
+    $scale: 2
+    width: icon-size(9 * $scale)
+    height: icon-size(9 * $scale)
 
   & > input:checked + img
     content: ui-img("Checkedbox")
@@ -512,8 +511,9 @@ img
   height: var(--arrow-length)
 
 %season
-  width: #{icon-size(24)}
-  height: $icon-size
+  $scale: 2
+  width: icon-size(12 * $scale)
+  height: icon-size(8 * $scale)
 
 @mixin season($name)
   .#{to-lower-case($name)}
@@ -528,8 +528,8 @@ img
   grid-template-columns: repeat(4, 1fr)
 
 .icon
-  width: $icon-size
-  height: $icon-size
+  width: icon-size(16)
+  height: icon-size(16)
 
   &-text
     display: inline-block
@@ -542,16 +542,26 @@ img
     @extend .icon
     content: url("/public/img/#{$folder}/#{$name}.png")
 
-@each $skill in Farming Tiller Artisan Agriculturist Foraging Gatherer Botanist
-  @include icon-img($skill, "Skills")
-
 @each $product in Jam Pickles Wine Juice
   @include icon-img($product, "Products")
 
-@mixin quality($name, $color)
-  .#{to-lower-case(#{$name})}
+@each $profession in Tiller Artisan Agriculturist Gatherer Botanist
+  @include icon-img($profession, "Skills")
+
+%skill
+  $scale: 2
+  width: icon-size(10 * $scale)
+  height: icon-size(10 * $scale)
+
+@each $skill in Farming Foraging
+  .#{to-lower-case($skill)}
+    @extend %skill
+    content: url("/public/img/Skills/#{$skill}.png")
+
+@mixin quality($quality, $color)
+  .#{to-lower-case(#{$quality})}
     --color: #{$color}
-    --img: url("/public/img/Qualities/#{$name}.png")
+    --img: url("/public/img/Qualities/#{$quality}.png")
 
 @include quality(Iridium, purple)
 @include quality(Gold, gold)
@@ -584,16 +594,15 @@ img
 .quality
   display: inline-block
   position: relative
-  width: $icon-size
-  height: $icon-size
+  @extend .icon
 
   & > img:last-child
     content: var(--img)
     position: absolute
     left: 0
     bottom: 0
-    width: #{icon-size(8)}
-    height: #{icon-size(8)}
+    width: icon-size(8)
+    height: icon-size(8)
 
 
 .disabled
