@@ -17,7 +17,8 @@ $icon-size: #{icon-size(16)}
 
 :root
   font: var(--font-size, 100%) / 1.25 Stardew Valley Stonks, Nunito, sans
-  --space-width: calc(3rem / 13)
+  --space-base-width: calc(3rem / 13)
+  --space-width: calc(var(--icon-scale) * var(--space-base-width))
   --icon-scale: var(--icon-base-scale)
   --arrow-length: #{icon-size(11)}
   --arrow-width: #{icon-size(10)}
@@ -384,7 +385,7 @@ img
 
 
 .select
-  $padding: 0.25rem
+  $padding: 0.5rem
   --border: #5b2b2a solid var(--sixth-border)
 
   display: inline-flex
@@ -408,7 +409,7 @@ img
     box-sizing: border-box
     border: var(--border)
     background: #f9ba66
-    padding: 0 (2 * $padding)
+    padding: 0 $padding
 
     display: flex
     align-items: center
@@ -522,7 +523,7 @@ img
     display: inline-block
 
     & > :first-child
-      margin-right: calc(var(--icon-scale) * var(--space-width))
+      margin-right: var(--space-width)
 
 @mixin icon-img($name, $folder)
   .#{to-lower-case($name)}
@@ -592,6 +593,7 @@ footer
   align-items: center
   justify-content: space-evenly
   text-align: center
+
 
 th.sortable
   cursor: pointer
