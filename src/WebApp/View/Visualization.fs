@@ -204,12 +204,7 @@ module SummaryTable =
     [|
       th [ scope "row"; children itemCell ]
       td unitValue
-      if quantity = none then
-        td []
-        td []
-      else
-        td "x"
-        td quantity
+      td quantity
       td value
       td seeds
     |]
@@ -386,16 +381,11 @@ module SummaryTable =
     |> Array.concat
     |> Array.map fragment
 
-  let private totalRow totalColSpan totalFormat total (seeds: ReactElement) =
-    tr [
-      th [
-        colSpan totalColSpan
-        scope "row"
-        text "Total"
-      ]
-      td (total |> Option.defaultOrMap "???" totalFormat |> ofStr)
-      td seeds
-    ]
+  let private footerProfitRowCells itemCell profit seeds =
+    rowCells itemCell none none profit seeds
+
+  let private totalRowCells totalFormat total (seeds: ReactElement) =
+    footerProfitRowCells (ofStr "Total") (total |> Option.defaultOrMap "???" totalFormat |> ofStr) seeds
 
   let private thColWith (cell: ReactElement) = th [ scope "col"; children cell ]
   let private thCol = ofStr >> thColWith
@@ -404,7 +394,6 @@ module SummaryTable =
     fragment [
       thCol itemCell
       thCol "Price"
-      thCol "x"
       thCol "Quantity"
       thCol "Profit"
       thColWith (if seeds then ofStr "Seeds" else none)
@@ -414,40 +403,32 @@ module SummaryTable =
 
   let private profitFooter timeNorm normDivisor profit seeds =
     tfoot [
-      totalRow 4 gold2 profit seeds
+      tr (totalRowCells gold2 profit seeds)
 
       if timeNorm = TotalPeriod || normDivisor = 1.0 then none else
-        tr [
-          th [
-            colSpan 4
-            scope "row"
-            text (TimeNormalization.unit timeNorm |> pluralize |> upperFirstChar)
-          ]
-          td $"{formatNormalizationDivisor timeNorm normDivisor}"
-          td []
-        ]
-        tr [
-          th [
-            colSpan 4
-            scope "row"
-            text $"Total {timeNorm |> string |> lowerCase}"
-          ]
-          td (profit |> formatNormalizedValue gold2 normDivisor)
-          td []
-        ]
+        tr (footerProfitRowCells
+          (TimeNormalization.unit timeNorm |> pluralize |> upperFirstChar |> ofStr)
+          (ofStr $"{formatNormalizationDivisor timeNorm normDivisor}")
+          none)
+
+        tr (footerProfitRowCells
+          (ofStr $"Total {timeNorm |> string |> lowerCase}")
+          (profit |> formatNormalizedValue gold2 normDivisor |> ofStr)
+          none)
     ]
 
   let private rankerProfitSummary data settings timeNorm (profitSummary: Query.ProfitSummary) =
-    table [
+    table [ className Class.profitTable; children [
       profitHeader "Item" (settings.Profit.SeedStrategy <> IgnoreSeeds)
 
-      fertilizerBoughtRow false profitSummary.Fertilizer profitSummary.FertilizerPrice 1.0
-      |> ofOption (tr >> Array.singleton >> tbody)
+      tbody [
+        fertilizerBoughtRow false profitSummary.Fertilizer profitSummary.FertilizerPrice 1.0 |> ofOption tr
 
-      profitSummary.CropSummaries[0]
-      |> cropProfitSummaryRows data settings profitSummary.Fertilizer profitSummary.FertilizerPrice
-      |> Array.map (Array.singleton >> tr)
-      |> tbody
+        yield!
+          profitSummary.CropSummaries[0]
+          |> cropProfitSummaryRows data settings profitSummary.Fertilizer profitSummary.FertilizerPrice
+          |> Array.map (Array.singleton >> tr)
+      ]
 
       let seeds =
         if settings.Profit.SeedStrategy = IgnoreSeeds
@@ -455,7 +436,7 @@ module SummaryTable =
         else ofNat 0u
 
       profitFooter timeNorm profitSummary.TimeNormalization profitSummary.NetProfit seeds
-    ]
+    ]]
 
   let private solverProfitSummary data settings total (summaries: Query.ProfitSummary array) =
     let header = profitHeaderCells "Crop / Item" (settings.Profit.SeedStrategy <> IgnoreSeeds)
@@ -501,11 +482,16 @@ module SummaryTable =
         key, row, body)
     |])
 
-    table [
+    table [ className Class.profitTable; children [
       Table.collapsibleHeaderAndBodies true header bodies
 
-      tfoot [ totalRow 5 gold2 (Some total) none ]
-    ]
+      tfoot [
+        tr [
+          td []
+          yield! totalRowCells gold2 (Some total) none
+        ]
+      ]
+    ]]
 
   let private keyValue (key: string) (valueCell: ReactElement) =
     fragment [
@@ -546,7 +532,7 @@ module SummaryTable =
   let private profitTooltip data settings timeNorm (profitSummary: Query.ProfitSummary) =
     let summary = profitSummary.CropSummaries[0]
     let seed = Crop.seed summary.Crop
-    table [
+    table [ className Class.profitTable; children [
       profitHeader "Item" false
 
       tbody [
@@ -574,7 +560,7 @@ module SummaryTable =
       ]
 
       profitFooter timeNorm profitSummary.TimeNormalization profitSummary.NetProfit none
-    ]
+    ]]
 
   let private mergeCropHarvests (dateSpan: Solver.FertilizerDateSpan) =
     let regrowHarvests = dateSpan.RegrowCrop |> Option.map (fun (_, crop, harvests) -> FarmCrop crop, harvests)
@@ -650,7 +636,6 @@ module SummaryTable =
             thCol "Crop"
             thCol "Harvests"
             thCol "XP"
-            thCol "x"
             thCol "Quantity"
             thCol "Total XP"
             thColWith none
@@ -663,14 +648,13 @@ module SummaryTable =
               th [ scope "row"; children (fertilizerAndCropHarvests data xpSummary.Fertilizer summary.Crop) ]
               td (ofNat summary.Harvests)
               td (summary.XpPerItem |> xp |> ofStr)
-              td "x"
               td (summary.ItemQuantity |> round2 |> ofFloat)
               td (xpSummary.Xp |> round2 |> xpFloat |> ofStr)
               td []
             ])
         ))
 
-        tfoot [ totalRow 5 (round2 >> xpFloat) (Some total) none ]
+        tfoot [ tr (totalRowCells (round2 >> xpFloat) (Some total) none) ]
       ]
 
     let solver data settings total dateSpans =

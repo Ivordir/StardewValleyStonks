@@ -315,14 +315,6 @@ img
     display: flex
     flex-direction: column
 
-.breakdown-table
-  margin: auto
-  width: max-content
-
-  & td
-    vertical-align: bottom
-    text-align: right
-
 
 .calendar
   &-season
@@ -645,6 +637,7 @@ th.collapsible
 
 tr.collapsible
   cursor: pointer
+  border-bottom: black dashed var(--eighth-border)
 
   & > td:first-child
     width: var(--arrow-length)
@@ -660,3 +653,37 @@ tr.collapsible
 
   &[aria-pressed=false] ~ tr
     visibility: collapse
+
+
+.profit-table
+  --border: black solid var(--eighth-border)
+
+  border-collapse: collapse
+
+  & > *
+    border: var(--border)
+
+  & > * > tr
+    &:nth-child(odd)
+      background: #f9ba66
+
+    &:nth-child(even)
+      background: scale-color(#f9ba66, $lightness: 25%)
+
+  // all cells
+  & > * > tr > *
+    vertical-align: middle
+    padding: 0.5rem
+    text-align: right
+
+    // profit column
+    &:nth-last-child(2)
+      min-width: 5rem
+
+  // row header column in thead and tfoot
+  & > * > tr > th:nth-child(-n+2)
+    text-align: center
+
+  // row header column in tbody
+  & > tbody > tr > th:nth-child(-n+2)
+    text-align: left

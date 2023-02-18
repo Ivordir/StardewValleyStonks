@@ -198,13 +198,13 @@ module Crops =
         |> Column.markAsKey
 
         Column.sortableOpt
-          (ofStr "Lowest Seed Price")
+          (ofStr "Seed Price")
           (Crop.seed >> Query.Price.seedMinVendorAndPrice data settings >> viewPrice)
           (Crop.seed >> Query.Price.seedMinPrice data settings)
 
-        Column.valueSortable (ofStr "Growth Time") (Game.growthTime settings.Game None) ofNat
+        Column.valueSortable (ofStr "Days") (Game.growthTime settings.Game None) ofNat
 
-        Column.valueOptSortable (ofStr "Regrow Time") Crop.regrowTime (ofOption ofNat)
+        Column.valueOptSortable (ofStr "Regrow") Crop.regrowTime (ofOption ofNat)
 
         Column.createWith
           (ofStr "Seasons")
@@ -498,7 +498,7 @@ module Fertilizers =
 
 
             Column.sortableOpt
-              (ofStr "Lowest Price")
+              (ofStr "Price")
               (Fertilizer.name >> Query.Price.fertilizerMinVendorAndPrice data settings >> viewPrice)
               (Fertilizer.name >> Query.Price.fertilizerMinPrice data settings)
 

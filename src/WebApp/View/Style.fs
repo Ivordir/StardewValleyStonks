@@ -78,6 +78,7 @@ module Class =
   let [<Literal>] pairSelect = "pair-select"
   let [<Literal>] summary = "summary"
   let [<Literal>] summaryControls = "summary-controls"
+  let [<Literal>] profitTable = "profit-table"
 
   let [<Literal>] select = "select"
   let [<Literal>] selectControl = "select-control"
