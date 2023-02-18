@@ -82,6 +82,9 @@ input
       transform: scale(1.1)
 
 
+%focus-outline
+  outline: 2px solid cyan
+
 input[type=range]:focus
   outline: none
 
@@ -263,7 +266,7 @@ img
     content: ui-img("Checkedbox")
 
   & > input:focus + img
-    outline: 2px solid cyan
+    @extend %focus-outline
 
   &:hover > input + img
     transform: scale(1.1)
@@ -283,7 +286,7 @@ img
     color: green
 
   & > input:focus + *
-    outline: 2px solid cyan
+    @extend %focus-outline
 
   &:hover
     background: white
@@ -391,7 +394,7 @@ img
   display: inline-flex
 
   &:focus-within
-    // border: 1px solid cyan
+    @extend %focus-outline
 
   & > div
     position: relative
