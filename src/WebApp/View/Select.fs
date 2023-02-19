@@ -185,7 +185,7 @@ let [<ReactComponent>] private Select (props: _ Props) =
 
   div [
     className Class.select
-    role "comboxbox"
+    role "combobox"
     ariaExpanded state.Hover.IsSome
     props.Label
 
