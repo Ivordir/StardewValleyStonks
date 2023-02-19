@@ -643,9 +643,10 @@ tr
 
   &.collapsed ~ tr
     visibility: collapse
-    // the following mimics visibility: collapse
-    // for browsers that treat visibility: collapse as visibility: hidden
-    line-height: 0
+    // until safari and other browsers stop treating visibility: collapse as visibility: hidden
+    // this is necessary to mimic visibility: collapse
+    // unfortunately, this will cause the table to recompute its layout even for well behaved browsers
+    position: absolute
 
 .profit-table
   --border: black solid var(--eighth-border)
