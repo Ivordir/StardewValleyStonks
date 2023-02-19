@@ -632,7 +632,9 @@ th.collapsible
 
 tr.collapsible
   cursor: pointer
-  border-bottom: black dashed var(--eighth-border)
+
+  &[aria-pressed=true]
+    border-bottom: black dashed var(--eighth-border)
 
   & > td:first-child
     width: var(--arrow-length)
@@ -648,6 +650,9 @@ tr.collapsible
 
   &[aria-pressed=false] ~ tr
     visibility: collapse
+    // the following mimics visibility: collapse
+    // for browsers that treat visibility: collapse as visibility: hidden
+    position: absolute
 
 
 .profit-table
