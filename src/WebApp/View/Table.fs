@@ -68,6 +68,7 @@ let private tableHeader key columns items sortCol ascending sortDispatch =
     tr (columns |> Array.mapi (fun i column ->
       let i = nat i
       let active = sortCol = i
+      let sortable = column.Sort.IsSome
 
       fragment [
         column.Select |> ofOption (fun (selected, dispatch) ->
@@ -85,21 +86,24 @@ let private tableHeader key columns items sortCol ascending sortDispatch =
 
         th [
           scope "col"
-          if column.Sort.IsSome then
-            onClick (fun _ -> sortDispatch (i, if active then not ascending else true))
-            role ("columnheader", "button")
-            className [
-              "sortable"
-              if column.Disabled then Class.disabled
-            ]
-            tabIndex 0
-            ariaPressed active
-            if active then
-              Interop.mkAttr "aria-sort" (if ascending then "ascending" else "descending")
-          elif column.Disabled then
-            className Class.disabled
+          className [
+            if sortable then Class.columnSort
+            if column.Disabled then Class.disabled
+          ]
 
-          children column.Header
+          if sortable && active then
+            Interop.mkAttr "aria-sort" (if ascending then "ascending" else "descending")
+
+          children [
+            if sortable then
+              button [
+                onClick (fun _ -> sortDispatch (i, if active then not ascending else true))
+                ariaPressed active
+                children column.Header
+              ]
+            else
+              column.Header
+          ]
         ]
       ]
     ))
@@ -152,6 +156,14 @@ let tableFromColumms key items sort sortDispatch columns =
   tableFromColummsWithRowDisable (konst false) key items sort sortDispatch columns
 
 
+let private collapseButton expandLabel collapseLabel collapsed setCollapsed =
+  button [
+    className Class.collapseArrow
+    ariaLabel (if collapsed then expandLabel else collapseLabel)
+    ariaPressed (not collapsed)
+    onClick (fun _ -> setCollapsed (not collapsed))
+  ]
+
 let [<ReactComponent>] private CollapsibleTableBody (props: {|
     key: string
     Header: ReactElement
@@ -167,12 +179,11 @@ let [<ReactComponent>] private CollapsibleTableBody (props: {|
 
   tbody [
     tr [
-      className Class.collapsible
-      role ("row", "button")
-      tabIndex 0
-      ariaPressed (not collapsed)
-      onClick (fun _ -> setCollapsed (not collapsed))
-      children [ td []; props.Header ]
+      className (if collapsed then "collapsed" else "expanded")
+      children [
+        td (collapseButton "Expand" "Collapse" collapsed setCollapsed)
+        props.Header
+      ]
     ]
 
     fragment (props.Rows |> Array.map (fun row -> tr [ td []; row ]))
@@ -191,10 +202,7 @@ let [<ReactComponent>] private CollapsibleTable (props: {|
         th [
           scope "col"
           className Class.collapsible
-          role ("columnheader", "button")
-          tabIndex 0
-          ariaPressed (not collapsed)
-          onClick (fun _ -> setCollapsed (not collapsed))
+          children (collapseButton "Expand All" "Collapse All" collapsed setCollapsed)
         ]
         props.Header
       ]

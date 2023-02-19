@@ -70,15 +70,16 @@ module Class =
   let [<Literal>] seasons = "seasons"
   let [<Literal>] date = "date"
 
-  let [<Literal>] breakdownTable = "breakdown-table"
-  let [<Literal>] collapsible = "collapsible"
-
   let [<Literal>] graph = "graph"
   let [<Literal>] graphControls = "graph-controls"
   let [<Literal>] pairImage = "pair-image"
   let [<Literal>] pairSelect = "pair-select"
   let [<Literal>] summary = "summary"
   let [<Literal>] summaryControls = "summary-controls"
+
+  let [<Literal>] columnSort = "colunmSort"
+  let [<Literal>] collapsible = "collapsible"
+  let [<Literal>] collapseArrow = "collapse-arrow"
   let [<Literal>] profitTable = "profit-table"
 
   let [<Literal>] select = "select"

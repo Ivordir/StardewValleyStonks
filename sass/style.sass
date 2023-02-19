@@ -470,47 +470,6 @@ img
       &[aria-selected=true]
         background-color: $background-hover
 
-
-// with pixelated image rendering, rotating distorts the image on some browsers
-// instead, let's create a class for each direction
-.arrow-right
-  content: ui-img("Arrow Right")
-  width: var(--arrow-length)
-  height: var(--arrow-width)
-
-.arrow-up
-  content: ui-img("Arrow Up")
-  width: var(--arrow-width)
-  height: var(--arrow-length)
-
-.arrow-down
-  content: ui-img("Arrow Down")
-  width: var(--arrow-width)
-  height: var(--arrow-length)
-
-%arrow
-  content: ""
-  @extend %pixel
-  background-size: cover
-
-%arrow-right
-  @extend %arrow
-  background-image: ui-img("Arrow Right")
-  width: var(--arrow-length)
-  height: var(--arrow-width)
-
-%arrow-up
-  @extend %arrow
-  background-image: ui-img("Arrow Up")
-  width: var(--arrow-width)
-  height: var(--arrow-length)
-
-%arrow-down
-  @extend %arrow
-  background-image: ui-img("Arrow Down")
-  width: var(--arrow-width)
-  height: var(--arrow-length)
-
 %season
   $scale: 2
   width: icon-size(12 * $scale)
@@ -617,57 +576,76 @@ footer
   text-align: center
 
 
-th.sortable
+%button-unstyled
+  padding: 0
+  background: none
+  outline: none
+  box-shadow: none
+  border: none
   cursor: pointer
 
+// with pixelated image rendering, rotating distorts the image on some browsers
+// instead, let's create a class for each direction
+.arrow-right
+  content: ui-img("Arrow Right")
+  width: var(--arrow-length)
+  height: var(--arrow-width)
+
+%arrow
+  content: ""
+  @extend %pixel
+  background-size: cover
+
+th.colunmSort
   &::after
     float: right
+    @extend %arrow
+    width: var(--arrow-width)
+    height: var(--arrow-length)
 
   &[aria-sort=ascending]::after
-    @extend %arrow-up
+    background-image: ui-img("Arrow Up")
 
   &[aria-sort=descending]::after
-    @extend %arrow-down
+    background-image: ui-img("Arrow Down")
 
+  & > button
+    @extend %button-unstyled
 
-th.collapsible
-  cursor: pointer
+  &:focus-within
+    @extend %focus-outline
+
+.collapse-arrow
+  @extend %button-unstyled
   width: var(--arrow-length)
+  height: var(--arrow-length)
 
   &::before
+    @extend %arrow
     display: block
 
   &[aria-pressed=false]::before
-    @extend %arrow-right
+    background-image: ui-img("Arrow Right")
+    width: var(--arrow-length)
+    height: var(--arrow-width)
 
   &[aria-pressed=true]::before
-    @extend %arrow-down
+    background-image: ui-img("Arrow Down")
+    width: var(--arrow-width)
+    height: var(--arrow-length)
 
+  &:focus::before
+    @extend %focus-outline
 
-tr.collapsible
-  cursor: pointer
-
-  &[aria-pressed=true]
+tr
+  &.expanded
     border-bottom: black dashed var(--eighth-border)
 
-  & > td:first-child
-    width: var(--arrow-length)
-
-    &::before
-      display: block
-
-  &[aria-pressed=false] > td:first-child::before
-    @extend %arrow-right
-
-  &[aria-pressed=true] > td:first-child::before
-    @extend %arrow-down
-
-  &[aria-pressed=false] ~ tr
+  &.collapsed ~ tr
     visibility: collapse
     // the following mimics visibility: collapse
     // for browsers that treat visibility: collapse as visibility: hidden
-    position: absolute
-
+    line-height: 0
 
 .profit-table
   --border: black solid var(--eighth-border)
