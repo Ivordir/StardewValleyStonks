@@ -207,7 +207,7 @@ let parseCrop farmCropOverrides forageCropData seed (data: string) =
   match data.Split '/' with
   | [| growthStages; seasons; spriteSheetRow; itemId; regrowTime; scythe; cropAmount; _; _ |] ->
     let spriteSheetRow = uint spriteSheetRow
-    let itemId = itemId |> nat |> convertUnit
+    let itemId = nat itemId * 1u<_>
 
     let growthStages =
       let splitted = growthStages.Split ' '
@@ -367,8 +367,8 @@ let main args =
     with _ -> printfn $"Error loading {name}."; reraise ()
 
   let inline tryLoadData name path =
-    (tryLoad (name + " data") path: Dictionary<int,_>)
-    |> Seq.map (fun (KeyValue (k, v)) -> k |> nat |> convertUnit, v)
+    (tryLoad $"{name} data" path: Dictionary<int,_>)
+    |> Seq.map (fun (KeyValue (k, v)) -> nat k * 1u<_>, v)
 
   let cropData =
     tryLoadData "crop" cropDataPath
@@ -377,7 +377,7 @@ let main args =
 
   let itemData = tryLoadData "item" itemDataPath |> Table.ofSeq
 
-  let inline tryLoadSpriteSheet name path: Texture2D = tryLoad (name + " spritesheet") path
+  let inline tryLoadSpriteSheet name path: Texture2D = tryLoad $"{name} spritesheet" path
 
   let cropSpriteSheet = tryLoadSpriteSheet "crop" cropSpriteSheetPath
   let itemSpriteSheet = tryLoadSpriteSheet "item" itemSpriteSheetPath
