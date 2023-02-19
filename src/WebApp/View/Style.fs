@@ -59,6 +59,7 @@ module Class =
   let [<Literal>] skill = "skill"
   let [<Literal>] skillLevel = "skill-level"
   let [<Literal>] professions = "professions"
+  let [<Literal>] profession = "profession"
 
   let [<Literal>] calendar = "calendar"
   let [<Literal>] calendarSeason = "calendar-season"

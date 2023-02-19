@@ -695,8 +695,8 @@ let private emptyPairData (pairData: PairData) =
 let rankBy label (metric: RankMetric) (timeNorm: TimeNormalization) dispatchMetric dispatchTimeNorm =
   fragment [
     ofStr label
-    Select.unitUnionWith (ariaLabel "Metric") (length.rem 3) metric dispatchMetric
-    Select.unitUnionWith (ariaLabel "Time Normalization") (length.rem 6) timeNorm dispatchTimeNorm
+    labeledHidden "Metric" (Select.unitUnion (length.rem 3) metric dispatchMetric)
+    labeledHidden "Time Normalization" (Select.unitUnion (length.rem 6) timeNorm dispatchTimeNorm)
   ]
 
 
@@ -924,7 +924,7 @@ module Ranker =
 
     fragment [
       div [ className Class.graphControls; children [
-        Select.unitUnion "Rank" (length.rem 5) ranker.RankItem (SetRankItem >> dispatch)
+        labeled "Rank" (Select.unitUnion (length.rem 5) ranker.RankItem (SetRankItem >> dispatch))
 
         rankBy
           "By"
@@ -949,8 +949,7 @@ module Ranker =
 
 
 let private selectSpecificOrBest name toString (viewItem: _ -> ReactElement) items selected dispatch =
-  Select.searchWith
-    (ariaLabel name)
+  Select.search
     (length.rem 15)
     (function
       | Choice1Of2 item
@@ -966,6 +965,7 @@ let private selectSpecificOrBest name toString (viewItem: _ -> ReactElement) ite
     items
     selected
     dispatch
+  |> labeledHidden name
 
 let [<ReactComponent>] CropAndFertilizerSummary (props: {|
     App: _
@@ -1162,7 +1162,7 @@ let section app dispatch =
       | Ranker -> rankerOrSummary app uiDispatch
       | Solver ->
         fragment [
-          Select.unitUnion "Maximize" (length.rem 3) ui.SolverMode (SetSolverMode >> uiDispatch)
+          labeled "Maximize" (Select.unitUnion (length.rem 3) ui.SolverMode (SetSolverMode >> uiDispatch))
           Solver {|
             Data = app.Data
             Settings = settings

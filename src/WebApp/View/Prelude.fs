@@ -190,6 +190,16 @@ module Icon =
     | ProcessorName processor -> withClass Class.iconProcessor (Path.processor processor) processor
 
 
+let private labelWith (css: string) (label: string) element =
+  Html.label [
+    Html.span [ className css; prop.text label ]
+    element
+  ]
+
+let labeled label element = labelWith "label-text" label element
+let labeledHidden label element = labelWith "label-hidden" label element
+
+
 // https://www.w3.org/TR/wai-aria-1.1/#tab
 
 let private tabId label tab = $"{lowerCase label}-tab-{Reflection.getCaseTag tab}"

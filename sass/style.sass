@@ -13,10 +13,11 @@ $phi: math.div(1 + math.sqrt(5), 2)
 @function icon-size($px)
   @return calc(var(--icon-scale) * #{$px}px)
 
+$space-width: calc(var(--icon-scale) * var(--space-width))
+
 :root
   font: var(--font-size, 100%) / 1.25 Stardew Valley Stonks, Nunito, sans
-  --space-base-width: calc(3rem / 13)
-  --space-width: calc(var(--icon-scale) * var(--space-base-width))
+  --space-width: calc(3rem / 13)
   --icon-scale: var(--icon-base-scale)
   --arrow-length: #{icon-size(11)}
   --arrow-width: #{icon-size(10)}
@@ -42,14 +43,18 @@ ul
   padding: 0
   margin: 0
 
+%colon
+  &::after
+    content: ":"
+
 dl
   display: grid
   grid-template-columns: auto auto
   justify-content: start
   gap: 0 0.5rem
 
-dt::after
-  content: ":"
+dt
+  @extend %colon
 
 dd
   margin: 0
@@ -86,12 +91,14 @@ input
 
 input[type=range]
   $scale: 3
+  $height: icon-size(6 * $scale)
 
   -webkit-appearance: none
   background: transparent
   margin: 0
-  width: calc(max(100px, 10em))
   cursor: pointer
+  width: calc(max(100px, 10rem))
+  height: $height
 
   &:focus
     @extend %focus-outline
@@ -106,7 +113,7 @@ input[type=range]
     border: none
     border-radius: 0
     width: icon-size(10 * $scale)
-    height: icon-size(6 * $scale)
+    height: $height
     background: ui-img("Range Thumb")
     background-size: contain
     background-repeat: no-repeat
@@ -122,7 +129,7 @@ input[type=range]
     @include thumb
 
   @mixin track
-    height: icon-size(6 * $scale)
+    height: $height
     border-image-source: ui-img("Range Track")
     border-image-slice: 2 fill
     border-image-width: icon-size(2 * $scale)
@@ -265,8 +272,15 @@ img
   &:hover > input + img
     transform: scale(1.1)
 
-.label > input + img
-  margin-right: var(--space-width)
+  & > input + img:not(:last-child)
+    margin-right: $space-width
+
+.label-hidden
+  @extend %colon
+  font-size: 0
+
+.label-text
+  @extend %colon
 
 .profession
   display: block
@@ -302,7 +316,7 @@ img
   flex-direction: column
 
   & > span:first-child
-    --icon-scale: calc(var(--icon-base-scale) * 2)
+    --icon-scale: calc(var(--icon-base-scale) * 1.5)
     font-size: 2rem
     text-align: center
 
@@ -522,7 +536,7 @@ img
     display: inline-block
 
     & > :first-child
-      margin-right: var(--space-width)
+      margin-right: $space-width
 
 @mixin icon-img($name, $folder)
   .#{to-lower-case($name)}

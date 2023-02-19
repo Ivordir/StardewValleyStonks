@@ -19,8 +19,6 @@ open Core.Operators
 type private 'a Props = {|
   Width: Styles.ICssUnit
   ToString: ('a -> string) option
-  Label: IReactProperty
-  LabelVisible: bool
   Display: 'a -> ReactElement
   Options: 'a array
   Selected: 'a
@@ -187,7 +185,6 @@ let [<ReactComponent>] private Select (props: _ Props) =
     className Class.select
     role "combobox"
     ariaExpanded state.Hover.IsSome
-    props.Label
 
     onMouseDown (fun e ->
       if e.button = 0 then
@@ -239,10 +236,8 @@ let [<ReactComponent>] private Select (props: _ Props) =
     ]
   ]
 
-let searchWith label width toString display options selected dispatch =
+let search width toString display options selected dispatch =
   Select {|
-    Label = label
-    LabelVisible = false
     Width = width
     ToString = Some toString
     Display = display
@@ -251,10 +246,8 @@ let searchWith label width toString display options selected dispatch =
     Dispatch = dispatch
   |}
 
-let optionsWith label width display options selected dispatch =
+let options width display options selected dispatch =
   Select {|
-    Label = label
-    LabelVisible = false
     Width = width
     ToString = None
     Display = display
@@ -263,24 +256,8 @@ let optionsWith label width display options selected dispatch =
     Dispatch = dispatch
   |}
 
-let inline unitUnionWith label width selected dispatch =
-  optionsWith label width (Reflection.getCaseName >> ofStr) unitUnionCases selected dispatch
+let inline unitUnion width selected dispatch =
+  options width (Reflection.getCaseName >> ofStr) unitUnionCases selected dispatch
 
-let inline enumWith label width (selected: 'a) dispatch =
-  optionsWith label width (Enum.name >> ofStr) Enum.values selected dispatch
-
-let options label width display options selected dispatch =
-  let labelId = (lowerCase label).Split ' ' |> String.concat "-"
-  Html.span [
-    Html.label [
-      prop.id labelId
-      text label
-    ]
-    optionsWith (ariaLabelledBy labelId) width display options selected dispatch
-  ]
-
-let inline unitUnion label width selected dispatch =
-  options label width (Reflection.getCaseName >> ofStr) unitUnionCases selected dispatch
-
-let inline enum label width (selected: 'a) dispatch =
-  options label width (Enum.name >> ofStr) Enum.values selected dispatch
+let inline enum width (selected: 'a) dispatch =
+  options width (Enum.name >> ofStr) Enum.values selected dispatch

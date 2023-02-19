@@ -20,8 +20,8 @@ module Skills =
     let selected = skills.Professions.Contains profession
     label [
       className [
-        "profession"
-        if not (skills |> Skills.professionUnlocked profession) then "disabled"
+        Class.profession
+        if not (skills |> Skills.professionUnlocked profession) then Class.disabled
       ]
       children [
         input [
@@ -54,34 +54,21 @@ module Skills =
       ]
     ]]
 
-  let skillBuffLevel name skill dispatch =
+  let skillBuffLevel skill dispatch =
     div [ className Class.skillLevel; children [
       Html.span [
-        let levelId = $"{lowerCase name}-level"
-
-        label [ prop.id levelId; children [
-          ofStr "Level"
-          Input.natWith
-            None
-            (length.rem 2)
-            None
-            (Some Skill.maxLevel)
-            skill.Level
-            (SetLevel >> dispatch)
-        ]]
-
-        Input.natRangeWith (Some (ariaLabelledBy levelId)) 0u Skill.maxLevel skill.Level (SetLevel >> dispatch)
+        labeled "Level" (Input.natWith (length.rem 2) None (Some Skill.maxLevel) skill.Level (SetLevel >> dispatch))
+        labeledHidden "Level" (Input.natRange 0u Skill.maxLevel skill.Level (SetLevel >> dispatch))
       ]
 
-      Input.nat (length.rem 2) skill.Buff (SetBuff >> dispatch)
-      |> Input.labeled "Buff"
+      labeled "Buff" (Input.nat (length.rem 2) skill.Buff (SetBuff >> dispatch))
     ]]
 
   let farming skills dispatch =
     let farming = skills.Farming
     div [ className Class.skill; children [
       Icon.skill "Farming"
-      skillBuffLevel "Farming" farming (SetFarming >> dispatch)
+      skillBuffLevel farming (SetFarming >> dispatch)
       div [ className Class.professions; children [
         div (profession skills Tiller dispatch)
         div [
@@ -96,7 +83,7 @@ module Skills =
     let foraging = skills.Foraging
     div [ className Class.skill; children [
       Icon.skill "Foraging"
-      skillBuffLevel "Foraging" foraging (SetForaging >> dispatch)
+      skillBuffLevel foraging (SetForaging >> dispatch)
       div [ className Class.professions; children [
         div (profession skills Gatherer dispatch)
         div (profession skills Botanist dispatch)
@@ -250,7 +237,7 @@ module Crops =
     let normalizedPrices = cropTab.NormalizeProductPrices
 
     fragment [
-      Select.enum "View with quality" (length.rem 4) productQuality (SetProductQuality >> cropTabDispatch)
+      labeled "View with quality" (Select.enum (length.rem 4) productQuality (SetProductQuality >> cropTabDispatch))
 
       Input.checkboxText "Normalize Prices" normalizedPrices (SetNormalizeProductPrices >> cropTabDispatch)
 
@@ -318,10 +305,10 @@ module Crops =
         (SetJojaMembership >> SetGameVariables >> settingsDispatch)
 
       Select.unitUnion
-        "Seed Strategy"
         (length.rem 5)
         settings.Profit.SeedStrategy
         (SetSeedStrategy >> SetProfit >> settingsDispatch)
+      |> labeled "Seed Strategy"
 
       tableFromColumms
         Crop.seed
@@ -404,7 +391,6 @@ module Crops =
 
   let private selectFilter name value dispatch =
     Select.options
-      name
       (length.rem 2)
       (function
         | Some true -> ofStr "Yes"
@@ -413,6 +399,7 @@ module Crops =
       [| Some true; Some false; None |]
       value
       dispatch
+    |> labeled name
 
   let cropFilter filters dispatch =
     let toggleSeason season selected =
@@ -596,30 +583,25 @@ module Misc =
       then day |> clamp otherDate.Day
       else day
 
-    let labelId = $"{lowerCase label}-date"
-
     div [ className Class.date; children [
-      Html.label [
-        prop.id labelId
-        text $"{label} Date"
-      ]
+      ofStr $"{label} Date"
 
-      Select.enumWith
-        (ariaLabelledBy labelId)
+      Select.enum
         (length.rem 4)
         date.Season
         (fun season -> dispatch {
           Season = season
           Day = date.Day |> clamp season
         })
+      |> labeledHidden $"{label} Season"
 
       Input.natWith
-        (Some (ariaLabelledBy labelId))
         (length.rem 2)
         (Date.firstDay |> clamp date.Season |> Some)
         (Date.lastDay |> clamp date.Season |> Some)
         date.Day
         (fun day -> dispatch { date with Day = day })
+      |> labeledHidden $"{label} Day"
     ]]
 
   let dates (startDate: Date) (endDate: Date) dispatch =
@@ -633,12 +615,12 @@ module Misc =
       Input.checkboxText "Bear's Knowledge" multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
 
       Select.options
-        "Profit Margin"
         (length.rem 4)
         (fun margin -> ofStr (if margin = 1.0 then "Normal" else percent margin))
         [| 1.0..(-0.25)..0.25 |]
         multipliers.ProfitMargin
         (SetProfitMargin >> dispatch)
+      |> labeled "Profit Margin"
 
       Input.checkboxText
         "Apply Tiller to Foraged Grapes and Blackberries"
@@ -649,41 +631,36 @@ module Misc =
   let cropAmountSettings settings dispatch =
     div [ className Class.settingsGroup; children [
       Html.span [
-        let giantCropChecksId = "giant-crop-checks"
+        Input.float
+          (length.rem 4)
+          10e-4
+          (Some CropAmount.minGiantCropChecks)
+          (Some CropAmount.maxGiantCropChecks)
+          settings.GiantChecksPerTile
+          (SetGiantChecksPerTile >> dispatch)
+        |> labeled "Giant Crop Checks Per Tile"
 
-        label [ prop.id giantCropChecksId; children [
-          ofStr "Giant Crop Checks Per Tile"
-          Input.floatWith
-            None
-            (length.rem 4)
-            10e-4
-            (Some CropAmount.minGiantCropChecks)
-            (Some CropAmount.maxGiantCropChecks)
-            settings.GiantChecksPerTile
-            (SetGiantChecksPerTile >> dispatch)
-        ]]
-
-        Input.floatRangeWith
-          (Some (ariaLabelledBy giantCropChecksId))
+        Input.floatRange
           10e-4
           CropAmount.minGiantCropChecks
           CropAmount.maxGiantCropChecks
           settings.GiantChecksPerTile
           (SetGiantChecksPerTile >> dispatch)
+        |> labeledHidden "Giant Crop Checks Per Tile"
       ]
 
       Select.options
-        "Shaving Enchantment"
         (length.rem 4)
         (Option.defaultOrMap "None" ToolLevel.name >> ofStr)
         (Enum.values |> Array.map Some |> Array.append [| None |])
         settings.ShavingToolLevel
         (SetShavingToolLevel >> dispatch)
+      |> labeled "Shaving Enchantment"
 
       Input.checkboxText "Special Charm" settings.SpecialCharm (SetSpecialCharm >> dispatch)
 
-      Input.natWith None (length.rem 2) None (Some CropAmount.maxLuckBuff) settings.LuckBuff (SetLuckBuff >> dispatch)
-      |> Input.labeled "Luck Buff"
+      Input.natWith (length.rem 2) None (Some CropAmount.maxLuckBuff) settings.LuckBuff (SetLuckBuff >> dispatch)
+      |> labeled "Luck Buff"
     ]]
 
   let mods data open' modData dispatch =
@@ -714,7 +691,7 @@ module Misc =
     let dispatch = SetGameVariables >> SetSettings >> dispatch
     fragment [
       div [ className Class.date; children [
-        Select.unitUnion "Location" (length.rem 6) settings.Location (SetLocation >> dispatch)
+        labeled "Location" (Select.unitUnion (length.rem 6) settings.Location (SetLocation >> dispatch))
         dates settings.StartDate settings.EndDate dispatch
       ]]
       multipliers settings.Multipliers (SetMultipliers >> dispatch)
