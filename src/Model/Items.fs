@@ -178,13 +178,15 @@ module Product =
     | SeedsFromSeedMaker item
     | Processed { Item = item } -> item
 
-  let name getItem = function
-    | Jam item -> (item |> getItem |> Item.name) + " " + nameof Jam
-    | Pickles item -> "Pickled " + (item |> getItem |> Item.name)
-    | Wine item -> (item |> getItem |> Item.name) + " " + nameof Wine
-    | Juice item -> (item |> getItem |> Item.name) + " " + nameof Juice
-    | SeedsFromSeedMaker seed -> seed |> getItem |> Item.name
-    | Processed p -> p.Item |> getItem |> Item.name
+  let name getItem product =
+    let item = product |> item |> getItem |> Item.name
+    match product with
+    | Jam _ -> $"{item} Jam"
+    | Pickles _ -> $"Pickled {item}"
+    | Wine _ -> $"{item} Wine"
+    | Juice _ -> $"{item} Juice"
+    | SeedsFromSeedMaker _ -> item
+    | Processed _ -> item
 
   let processor = function
     | Jam _ | Pickles _ -> Processor.preservesJar

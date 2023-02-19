@@ -43,7 +43,7 @@ module Season =
     then value + count
     else value
 
-  let private plusMod (i: int) (season: Season) = (int season + i) % 4
+  let private plusMod (i: int) (season: Season) = (int season + i) % count
 
   let inline private plus i season = plusMod i season |> enum<Season>
 
