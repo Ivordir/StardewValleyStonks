@@ -1159,7 +1159,7 @@ let [<ReactComponent>] Solver (props: {|
 
   div [
     if solving then className Class.disabled
-    children (Elmish.React.Common.lazyView (solverSummary data settings mode) solution)
+    children (Elmish.React.Common.lazyView (uncurry (solverSummary data settings)) (mode, solution))
   ]
 
 let section app dispatch =

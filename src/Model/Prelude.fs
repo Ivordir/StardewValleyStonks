@@ -83,9 +83,6 @@ module Table =
     then Some (table |> find key)
     else None
 
-  let exists predicate table = toSeq table |> Seq.exists (fun (k, v) -> predicate k v)
-  let forall predicate table = toSeq table |> Seq.forall (fun (k, v) -> predicate k v)
-
 type Table<'a, 'b> with
   member inline this.Count = Table.count this
   member inline this.Keys = Table.keys this

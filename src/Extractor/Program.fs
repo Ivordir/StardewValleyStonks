@@ -289,7 +289,7 @@ let saveSubTexture name graphics x y width height (texture: Texture2D) =
   use file = File.OpenWrite (name + ".png")
   subtexture.SaveAsPng (file, width, height)
 
-let saveStageImages graphics outputPath cropSpriteSheet crop spriteSheetRow =
+let saveStageImages graphics outputPath cropSpriteSheet spriteSheetRow crop =
   let path = Path.Combine (outputPath, string (Crop.seed crop))
   Directory.CreateDirectory path |> ignore
 
@@ -410,7 +410,7 @@ let main args =
   try
     Directory.CreateDirectory config.CropImageOutputPath |> ignore
     crops |> Array.iter (fun (spriteSheetRow, crop) ->
-      saveStageImages graphics config.CropImageOutputPath cropSpriteSheet crop spriteSheetRow)
+      saveStageImages graphics config.CropImageOutputPath cropSpriteSheet spriteSheetRow crop)
   with _ -> printfn "Error writing the crop images."; reraise ()
 
   let dataStr =

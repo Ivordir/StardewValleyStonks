@@ -235,7 +235,7 @@ module Price =
     |> Option.merge (Qualities.map2 max) (itemMaxProductNormalizedPriceByQuality data settings item)
     |> Option.merge (Qualities.map2 max) customPrice
 
-  let private itemMaxProductAndPriceByQualityBy projection data settings seed item =
+  let private itemMaxProductAndPriceByQualityBy projection data settings item =
     let products = Selected.unlockedProducts data settings item |> Array.map (fun product ->
       product, projection data settings.Game product)
 
@@ -244,11 +244,11 @@ module Price =
       products |> Array.mapReduce (maxBy snd) (fun (product, prices: _ Qualities) -> product, prices[quality]))
     |> Some
 
-  let itemMaxProductAndPriceByQuality data settings seed item =
-    itemMaxProductAndPriceByQualityBy Game.productPriceByQuality data settings seed item
+  let itemMaxProductAndPriceByQuality data settings item =
+    itemMaxProductAndPriceByQualityBy Game.productPriceByQuality data settings item
 
-  let itemMaxProductAndNormalizedPriceByQuality data settings seed item =
-    itemMaxProductAndPriceByQualityBy Game.productNormalizedPriceByQuality data settings seed item
+  let itemMaxProductAndNormalizedPriceByQuality data settings item =
+    itemMaxProductAndPriceByQualityBy Game.productNormalizedPriceByQuality data settings item
 
   let itemMaxSellAsAndNormalizedPrice data settings seed item =
     let rawPrices =
@@ -262,7 +262,7 @@ module Price =
         customSellPriceValueByQuality custom |> Qualities.map (fun price -> Some (Custom custom), float price))
 
     let productPrices =
-      itemMaxProductAndNormalizedPriceByQuality data settings seed item
+      itemMaxProductAndNormalizedPriceByQuality data settings item
       |> Option.map (Qualities.map (fun (product, profit) -> Some (NonCustom product), profit))
 
     let sellAs = Array.choose id [|
@@ -1204,7 +1204,7 @@ module Solver =
     }
 
   let xpSummary data settings fertilizer cropHarvests =
-    let summaries = cropHarvests |> Array.map (fun (crop, harvests) -> cropXpSummary data settings crop harvests)
+    let summaries = cropHarvests |> Array.map (uncurry (cropXpSummary data settings))
     let xp = summaries |> Array.sumBy (fun summary -> float summary.XpPerItem * summary.ItemQuantity)
     {
       Fertilizer = fertilizer

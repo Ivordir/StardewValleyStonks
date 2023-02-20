@@ -12,6 +12,7 @@ module internal Util =
 
   let inline konst x _ = x
   let inline curry f a b = f (a, b)
+  let inline uncurry f (a, b) = f a b
 
   let minBy projection a b = if projection a <= projection b then a else b
   let maxBy projection a b = if projection a >= projection b then a else b
