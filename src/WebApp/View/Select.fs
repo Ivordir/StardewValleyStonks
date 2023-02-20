@@ -50,8 +50,9 @@ let selectControl initialState inputRef (props: _ Props) (state: _ State) setSta
       input [
         prop.ref<Browser.Types.HTMLInputElement> inputRef
         ariaMultiLine false
-        ariaControls (if state.Hover.IsSome then listId else "")
-        ariaActiveDescendant (if state.Hover.IsSome then optionId else "")
+        if state.Hover.IsSome then
+          ariaControls listId
+          ariaActiveDescendant optionId
         onFocus (fun _ -> setState {| state with Focused = true |})
         onBlur (fun _ -> setState initialState)
 
