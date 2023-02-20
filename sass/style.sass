@@ -648,13 +648,17 @@ tr
     // unfortunately, this will cause the table to recompute its layout even for well behaved browsers
     position: absolute
 
-.profit-table
+.summary-table
   --border: black solid var(--eighth-border)
 
   border-collapse: collapse
 
   & > *
     border: var(--border)
+
+  // empty tbody messes up borders on firefox?
+  & > tbody:empty
+    display: none
 
   & > * > tr
     &:nth-child(odd)
@@ -667,9 +671,15 @@ tr
   & > * > tr > *
     vertical-align: middle
     padding: 0.5rem
-    text-align: right
 
-    // profit column
+    &:empty
+      padding: 0
+
+    // last 4 columns
+    &:nth-last-child(-n+4)
+      text-align: right
+
+    // profit/xp column
     &:nth-last-child(2)
       min-width: 5rem
 

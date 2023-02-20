@@ -80,7 +80,7 @@ module Class =
   let [<Literal>] columnSort = "colunmSort"
   let [<Literal>] collapsible = "collapsible"
   let [<Literal>] collapseArrow = "collapse-arrow"
-  let [<Literal>] profitTable = "profit-table"
+  let [<Literal>] summaryTable = "summary-table"
 
   let [<Literal>] select = "select"
   let [<Literal>] selectControl = "select-control"

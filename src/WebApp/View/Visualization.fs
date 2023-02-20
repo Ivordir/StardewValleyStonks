@@ -418,7 +418,7 @@ module SummaryTable =
     ]
 
   let private rankerProfitSummary data settings timeNorm (profitSummary: Query.ProfitSummary) =
-    table [ className Class.profitTable; children [
+    table [ className Class.summaryTable; children [
       profitHeader "Item" (settings.Profit.SeedStrategy <> IgnoreSeeds)
 
       tbody [
@@ -482,7 +482,7 @@ module SummaryTable =
         key, row, body)
     |])
 
-    table [ className Class.profitTable; children [
+    table [ className Class.summaryTable; children [
       Table.collapsibleHeaderAndBodies true header bodies
 
       tfoot [
@@ -532,7 +532,7 @@ module SummaryTable =
   let private profitTooltip data settings timeNorm (profitSummary: Query.ProfitSummary) =
     let summary = profitSummary.CropSummaries[0]
     let seed = Crop.seed summary.Crop
-    table [ className Class.profitTable; children [
+    table [ className Class.summaryTable; children [
       profitHeader "Item" false
 
       tbody [
@@ -630,7 +630,7 @@ module SummaryTable =
       ]
 
     let private tableSummary data total (summaries: Query.XpSummary array) =
-      table [
+      table [ className Class.summaryTable; children [
         thead [
           tr [
             thCol "Crop"
@@ -654,8 +654,17 @@ module SummaryTable =
             ])
         ))
 
-        tfoot [ tr (totalRowCells (round2 >> xpFloat) (Some total) none) ]
-      ]
+        tfoot [
+          tr [
+            th "Total"
+            td []
+            td []
+            td []
+            td (total |> round2 |> xpFloat)
+            td []
+          ]
+        ]
+      ]]
 
     let solver data settings total dateSpans =
       dateSpans
