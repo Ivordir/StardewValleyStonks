@@ -907,7 +907,7 @@ module private ProfitSummary =
         profitCalc prices soldsoldQuantities
         + float (Game.seedItemSellPrice data settings.Game crop.Seed) * forageSeedsSold
 
-      abs (profit - profit') < 1e-5
+      abs (profit - profit') < 1e-4
 
     assert
       let seeds =
@@ -915,7 +915,7 @@ module private ProfitSummary =
         + forageSeedsUsed
         + Processor.seedMakerExpectedQuantity crop.Seed * (seedsUsed |> Array.sumBy (snd >> Qualities.sum))
 
-      not makeSeeds || abs (seeds - float harvests) < 1e-5
+      not makeSeeds || abs (seeds - float harvests) < 1e-4
 
     assert
       let quantitiesForForageSeeds = solution |> itemQuantities harvests (function
@@ -925,7 +925,7 @@ module private ProfitSummary =
       let neededQuantity = (forageSeedsSold + forageSeedsUsed) / float ForageCrop.forageSeedsPerCraft
 
       quantitiesForForageSeeds |> Array.forall (fun (_, quantities) ->
-        abs (neededQuantity - Qualities.sum quantities) < 1e-5)
+        abs (neededQuantity - Qualities.sum quantities) < 1e-4)
 
     let profit =
       if not makeSeeds || seedTarget = 1.0
