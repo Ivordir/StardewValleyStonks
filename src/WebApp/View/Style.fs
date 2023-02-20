@@ -78,7 +78,6 @@ module Class =
   let [<Literal>] summaryControls = "summary-controls"
 
   let [<Literal>] columnSort = "colunmSort"
-  let [<Literal>] collapsible = "collapsible"
   let [<Literal>] collapseArrow = "collapse-arrow"
   let [<Literal>] summaryTable = "summary-table"
 

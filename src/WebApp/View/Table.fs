@@ -201,7 +201,6 @@ let [<ReactComponent>] private CollapsibleTable (props: {|
       tr [
         th [
           scope "col"
-          className Class.collapsible
           children (collapseButton "Expand All" "Collapse All" collapsed setCollapsed)
         ]
         props.Header
