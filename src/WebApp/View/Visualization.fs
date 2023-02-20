@@ -256,14 +256,15 @@ module SummaryTable =
       ]
       unknownProfitRow seeds itemCell quantity
 
-  let private itemCellWithInputs data itemCell inputs =
+  let private itemCellWithInputs data (itemCell: ReactElement) inputs =
     let inputRows = inputs |> Array.choose (fun (item, quantity) ->
       let quantity = round2 quantity
       if quantity = 0.0
       then None
       else Some (item, quantity))
 
-    fragment [
+    details [
+      summary [ itemCell ]
       table [
         tbody (inputRows |> Array.map (fun ((item, quality), quantity) ->
           tr [
@@ -273,10 +274,6 @@ module SummaryTable =
           ]
         ))
       ]
-
-      Icon.arrowInto
-
-      itemCell
     ]
 
   let private fertilizerBoughtRow replacement fertilizer price quantity =
