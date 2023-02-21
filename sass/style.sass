@@ -9,8 +9,6 @@ $phi: math.div(1 + math.sqrt(5), 2)
 @function ui-img($file)
   @return url("/public/img/UI/#{$file}.png")
 
-$space-width: calc(3em / 13)
-
 :root
   font: var(--font-size, 100%) / 1.25 Stardew Valley Stonks, Nunito, sans
 
@@ -37,6 +35,7 @@ ul
 
 %colon
   &::after
+    font-weight: 600
     content: ":"
 
 dl
@@ -214,7 +213,7 @@ $arrow-length: 1.1em
 $arrow-width: 1em
 
 .arrow-right
-  content: ui-img("Arrow Right")
+  content: ui-img("Arrow")
   width: $arrow-length
   height: $arrow-width
 
@@ -246,7 +245,7 @@ details
 
     &::before
       @extend %arrow
-      background-image: ui-img("Arrow Right")
+      background-image: ui-img("Arrow")
       margin-right: 0.5rem
 
   &[open] > summary::before
@@ -266,9 +265,12 @@ details
 
   & > input + img
     content: ui-img("Checkbox")
-    $scale: 2
+    vertical-align: text-bottom
     width: 1.5rem
     height: 1.5rem
+
+    &:not(:last-child)
+      margin-right: 0.25rem
 
   & > input:checked + img
     content: ui-img("Checkedbox")
@@ -278,9 +280,6 @@ details
 
   &:hover > input + img
     transform: scale(1.1)
-
-  & > input + img:not(:last-child)
-    margin-right: $space-width
 
 .label-hidden
   @extend %colon
@@ -358,7 +357,7 @@ details
       justify-content: center
       outline: var(--eighth-border) solid black
       padding: 10%
-      $counter-offset: 2.5%
+      $counter-offset: 4%
 
       & > img
         width: 50%
@@ -372,7 +371,7 @@ details
         content: counter(day)
         position: absolute
         top: $counter-offset
-        left: calc(#{$counter-offset} + 0.25rem)
+        left: calc(#{$counter-offset} + 0.125rem)
 
 
 
@@ -415,10 +414,9 @@ details
 
   & > img
     content: ui-img("Select Spinner")
-    height: calc(max(24px, 2rem + 4px)) // eyeball css
+    height: 1rem + 2 * $padding
     border: var(--border)
     border-left: none
-    box-sizing: border-box
 
   &-control
     position: relative
@@ -446,6 +444,9 @@ details
     & > input[inputmode=none]
       @extend %hidden-input
 
+    & > span
+      margin-top: 0.125rem
+
     & span
       display: inline
       overflow: hidden
@@ -453,7 +454,7 @@ details
       white-space: nowrap
 
   &-list
-    max-height: 40vh
+    max-height: 50vh
     position: absolute
     left: 0
     top: 100%
@@ -476,7 +477,7 @@ details
         background-color: $background-hover
 
 %season
-  height: 1em
+  height: 1.25em
 
 @mixin season($name)
   .#{to-lower-case($name)}
@@ -501,7 +502,8 @@ details
     display: inline-block
 
     & > :first-child
-      margin-right: $space-width
+      vertical-align: text-bottom
+      margin-right: 0.25rem
 
 @mixin icon-img($name, $folder)
   .#{to-lower-case($name)}
@@ -596,10 +598,10 @@ th.colunmSort
     transform: rotate(-90deg)
 
   &[aria-sort=ascending]::after
-    background-image: ui-img("Arrow Right")
+    background-image: ui-img("Arrow")
 
   &[aria-sort=descending]::after
-    background-image: ui-img("Arrow Right")
+    background-image: ui-img("Arrow")
     transform: rotate(90deg)
 
   & > button
@@ -615,7 +617,7 @@ th.colunmSort
 
   &::before
     @extend %arrow
-    background-image: ui-img("Arrow Right")
+    background-image: ui-img("Arrow")
 
   &[aria-pressed=true]::before
     transform: rotate(90deg)
