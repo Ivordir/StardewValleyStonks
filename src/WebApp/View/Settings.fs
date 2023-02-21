@@ -634,19 +634,19 @@ module Misc =
         Input.float
           (length.rem 4)
           10e-4
-          (Some CropAmount.minGiantCropChecks)
-          (Some CropAmount.maxGiantCropChecks)
-          settings.GiantChecksPerTile
-          (SetGiantChecksPerTile >> dispatch)
-        |> labeled "Giant Crop Checks Per Tile"
+          (Some CropAmount.minPossibleGiantCropsPerTile)
+          (Some CropAmount.maxPossibleGiantCropsPerTile)
+          settings.PossibleGiantCropsPerTile
+          (SetPossibleGiantCropsPerTile >> dispatch)
+        |> labeled "Average Possible Giant Crops Per Tile"
 
         Input.floatRange
           10e-4
-          CropAmount.minGiantCropChecks
-          CropAmount.maxGiantCropChecks
-          settings.GiantChecksPerTile
-          (SetGiantChecksPerTile >> dispatch)
-        |> labeledHidden "Giant Crop Checks Per Tile"
+          CropAmount.minPossibleGiantCropsPerTile
+          CropAmount.maxPossibleGiantCropsPerTile
+          settings.PossibleGiantCropsPerTile
+          (SetPossibleGiantCropsPerTile >> dispatch)
+        |> labeledHidden "Average Possible Giant Crops Per Tile"
       ]
 
       Select.options

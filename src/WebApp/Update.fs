@@ -16,7 +16,7 @@ type SkillsMessage =
 type CropAmountMessage =
   | SetSpecialCharm of bool
   | SetLuckBuff of nat
-  | SetGiantChecksPerTile of float
+  | SetPossibleGiantCropsPerTile of float
   | SetShavingToolLevel of ToolLevel option
 
 type MultipliersMessage =
@@ -165,7 +165,7 @@ let cropAmount msg amount =
   match msg with
   | SetSpecialCharm value -> { amount with SpecialCharm = value }
   | SetLuckBuff value -> { amount with LuckBuff = value }
-  | SetGiantChecksPerTile value -> { amount with GiantChecksPerTile = value }
+  | SetPossibleGiantCropsPerTile value -> { amount with PossibleGiantCropsPerTile = value }
   | SetShavingToolLevel value -> { amount with ShavingToolLevel = value }
 
 let multipliers msg multipliers =
