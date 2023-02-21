@@ -175,19 +175,15 @@ module Icon =
   let vendorNoText (VendorName name) = fromPathAndAlt (Path.vendor name) name
   let vendor (VendorName name) = fromPathAndName (Path.vendor name) name
 
-  let private withClass (css: string) path name =
+  let processor (ProcessorName processor) =
     fragment [
       img [
-        className css
-        src path
+        className Class.iconProcessor
+        src (Path.processor processor)
         alt ""
       ]
-      ofStr name
+      ofStr processor
     ]
-
-  let processor = function
-    | ProcessorName "Mill" -> withClass Class.iconProcessorLarge (Path.processor "Mill") "Mill"
-    | ProcessorName processor -> withClass Class.iconProcessor (Path.processor processor) processor
 
 
 let private labelWith (css: string) (label: string) element =

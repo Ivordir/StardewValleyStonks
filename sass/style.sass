@@ -9,18 +9,10 @@ $phi: math.div(1 + math.sqrt(5), 2)
 @function ui-img($file)
   @return url("/public/img/UI/#{$file}.png")
 
-
-@function icon-size($px)
-  @return calc(var(--icon-scale) * #{$px}px)
-
-$space-width: calc(var(--icon-scale) * var(--space-width))
+$space-width: calc(3em / 13)
 
 :root
   font: var(--font-size, 100%) / 1.25 Stardew Valley Stonks, Nunito, sans
-  --space-width: calc(3rem / 13)
-  --icon-scale: var(--icon-base-scale)
-  --arrow-length: #{icon-size(11)}
-  --arrow-width: #{icon-size(10)}
 
 body
   display: flex
@@ -88,10 +80,13 @@ input
 %focus-outline
   outline: var(--eighth-border) solid #d83700
 
+%pixel
+  image-rendering: crisp-edges
+  image-rendering: pixelated
 
 input[type=range]
   $scale: 3
-  $height: icon-size(6 * $scale)
+  $height: 6px * $scale
 
   -webkit-appearance: none
   background: transparent
@@ -112,8 +107,10 @@ input[type=range]
     box-shadow: none
     border: none
     border-radius: 0
-    width: icon-size(10 * $scale)
+    width: 10px * $scale
     height: $height
+    image-rendering: crisp-edges
+    image-rendering: pixelated
     background: ui-img("Range Thumb")
     background-size: contain
     background-repeat: no-repeat
@@ -121,25 +118,23 @@ input[type=range]
 
   &::-webkit-slider-thumb
     -webkit-appearance: none
-    image-rendering: pixelated
     @include thumb
 
   &::-moz-range-thumb
-    image-rendering: crisp-edges
     @include thumb
 
   @mixin track
     height: $height
+    image-rendering: crisp-edges
+    image-rendering: pixelated
     border-image-source: ui-img("Range Track")
     border-image-slice: 2 fill
-    border-image-width: icon-size(2 * $scale)
+    border-image-width: 2px * $scale
 
   &::-webkit-slider-runnable-track
-    image-rendering: pixelated
     @include track
 
   &::-moz-range-track
-    image-rendering: crisp-edges
     @include track
 
 
@@ -215,34 +210,20 @@ main
   .graph
     height: 50vh
 
+$arrow-length: 1.1em
+$arrow-width: 1em
 
-// with pixelated image rendering, rotating distorts the image on some browsers
-// instead, let's create a class for each direction
 .arrow-right
   content: ui-img("Arrow Right")
-  width: var(--arrow-length)
-  height: var(--arrow-width)
+  width: $arrow-length
+  height: $arrow-width
 
 %arrow
   content: ""
-  @extend %pixel
-  background-size: cover
-
-  &-right
-    width: var(--arrow-length)
-    height: var(--arrow-width)
-    background-image: ui-img("Arrow Right")
-
-  &-up
-    width: var(--arrow-width)
-    height: var(--arrow-length)
-    background-image: ui-img("Arrow Up")
-
-  &-down
-    width: var(--arrow-width)
-    height: var(--arrow-length)
-    background-image: ui-img("Arrow Down")
-
+  display: inline-block
+  width: $arrow-length
+  height: $arrow-width
+  background-size: contain
 
 details > div
   opacity: 0
@@ -259,37 +240,17 @@ details > div.open
   transition: opacity 0.5s, transform 0.5s
 
 details
-  $margin: 0.5rem
-
   & > summary
     list-style: none
     cursor: pointer
 
-
     &::before
       @extend %arrow
-      @extend %arrow-right
-      display: inline-block
-      margin-right: $margin
+      background-image: ui-img("Arrow Right")
+      margin-right: 0.5rem
 
   &[open] > summary::before
-    @extend %arrow-down
-    margin-right: calc(1px + $margin)
-
-
-%pixel
-  image-rendering: pixelated
-  image-rendering: crisp-edges
-
-img
-  @extend %pixel
-
-.icon-processor
-  width: 1.25rem
-
-  &-large
-    width: 1.25rem
-    image-rendering: unset
+    transform: rotate(90deg)
 
 
 %hidden-input
@@ -306,8 +267,8 @@ img
   & > input + img
     content: ui-img("Checkbox")
     $scale: 2
-    width: icon-size(9 * $scale)
-    height: icon-size(9 * $scale)
+    width: 1.5rem
+    height: 1.5rem
 
   & > input:checked + img
     content: ui-img("Checkedbox")
@@ -362,7 +323,6 @@ img
   flex-direction: column
 
   & > span:first-child
-    --icon-scale: calc(var(--icon-base-scale) * 1.5)
     font-size: 2rem
     text-align: center
 
@@ -382,7 +342,6 @@ img
     align-items: center
     font-size: 2rem
     margin-bottom: 0.25rem
-    --icon-scale: calc(var(--icon-base-scale) * 2)
 
   &-days
     display: grid
@@ -517,9 +476,7 @@ img
         background-color: $background-hover
 
 %season
-  $scale: 2
-  width: icon-size(12 * $scale)
-  height: icon-size(8 * $scale)
+  height: 1em
 
 @mixin season($name)
   .#{to-lower-case($name)}
@@ -534,8 +491,11 @@ img
   grid-template-columns: repeat(4, 1fr)
 
 .icon
-  width: icon-size(16)
-  height: icon-size(16)
+  width: 1.5rem
+  height: 1.5rem
+
+  &-processor
+    width: 1.25rem
 
   &-text
     display: inline-block
@@ -555,9 +515,8 @@ img
   @include icon-img($profession, "Skills")
 
 %skill
-  $scale: 2
-  width: icon-size(10 * $scale)
-  height: icon-size(10 * $scale)
+  width: 1em
+  height: 1em
 
 @each $skill in Farming Foraging
   .#{to-lower-case($skill)}
@@ -607,8 +566,8 @@ img
     position: absolute
     left: 0
     bottom: 0
-    width: icon-size(8)
-    height: icon-size(8)
+    width: 50%
+    height: 50%
 
 
 .disabled
@@ -634,14 +593,14 @@ th.colunmSort
   &::after
     float: right
     @extend %arrow
-    width: var(--arrow-width)
-    height: var(--arrow-length)
+    transform: rotate(-90deg)
 
   &[aria-sort=ascending]::after
-    @extend %arrow-up
+    background-image: ui-img("Arrow Right")
 
   &[aria-sort=descending]::after
-    @extend %arrow-down
+    background-image: ui-img("Arrow Right")
+    transform: rotate(90deg)
 
   & > button
     @extend %button-unstyled
@@ -651,18 +610,15 @@ th.colunmSort
 
 .collapse-arrow
   @extend %button-unstyled
-  width: var(--arrow-length)
-  height: var(--arrow-length)
+  width: $arrow-length
+  height: $arrow-length
 
   &::before
     @extend %arrow
-    display: block
-
-  &[aria-pressed=false]::before
-    @extend %arrow-right
+    background-image: ui-img("Arrow Right")
 
   &[aria-pressed=true]::before
-    @extend %arrow-down
+    transform: rotate(90deg)
 
   &:focus::before
     @extend %focus-outline

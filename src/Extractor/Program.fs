@@ -117,6 +117,7 @@ module Constants =
   let [<Literal>] cropImageHeight = 32
   let [<Literal>] itemImageWidth = 16
   let [<Literal>] itemImageHeight = 16
+  let [<Literal>] imageScale = 4
 
   let [<Literal>] configPath = "config.json"
 
@@ -281,13 +282,35 @@ let parseCrop farmCropOverrides forageCropData seed (data: string) =
   | _ -> failwith $"Unexpected crop data format for crop {seed}: {data}"
 
 
+// monogame has no scale method?
+// and I'd rather not create an imagemagick script
+let scale scale graphics width height (texture: Color array) =
+  let scaledWidth = scale * width
+  let scaledHeight = scale * height
+  let data = Array.zeroCreate (scaledWidth * scaledHeight)
+
+  for y = 0 to height - 1 do
+    let row = y * width
+    let scaledRow = y * scale * scaledWidth
+
+    // scale the row
+    for x = 0 to width - 1 do
+      texture[row + x] |> Array.fill data (scaledRow + x * scale) scale
+
+    // copy the scaled row
+    for z = 1 to scale - 1 do
+      Array.blit data scaledRow data (scaledRow + z * scaledWidth) scaledWidth
+
+  let subtexture = new Texture2D (graphics, scaledWidth, scaledHeight)
+  subtexture.SetData data
+  subtexture
+
 let saveSubTexture name graphics x y width height (texture: Texture2D) =
   let sub = Array.zeroCreate (width * height)
   texture.GetData (0, Rectangle (x, y, width, height), sub, 0, sub.Length)
-  let subtexture = new Texture2D (graphics, width, height)
-  subtexture.SetData sub
+  let subTexture = sub |> scale imageScale graphics width height
   use file = File.OpenWrite (name + ".png")
-  subtexture.SaveAsPng (file, width, height)
+  subTexture.SaveAsPng (file, imageScale * width, imageScale * height)
 
 let saveStageImages graphics outputPath cropSpriteSheet spriteSheetRow crop =
   let path = Path.Combine (outputPath, string (Crop.seed crop))

@@ -5,7 +5,6 @@ open Fable.Core.JsInterop
 module Values =
   let private root = Browser.Dom.document.documentElement
   let private setVar (name: string) (value: string) = root?style?setProperty($"--{name}", value)
-  let private setValue (name: string) (value: float) = setVar name (string value)
   let private setPx (name: string) px = setVar name $"{ceil px}px"
 
   let private fontPx =
@@ -14,23 +13,10 @@ module Values =
 
   let fontSize = int fontPx
 
-  // set icon size to a multiple of 16 pixels,
-  // preferring to upsize instead of downsizing
-  let iconScale =
-    let div = fontPx / 16.0
-    let rem = fontPx % 16.0
-    if rem < 4.0
-    then floor div
-    else ceil div
-    |> max 1.0
-
   do
     setPx "font-size" fontPx
     setPx "eighth-border" (fontPx / 8.0)
     setPx "sixth-border" (fontPx / 6.0)
-    let sp = fontPx / 16.0
-    setPx "min-size" (sp * 48.0)
-    setValue "icon-base-scale" iconScale
 
 
 [<RequireQualifiedAccess>]
