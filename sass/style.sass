@@ -216,6 +216,34 @@ main
     height: 50vh
 
 
+// with pixelated image rendering, rotating distorts the image on some browsers
+// instead, let's create a class for each direction
+.arrow-right
+  content: ui-img("Arrow Right")
+  width: var(--arrow-length)
+  height: var(--arrow-width)
+
+%arrow
+  content: ""
+  @extend %pixel
+  background-size: cover
+
+  &-right
+    width: var(--arrow-length)
+    height: var(--arrow-width)
+    background-image: ui-img("Arrow Right")
+
+  &-up
+    width: var(--arrow-width)
+    height: var(--arrow-length)
+    background-image: ui-img("Arrow Up")
+
+  &-down
+    width: var(--arrow-width)
+    height: var(--arrow-length)
+    background-image: ui-img("Arrow Down")
+
+
 details > div
   opacity: 0
   transform: scaleY(0)
@@ -229,6 +257,24 @@ details > div.open
   transform: scaleY(1)
   transform-origin: top
   transition: opacity 0.5s, transform 0.5s
+
+details
+  $margin: 0.5rem
+
+  & > summary
+    list-style: none
+    cursor: pointer
+
+
+    &::before
+      @extend %arrow
+      @extend %arrow-right
+      display: inline-block
+      margin-right: $margin
+
+  &[open] > summary::before
+    @extend %arrow-down
+    margin-right: calc(1px + $margin)
 
 
 %pixel
@@ -584,18 +630,6 @@ footer
   border: none
   cursor: pointer
 
-// with pixelated image rendering, rotating distorts the image on some browsers
-// instead, let's create a class for each direction
-.arrow-right
-  content: ui-img("Arrow Right")
-  width: var(--arrow-length)
-  height: var(--arrow-width)
-
-%arrow
-  content: ""
-  @extend %pixel
-  background-size: cover
-
 th.colunmSort
   &::after
     float: right
@@ -604,10 +638,10 @@ th.colunmSort
     height: var(--arrow-length)
 
   &[aria-sort=ascending]::after
-    background-image: ui-img("Arrow Up")
+    @extend %arrow-up
 
   &[aria-sort=descending]::after
-    background-image: ui-img("Arrow Down")
+    @extend %arrow-down
 
   & > button
     @extend %button-unstyled
@@ -625,14 +659,10 @@ th.colunmSort
     display: block
 
   &[aria-pressed=false]::before
-    background-image: ui-img("Arrow Right")
-    width: var(--arrow-length)
-    height: var(--arrow-width)
+    @extend %arrow-right
 
   &[aria-pressed=true]::before
-    background-image: ui-img("Arrow Down")
-    width: var(--arrow-width)
-    height: var(--arrow-length)
+    @extend %arrow-down
 
   &:focus::before
     @extend %focus-outline
