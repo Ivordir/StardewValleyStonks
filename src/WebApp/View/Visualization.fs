@@ -698,9 +698,9 @@ let private emptyPairData (pairData: PairData) =
     if Array.isEmpty pairData.Fertilizers then ofStr "No fertilizers selected!"
   ]
 
-let rankBy label (metric: RankMetric) (timeNorm: TimeNormalization) dispatchMetric dispatchTimeNorm =
+let rankBy (label: ReactElement) (metric: RankMetric) (timeNorm: TimeNormalization) dispatchMetric dispatchTimeNorm =
   fragment [
-    ofStr label
+    label
     labeledHidden "Metric" (Select.unitUnion (length.rem 3) metric dispatchMetric)
     labeledHidden "Time Normalization" (Select.unitUnion (length.rem 6) timeNorm dispatchTimeNorm)
   ]
@@ -930,10 +930,13 @@ module Ranker =
 
     fragment [
       div [ className Class.graphControls; children [
-        labeled "Rank" (Select.unitUnion (length.rem 5) ranker.RankItem (SetRankItem >> dispatch))
+        Html.label [
+          ofStr "Rank"
+          Select.unitUnion (length.rem 5) ranker.RankItem (SetRankItem >> dispatch)
+        ]
 
         rankBy
-          "By"
+          (ofStr "By")
           ranker.RankMetric
           ranker.TimeNormalization
           (SetRankMetric >> dispatch)
@@ -954,9 +957,9 @@ module Ranker =
     ]
 
 
-let private selectSpecificOrBest name toString (viewItem: _ -> ReactElement) items selected dispatch =
+let private selectSpecificOrBest name length toString (viewItem: _ -> ReactElement) items selected dispatch =
   Select.search
-    (length.rem 15)
+    length
     (function
       | Choice1Of2 item
       | Choice2Of2 (Some item) -> toString item
@@ -1048,6 +1051,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
       div [
         selectSpecificOrBest
           "Crop"
+          (length.rem 12)
           (Crop.name data.Items.Find)
           (Icon.crop data)
           cropOptions
@@ -1063,6 +1067,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
 
         selectSpecificOrBest
           "Fertilizer"
+          (length.rem 15)
           Fertilizer.Opt.displayName
           (Option.defaultOrMap (ofStr "No Fertilizer") Icon.fertilizer)
           fertilizerOptions
@@ -1077,7 +1082,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
 
       div
         (rankBy
-          "Show"
+          (labeled "Show" none)
           metric
           timeNorm
           (fun metric -> setState (metric, timeNorm))

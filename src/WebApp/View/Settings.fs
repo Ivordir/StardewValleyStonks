@@ -584,7 +584,7 @@ module Misc =
       else day
 
     div [ className Class.date; children [
-      ofStr $"{label} Date"
+      labeled $"{label} Date" none
 
       Select.enum
         (length.rem 4)
