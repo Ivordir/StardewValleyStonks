@@ -66,6 +66,7 @@ module Class =
   let [<Literal>] columnSort = "colunmSort"
   let [<Literal>] collapseArrow = "collapse-arrow"
   let [<Literal>] summaryTable = "summary-table"
+  let [<Literal>] inputItems = "input-items"
 
   let [<Literal>] select = "select"
   let [<Literal>] selectControl = "select-control"

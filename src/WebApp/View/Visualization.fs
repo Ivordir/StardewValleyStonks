@@ -257,24 +257,17 @@ module SummaryTable =
       unknownProfitRow seeds itemCell quantity
 
   let private itemCellWithInputs data (itemCell: ReactElement) inputs =
-    let inputRows = inputs |> Array.choose (fun (item, quantity) ->
-      let quantity = round2 quantity
-      if quantity = 0.0
-      then None
-      else Some (item, quantity))
-
-    details [
+    details [ className Class.inputItems; children [
       summary [ itemCell ]
-      table [
-        tbody (inputRows |> Array.map (fun ((item, quality), quantity) ->
-          tr [
-            td (Icon.itemIdQuality data item quality)
-            td "x"
-            td (ofFloat quantity)
-          ]
-        ))
-      ]
-    ]
+      ul (inputs |> Array.map (fun ((item, quality), quantity) ->
+        let quantity = round2 quantity
+        if quantity = 0.0 then none else
+        li [
+          Icon.itemIdQuality data item quality
+          ofStr $" x {quantity}"
+        ]
+      ))
+    ]]
 
   let private fertilizerBoughtRow replacement fertilizer price quantity =
     match fertilizer, price with
