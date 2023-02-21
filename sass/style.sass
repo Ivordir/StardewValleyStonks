@@ -76,6 +76,9 @@ input
 %focus-outline
   outline: var(--eighth-border) solid #d83700
 
+:focus
+  @extend %focus-outline
+
 %pixel
   image-rendering: crisp-edges
   image-rendering: pixelated
@@ -90,9 +93,6 @@ input[type=range]
   cursor: pointer
   width: calc(max(100px, 10rem))
   height: $height
-
-  &:focus
-    @extend %focus-outline
 
   &:hover, &:active
     filter: brightness(1.1)
@@ -163,9 +163,6 @@ main
     justify-content: center
     align-items: center
 
-// svg
-  // @extend .pixel
-
 .recharts-wrapper
   overflow: hidden
 
@@ -221,29 +218,32 @@ $arrow-width: 1em
   height: $arrow-width
   background-size: contain
 
-details > div
-  opacity: 0
-  transform: scaleY(0)
-
-// details[open] > div
-// and
-// details.open > div
-// are broken -> only gets triggered on first open?
-details > div.open
-  opacity: 1
-  transform: scaleY(1)
-  transform-origin: top
-  transition: opacity 0.5s, transform 0.5s
 
 details
+  & > div
+    opacity: 0
+    transform: scaleY(0)
+
+  // details[open] > div
+  // and
+  // details.open > div
+  // are broken -> only gets triggered on first open?
+  & > div.open
+    opacity: 1
+    transform: scaleY(1)
+    transform-origin: top
+    transition: opacity 0.5s, transform 0.5s
+
   & > summary
     list-style: none
     cursor: pointer
+    font-size: 1.5rem
+    padding: 0.25em
 
     &::before
       @extend %arrow
       background-image: ui-img("Arrow")
-      margin-right: 0.5rem
+      margin-right: 0.5em
 
   &[open] > summary::before
     transform: rotate(90deg)
@@ -369,7 +369,6 @@ details
         position: absolute
         top: $counter-offset
         left: calc(#{$counter-offset} + 0.125rem)
-
 
 
 .input-box
@@ -514,8 +513,8 @@ details
   @include icon-img($profession, "Skills")
 
 %skill
-  width: 1em
-  height: 1em
+  width: 1.25em
+  height: 1.25em
 
 @each $skill in Farming Foraging
   .#{to-lower-case($skill)}
