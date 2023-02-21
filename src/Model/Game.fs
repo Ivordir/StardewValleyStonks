@@ -182,7 +182,7 @@ module Game =
   let growthTimeAndStages vars fertilizer crop = Crop.growthStagesAndTime (growthSpeed vars fertilizer crop) crop
   let growthTime vars fertilizer crop = growthTimeAndStages vars fertilizer crop |> snd
 
-  let giantCropsPossible location = location <> Greenhouse
+  let giantCropsPossible location = location = Farm
 
   let giantCropProb vars =
     if giantCropsPossible vars.Location
