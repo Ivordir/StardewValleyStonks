@@ -28,7 +28,6 @@ module Class =
   let [<Literal>] icon = "icon"
   let [<Literal>] iconText = "icon-text"
   let [<Literal>] iconProcessor = "icon-processor"
-  let [<Literal>] iconProcessorLarge = "icon-processor-large"
 
   let [<Literal>] fileInput = "file-input"
   let [<Literal>] fileDropzone = "file-dropzone"
