@@ -50,9 +50,13 @@ dt
 dd
   margin: 0
 
-button
-  font-family: inherit
-  font-size: inherit
+%button-unstyled
+  padding: 0
+  background: none
+  outline: none
+  box-shadow: none
+  border: none
+
 %focus-outline
   outline: var(--eighth-border) solid #d83700
   outline-offset: var(--eighth-border)
@@ -77,23 +81,14 @@ input
 
   &-input
     display: inline-block
+    @extend button
 
     & > input
-      display: none
+      @extend %hidden-input
 
-    &:hover
-      transform: scale(1.1)
+    &:focus-within
+      @extend %focus-outline
 
-
-%focus-outline
-  outline: var(--eighth-border) solid #d83700
-
-:focus
-  @extend %focus-outline
-
-%pixel
-  image-rendering: crisp-edges
-  image-rendering: pixelated
 
 input[type=range]
   $scale: 3
@@ -555,6 +550,24 @@ details
 @include quality(Silver, silver)
 @include quality(Normal, white)
 
+%square-button
+  @extend %button-unstyled
+  background-size: contain
+
+  &:hover
+    @extend %hover-scale
+
+@mixin square-button($name, $width)
+  .#{to-lower-case($name)}
+    @extend %square-button
+    width: $width
+    height: $width
+    background-image: ui-img("#{$name}")
+
+@include square-button(Ok, 2.5rem)
+@include square-button(Cancel, 2.5rem)
+@include square-button(Edit, 1.5rem)
+
 .crop-qualities
   $transition: flex-grow 0.75s
 
@@ -603,14 +616,21 @@ footer
   text-align: center
 
 
-%button-unstyled
-  padding: 0
-  background: none
-  outline: none
-  box-shadow: none
-  border: none
+button
+  font-family: inherit
+  font-size: inherit
   cursor: pointer
 
+.button
+  background: none
+  image-rendering: pixelated
+  border-image-source: ui-img("Button")
+  border-image-slice: 2 fill
+  border-image-width: 0.25rem
+  padding: 0.5rem
+
+  &:hover
+    @extend %hover-brightness
 
 table, tr
   // ignored by browser, but needed for td and th 100% height

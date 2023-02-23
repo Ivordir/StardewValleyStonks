@@ -433,8 +433,9 @@ module Crops =
       selectFilter "Forage" filters.Forage (SetForage >> dispatch)
 
       button [
+        className Class.button
         onClick (fun _ -> dispatch ClearFilters)
-        text "Clear Filters"
+        text "Clear"
       ]
     ]
 
@@ -712,6 +713,7 @@ module LoadSave =
         input [
           prop.type'.file
           onChange loadFile
+          autoFocus true
         ]
       ]]
 
@@ -790,14 +792,18 @@ module LoadSave =
       ul (app.Presets |> List.mapi (fun i preset ->
         li [
           ofStr preset.Name
+
           button [
+            className Class.button
             onClick (fun _ -> loadDispatch preset.Settings)
             text "Load"
           ]
-          Dialog.toggleEdit "Edit" "Rename" preset.Name (curry RenamePreset i >> saveDispatch) Input.text
+
+
           button [
+            className Class.button
             onClick (fun _ -> saveDispatch (DeletePreset i))
-            text "x"
+            text "Delete"
           ]
         ]
       ))
@@ -819,6 +825,7 @@ module LoadSave =
           importSave app.Presets saveDispatch
 
           button [
+            className Class.button
             onClick (fun _ -> loadDispatch Data.defaultSettings)
             text "Reset Settings"
           ]

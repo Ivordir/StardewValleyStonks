@@ -1,4 +1,4 @@
-namespace StardewValleyStonks.WebApp
+namespace StardewValleyStonks.WebApp.View
 
 open Fable.Core.JsInterop
 
@@ -29,11 +29,16 @@ module Class =
   let [<Literal>] iconText = "icon-text"
   let [<Literal>] iconProcessor = "icon-processor"
 
+  let [<Literal>] button = "button"
+  let [<Literal>] ok = "ok"
+  let [<Literal>] cancel = "cancel"
+  let [<Literal>] edit = "edit"
+  let [<Literal>] delete = "delete"
+
   let [<Literal>] fileInput = "file-input"
   let [<Literal>] fileDropzone = "file-dropzone"
   let [<Literal>] inputBox = "input-box"
   let [<Literal>] checkbox = "checkbox"
-  let [<Literal>] label = "label"
 
   let [<Literal>] disabled = "disabled"
 
