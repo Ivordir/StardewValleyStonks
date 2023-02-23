@@ -1,6 +1,9 @@
 [<RequireQualifiedAccess>]
 module StardewValleyStonks.WebApp.View.Dialog
 
+open StardewValleyStonks.WebApp
+open StardewValleyStonks.WebApp.View
+
 open Feliz
 
 open type Html
@@ -13,7 +16,7 @@ let [<ReactComponent>] private Dialog (props: {|
     Cancel: bool
     Title: string
     Close: bool -> unit
-    Children: ReactElement
+    Children: (unit -> unit) -> ReactElement
   |}) =
   let ref = useRef<Browser.Types.HTMLDialogElement option> None
 
@@ -27,16 +30,18 @@ let [<ReactComponent>] private Dialog (props: {|
     Interop.mkAttr "onClose" (fun _ -> props.Close false)
     children [
       h1 props.Title
-      props.Children
+      props.Children (fun () -> ref.current |> Option.iter (fun m -> m.close ()))
       div [
         if props.Cancel then
           button [
+            className Class.cancel
             onClick (fun _ -> props.Close false)
-            text "Cancel"
+            ariaLabel "Cancel"
           ]
         button [
+          className Class.ok
           onClick (fun _ -> props.Close true)
-          text "Ok"
+          ariaLabel "Ok"
         ]
       ]
     ]
@@ -44,18 +49,15 @@ let [<ReactComponent>] private Dialog (props: {|
 
 let [<ReactComponent>] private EditDialogToggle (props: {|
     Title: string
-    Toggle: ReactElement
+    Toggle: (unit -> unit) -> ReactElement
     State: 'a
     Dispatch: 'a -> unit
-    Children: 'a -> ('a -> unit) -> ReactElement
+    Children: (unit -> unit) -> 'a -> ('a -> unit) -> ReactElement
   |}) =
   let state, setState = useState None
 
   fragment [
-    button [
-      onClick (fun _ -> setState (Some props.State))
-      children props.Toggle
-    ]
+    props.Toggle (fun _ -> setState (Some props.State))
 
     state |> ofOption (fun state ->
       Dialog {|
@@ -64,31 +66,37 @@ let [<ReactComponent>] private EditDialogToggle (props: {|
         Close = fun ok ->
           if ok then props.Dispatch state
           setState None
-        Children = props.Children state (Some >> setState)
+        Children = fun close -> props.Children close state (Some >> setState)
       |})
   ]
 
-let create title close children = Dialog {|
-  Cancel = false
-  Title = title
-  Close = fun _ -> close ()
-  Children = children
-|}
-
-let toggleEditWith buttonContent title state dispatch children =
+let toggleEditWith (buttonText: string) title state dispatch children =
   EditDialogToggle {|
     Title = title
-    Toggle = buttonContent
+    Toggle = fun toggle ->
+      button [
+        className Class.button
+        onClick (ignore >> toggle)
+        text buttonText
+      ]
     State = state
     Dispatch = dispatch
     Children = children
   |}
 
-let toggleEdit buttonText title state dispatch children =
-  toggleEditWith (ofStr buttonText) title state dispatch children
+let toggleEdit title state dispatch children =
+  EditDialogToggle {|
+    Title = title
+    Toggle = fun toggle ->
+      button [
+        className Class.edit
+        onClick (ignore >> toggle)
+        ariaLabel "Edit"
+      ]
+    State = state
+    Dispatch = dispatch
+    Children = children
+  |}
 
-let confirmActionWith buttonContent title dispatch children =
-  toggleEditWith buttonContent title () dispatch (fun () _ -> children)
-
-let confirmAction buttonContent title dispatch children =
-  confirmActionWith (ofStr buttonContent) title dispatch children
+let confirmAction buttonText title dispatch children =
+  toggleEditWith buttonText title () dispatch (fun _ () _ -> children)

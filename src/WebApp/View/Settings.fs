@@ -138,11 +138,10 @@ let private customColumn viewValue editValue defaultValue title key selection di
         value |> ofOption viewValue
 
         Dialog.toggleEdit
-          (if value.IsSome then "Edit" else "Add")
           title
           (value |> Option.defaultValue defaultValue)
           (curry (if value.IsSome then EditCustom else AddCustom) key >> dispatch)
-          editValue
+          (editValue key)
       ])
     (key >> selection.Values.TryFind)
   |> Column.withSelect
@@ -153,7 +152,17 @@ let private customColumn viewValue editValue defaultValue title key selection di
       (SelectCustom >> dispatch)
 
 let private customPriceColumn title key selection dispatch =
-  customColumn ofNat (Input.nat (length.rem 7.5)) 0u title key selection dispatch
+  let editPrice key close value setValue =
+    fragment [
+      Input.nat (length.rem 7.5) value setValue
+      button [
+        className Class.button
+        onClick (fun _ -> dispatch (RemoveCustom key); close ())
+        text "Delete"
+      ]
+    ]
+
+  customColumn ofNat editPrice 0u title key selection dispatch
 
 module Crops =
   let seedVendors = refMemo (fun (data: GameData) -> sortKeysByHighestCount data.SeedPrices)
@@ -278,7 +287,7 @@ module Crops =
 
           customColumn
             (Query.customSellPriceValue productQuality >> ofNat)
-            (fun (price, preserveQuality) setState ->
+            (fun _ _ (price, preserveQuality) setState ->
               fragment [
                 Input.nat (length.rem 2) price (fun price -> setState (price, preserveQuality))
                 Input.checkboxText
@@ -753,12 +762,12 @@ module LoadSave =
     ])
 
   let importSave presets dispatch =
-    Dialog.toggleEdit
+    Dialog.toggleEditWith
       "Import Save"
       "Import Save Game"
       None
       (Option.bind snd >> Option.iter (fst >> LoadSaveGame >> dispatch))
-      (fun save setSave ->
+      (fun _ save setSave ->
         fragment [
           p [
             ofStr """
@@ -799,6 +808,12 @@ module LoadSave =
             text "Load"
           ]
 
+          Dialog.toggleEditWith
+            "Edit"
+            "Rename"
+            preset.Name
+            (curry RenamePreset i >> saveDispatch)
+            (konst Input.text)
 
           button [
             className Class.button
@@ -815,12 +830,12 @@ module LoadSave =
           style.width.maxContent
         ]
         children [
-          Dialog.toggleEdit
+          Dialog.toggleEditWith
             "Save Current Settings"
             "Save Current Settings As"
             "Untitled Settings"
             (fun name -> SavePreset (name, fst app.State) |> saveDispatch)
-            Input.text
+            (konst Input.text)
 
           importSave app.Presets saveDispatch
 
