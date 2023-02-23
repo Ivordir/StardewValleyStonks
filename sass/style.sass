@@ -42,7 +42,7 @@ dl
   display: grid
   grid-template-columns: auto auto
   justify-content: start
-  gap: 0 0.5rem
+  gap: 0 0.5em
 
 dt
   @extend %colon
@@ -281,11 +281,11 @@ details
   & > input + img
     content: ui-img("Checkbox")
     vertical-align: text-bottom
-    width: 1.5rem
-    height: 1.5rem
+    width: 1.5em
+    height: 1.5em
 
     &:not(:last-child)
-      margin-right: 0.5rem
+      margin-right: 0.5em
 
   & > input:checked + img
     content: ui-img("Checkedbox")
@@ -302,7 +302,7 @@ details
 
 .label-text
   @extend %colon
-  margin-right: 0.5rem
+  margin-right: 0.5em
 
 .profession
   display: block
@@ -348,7 +348,7 @@ details
 
 .calendar
   &-season
-    padding: 0.5rem 1rem 0.5rem 1rem
+    padding: 0.5em 1em
     min-width: min-content
 
   &-header
@@ -356,7 +356,7 @@ details
     justify-content: center
     align-items: center
     font-size: 2rem
-    margin-bottom: 0.25rem
+    margin-bottom: 0.25em
 
   &-days
     display: grid
@@ -509,18 +509,18 @@ details
   grid-template-columns: repeat(4, 1fr)
 
 .icon
-  width: 1.5rem
-  height: 1.5rem
+  width: 1.5em
+  height: 1.5em
 
   &-processor
-    width: 1.25rem
+    width: 1.25em
 
   &-text
     display: inline-block
 
     & > :first-child
       vertical-align: text-bottom
-      margin-right: 0.25rem
+      margin-right: 0.25em
 
 @mixin icon-img($name, $folder)
   .#{to-lower-case($name)}
@@ -631,8 +631,8 @@ button
   image-rendering: pixelated
   border-image-source: ui-img("Button")
   border-image-slice: 2 fill
-  border-image-width: 0.25rem
-  padding: 0.5rem
+  border-image-width: 0.25em
+  padding: 0.5em
 
   &:hover
     @extend %hover-brightness
@@ -647,7 +647,6 @@ th, td
   vertical-align: middle
 
 th, th > button
-  font-size: 1rem
   font-weight: 500
 
 tr
@@ -672,7 +671,7 @@ th.colunm-sort
   & > button::after
     @extend %arrow
     flex-shrink: 0
-    margin-left: 0.25rem
+    margin-left: 0.25em
 
   &[aria-sort=ascending] > button::after
     @extend %arrow-up
@@ -689,9 +688,9 @@ th.colunm-sort
 
 .collapse-arrow
   @extend %button-unstyled
-  height: 1.5rem
+  height: 1.5em
   width: $arrow-length
-  margin-left: 0.125rem
+  margin-left: 0.125em
   display: flex
   align-items: center
   justify-content: center
@@ -707,7 +706,7 @@ th.colunm-sort
 
   &:focus::before
     @extend %focus-outline
-    outline-offset: 0.25rem
+    outline-offset: 0.25em
 
   &:hover::before
     @extend %hover-scale
@@ -737,7 +736,7 @@ tr
 
   // all cells
   & tr > *
-    padding: 0.5rem
+    padding: 0.5em
 
     &:empty
       padding: 0
@@ -748,7 +747,7 @@ tr
 
     // profit/xp column
     &:nth-last-child(2)
-      min-width: 5rem
+      min-width: 5em
 
   // row header column in thead and tfoot
   & th:nth-child(-n+2)
@@ -775,19 +774,19 @@ tr
   border-top: none
 
   & th
-    padding: 0.5rem 0.25rem
+    padding: 0.5em 0.25em
 
   & tbody th > *
     min-width: max-content
 
   & td
-    padding: 0.5rem 0.25rem
+    padding: 0.5em 0.25em
 
   & tr > :first-child
-    padding-left: 0.5rem
+    padding-left: 0.5em
 
   & tr > :last-child
-    padding-right: 0.5rem
+    padding-right: 0.5em
 
   & > thead
     position: sticky
