@@ -237,6 +237,9 @@ let [<ReactComponent>] private Select (props: _ Props) =
     ]
   ]
 
+let private ignoreSame selected dispatch value =
+  if selected <> value then dispatch value
+
 let search width toString display options selected dispatch =
   Select {|
     Width = width
@@ -244,7 +247,7 @@ let search width toString display options selected dispatch =
     Display = display
     Options = options
     Selected = selected
-    Dispatch = dispatch
+    Dispatch = ignoreSame selected dispatch
   |}
 
 let options width display options selected dispatch =
@@ -254,7 +257,7 @@ let options width display options selected dispatch =
     Display = display
     Options = options
     Selected = selected
-    Dispatch = dispatch
+    Dispatch = ignoreSame selected dispatch
   |}
 
 let inline unitUnion width selected dispatch =
