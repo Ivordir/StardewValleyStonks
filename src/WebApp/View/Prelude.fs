@@ -123,7 +123,8 @@ module Icon =
   let season = Season.name >> fromClassIsName
 
   let profession (profession: Profession) = profession |> string |> fromClassIsName
-  let skill name = fromClassIsName name
+  let farming = fromClassIsName "Farming"
+  let foraging = fromClassIsName "Foraging"
 
   let itemNoText item = fromPathAndAlt (Path.item item.Id) item.Name
   let itemIdNoText (data: GameData) itemId = itemNoText data.Items[itemId]

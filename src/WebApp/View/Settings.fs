@@ -67,7 +67,7 @@ module Skills =
   let farming skills dispatch =
     let farming = skills.Farming
     div [ className Class.skill; children [
-      Icon.skill "Farming"
+      Icon.farming
       skillBuffLevel farming (SetFarming >> dispatch)
       div [ className Class.professions; children [
         div (profession skills Tiller dispatch)
@@ -82,7 +82,7 @@ module Skills =
   let foraging skills dispatch =
     let foraging = skills.Foraging
     div [ className Class.skill; children [
-      Icon.skill "Foraging"
+      Icon.foraging
       skillBuffLevel foraging (SetForaging >> dispatch)
       div [ className Class.professions; children [
         div (profession skills Gatherer dispatch)

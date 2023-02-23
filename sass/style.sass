@@ -112,7 +112,6 @@ input[type=range]
     border-radius: 0
     width: 10px * $scale
     height: $height
-    image-rendering: crisp-edges
     image-rendering: pixelated
     background: ui-img("Range Thumb")
     background-size: contain
@@ -128,7 +127,6 @@ input[type=range]
 
   @mixin track
     height: $height
-    image-rendering: crisp-edges
     image-rendering: pixelated
     border-image-source: ui-img("Range Track")
     border-image-slice: 2 fill
@@ -172,6 +170,9 @@ main
 
 .recharts-wrapper
   overflow: hidden
+
+.recharts-tooltip-wrapper:focus
+  outline: none
 
 .recharts-bar-rectangle
   cursor: pointer
@@ -284,7 +285,7 @@ details
     height: 1.5rem
 
     &:not(:last-child)
-      margin-right: 0.25rem
+      margin-right: 0.5rem
 
   & > input:checked + img
     content: ui-img("Checkedbox")
@@ -301,6 +302,7 @@ details
 
 .label-text
   @extend %colon
+  margin-right: 0.5rem
 
 .profession
   display: block
@@ -775,21 +777,22 @@ tr
   & th
     padding: 0.5rem 0.25rem
 
+  & tbody th > *
+    min-width: max-content
+
   & td
     padding: 0.5rem 0.25rem
 
-  & > tbody th
+  & tr > :first-child
     padding-left: 0.5rem
 
-    & > *
-      min-width: max-content
+  & tr > :last-child
+    padding-right: 0.5rem
 
   & > thead
     position: sticky
-    z-index: 1
     top: 0
-    border-top: var(--border)
-    border-bottom: var(--border)
+    z-index: 1
 
     & th
       border-top: var(--border)
