@@ -394,11 +394,10 @@ details
 
 
 .input-box
-  outline: none
   background: none
-  @extend %pixel
+  image-rendering: pixelated
   border-image-source: ui-img("Input Box")
-  border-image-slice: 3 fill
+  border-image-slice: 3 3 2 2 fill
   border-image-width: 0.5rem
   padding: 0.5rem
 
@@ -407,6 +406,9 @@ details
     margin: 0
 
   -moz-appearance: textfield
+
+  &:hover
+    @extend %hover-brightness
 
 
 .select
