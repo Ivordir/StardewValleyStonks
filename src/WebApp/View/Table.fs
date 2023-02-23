@@ -179,7 +179,7 @@ let [<ReactComponent>] private CollapsibleTableBody (props: {|
 
   tbody [
     tr [
-      className (if collapsed then "collapsed" else "expanded")
+      className (if collapsed then Class.collapsed else Class.expanded)
       children [
         td (collapseButton "Expand" "Collapse" collapsed setCollapsed)
         props.Header

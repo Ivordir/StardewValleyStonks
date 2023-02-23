@@ -53,6 +53,18 @@ dd
 button
   font-family: inherit
   font-size: inherit
+%focus-outline
+  outline: var(--eighth-border) solid #d83700
+  outline-offset: var(--eighth-border)
+
+:focus
+  @extend %focus-outline
+
+%hover-brightness
+  filter: brightness(1.15)
+
+%hover-scale
+  transform: scale(1.1)
 
 input
   font-family: inherit
@@ -94,8 +106,8 @@ input[type=range]
   width: calc(max(100px, 10rem))
   height: $height
 
-  &:hover, &:active
-    filter: brightness(1.1)
+  &:hover
+    @extend %hover-brightness
 
   // css needs to be repeated/inlined for some reason
   // and cannot be reused across webkit and mozilla
@@ -203,21 +215,28 @@ main
   .graph
     height: 50vh
 
-$arrow-length: 1.1em
-$arrow-width: 1em
 
-.arrow-right
-  content: ui-img("Arrow")
-  width: $arrow-length
-  height: $arrow-width
+img
+  user-select: none
+
+$arrow-length: 1em
 
 %arrow
   content: ""
   display: inline-block
-  width: $arrow-length
-  height: $arrow-width
   background-size: contain
+  background-repeat: no-repeat
+  width: $arrow-length
+  height: $arrow-length
 
+%arrow-right
+  background-image: ui-img("Arrow Right")
+
+%arrow-up
+  background-image: ui-img("Arrow Up")
+
+%arrow-down
+  background-image: ui-img("Arrow Down")
 
 details
   & > div
@@ -242,11 +261,14 @@ details
 
     &::before
       @extend %arrow
-      background-image: ui-img("Arrow")
+      @extend %arrow-right
       margin-right: 0.5em
 
+    &:hover::before
+      @extend %hover-scale
+
   &[open] > summary::before
-    transform: rotate(90deg)
+    @extend %arrow-down
 
 
 %hidden-input
@@ -276,7 +298,7 @@ details
     @extend %focus-outline
 
   &:hover > input + img
-    transform: scale(1.1)
+    @extend %hover-scale
 
 .label-hidden
   @extend %colon
@@ -455,7 +477,7 @@ details
     left: 0
     top: 100%
     width: 100%
-    z-index: 1
+    z-index: 2
     border: var(--border)
     border-top: none
     background-color: $background
@@ -611,7 +633,7 @@ tr
 tbody th
   text-align: left
 
-th.colunmSort
+th.colunm-sort
   & > button
     @extend %button-unstyled
     width: 100%
@@ -620,41 +642,48 @@ th.colunmSort
     align-items: center
     justify-content: center
 
-  &:not([aria-sort]) > button:hover::after
-    background-image: ui-img("Arrow")
-    opacity: 0.5
-
   & > button::after
     @extend %arrow
-    transform: rotate(-90deg)
     flex-shrink: 0
     margin-left: 0.25rem
 
   &[aria-sort=ascending] > button::after
-    background-image: ui-img("Arrow")
+    @extend %arrow-up
 
   &[aria-sort=descending] > button::after
-    background-image: ui-img("Arrow")
-    transform: rotate(90deg)
+    @extend %arrow-down
 
-  &:focus-within
+  & > button:focus
     @extend %focus-outline
+
+  &:not([aria-sort]) > button:hover::after
+    @extend %arrow-up
+    opacity: 0.5
 
 .collapse-arrow
   @extend %button-unstyled
+  height: 1.5rem
   width: $arrow-length
-  height: $arrow-length
+  margin-left: 0.125rem
+  display: flex
+  align-items: center
+  justify-content: center
 
   &::before
     @extend %arrow
-    background-image: ui-img("Arrow")
+
+  &[aria-pressed=false]::before
+    @extend %arrow-right
 
   &[aria-pressed=true]::before
-    transform: rotate(90deg)
+    @extend %arrow-down
 
   &:focus::before
     @extend %focus-outline
     outline-offset: 0.25rem
+
+  &:hover::before
+    @extend %hover-scale
 
 tr
   &.expanded

@@ -62,8 +62,10 @@ module Class =
   let [<Literal>] summary = "summary"
   let [<Literal>] summaryControls = "summary-controls"
 
-  let [<Literal>] columnSort = "colunmSort"
+  let [<Literal>] columnSort = "colunm-sort"
   let [<Literal>] collapseArrow = "collapse-arrow"
+  let [<Literal>] expanded = "expanded"
+  let [<Literal>] collapsed = "collapsed"
   let [<Literal>] summaryTable = "summary-table"
   let [<Literal>] inputItems = "input-items"
 
