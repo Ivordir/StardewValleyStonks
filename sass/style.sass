@@ -138,6 +138,12 @@ input[type=range]
   &::-moz-range-track
     @include track
 
+.border-box
+  border-image-source: ui-img("Border Box")
+  border-image-slice: 12 fill
+  border-image-width: 1rem
+  border-image-outset: 1rem
+  margin: 1rem
 
 main
   flex-grow: 1
@@ -154,10 +160,12 @@ main
     overflow: hidden
 
     & > [role=tabpanel]
+      @extend .border-box
       flex-grow: 1
       display: flex
       flex-direction: column
       overflow: auto
+
 
 .graph
   flex-grow: 1

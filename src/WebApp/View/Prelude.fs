@@ -199,7 +199,7 @@ let labeledHidden label element = labelWith "label-hidden" label element
 
 // https://www.w3.org/TR/wai-aria-1.1/#tab
 
-let private tabId label tab = $"{lowerCase label}-tab-{Reflection.getCaseTag tab}"
+let private tabId label tab = $"{lowerCase label}-tab-{tab |> Reflection.getCaseName |> lowerCase}"
 
 let [<ReactComponent>] Tabs (props: {|
     Tabs: 'a array
@@ -243,7 +243,12 @@ let [<ReactComponent>] Tabs (props: {|
     div [
       role "tabpanel"
       ariaLabelledBy (tabId label current)
-      children (props.Panel current)
+      children [
+        div [
+          prop.id $"{lowerCase label}-{current |> Reflection.getCaseName |> lowerCase}"
+          children (props.Panel current)
+        ]
+    ]
     ]
   ]
 
