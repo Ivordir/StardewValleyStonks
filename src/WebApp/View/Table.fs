@@ -81,7 +81,11 @@ let private tableHeader key columns items sortCol ascending sortDispatch =
           th [
             scope "col"
             if column.Disabled then className Class.disabled
-            children (Input.checkbox "Select All" allSelected (curry SetManySelected keys >> dispatch))
+            children [
+              if keys.IsEmpty
+              then Input.checkbox "Select All" false ignore
+              else Input.checkbox "Select All" allSelected (curry SetManySelected keys >> dispatch)
+            ]
           ])
 
         th [
