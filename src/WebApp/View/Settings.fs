@@ -128,7 +128,7 @@ let private sortKeysByHighestCount table =
   |> Seq.map fst
   |> Array.ofSeq
 
-let private customColumn viewValue editValue defaultValue title key selection dispatch =
+let private customColumn viewValue (editValue: _ -> _ -> ReactElement) defaultValue title key selection dispatch =
   Column.sortableOpt
     (ofStr "Custom")
     (fun item ->
@@ -141,7 +141,17 @@ let private customColumn viewValue editValue defaultValue title key selection di
           title
           (value |> Option.defaultValue defaultValue)
           (curry (if value.IsSome then EditCustom else AddCustom) key >> dispatch)
-          (editValue key)
+          (fun close v setValue ->
+            fragment [
+              editValue v setValue
+
+              if value.IsSome then
+                button [
+                  className Class.button
+                  onClick (fun _ -> dispatch (RemoveCustom key); close ())
+                  text "Delete"
+                ]
+            ])
       ])
     (key >> selection.Values.TryFind)
   |> Column.withSelect
@@ -152,17 +162,7 @@ let private customColumn viewValue editValue defaultValue title key selection di
       (SelectCustom >> dispatch)
 
 let private customPriceColumn title key selection dispatch =
-  let editPrice key close value setValue =
-    fragment [
-      Input.nat (length.rem 7.5) value setValue
-      button [
-        className Class.button
-        onClick (fun _ -> dispatch (RemoveCustom key); close ())
-        text "Delete"
-      ]
-    ]
-
-  customColumn ofNat editPrice 0u title key selection dispatch
+  customColumn ofNat (Input.nat (length.rem 7.5)) 0u title key selection dispatch
 
 module Crops =
   let seedVendors = refMemo (fun (data: GameData) -> sortKeysByHighestCount data.SeedPrices)
@@ -287,7 +287,7 @@ module Crops =
 
           customColumn
             (Query.customSellPriceValue productQuality >> ofNat)
-            (fun _ _ (price, preserveQuality) setState ->
+            (fun (price, preserveQuality) setState ->
               fragment [
                 Input.nat (length.rem 2) price (fun price -> setState (price, preserveQuality))
                 Input.checkboxText
