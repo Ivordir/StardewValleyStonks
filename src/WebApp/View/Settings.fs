@@ -33,25 +33,23 @@ module Skills =
       ]
     ]
 
-  let private qualityClasses = Enum.values |> Array.map (Quality.name >> lowerCase >> className)
-
   let cropQualities qualities =
-    let qualities = Qualities.toArray qualities
+    let qualities =
+      qualities
+      |> Qualities.indexed
+      |> Array.filter (fun (_, prob) -> prob > 0.0)
+
     let mapQualities (text: _ -> ReactElement) =
-      (qualityClasses, qualities) ||> Array.map2 (fun class' prob ->
+      qualities |> Array.map (fun (quality, prob) ->
         div [
-          class'
+          className (quality |> Quality.name |> lowerCase)
           style [ style.custom ("flexGrow", prob) ]
           children (text prob)
         ])
 
     div [ className Class.cropQualities; children [
       div [ className Class.cropQualitiesBars; children (mapQualities (konst none)) ]
-      div [ className Class.cropQualitiesProbs; children (mapQualities (fun prob ->
-        if prob = 0.0
-        then none
-        else ofStr (percent2 prob)))
-      ]
+      div [ className Class.cropQualitiesProbs; children (mapQualities (percent2 >> ofStr)) ]
     ]]
 
   let skillBuffLevel skill dispatch =
