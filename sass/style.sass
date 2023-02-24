@@ -578,6 +578,21 @@ details
 @include square-button(Cancel, 2.5rem)
 @include square-button(Edit, 1.5rem)
 
+
+.back
+  @extend %button-unstyled
+  font-size: 1.5rem
+  padding: 0.25em 0.25em 0.125em 0.25em
+
+  &::before
+    @extend %arrow
+    @extend %arrow-left
+    margin-right: 0.5em
+
+  &:hover::before
+    @extend %hover-scale
+
+
 .crop-qualities
   $transition: flex-grow 0.75s
 

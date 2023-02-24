@@ -66,6 +66,7 @@ module Class =
   let [<Literal>] pairSelect = "pair-select"
   let [<Literal>] summary = "summary"
   let [<Literal>] summaryControls = "summary-controls"
+  let [<Literal>] back = "back"
 
   let [<Literal>] columnSort = "colunm-sort"
   let [<Literal>] collapseArrow = "collapse-arrow"

@@ -1035,6 +1035,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
 
   div [ className Class.summary; children [
     button [
+      className Class.back
       onClick (fun _ -> SetSelectedCropAndFertilizer None |> dispatch)
       text "Back"
     ]
