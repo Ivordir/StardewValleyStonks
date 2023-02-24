@@ -6,6 +6,7 @@ open StardewValleyStonks.WebApp.Update
 open StardewValleyStonks.WebApp.View
 
 open Feliz
+open Elmish.React
 
 open type Html
 open type prop
@@ -867,7 +868,7 @@ module Ranker =
             yAxis.unit (RankMetric.unit ranker.RankMetric)
             yAxis.domain (domain.constant 0, domain.auto)
             if ranker.RankMetric = ROI then Interop.mkYAxisAttr "tickFormatter" (fun x -> x * 100.0)
-            yAxis.width (Values.fontSize * 5)
+            yAxis.width (Values.fontSize * 4)
           ]
           Recharts.tooltip [
             tooltip.content (chartTooltip pairs data settings ranker.TimeNormalization ranker.RankMetric)
@@ -942,10 +943,8 @@ module Ranker =
       else
         div [
           className Class.graph
-          children [
-            // rerender only if computed pairs or RankMetric changes
-            Elmish.React.Common.lazyView2 (fst >> graph ranker data settings) (pairs, ranker.RankMetric) dispatch
-          ]
+          // rerender only if computed pairs or RankMetric changes
+          children (lazyView2 (fst >> graph ranker data settings) (pairs, ranker.RankMetric) dispatch)
         ]
     ]
 
@@ -979,7 +978,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
   let seed = props.Seed
   let fertName = props.Fertilizer
 
-  let appDispatch = props.Dispatch
+  let uiDispatch = props.Dispatch
   let dispatch = SetRanker >> props.Dispatch
   let data = app.Data
   let settings, ui = app.State
@@ -1110,7 +1109,7 @@ let rankerOrSummary app dispatch =
   let ranker = ui.Ranker
   match ranker.SelectedCropAndFertilizer with
   | Some (crop, fert) -> CropAndFertilizerSummary {| App = app; Seed = crop; Fertilizer = fert; Dispatch = dispatch |}
-  | None -> Elmish.React.Common.lazyView3 Ranker.ranker ranker (app.Data, settings) (SetRanker >> dispatch)
+  | None -> lazyView3 Ranker.ranker ranker (app.Data, settings) (SetRanker >> dispatch)
 
 
 // The solver typically takes < 50ms, but with
@@ -1122,24 +1121,42 @@ let private workerQueue, private workerSubscribe =
   let queue, subscribe = Solver.createWorker ()
   debouncer 200 (fun (data, settings, mode) -> queue data settings mode), subscribe
 
-let private solverSummary data settings mode solution =
+let private solverSummary openDetails data settings dispatch mode solution =
   fragment [
     match solution with
-    | Some (dateSpans, total) ->
-      match mode with
-      | MaximizeGold -> SummaryTable.Profit.solver data settings total dateSpans
-      | MaximizeXP -> SummaryTable.XP.solver data settings total dateSpans
-      div [
-        className Class.calendar
-        children (dateSpans |> Array.collect (GrowthCalendar.solver data settings))
-      ]
+    | Some solution ->
+      animatedDetails
+        openDetails
+        OpenDetails.SolverSummary
+        (ofStr "Summary")
+        (lazyView (fun (mode, (total, dateSpans)) ->
+          match mode with
+          | MaximizeGold -> SummaryTable.Profit.solver data settings total dateSpans
+          | MaximizeXP -> SummaryTable.XP.solver data settings total dateSpans)
+          (mode, solution))
+        dispatch
+
+      animatedDetails
+        openDetails
+        OpenDetails.SolverGrowthCalendar
+        (ofStr "Growth Calendar")
+        (lazyView (fun dateSpans ->
+          div [
+            className Class.calendar
+            children (dateSpans |> Array.collect (GrowthCalendar.solver data settings))
+          ])
+          (snd solution))
+        dispatch
+
     | None -> ofStr "Loading..."
   ]
 
 let [<ReactComponent>] Solver (props: {|
+    OpenDetails: OpenDetails Set
     Data: GameData
     Settings: Settings
     SolverMode: SolverMode
+    Dispatch: UIMessage -> unit
   |}) =
   let data = props.Data
   let settings = props.Settings
@@ -1156,7 +1173,7 @@ let [<ReactComponent>] Solver (props: {|
 
   div [
     if solving then className Class.disabled
-    children (Elmish.React.Common.lazyView (uncurry (solverSummary data settings)) (mode, solution))
+    children (solverSummary props.OpenDetails data settings props.Dispatch mode solution)
   ]
 
 let section app dispatch =
@@ -1170,9 +1187,11 @@ let section app dispatch =
         fragment [
           labeled "Maximize" (Select.unitUnion (length.rem 3) ui.SolverMode (SetSolverMode >> uiDispatch))
           Solver {|
+            OpenDetails = ui.OpenDetails
             Data = app.Data
             Settings = settings
             SolverMode = ui.SolverMode
+            Dispatch = SetUI >> dispatch
           |}
         ])
   ]]

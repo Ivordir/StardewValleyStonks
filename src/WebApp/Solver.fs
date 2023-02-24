@@ -460,7 +460,7 @@ let private toDateSpans (vars: GameVariables) (solvedRequests: (FertilizerSpanRe
       RegrowCrop = regrowCrop
     })
 
-  Array.ofSeq solution, totalValue
+  totalValue, Array.ofSeq solution
 
 
 open Fable.Core
