@@ -1,5 +1,29 @@
 @use 'common'
 
+%hidden-input
+  transform: scale(0)
+  opacity: 0
+  position: absolute
+
+%square-button
+  @extend %button-unstyled
+  background-size: contain
+
+  &:hover
+    @extend %hover-scale
+
+@mixin square-button($name, $width)
+  .#{to-lower-case($name)}
+    @extend %square-button
+    width: $width
+    height: $width
+    background-image: common.ui-img("#{$name}")
+
+@include square-button(Ok, 2.5rem)
+@include square-button(Cancel, 2.5rem)
+@include square-button(Edit, 1.5rem)
+
+
 html
   scroll-snap-type: y mandatory
 
@@ -45,32 +69,6 @@ footer
 
   .graph
     height: 50vh
-
-
-%hidden-input
-  transform: scale(0)
-  opacity: 0
-  position: absolute
-
-
-%square-button
-  @extend %button-unstyled
-  background-size: contain
-
-  &:hover
-    @extend %hover-scale
-
-@mixin square-button($name, $width)
-  .#{to-lower-case($name)}
-    @extend %square-button
-    width: $width
-    height: $width
-    background-image: common.ui-img("#{$name}")
-
-@include square-button(Ok, 2.5rem)
-@include square-button(Cancel, 2.5rem)
-@include square-button(Edit, 1.5rem)
-
 
 ul
   list-style: none
@@ -177,6 +175,32 @@ input[type=range]
     flex-direction: column
 
 
+.label-hidden
+  @extend %colon
+  font-size: 0
+
+.label-text
+  @extend %colon
+  margin-right: 0.5em
+
+.input-box
+  background: none
+  image-rendering: pixelated
+  border-image-source: common.ui-img("Input Box")
+  border-image-slice: 3 3 2 2 fill
+  border-image-width: 0.5rem
+  padding: 0.5rem
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button
+    -webkit-appearance: none
+    margin: 0
+
+  -moz-appearance: textfield
+
+  &:hover
+    @extend %hover-brightness
+
 .checkbox
   cursor: pointer
 
@@ -201,13 +225,116 @@ input[type=range]
   &:hover > input + img
     @extend %hover-scale
 
-.label-hidden
-  @extend %colon
-  font-size: 0
+.select
+  $padding: 0.5rem
+  $background: #f9ba66
+  $background-hover: #f5deb3
+  --border: #5b2b2a solid var(--sixth-border)
 
-.label-text
-  @extend %colon
-  margin-right: 0.5em
+  display: inline-flex
+  cursor: pointer
+
+  &:focus-within
+    @extend %focus-outline
+
+  &[aria-expanded=true]:focus-within
+    outline: none
+
+  &[aria-expanded=false]:hover > div > .select-control
+    background-color: $background-hover
+
+  & > div
+    position: relative
+
+  & > img
+    content: common.ui-img("Select Spinner")
+    height: 1rem + 2 * $padding
+    border: var(--border)
+    border-left: none
+
+  &-control
+    position: relative
+    height: 100%
+    box-sizing: border-box
+    border: var(--border)
+    background-color: $background
+    padding: 0 $padding
+
+    display: flex
+    align-items: center
+
+    & > input[type=search]
+      outline: none
+      background: transparent
+      border: none
+      position: absolute
+      padding: 0
+      width: calc(100% - 2 * #{$padding})
+      height: 100%
+
+      &:not(:placeholder-shown) + *
+        visibility: hidden
+
+    & > input[inputmode=none]
+      @extend %hidden-input
+
+    & > span
+      margin-top: 0.125rem
+
+    & span
+      display: inline
+      overflow: hidden
+      text-overflow: ellipsis
+      white-space: nowrap
+
+  &-list
+    max-height: 50vh
+    position: absolute
+    left: 0
+    top: 100%
+    width: 100%
+    z-index: 2
+    border: var(--border)
+    border-top: none
+    background-color: $background
+    box-sizing: border-box
+    overflow: auto
+
+    & > li
+      padding: $padding
+
+      &.select-empty
+        text-align: center
+        padding: 1.5 * $padding
+
+      &[aria-selected=true]
+        background-color: $background-hover
+
+.button
+  background: none
+  image-rendering: pixelated
+  border-image-source: common.ui-img("Button")
+  border-image-slice: 2 fill
+  border-image-width: 0.25em
+  padding: 0.5em
+
+  &:hover
+    @extend %hover-brightness
+
+.file
+  &-dropzone
+    background: lightgray
+    height: 5rem
+
+  &-input
+    display: inline-block
+    @extend button
+
+    & > input
+      @extend %hidden-input
+
+    &:focus-within
+      @extend %focus-outline
 
 
 .profession
@@ -296,126 +423,6 @@ input[type=range]
         position: absolute
         top: $counter-offset
         left: calc(#{$counter-offset} + 0.125rem)
-
-
-.input-box
-  background: none
-  image-rendering: pixelated
-  border-image-source: common.ui-img("Input Box")
-  border-image-slice: 3 3 2 2 fill
-  border-image-width: 0.5rem
-  padding: 0.5rem
-
-  &::-webkit-outer-spin-button,
-  &::-webkit-inner-spin-button
-    -webkit-appearance: none
-    margin: 0
-
-  -moz-appearance: textfield
-
-  &:hover
-    @extend %hover-brightness
-
-
-.select
-  $padding: 0.5rem
-  $background: #f9ba66
-  $background-hover: #f5deb3
-  --border: #5b2b2a solid var(--sixth-border)
-
-  display: inline-flex
-  cursor: pointer
-
-  &:focus-within
-    @extend %focus-outline
-
-  &[aria-expanded=true]:focus-within
-    outline: none
-
-  &[aria-expanded=false]:hover > div > .select-control
-    background-color: $background-hover
-
-  & > div
-    position: relative
-
-  & > img
-    content: common.ui-img("Select Spinner")
-    height: 1rem + 2 * $padding
-    border: var(--border)
-    border-left: none
-
-  &-control
-    position: relative
-    height: 100%
-    box-sizing: border-box
-    border: var(--border)
-    background-color: $background
-    padding: 0 $padding
-
-    display: flex
-    align-items: center
-
-    & > input[type=search]
-      outline: none
-      background: transparent
-      border: none
-      position: absolute
-      padding: 0
-      width: calc(100% - 2 * #{$padding})
-      height: 100%
-
-      &:not(:placeholder-shown) + *
-        visibility: hidden
-
-    & > input[inputmode=none]
-      @extend %hidden-input
-
-    & > span
-      margin-top: 0.125rem
-
-    & span
-      display: inline
-      overflow: hidden
-      text-overflow: ellipsis
-      white-space: nowrap
-
-  &-list
-    max-height: 50vh
-    position: absolute
-    left: 0
-    top: 100%
-    width: 100%
-    z-index: 2
-    border: var(--border)
-    border-top: none
-    background-color: $background
-    box-sizing: border-box
-    overflow: auto
-
-    & > li
-      padding: $padding
-
-      &.select-empty
-        text-align: center
-        padding: 1.5 * $padding
-
-      &[aria-selected=true]
-        background-color: $background-hover
-
-.file
-  &-dropzone
-    background: lightgray
-    height: 5rem
-
-  &-input
-    display: inline-block
-    @extend button
-
-    & > input
-      @extend %hidden-input
-
-    &:focus-within
-      @extend %focus-outline
 
 .graph
   flex-grow: 1
@@ -511,16 +518,6 @@ input[type=range]
     width: 50%
     height: 50%
 
-.button
-  background: none
-  image-rendering: pixelated
-  border-image-source: common.ui-img("Button")
-  border-image-slice: 2 fill
-  border-image-width: 0.25em
-  padding: 0.5em
-
-  &:hover
-    @extend %hover-brightness
 
 table, tr
   // ignored by browser, but needed for td and th 100% height
