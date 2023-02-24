@@ -7,14 +7,13 @@ module Values =
   let private setVar (name: string) (value: string) = root?style?setProperty($"--{name}", value)
   let private setPx (name: string) px = setVar name $"{ceil px}px"
 
-  let private fontPx =
+  let fontPx =
     let fontSize: string = Browser.Dom.window?getComputedStyle(root)?getPropertyValue("font-size")
     (fontSize.Substring(0, fontSize.Length - 2)) |> float |> ceil
 
   let fontSize = int fontPx
 
   do
-    setPx "font-size" fontPx
     setPx "eighth-border" (fontPx / 8.0)
     setPx "sixth-border" (fontPx / 6.0)
 

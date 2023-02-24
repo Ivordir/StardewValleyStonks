@@ -10,19 +10,20 @@ $phi: math.div(1 + math.sqrt(5), 2)
   @return url("/public/img/UI/#{$file}.png")
 
 :root
-  font: var(--font-size, 100%) / 1.25 Stardew Valley Stonks, Nunito, sans
+  font: 100% / 1.25 Stardew Valley Stonks, Nunito, sans
+
+html
+  scroll-snap-type: y mandatory
 
 body
-  display: flex
-  flex-direction: column
-
-  min-height: 100vh
-  max-height: 100vh
-
-  background-image: ui-img("Gradient")
-  background-size: contain
-  background-repeat: repeat-x
   margin: 0
+  background-image: ui-img("Background")
+  background-size: cover
+  overflow-y: scroll
+
+  & > *
+    scroll-snap-align: start
+    scroll-snap-stop: always
 
   & > span // noscript
     text-align: center
@@ -138,18 +139,50 @@ input[type=range]
   &::-moz-range-track
     @include track
 
-.border-box
+%border-box
+  image-rendering: pixelated
   border-image-source: ui-img("Border Box")
   border-image-slice: 12 fill
-  border-image-width: 1rem
-  border-image-outset: 1rem
-  margin: 1rem
+  border-image-width: 0.75rem
+  border-image-outset: 0.75rem
+  margin: 0.75rem
+
+  & > *
+    image-rendering: initial
+
+[role=tablist]
+  display: flex
+  column-gap: 0.5rem
+  padding-inline: 0.75rem
+
+[role=tab]
+  @extend %button-unstyled
+  min-width: 5em
+  font-size: 1.5rem
+  padding: 0.75rem 1rem 0.5rem 1rem
+
+  @extend %border-box
+  border-image-width: 0.75rem 0.75rem 0 0.75rem
+  border-image-outset: 0.75rem 0.75rem 0 0.75rem
+  margin: 0.75rem 0.75rem 0 0.75rem
+
+  outline-offset: calc(-1 * var(--eighth-border))
+
+  &[aria-selected=true]
+    z-index: 1
+    transform: translateY(0.5rem)
+
+  &:hover
+    @extend %hover-brightness
 
 main
-  flex-grow: 1
   display: flex
   flex-flow: row
   overflow: hidden
+  height: 100vh
+  padding: 1em
+  column-gap: 1em
+  box-sizing: border-box
 
   & > section
     min-width: min-content
@@ -160,12 +193,38 @@ main
     overflow: hidden
 
     & > [role=tabpanel]
-      @extend .border-box
+      @extend %border-box
       flex-grow: 1
       display: flex
       flex-direction: column
       overflow: auto
+      overscroll-behavior: contain
 
+[role=tabpanel]
+  @extend %border-box
+
+  & > div
+    padding: 0.75em
+    flex-grow: 1
+    display: flex
+    flex-direction: column
+
+header
+  font-size: 2.5rem
+  text-align: center
+  padding: 1em
+
+footer
+  display: flex
+  align-items: center
+  justify-content: space-evenly
+  text-align: center
+  height: 15vh
+
+  & > span
+    @extend %border-box
+    padding: 0.5em 0.75em
+    font-size: 1.25rem
 
 .graph
   flex-grow: 1
@@ -230,8 +289,12 @@ $arrow-length: 1em
   display: inline-block
   background-size: contain
   background-repeat: no-repeat
+  background-position: center center
   width: $arrow-length
   height: $arrow-length
+
+%arrow-left
+  background-image: ui-img("Arrow Left")
 
 %arrow-right
   background-image: ui-img("Arrow Right")
@@ -262,6 +325,10 @@ details
     cursor: pointer
     font-size: 1.5rem
     padding: 0.25em
+
+    &::marker,
+    &::-webkit-details-marker
+      display: none
 
     &::before
       @extend %arrow
@@ -356,7 +423,7 @@ details
 
 .calendar
   &-season
-    padding: 0.5em 1em
+    padding: var(--eighth-border)
     min-width: min-content
 
   &-header
@@ -371,7 +438,6 @@ details
     grid-template-columns: repeat(7, minmax(4rem, 1fr))
     grid-auto-rows: 1fr
     gap: var(--eighth-border)
-    border: var(--eighth-border) solid black
 
     & > div
       position: relative
@@ -406,7 +472,8 @@ details
   border-image-width: 0.5rem
   padding: 0.5rem
 
-  &::-webkit-outer-spin-button, &::-webkit-inner-spin-button
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button
     -webkit-appearance: none
     margin: 0
 
@@ -578,6 +645,8 @@ details
 @include square-button(Cancel, 2.5rem)
 @include square-button(Edit, 1.5rem)
 
+.edit
+  float: right
 
 .back
   @extend %button-unstyled
@@ -633,14 +702,11 @@ details
 .disabled
   opacity: 0.5
 
-footer
-  background-color: white
-  display: flex
-  align-items: center
-  justify-content: space-evenly
-  text-align: center
 
 dialog
+  @extend %border-box
+  margin: auto
+  padding: 1rem
   min-width: 15rem
   max-width: calc(min(80ch, 40vw))
 
@@ -717,6 +783,7 @@ th.colunm-sort
   display: flex
   align-items: center
   justify-content: center
+  outline: none
 
   &::before
     @extend %arrow
@@ -796,14 +863,11 @@ tr
   border: var(--border)
   border-top: none
 
-  & th
+  & th, & td
     padding: 0.5em 0.25em
 
   & tbody th > *
     min-width: max-content
-
-  & td
-    padding: 0.5em 0.25em
 
   & tr > :first-child
     padding-left: 0.5em
