@@ -7,92 +7,6 @@
 @function ui-img($file)
   @return url("/public/img/UI/#{$file}.png")
 
-:root
-  font-family: Stardew Valley Stonks, Nunito, sans
-  line-height: 1.25
-
-body
-  margin: 0
-  min-height: 100vh
-  background-image: ui-img("Background")
-  background-size: cover
-  background-position: center center
-  overflow-y: scroll
-
-  & > span // noscript
-    text-align: center
-    margin-top: 1rem
-
-%colon
-  &::after
-    font-weight: 600
-    content: ":"
-
-dl
-  display: grid
-  grid-template-columns: auto auto
-  justify-content: start
-  gap: 0 0.5em
-
-dt
-  @extend %colon
-
-dd
-  margin: 0
-
-%focus-outline
-  outline: var(--eighth-border) solid #d83700
-  outline-offset: var(--eighth-border)
-
-:focus
-  @extend %focus-outline
-
-%hover-brightness
-  filter: brightness(1.15)
-
-%hover-scale
-  transform: scale(1.1)
-
-%button-unstyled
-  padding: 0
-  background: none
-  outline: none
-  box-shadow: none
-  border: none
-
-%border-box
-  image-rendering: pixelated
-  border-image-source: ui-img("Border Box")
-  border-image-slice: 12 fill
-  border-image-width: 0.75rem
-  border-image-outset: 0.75rem
-  margin: 0.75rem
-
-  & > *
-    image-rendering: initial
-
-header
-  font-size: 2.5rem
-  text-align: center
-  padding: 1em
-
-footer
-  display: flex
-  align-items: center
-  justify-content: space-evenly
-  text-align: center
-  flex-wrap: wrap
-  font-size: 1.25rem
-  column-gap: 1em
-  min-height: 15vh
-  padding-block: 1em
-
-  & > span
-    @extend %border-box
-    padding: 0.5em 0.75em
-
-img
-  user-select: none
 
 $arrow-length: 1em
 
@@ -116,7 +30,6 @@ $arrow-length: 1em
 
 %arrow-down
   background-image: ui-img("Arrow Down")
-
 
 %season
   height: 1.25em
@@ -173,6 +86,94 @@ $arrow-length: 1em
 @include quality(Silver, silver)
 @include quality(Normal, white)
 
+
+%colon
+  &::after
+    font-weight: 600
+    content: ":"
+
+%focus-outline
+  outline: var(--eighth-border) solid #d83700
+  outline-offset: var(--eighth-border)
+
+:focus
+  @extend %focus-outline
+
+%hover-brightness
+  filter: brightness(1.15)
+
+%hover-scale
+  transform: scale(1.1)
+
+%button-unstyled
+  padding: 0
+  background: none
+  outline: none
+  box-shadow: none
+  border: none
+
+%border-box
+  image-rendering: pixelated
+  border-image-source: ui-img("Border Box")
+  border-image-slice: 12 fill
+  border-image-width: 0.75rem
+  border-image-outset: 0.75rem
+  margin: 0.75rem
+
+  & > *
+    image-rendering: initial
+
+
+:root
+  font-family: Stardew Valley Stonks, Nunito, sans
+  line-height: 1.25
+
+body
+  margin: 0
+  min-height: 100vh
+  background-image: ui-img("Background")
+  background-size: cover
+  background-position: center center
+  overflow-y: scroll
+
+  & > span // noscript
+    text-align: center
+    margin-top: 1rem
+
+header
+  font-size: 2.5rem
+  text-align: center
+  padding: 1em
+
+footer
+  display: flex
+  align-items: center
+  justify-content: space-evenly
+  text-align: center
+  flex-wrap: wrap
+  font-size: 1.25rem
+  column-gap: 1em
+  min-height: 15vh
+  padding-block: 1em
+
+  & > span
+    @extend %border-box
+    padding: 0.5em 0.75em
+
+img
+  user-select: none
+
+dl
+  display: grid
+  grid-template-columns: auto auto
+  justify-content: start
+  gap: 0 0.5em
+
+dt
+  @extend %colon
+
+dd
+  margin: 0
 
 details
   & > summary
