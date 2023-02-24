@@ -65,7 +65,7 @@ module GrowthCalendar =
     let stageList = firstHarvest :: stageList
     season, totalDays + days[season] - usedDays - nat filler, stageList
 
-  let private fromDateSpan data settings single (span: Solver.FertilizerDateSpan) =
+  let private fromDateSpan data settings single (span: Optimizer.FertilizerDateSpan) =
     let stageList = [ Array.create (int (Date.daysInSeason - span.EndDate.Day)) (div [ className Class.disabled ]) ]
     let days =
       if not single && settings.Game.Location = Farm
@@ -134,7 +134,7 @@ module GrowthCalendar =
         ]
       ])
 
-  let solver data settings dateSpan = fromDateSpan data settings false dateSpan
+  let optimizer data settings dateSpan = fromDateSpan data settings false dateSpan
 
   let ranker app fertilizer crop =
     let settings, _ = app.State
@@ -146,7 +146,7 @@ module GrowthCalendar =
         | FarmCrop crop when crop.RegrowTime.IsSome -> [||], Some (0, crop, span.Harvests)
         | _ -> [| crop, span.Harvests, false |], None
 
-      let dateSpan: Solver.FertilizerDateSpan = {
+      let dateSpan: Optimizer.FertilizerDateSpan = {
         StartDate = {
           Season = span.StartSeason
           Day =
@@ -429,7 +429,7 @@ module SummaryTable =
       profitFooter timeNorm profitSummary.TimeNormalization profitSummary.NetProfit seeds
     ]]
 
-  let private solverProfitSummary data settings total (summaries: Query.ProfitSummary array) =
+  let private optimizerProfitSummary data settings total (summaries: Query.ProfitSummary array) =
     let header = profitHeaderCells "Crop / Item" (settings.Profit.SeedStrategy <> IgnoreSeeds)
 
     // A key is needed for each collapsible table body to preserve the collapsed state across new solutions/renders.
@@ -553,7 +553,7 @@ module SummaryTable =
       profitFooter timeNorm profitSummary.TimeNormalization profitSummary.NetProfit none
     ]]
 
-  let private mergeCropHarvests (dateSpan: Solver.FertilizerDateSpan) =
+  let private mergeCropHarvests (dateSpan: Optimizer.FertilizerDateSpan) =
     let regrowHarvests = dateSpan.RegrowCrop |> Option.map (fun (_, crop, harvests) -> FarmCrop crop, harvests)
     let cropHarvests = dateSpan.CropHarvests |> Array.map (fun (crop, harvests, _) -> crop, harvests)
     regrowHarvests
@@ -576,11 +576,11 @@ module SummaryTable =
 
     let tooltip = profitTooltip
 
-    let solver data settings total dateSpans =
+    let optimizer data settings total dateSpans =
       let summaries = dateSpans |> Array.map (fun dateSpan ->
-        mergeCropHarvests dateSpan |> Query.Solver.profitSummary data settings dateSpan.Fertilizer)
+        mergeCropHarvests dateSpan |> Query.Optimizer.profitSummary data settings dateSpan.Fertilizer)
 
-      solverProfitSummary data settings total summaries
+      optimizerProfitSummary data settings total summaries
 
   module ROI =
     let ranker data settings timeNorm fertilizer crop =
@@ -657,10 +657,10 @@ module SummaryTable =
         ]
       ]]
 
-    let solver data settings total dateSpans =
+    let optimizer data settings total dateSpans =
       dateSpans
       |> Array.map (fun dateSpan ->
-        mergeCropHarvests dateSpan |> Query.Solver.xpSummary data settings dateSpan.Fertilizer)
+        mergeCropHarvests dateSpan |> Query.Optimizer.xpSummary data settings dateSpan.Fertilizer)
       |> tableSummary data total
 
 
@@ -1122,32 +1122,32 @@ let rankerOrSummary app dispatch =
 // For this reason, the solver is put in a web worker with a debouncer.
 
 let private workerQueue, private workerSubscribe =
-  let queue, subscribe = Solver.createWorker ()
-  debouncer 200 (fun (data, settings, mode) -> queue data settings mode), subscribe
+  let queue, subscribe = Optimizer.createWorker ()
+  debouncer 200 (fun (data, settings, objective) -> queue data settings objective), subscribe
 
-let private solverSummary openDetails data settings dispatch mode solution =
+let private optimizerSummary openDetails data settings dispatch objective solution =
   fragment [
     match solution with
     | Some solution ->
       animatedDetails
         openDetails
-        OpenDetails.SolverSummary
+        OpenDetails.OptimizerSummary
         (ofStr "Summary")
-        (lazyView (fun (mode, (total, dateSpans)) ->
-          match mode with
-          | MaximizeGold -> SummaryTable.Profit.solver data settings total dateSpans
-          | MaximizeXP -> SummaryTable.XP.solver data settings total dateSpans)
-          (mode, solution))
+        (lazyView (fun (objective, (total, dateSpans)) ->
+          match objective with
+          | MaximizeGold -> SummaryTable.Profit.optimizer data settings total dateSpans
+          | MaximizeXP -> SummaryTable.XP.optimizer data settings total dateSpans)
+          (objective, solution))
         dispatch
 
       animatedDetails
         openDetails
-        OpenDetails.SolverGrowthCalendar
+        OpenDetails.OptimizerGrowthCalendar
         (ofStr "Growth Calendar")
         (lazyView (fun dateSpans ->
           div [
             className Class.calendar
-            children (dateSpans |> Array.collect (GrowthCalendar.solver data settings))
+            children (dateSpans |> Array.collect (GrowthCalendar.optimizer data settings))
           ])
           (snd solution))
         dispatch
@@ -1155,16 +1155,16 @@ let private solverSummary openDetails data settings dispatch mode solution =
     | None -> ofStr "Loading..."
   ]
 
-let [<ReactComponent>] Solver (props: {|
+let [<ReactComponent>] Optimizer (props: {|
     OpenDetails: OpenDetails Set
     Data: GameData
     Settings: Settings
-    SolverMode: SolverMode
+    Objective: OptimizationObjective
     Dispatch: UIMessage -> unit
   |}) =
   let data = props.Data
   let settings = props.Settings
-  let mode = props.SolverMode
+  let objective = props.Objective
 
   let (solution, solving), setState = useState ((None, false))
 
@@ -1172,12 +1172,12 @@ let [<ReactComponent>] Solver (props: {|
 
   useEffect ((fun () ->
     setState (solution, true)
-    workerQueue (data, settings, mode)
-  ), [| box data; settings; mode |])
+    workerQueue (data, settings, objective)
+  ), [| box data; settings; objective |])
 
   div [
     if solving then className Class.disabled
-    children (solverSummary props.OpenDetails data settings props.Dispatch mode solution)
+    children (optimizerSummary props.OpenDetails data settings props.Dispatch objective solution)
   ]
 
 let section app dispatch =
@@ -1187,14 +1187,14 @@ let section app dispatch =
   section [ prop.id "visualization"; children [
     tabs "Visualization" ui.Mode (SetAppMode >> uiDispatch) (function
       | Ranker -> rankerOrSummary app uiDispatch
-      | Solver ->
+      | Optimizer ->
         fragment [
-          labeled "Maximize" (Select.unitUnion (length.rem 3) ui.SolverMode (SetSolverMode >> uiDispatch))
-          Solver {|
+          labeled "Maximize" (Select.unitUnion (length.rem 3) ui.OptimizationObjective (SetOptimizationObjective >> uiDispatch))
+          Optimizer {|
             OpenDetails = ui.OpenDetails
             Data = app.Data
             Settings = settings
-            SolverMode = ui.SolverMode
+            Objective = ui.OptimizationObjective
             Dispatch = SetUI >> dispatch
           |}
         ])

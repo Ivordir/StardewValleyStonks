@@ -106,7 +106,7 @@ type RankerMessage =
 type UIMessage =
   | SetAppMode of AppMode
   | SetRanker of RankerMessage
-  | SetSolverMode of SolverMode
+  | SetOptimizationObjective of OptimizationObjective
   | SetSettingsTab of SettingsTab
   | SetDetailsOpen of OpenDetails * bool
   | SetCropTabState of CropTabMessage
@@ -316,7 +316,7 @@ let ui msg ui =
   match msg with
   | SetAppMode mode -> { ui with Mode = mode }
   | SetRanker msg -> { ui with Ranker = ranker msg ui.Ranker }
-  | SetSolverMode mode -> { ui with SolverMode = mode }
+  | SetOptimizationObjective mode -> { ui with OptimizationObjective = mode }
   | SetSettingsTab tab -> { ui with SettingsTab = tab }
   | SetDetailsOpen (details, selected) -> { ui with OpenDetails = ui.OpenDetails |> setSelected selected details }
   | SetCropTabState msg -> { ui with CropTab = cropTab msg ui.CropTab }

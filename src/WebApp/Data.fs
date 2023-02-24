@@ -262,15 +262,15 @@ let defaultCropTabState = {
 let defaultUI = {
   Mode = Ranker
   Ranker = defaultRanker
-  SolverMode = MaximizeGold
+  OptimizationObjective = MaximizeGold
   SettingsTab = Crops
   OpenDetails = Set.ofArray [|
     OpenDetails.Crops
     OpenDetails.Fertilizers
     OpenDetails.RankerSummary
     OpenDetails.RankerGrowthCalendar
-    OpenDetails.SolverSummary
-    OpenDetails.SolverGrowthCalendar
+    OpenDetails.OptimizerSummary
+    OpenDetails.OptimizerGrowthCalendar
   |]
   CropTab = defaultCropTabState
   FertilizerSort = 0u, true

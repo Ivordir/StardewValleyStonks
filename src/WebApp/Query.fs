@@ -311,7 +311,7 @@ let private invalidReasons hasOneHarvest hasFertilierPrice hasEnoughSeeds =
 
 // For simplicity, it is nice to be able to tell whether a crop can either
 // make enough seeds or never make enough seeds given only one (or more) harvest(s).
-// I.e., it would be annoying in the solver if a regrow crop could only make enough seeds after x number of harvests.
+// I.e., it would be annoying in the optimizer if a regrow crop could only make enough seeds after x number of harvests.
 // If a crop regrows and any item = seed, then the harvested quantity for that item should be >= 1.0.
 // This is always true for the main item, since the minimum crop yield is 1.
 // For any extra items = seed, the quantity is validated in the data beforehand to be >= 1.0.
@@ -1166,7 +1166,7 @@ module Ranker =
     | span -> invalidReasons span.IsSome hasFertPrice enoughSeeds
 
 
-module Solver =
+module Optimizer =
   let nonRegrowCropProfitPerHarvest = Profit.nonRegrowCropProfitPerHarvest
   let regrowCropProfitData = Profit.regrowCropProfitData
 

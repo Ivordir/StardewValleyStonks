@@ -1,4 +1,4 @@
-module StardewValleyStonks.WebApp.Solver
+module StardewValleyStonks.WebApp.Optimizer
 
 (*
 A description of the problem:
@@ -262,13 +262,13 @@ let private fertilizerAndCropData data settings mode (seasons: _ array) =
       removeStrictlyWorseFertilizers,
       (fun crop data (fertilizer: Fertilizer option) fertCost ->
         data fertilizer - Query.replacedFertilizerPerHarvest settings crop * float fertCost),
-      Query.Solver.nonRegrowCropProfitPerHarvest data settings,
-      Query.Solver.regrowCropProfitData data settings
+      Query.Optimizer.nonRegrowCropProfitPerHarvest data settings,
+      Query.Optimizer.regrowCropProfitData data settings
     | MaximizeXP ->
       groupFertilizersBySpeed,
       (fun _ data fertilizer _ -> data fertilizer),
-      Query.Solver.nonRegrowCropXpPerHarvest data settings >> Option.map konst,
-      Query.Solver.regrowCropXpData data settings >> Option.map konst
+      Query.Optimizer.nonRegrowCropXpPerHarvest data settings >> Option.map konst,
+      Query.Optimizer.regrowCropXpData data settings >> Option.map konst
 
   let fertilizerData =
     Query.Selected.fertilizersOpt data settings

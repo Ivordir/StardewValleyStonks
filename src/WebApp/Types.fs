@@ -242,7 +242,7 @@ module Settings =
 
 type AppMode =
   | Ranker
-  | Solver
+  | Optimizer
 
 type RankItem =
   | [<CompiledName ("All Pairs")>] RankCropsAndFertilizers
@@ -282,7 +282,7 @@ type Ranker = {
   SelectedCropAndFertilizer: (SeedId option * FertilizerName option option) option
 }
 
-type SolverMode =
+type OptimizationObjective =
   | [<CompiledName ("Gold")>] MaximizeGold
   | [<CompiledName ("XP")>] MaximizeXP
 
@@ -303,8 +303,8 @@ type OpenDetails =
   | Mod
   | RankerGrowthCalendar
   | RankerSummary
-  | SolverGrowthCalendar
-  | SolverSummary
+  | OptimizerGrowthCalendar
+  | OptimizerSummary
 
 type CropFilters = {
   NameSearch: string
@@ -340,7 +340,7 @@ type CropTabState = {
 type UIState = {
   Mode: AppMode
   Ranker: Ranker
-  SolverMode: SolverMode
+  OptimizationObjective: OptimizationObjective
 
   SettingsTab: SettingsTab
   OpenDetails: OpenDetails Set
