@@ -1,14 +1,15 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <title>Stardew Valley Stonks Credits</title>
+  <title>Stardew Valley Stonks — Info</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="author" content="Ivordir">
+  <meta name="description" content="A Stardew Valley crop ranker and visualizer. Includes an optimizer for maximum stonks.">
   <link rel="icon" href="favicon.png" type="image/png">
   <link rel="stylesheet" href="/sass/info.sass">
 </head>
 <body>
-  <header>Info</header>
+  <header>Stardew Valley Stonks</header>
   <main>
     <nav>
       $toc$
