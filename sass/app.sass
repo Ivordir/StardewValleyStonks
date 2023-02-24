@@ -156,7 +156,7 @@ input[type=range]
   border-image-outset: 0.75rem 0.75rem 0 0.75rem
   margin: 0.75rem 0.75rem 0 0.75rem
 
-  outline-offset: calc(-1 * var(--eighth-border))
+  outline-offset: calc(-1 * var(--border-thin))
 
   &[aria-selected=true]
     z-index: 1
@@ -229,7 +229,7 @@ input[type=range]
   $padding: 0.5rem
   $background: #f9ba66
   $background-hover: #f5deb3
-  --border: #5b2b2a solid var(--sixth-border)
+  --border: #5b2b2a solid var(--border-med)
 
   display: inline-flex
   cursor: pointer
@@ -384,7 +384,7 @@ input[type=range]
 
 .calendar
   &-season
-    padding: var(--eighth-border)
+    padding: var(--border-thin)
     min-width: min-content
 
   &-header
@@ -398,7 +398,7 @@ input[type=range]
     display: grid
     grid-template-columns: repeat(7, minmax(4rem, 1fr))
     grid-auto-rows: 1fr
-    gap: var(--eighth-border)
+    gap: var(--border-thin)
 
     & > div
       position: relative
@@ -406,7 +406,7 @@ input[type=range]
       aspect-ratio: 1
       align-items: center
       justify-content: center
-      outline: var(--eighth-border) solid black
+      outline: var(--border-thin) solid black
       padding: 10%
       $counter-offset: 4%
 
@@ -596,7 +596,7 @@ th.colunm-sort
 
 tr
   &.expanded
-    border-bottom: black dashed var(--eighth-border)
+    border-bottom: black dashed var(--border-thin)
 
   &.collapsed ~ tr
     visibility: collapse
@@ -606,7 +606,7 @@ tr
     position: absolute
 
 .summary-table
-  --border: black solid var(--eighth-border)
+  --border: black solid var(--border-thin)
 
   border-collapse: collapse
 
@@ -649,7 +649,7 @@ tr
     margin-left: common.$arrow-length + 0.5em
 
 #settings table
-  --border: black solid var(--eighth-border)
+  --border: black solid var(--border-thin)
 
   border-collapse: separate
   border-spacing: 0

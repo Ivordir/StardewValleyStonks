@@ -14,8 +14,8 @@ module Values =
   let fontSize = int fontPx
 
   do
-    setPx "eighth-border" (fontPx / 8.0)
-    setPx "sixth-border" (fontPx / 6.0)
+    setPx "border-thin" (fontPx / 8.0)
+    setPx "border-med" (fontPx / 6.0)
 
 
 [<RequireQualifiedAccess>]
