@@ -182,6 +182,16 @@ let defaultSettings = {
         |]
         Selected = Set.empty
       }
+
+      CustomSellPrices = {
+        Values = Map.ofArray [|
+          495u<_>, (240u, false)
+          496u<_>, (240u, false)
+          497u<_>, (240u, false)
+          498u<_>, (240u, false)
+        |]
+        Selected = Set.empty
+      }
   }
   Game = GameVariables.common
   Profit = {
@@ -259,6 +269,8 @@ let defaultUI = {
     OpenDetails.Fertilizers
     OpenDetails.RankerSummary
     OpenDetails.RankerGrowthCalendar
+    OpenDetails.SolverSummary
+    OpenDetails.SolverGrowthCalendar
   |]
   CropTab = defaultCropTabState
   FertilizerSort = 0u, true
