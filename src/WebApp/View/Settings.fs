@@ -146,7 +146,7 @@ let private customColumn viewValue (editValue: _ -> _ -> ReactElement) defaultVa
               if value.IsSome then
                 button [
                   className Class.button
-                  onClick (fun _ -> dispatch (RemoveCustom key); close ())
+                  onClick (fun _ -> RemoveCustom key |> dispatch; close ())
                   text "Delete"
                 ]
             ])
@@ -368,9 +368,9 @@ module Crops =
               then Some (settings.Selected.UseForageSeeds.Contains seed)
               else None)
             (SelectUseForageSeeds >> selectDispatch)
-          |> Column.withDisabled (crops |> Seq.exists (function
+          |> Column.withDisabled (not (crops |> Seq.exists (function
             | ForageCrop crop -> ForageCrop.seedRecipeUnlocked settings.Game.Skills crop
-            | FarmCrop _ -> false) |> not)
+            | FarmCrop _ -> false)))
         |]
     ]
 
@@ -828,7 +828,7 @@ module LoadSave =
 
           button [
             className Class.button
-            onClick (fun _ -> saveDispatch (DeletePreset i))
+            onClick (fun _ -> DeletePreset i |> saveDispatch)
             text "Delete"
           ]
         ]
