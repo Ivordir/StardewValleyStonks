@@ -1085,19 +1085,21 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
     match crop, fert with
     | (Choice1Of2 crop | Choice2Of2 (Some crop)), (Choice1Of2 fert | Choice2Of2 (Some fert)) ->
       animatedDetails
-        (ui.OpenDetails.Contains OpenDetails.RankerSummary)
+        ui.OpenDetails
+        OpenDetails.RankerSummary
         (ofStr "Summary")
         (match metric with
           | Gold -> SummaryTable.Profit.ranker data settings timeNorm fert crop
           | ROI -> SummaryTable.ROI.ranker data settings timeNorm fert crop
           | XP -> SummaryTable.XP.ranker data settings timeNorm fert crop)
-        (curry SetDetailsOpen OpenDetails.RankerSummary >> appDispatch)
+        uiDispatch
 
       animatedDetails
-        (ui.OpenDetails.Contains OpenDetails.RankerGrowthCalendar)
+        ui.OpenDetails
+        OpenDetails.RankerGrowthCalendar
         (ofStr "Growth Calendar")
         (GrowthCalendar.ranker app fert crop)
-        (curry SetDetailsOpen OpenDetails.RankerGrowthCalendar >> appDispatch)
+        uiDispatch
 
     | _ -> emptyPairData pairData
   ]]

@@ -452,137 +452,148 @@ module Crops =
     let data = app.Data
     let settings, ui = app.State
     let cropTab = ui.CropTab
-    let cropTabDispatch = SetCropTabState >> SetUI >> dispatch
+    let uiDispatch = SetUI >> dispatch
+    let cropTabDispatch = SetCropTabState >> uiDispatch
     let crops = filteredCrops app |> Array.sortBy (sortKey data)
 
     fragment [
       cropFilter cropTab.Filters (SetCropFilters >> cropTabDispatch)
 
-      tabs "Crop" cropTab.Tab (SetCropTab >> cropTabDispatch) (function
-        | CropsTable -> table data settings cropTab.CropSort crops dispatch
-        | ProductsTable -> products data settings cropTab crops dispatch
-        | SeedsTable -> seeds data settings cropTab.SeedSort crops dispatch)
+      animatedDetails
+        ui.OpenDetails
+        OpenDetails.Crops
+        (ofStr "Crops")
+        (table data settings cropTab.CropSort crops dispatch)
+        uiDispatch
+
+      animatedDetails
+        ui.OpenDetails
+        OpenDetails.Products
+        (ofStr "Products")
+        (products data settings cropTab crops dispatch)
+        uiDispatch
+
+      animatedDetails
+        ui.OpenDetails
+        OpenDetails.Seeds
+        (ofStr "Seeds")
+        (seeds data settings cropTab.SeedSort crops dispatch)
+        uiDispatch
     ]
 
 
 module Fertilizers =
   let fertilizerVendors = refMemo (fun (data: GameData) -> sortKeysByHighestCount data.FertilizerPrices)
 
-  let table (data: GameData) settings fertSort open' fertilizers dispatch =
+  let table data settings fertSort fertilizers dispatch =
     let uiDispatch = SetUI >> dispatch
     let selectDispatch = SetSelections >> SetSettings >> dispatch
-    animatedDetails
-      open'
-      (ofStr "Fertilizers")
-      (fragment [
-        Input.checkboxText "Allow No Fertilizer" settings.Selected.NoFertilizer (SelectNoFertilizer >> selectDispatch)
 
-        tableFromColummsWithRowDisable
-          (Fertilizer.name >> Query.fertilizerCost data settings >> Option.isNone)
-          Fertilizer.name
-          fertilizers
-          fertSort
-          (SetFertilizerSort >> uiDispatch)
-          [|
-            Column.valueSortable
-              (ofStr "Fertilizer")
-              Fertilizer.name
-              Icon.fertilizerName
-            |> Column.withSelect
-              (settings.Selected.Fertilizers.Contains >> Some)
-              (SelectFertilizers >> selectDispatch)
-            |> Column.markAsKey
+    fragment [
+      Input.checkboxText "Allow No Fertilizer" settings.Selected.NoFertilizer (SelectNoFertilizer >> selectDispatch)
+
+      tableFromColummsWithRowDisable
+        (Fertilizer.name >> Query.fertilizerCost data settings >> Option.isNone)
+        Fertilizer.name
+        fertilizers
+        fertSort
+        (SetFertilizerSort >> uiDispatch)
+        [|
+          Column.valueSortable
+            (ofStr "Fertilizer")
+            Fertilizer.name
+            Icon.fertilizerName
+          |> Column.withSelect
+            (settings.Selected.Fertilizers.Contains >> Some)
+            (SelectFertilizers >> selectDispatch)
+          |> Column.markAsKey
 
 
-            Column.sortableOpt
-              (ofStr "Price")
-              (Fertilizer.name >> Query.Price.fertilizerMinVendorAndPrice data settings >> viewPrice)
-              (Fertilizer.name >> Query.Price.fertilizerMinPrice data settings)
+          Column.sortableOpt
+            (ofStr "Price")
+            (Fertilizer.name >> Query.Price.fertilizerMinVendorAndPrice data settings >> viewPrice)
+            (Fertilizer.name >> Query.Price.fertilizerMinPrice data settings)
 
-            Column.valueSortable (ofStr "Speed Bonus") Fertilizer.speed (percent >> ofStr)
+          Column.valueSortable (ofStr "Speed Bonus") Fertilizer.speed (percent >> ofStr)
 
-            Column.valueSortable (ofStr "Crop Qualities") Fertilizer.quality (fun fertQuality ->
-              Skills.farmCropQualitiesFrom fertQuality settings.Game.Skills |> Skills.cropQualities)
-          |]
-      ])
-      (curry SetDetailsOpen OpenDetails.Fertilizers >> uiDispatch)
+          Column.valueSortable (ofStr "Crop Qualities") Fertilizer.quality (fun fertQuality ->
+            Skills.farmCropQualitiesFrom fertQuality settings.Game.Skills |> Skills.cropQualities)
+        |]
+    ]
 
-  let prices (data: GameData) settings fertPriceSort open' fertilizers dispatch =
+  let prices data settings fertPriceSort fertilizers dispatch =
     let uiDispatch = SetUI >> dispatch
     let dispatch = SetSettings >> dispatch
     let selectDispatch = SetSelections >> dispatch
 
     let fertilizers = fertilizers |> Array.map Fertilizer.name
 
-    animatedDetails
-      open'
-      (ofStr "Prices")
-      (fragment [
-        Input.checkboxText
-          "Pay for Fertilizer"
-          settings.Profit.PayForFertilizer
-          (SetPayForFertilizer >> SetProfit >> dispatch)
+    fragment [
+      Input.checkboxText
+        "Pay for Fertilizer"
+        settings.Profit.PayForFertilizer
+        (SetPayForFertilizer >> SetProfit >> dispatch)
 
-        Html.span [
-          if not settings.Profit.PayForFertilizer then className Class.disabled
-          children [
-            Input.checkboxText
-              "Replace Lost Fertilizer"
-              settings.Profit.ReplaceLostFertilizer
-              (SetReplaceLostFertilizer >> SetProfit >> dispatch)
-          ]
+      Html.span [
+        if not settings.Profit.PayForFertilizer then className Class.disabled
+        children [
+          Input.checkboxText
+            "Replace Lost Fertilizer"
+            settings.Profit.ReplaceLostFertilizer
+            (SetReplaceLostFertilizer >> SetProfit >> dispatch)
         ]
+      ]
 
-        tableFromColumms
-          id
-          fertilizers
-          fertPriceSort
-          (SetFertilizerPriceSort >> uiDispatch)
-          [|
-            Column.valueSortable (ofStr "Fertilizer") id Icon.fertilizerName
-            |> Column.markAsKey
+      tableFromColumms
+        id
+        fertilizers
+        fertPriceSort
+        (SetFertilizerPriceSort >> uiDispatch)
+        [|
+          Column.valueSortable (ofStr "Fertilizer") id Icon.fertilizerName
+          |> Column.markAsKey
 
-            yield! fertilizerVendors data |> Array.map (fun vendor ->
-              Column.valueOptSortable
-                (Icon.vendor vendor)
-                (data.FertilizerPrices.Find >> Table.tryFind vendor)
-                (ofOption ofNat)
-              |> Column.withSelect
-                (fun fertilizer ->
-                  if data.FertilizerPrices[fertilizer].ContainsKey vendor
-                  then Some (settings.Selected.FertilizerPrices[fertilizer].Contains vendor)
-                  else None)
-                (curry SelectFertilizerPrices vendor >> selectDispatch))
+          yield! fertilizerVendors data |> Array.map (fun vendor ->
+            Column.valueOptSortable
+              (Icon.vendor vendor)
+              (data.FertilizerPrices.Find >> Table.tryFind vendor)
+              (ofOption ofNat)
+            |> Column.withSelect
+              (fun fertilizer ->
+                if data.FertilizerPrices[fertilizer].ContainsKey vendor
+                then Some (settings.Selected.FertilizerPrices[fertilizer].Contains vendor)
+                else None)
+              (curry SelectFertilizerPrices vendor >> selectDispatch))
 
-            customPriceColumn
-              "Custom Fertilizer Price"
-              id
-              settings.Selected.CustomFertilizerPrices
-              (SetCustomFertilizerPrice >> selectDispatch)
-          |]
-      ])
-      (curry SetDetailsOpen OpenDetails.FertilizerPrices >> uiDispatch)
+          customPriceColumn
+            "Custom Fertilizer Price"
+            id
+            settings.Selected.CustomFertilizerPrices
+            (SetCustomFertilizerPrice >> selectDispatch)
+        |]
+    ]
 
   let tab app dispatch =
     let data = app.Data
     let settings, ui = app.State
-    let fertilizers = data.Fertilizers.Values |> Seq.sortBy Fertilizer.name |> Array.ofSeq
-    fragment [
-      table
-        data
-        settings
-        ui.FertilizerSort
-        (ui.OpenDetails.Contains OpenDetails.Fertilizers)
-        fertilizers
-        dispatch
+    let uiDispatch = SetUI >> dispatch
 
-      prices
-        data
-        settings
-        ui.FertilizerPriceSort
-        (ui.OpenDetails.Contains OpenDetails.FertilizerPrices)
-        fertilizers
-        dispatch
+    let fertilizers = data.Fertilizers.Values |> Seq.sortBy Fertilizer.name |> Array.ofSeq
+
+    fragment [
+      animatedDetails
+        ui.OpenDetails
+        OpenDetails.Fertilizers
+        (ofStr "Fertilizers")
+        (table data settings ui.FertilizerSort fertilizers dispatch)
+        uiDispatch
+
+      animatedDetails
+        ui.OpenDetails
+        OpenDetails.FertilizerPrices
+        (ofStr "Prices")
+        (prices data settings ui.FertilizerPriceSort fertilizers dispatch)
+        uiDispatch
     ]
 
 
@@ -673,8 +684,10 @@ module Misc =
       |> labeled "Luck Buff"
     ]]
 
-  let mods data open' modData dispatch =
-    animatedDetails open'
+  let mods data ui modData dispatch =
+    animatedDetails
+      ui.OpenDetails
+      OpenDetails.Mod
       (ofStr "Mods")
       (fragment [
         let dispatch = SetModData >> SetGameVariables >> SetSettings >> dispatch
@@ -694,7 +707,7 @@ module Misc =
             ))
         ]
       ])
-      (curry SetDetailsOpen OpenDetails.Mod >> SetUI >> dispatch)
+      (SetUI >> dispatch)
 
   let tab modsOpen data settings dispatch =
     let appDispatch = dispatch
@@ -859,6 +872,6 @@ let section app dispatch =
       | Skills -> Skills.tab settings.Game.Skills (SetSkills >> SetGameVariables >> SetSettings >> dispatch)
       | Crops -> Crops.tab app dispatch
       | Fertilizers -> Fertilizers.tab app dispatch
-      | Misc -> Misc.tab (ui.OpenDetails.Contains OpenDetails.Mod) app.Data settings.Game dispatch
+      | Misc -> Misc.tab ui app.Data settings.Game dispatch
       | SettingsTab.LoadSettings -> LoadSave.tab app appDispatch)
   ]]

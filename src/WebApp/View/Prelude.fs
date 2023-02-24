@@ -3,6 +3,7 @@ module StardewValleyStonks.WebApp.View.Prelude
 
 open StardewValleyStonks
 open StardewValleyStonks.WebApp
+open StardewValleyStonks.WebApp.Update
 
 open Fable.Core.JsInterop
 open Feliz
@@ -262,15 +263,16 @@ let inline tabs label current dispatch tabpanel =
   |}
 
 
-let animatedDetails open' (summary': ReactElement) (children': ReactElement) dispatch =
+let animatedDetails openDetails key (summaryContent: ReactElement) (children: ReactElement) dispatch =
+  let open' = openDetails |> Set.contains key
   details [
     isOpen open'
-    onToggle dispatch
-    children [
-      summary summary'
+    onToggle (curry SetDetailsOpen key >> dispatch)
+    prop.children [
+      summary summaryContent
       div [
         if open' then className Class.open'
-        children children'
+        prop.children children
       ]
     ]
   ]

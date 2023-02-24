@@ -287,21 +287,19 @@ type SolverMode =
   | [<CompiledName ("XP")>] MaximizeXP
 
 type SettingsTab =
-  | Skills
   | Crops
   | Fertilizers
+  | Skills
   | Misc
-  | [<CompiledName ("Load / Save")>] LoadSettings
-
-type CropTab =
-  | [<CompiledName ("Crops")>] CropsTable
-  | [<CompiledName ("Products")>] ProductsTable
-  | [<CompiledName ("Seeds")>] SeedsTable
+  | [<CompiledName ("Load/Save")>] LoadSettings
 
 [<RequireQualifiedAccess>]
 type OpenDetails =
   | Fertilizers
   | FertilizerPrices
+  | Crops
+  | Products
+  | Seeds
   | Mod
   | RankerGrowthCalendar
   | RankerSummary
@@ -331,7 +329,6 @@ module CropFilters =
 type TableSort = nat * bool
 
 type CropTabState = {
-  Tab: CropTab
   Filters: CropFilters
   CropSort: TableSort
   ProductSort: TableSort

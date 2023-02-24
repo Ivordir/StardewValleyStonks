@@ -88,7 +88,6 @@ type CropFiltersMessage =
   | ClearFilters
 
 type CropTabMessage =
-  | SetCropTab of CropTab
   | SetCropFilters of CropFiltersMessage
   | SetCropSort of TableSort
   | SetProductSort of TableSort
@@ -278,7 +277,6 @@ let cropFilters msg filters =
 
 let cropTab msg state =
   match msg with
-  | SetCropTab tab -> { state with Tab = tab }
   | SetCropFilters msg -> { state with Filters = cropFilters msg state.Filters }
   | SetCropSort (col, asc) -> { state with CropSort = col, asc }
   | SetProductSort (col, asc) -> { state with ProductSort = col, asc }
