@@ -1,0 +1,692 @@
+@use 'common'
+
+html
+  scroll-snap-type: y mandatory
+
+header
+  scroll-snap-align: start
+
+main
+  scroll-snap-align: start
+
+  display: flex
+  flex-flow: row
+  overflow: hidden
+  height: 100vh
+  padding: 1em
+  column-gap: 1em
+  box-sizing: border-box
+
+  & > section
+    min-width: min-content
+    flex-basis: 0
+    flex-grow: 1
+    display: flex
+    flex-direction: column
+    overflow: hidden
+
+    & > [role=tabpanel]
+      @extend %border-box
+      flex-grow: 1
+      display: flex
+      flex-direction: column
+      overflow: auto
+      overscroll-behavior: contain
+
+footer
+  scroll-snap-align: end
+
+@media (max-aspect-ratio: 1)
+  body
+    max-height: unset
+
+  main
+    display: block
+
+  .graph
+    height: 50vh
+
+
+%hidden-input
+  transform: scale(0)
+  opacity: 0
+  position: absolute
+
+
+%square-button
+  @extend %button-unstyled
+  background-size: contain
+
+  &:hover
+    @extend %hover-scale
+
+@mixin square-button($name, $width)
+  .#{to-lower-case($name)}
+    @extend %square-button
+    width: $width
+    height: $width
+    background-image: common.ui-img("#{$name}")
+
+@include square-button(Ok, 2.5rem)
+@include square-button(Cancel, 2.5rem)
+@include square-button(Edit, 1.5rem)
+
+
+ul
+  list-style: none
+  padding: 0
+  margin: 0
+
+dialog
+  @extend %border-box
+  margin: auto
+  padding: 1rem
+  min-width: 15rem
+  max-width: calc(min(80ch, 40vw))
+
+button
+  font-family: inherit
+  font-size: inherit
+  cursor: pointer
+
+input
+  font-family: inherit
+  font-size: inherit
+
+input[type=range]
+  $scale: 3
+  $height: 6px * $scale
+
+  -webkit-appearance: none
+  background: transparent
+  margin: 0
+  cursor: pointer
+  width: calc(max(100px, 10rem))
+  height: $height
+
+  &:hover
+    @extend %hover-brightness
+
+  // css needs to be repeated/inlined for some reason
+  // and cannot be reused across webkit and mozilla
+  @mixin thumb
+    box-shadow: none
+    border: none
+    border-radius: 0
+    width: 10px * $scale
+    height: $height
+    image-rendering: pixelated
+    background: common.ui-img("Range Thumb")
+    background-size: contain
+    background-repeat: no-repeat
+    background-position: center
+
+  &::-webkit-slider-thumb
+    -webkit-appearance: none
+    @include thumb
+
+  &::-moz-range-thumb
+    @include thumb
+
+  @mixin track
+    height: $height
+    image-rendering: pixelated
+    border-image-source: common.ui-img("Range Track")
+    border-image-slice: 2 fill
+    border-image-width: 2px * $scale
+
+  &::-webkit-slider-runnable-track
+    @include track
+
+  &::-moz-range-track
+    @include track
+
+
+[role=tablist]
+  display: flex
+  column-gap: 0.5rem
+  padding-inline: 0.75rem
+
+[role=tab]
+  @extend %button-unstyled
+  min-width: 5em
+  font-size: 1.5rem
+  padding: 0.75rem 1rem 0.5rem 1rem
+
+  @extend %border-box
+  border-image-width: 0.75rem 0.75rem 0 0.75rem
+  border-image-outset: 0.75rem 0.75rem 0 0.75rem
+  margin: 0.75rem 0.75rem 0 0.75rem
+
+  outline-offset: calc(-1 * var(--eighth-border))
+
+  &[aria-selected=true]
+    z-index: 1
+    transform: translateY(0.5rem)
+
+  &:hover
+    @extend %hover-brightness
+
+[role=tabpanel]
+  @extend %border-box
+
+  & > div
+    padding: 0.75em
+    flex-grow: 1
+    display: flex
+    flex-direction: column
+
+
+.checkbox
+  cursor: pointer
+
+  & > input
+    @extend %hidden-input
+
+  & > input + img
+    content: common.ui-img("Checkbox")
+    vertical-align: text-bottom
+    width: 1.5em
+    height: 1.5em
+
+    &:not(:last-child)
+      margin-right: 0.5em
+
+  & > input:checked + img
+    content: common.ui-img("Checkedbox")
+
+  & > input:focus + img
+    @extend %focus-outline
+
+  &:hover > input + img
+    @extend %hover-scale
+
+.label-hidden
+  @extend %colon
+  font-size: 0
+
+.label-text
+  @extend %colon
+  margin-right: 0.5em
+
+
+.profession
+  display: block
+  width: 100%
+  height: 2.5rem
+
+  & > input
+    @extend %hidden-input
+
+  & > input:checked + *
+    color: green
+
+  & > input:focus + *
+    @extend %focus-outline
+
+  &:hover
+    background: white
+
+.professions
+  display: flex
+  justify-content: center
+  align-items: center
+  flex-wrap: wrap
+
+  & > div
+    display: flex
+    flex-direction: column
+    width: 50%
+    align-items: center
+
+.skill
+  display: flex
+  flex-direction: column
+
+  & > span:first-child
+    font-size: 2rem
+    text-align: center
+
+  &-level
+    display: flex
+    flex-direction: column
+
+.seasons
+  display: grid
+  grid-template-columns: repeat(4, 1fr)
+
+.calendar
+  &-season
+    padding: var(--eighth-border)
+    min-width: min-content
+
+  &-header
+    display: flex
+    justify-content: center
+    align-items: center
+    font-size: 2rem
+    margin-bottom: 0.25em
+
+  &-days
+    display: grid
+    grid-template-columns: repeat(7, minmax(4rem, 1fr))
+    grid-auto-rows: 1fr
+    gap: var(--eighth-border)
+
+    & > div
+      position: relative
+      display: flex
+      aspect-ratio: 1
+      align-items: center
+      justify-content: center
+      outline: var(--eighth-border) solid black
+      padding: 10%
+      $counter-offset: 4%
+
+      & > img
+        width: 50%
+        height: unset
+
+      &:nth-child(28n + 1)
+        counter-reset: day
+
+      &::before
+        counter-increment: day
+        content: counter(day)
+        position: absolute
+        top: $counter-offset
+        left: calc(#{$counter-offset} + 0.125rem)
+
+
+.input-box
+  background: none
+  image-rendering: pixelated
+  border-image-source: common.ui-img("Input Box")
+  border-image-slice: 3 3 2 2 fill
+  border-image-width: 0.5rem
+  padding: 0.5rem
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button
+    -webkit-appearance: none
+    margin: 0
+
+  -moz-appearance: textfield
+
+  &:hover
+    @extend %hover-brightness
+
+
+.select
+  $padding: 0.5rem
+  $background: #f9ba66
+  $background-hover: #f5deb3
+  --border: #5b2b2a solid var(--sixth-border)
+
+  display: inline-flex
+  cursor: pointer
+
+  &:focus-within
+    @extend %focus-outline
+
+  &[aria-expanded=true]:focus-within
+    outline: none
+
+  &[aria-expanded=false]:hover > div > .select-control
+    background-color: $background-hover
+
+  & > div
+    position: relative
+
+  & > img
+    content: common.ui-img("Select Spinner")
+    height: 1rem + 2 * $padding
+    border: var(--border)
+    border-left: none
+
+  &-control
+    position: relative
+    height: 100%
+    box-sizing: border-box
+    border: var(--border)
+    background-color: $background
+    padding: 0 $padding
+
+    display: flex
+    align-items: center
+
+    & > input[type=search]
+      outline: none
+      background: transparent
+      border: none
+      position: absolute
+      padding: 0
+      width: calc(100% - 2 * #{$padding})
+      height: 100%
+
+      &:not(:placeholder-shown) + *
+        visibility: hidden
+
+    & > input[inputmode=none]
+      @extend %hidden-input
+
+    & > span
+      margin-top: 0.125rem
+
+    & span
+      display: inline
+      overflow: hidden
+      text-overflow: ellipsis
+      white-space: nowrap
+
+  &-list
+    max-height: 50vh
+    position: absolute
+    left: 0
+    top: 100%
+    width: 100%
+    z-index: 2
+    border: var(--border)
+    border-top: none
+    background-color: $background
+    box-sizing: border-box
+    overflow: auto
+
+    & > li
+      padding: $padding
+
+      &.select-empty
+        text-align: center
+        padding: 1.5 * $padding
+
+      &[aria-selected=true]
+        background-color: $background-hover
+
+.file
+  &-dropzone
+    background: lightgray
+    height: 5rem
+
+  &-input
+    display: inline-block
+    @extend button
+
+    & > input
+      @extend %hidden-input
+
+    &:focus-within
+      @extend %focus-outline
+
+.graph
+  flex-grow: 1
+  overflow: hidden
+
+  &-controls
+    display: flex
+    justify-content: center
+    align-items: center
+
+.recharts-wrapper
+  overflow: hidden
+
+.recharts-tooltip-wrapper:focus
+  outline: none
+
+.recharts-bar-rectangle
+  cursor: pointer
+
+.pair-image
+  cursor: pointer
+
+.pair-select
+  cursor: pointer
+  fill: transparent
+
+.summary
+
+  &-controls
+    display: flex
+    flex-direction: column
+    align-items: center
+
+    & > div
+      display: flex
+      width: 100%
+      justify-content: center
+      align-items: center
+
+.settings-group
+  display: flex
+  flex-direction: column
+
+.edit
+  float: right
+
+.back
+  @extend %button-unstyled
+  font-size: 1.5rem
+  padding: 0.25em 0.25em 0.125em 0.25em
+
+  &::before
+    @extend %arrow
+    @extend %arrow-left
+    margin-right: 0.5em
+
+  &:hover::before
+    @extend %hover-scale
+
+
+.crop-qualities
+  $transition: flex-grow 0.75s
+
+  width: 100%
+
+  &-bars
+    height: 1rem
+    display: flex
+
+    & > div
+      transition: $transition
+      background-color: var(--color)
+
+  &-probs
+    height: 1rem
+    display: flex
+    gap: 1rem
+
+    & > div
+      transition: $transition
+      flex-basis: min-content
+      text-align: center
+      color: var(--color)
+
+.quality
+  display: inline-block
+  position: relative
+  @extend .icon
+
+  & > img:last-child
+    content: var(--img)
+    position: absolute
+    left: 0
+    bottom: 0
+    width: 50%
+    height: 50%
+
+.button
+  background: none
+  image-rendering: pixelated
+  border-image-source: common.ui-img("Button")
+  border-image-slice: 2 fill
+  border-image-width: 0.25em
+  padding: 0.5em
+
+  &:hover
+    @extend %hover-brightness
+
+table, tr
+  // ignored by browser, but needed for td and th 100% height
+  height: 1px
+
+th, td
+  // allows inner divs to take up full height
+  height: 100%
+  vertical-align: middle
+
+th, th > button
+  font-weight: 500
+
+tr
+  &:nth-child(odd)
+    background: #f9ba66
+
+  &:nth-child(even)
+    background: scale-color(#f9ba66, $lightness: 25%)
+
+tbody th
+  text-align: left
+
+th.colunm-sort
+  & > button
+    @extend %button-unstyled
+    width: 100%
+    height: 100%
+    display: flex
+    align-items: center
+    justify-content: center
+
+  & > button::after
+    @extend %arrow
+    flex-shrink: 0
+    margin-left: 0.25em
+
+  &[aria-sort=ascending] > button::after
+    @extend %arrow-up
+
+  &[aria-sort=descending] > button::after
+    @extend %arrow-down
+
+  & > button:focus
+    @extend %focus-outline
+
+  &:not([aria-sort]) > button:hover::after
+    @extend %arrow-up
+    opacity: 0.5
+
+.collapse-arrow
+  @extend %button-unstyled
+  height: 1.5em
+  width: common.$arrow-length
+  margin-left: 0.125em
+  display: flex
+  align-items: center
+  justify-content: center
+  outline: none
+
+  &::before
+    @extend %arrow
+
+  &[aria-pressed=false]::before
+    @extend %arrow-right
+
+  &[aria-pressed=true]::before
+    @extend %arrow-down
+
+  &:focus::before
+    @extend %focus-outline
+    outline-offset: 0.25em
+
+  &:hover::before
+    @extend %hover-scale
+
+tr
+  &.expanded
+    border-bottom: black dashed var(--eighth-border)
+
+  &.collapsed ~ tr
+    visibility: collapse
+    // until safari and other browsers stop treating visibility: collapse as visibility: hidden
+    // this is necessary to mimic visibility: collapse
+    // unfortunately, this will cause the table to recompute its layout even for well behaved browsers
+    position: absolute
+
+.summary-table
+  --border: black solid var(--eighth-border)
+
+  border-collapse: collapse
+
+  & > *
+    border: var(--border)
+
+  // empty tbody messes up borders on firefox?
+  & > tbody:empty
+    display: none
+
+  // all cells
+  & tr > *
+    padding: 0.5em
+
+    &:empty
+      padding: 0
+
+    // last 4 columns
+    &:nth-last-child(-n+4)
+      text-align: right
+
+    // profit/xp column
+    &:nth-last-child(2)
+      min-width: 5em
+
+  // row header column in thead and tfoot
+  & th:nth-child(-n+2)
+    text-align: center
+
+  // row header column in tbody
+  & > tbody th:nth-child(-n+2)
+    text-align: left
+
+.input-items
+  & > summary
+    font-size: 1rem
+    padding: 0
+
+  & > ul
+    margin-left: common.$arrow-length + 0.5em
+
+#settings table
+  --border: black solid var(--eighth-border)
+
+  border-collapse: separate
+  border-spacing: 0
+  border: var(--border)
+  border-top: none
+
+  & th, & td
+    padding: 0.5em 0.25em
+
+  & tbody th > *
+    min-width: max-content
+
+  & tr > :first-child
+    padding-left: 0.5em
+
+  & tr > :last-child
+    padding-right: 0.5em
+
+  & > thead
+    position: sticky
+    top: 0
+    z-index: 1
+
+    & th
+      border-top: var(--border)
+      border-bottom: var(--border)
+
+      &.disabled
+        opacity: 1
+
+        & > *
+          @extend .disabled
+
+.disabled
+  opacity: 0.5

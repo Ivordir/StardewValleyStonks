@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="author" content="Ivordir">
   <link rel="icon" href="favicon.png" type="image/png">
-  <link rel="stylesheet" href="/sass/style.sass">
+  <link rel="stylesheet" href="/sass/info.sass">
 </head>
 <body>
   <header>Info</header>

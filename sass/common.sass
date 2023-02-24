@@ -1,0 +1,211 @@
+@use 'sass:math'
+
+@font-face
+  font-family: Stardew Valley Stonks
+  src: url("/public/Stardew Valley Stonks.otf")
+
+@function ui-img($file)
+  @return url("/public/img/UI/#{$file}.png")
+
+:root
+  font-family: Stardew Valley Stonks, Nunito, sans
+  line-height: 1.25
+
+body
+  margin: 0
+  min-height: 100vh
+  background-image: ui-img("Background")
+  background-size: cover
+  background-position: center center
+  overflow-y: scroll
+
+  & > span // noscript
+    text-align: center
+    margin-top: 1rem
+
+%colon
+  &::after
+    font-weight: 600
+    content: ":"
+
+dl
+  display: grid
+  grid-template-columns: auto auto
+  justify-content: start
+  gap: 0 0.5em
+
+dt
+  @extend %colon
+
+dd
+  margin: 0
+
+%focus-outline
+  outline: var(--eighth-border) solid #d83700
+  outline-offset: var(--eighth-border)
+
+:focus
+  @extend %focus-outline
+
+%hover-brightness
+  filter: brightness(1.15)
+
+%hover-scale
+  transform: scale(1.1)
+
+%button-unstyled
+  padding: 0
+  background: none
+  outline: none
+  box-shadow: none
+  border: none
+
+%border-box
+  image-rendering: pixelated
+  border-image-source: ui-img("Border Box")
+  border-image-slice: 12 fill
+  border-image-width: 0.75rem
+  border-image-outset: 0.75rem
+  margin: 0.75rem
+
+  & > *
+    image-rendering: initial
+
+header
+  font-size: 2.5rem
+  text-align: center
+  padding: 1em
+
+footer
+  display: flex
+  align-items: center
+  justify-content: space-evenly
+  text-align: center
+  flex-wrap: wrap
+  font-size: 1.25rem
+  column-gap: 1em
+  min-height: 15vh
+  padding-block: 1em
+
+  & > span
+    @extend %border-box
+    padding: 0.5em 0.75em
+
+img
+  user-select: none
+
+$arrow-length: 1em
+
+%arrow
+  content: ""
+  display: inline-block
+  background-size: contain
+  background-repeat: no-repeat
+  background-position: center center
+  width: $arrow-length
+  height: $arrow-length
+
+%arrow-left
+  background-image: ui-img("Arrow Left")
+
+%arrow-right
+  background-image: ui-img("Arrow Right")
+
+%arrow-up
+  background-image: ui-img("Arrow Up")
+
+%arrow-down
+  background-image: ui-img("Arrow Down")
+
+
+%season
+  height: 1.25em
+
+@mixin season($name)
+  .#{to-lower-case($name)}
+    @extend %season
+    content: url("/public/img/Seasons/#{$name}.png")
+
+@each $season in Spring Summer Fall Winter
+  @include season($season)
+
+.icon
+  width: 1.5em
+  height: 1.5em
+
+  &-processor
+    width: 1.25em
+
+  &-text
+    display: inline-block
+
+    & > :first-child
+      vertical-align: text-bottom
+      margin-right: 0.25em
+
+@mixin icon-img($name, $folder)
+  .#{to-lower-case($name)}
+    @extend .icon
+    content: url("/public/img/#{$folder}/#{$name}.png")
+
+@each $product in Jam Pickles Wine Juice
+  @include icon-img($product, "Products")
+
+@each $profession in Tiller Artisan Agriculturist Gatherer Botanist
+  @include icon-img($profession, "Skills")
+
+%skill
+  width: 1.25em
+  height: 1.25em
+
+@each $skill in Farming Foraging
+  .#{to-lower-case($skill)}
+    @extend %skill
+    content: url("/public/img/Skills/#{$skill}.png")
+
+@mixin quality($quality, $color)
+  .#{to-lower-case(#{$quality})}
+    --color: #{$color}
+    --img: url("/public/img/Qualities/#{$quality}.png")
+
+@include quality(Iridium, purple)
+@include quality(Gold, gold)
+@include quality(Silver, silver)
+@include quality(Normal, white)
+
+
+details
+  & > div
+    opacity: 0
+    transform: scaleY(0)
+
+  // details[open] > div
+  // and
+  // details.open > div
+  // are broken -> only gets triggered on first open?
+  & > div.open
+    opacity: 1
+    transform: scaleY(1)
+    transform-origin: top
+    transition: opacity 0.5s, transform 0.5s
+
+  & > summary
+    list-style: none
+    cursor: pointer
+    font-size: 1.5rem
+    padding: 0.25em
+
+    &::marker,
+    &::-webkit-details-marker
+      display: none
+
+    &::before
+      @extend %arrow
+      @extend %arrow-right
+      margin-right: 0.5em
+
+    &:hover::before
+      @extend %hover-scale
+
+  &[open] > summary::before
+    @extend %arrow-down
