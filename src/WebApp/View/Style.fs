@@ -20,8 +20,6 @@ module Values =
 
 [<RequireQualifiedAccess>]
 module Class =
-  let [<Literal>] open' = "open"
-
   let [<Literal>] settingsGroup = "settings-group"
 
   let [<Literal>] icon = "icon"

@@ -175,20 +175,6 @@ $arrow-length: 1em
 
 
 details
-  & > div
-    opacity: 0
-    transform: scaleY(0)
-
-  // details[open] > div
-  // and
-  // details.open > div
-  // are broken -> only gets triggered on first open?
-  & > div.open
-    opacity: 1
-    transform: scaleY(1)
-    transform-origin: top
-    transition: opacity 0.5s, transform 0.5s
-
   & > summary
     list-style: none
     cursor: pointer

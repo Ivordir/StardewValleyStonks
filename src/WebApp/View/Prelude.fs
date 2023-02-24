@@ -270,10 +270,7 @@ let animatedDetails openDetails key (summaryContent: ReactElement) (children: Re
     onToggle (curry SetDetailsOpen key >> dispatch)
     prop.children [
       summary summaryContent
-      div [
-        if open' then className Class.open'
-        prop.children children
-      ]
+      children
     ]
   ]
 
