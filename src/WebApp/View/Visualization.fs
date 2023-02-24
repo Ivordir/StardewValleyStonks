@@ -980,6 +980,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
 
   let uiDispatch = props.Dispatch
   let dispatch = SetRanker >> props.Dispatch
+  let selectDispatch = Some >> SetSelectedCropAndFertilizer >> dispatch
   let data = app.Data
   let settings, ui = app.State
   let ranker = ui.Ranker
@@ -1033,7 +1034,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
   let crop = seed |> Option.defaultOrMap bestCrop (data.Crops.Find >> Choice1Of2)
   let fert = fertName |> Option.defaultOrMap bestFert (Option.map data.Fertilizers.Find >> Choice1Of2)
 
-  div [ className Class.summary; children [
+  fragment [
     button [
       className Class.back
       onClick (fun _ -> SetSelectedCropAndFertilizer None |> dispatch)
@@ -1054,7 +1055,8 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
               match opt with
               | Choice1Of2 crop -> Some (Crop.seed crop)
               | Choice2Of2 _ -> None
-            dispatch (SetSelectedCropAndFertilizer (Some (seed, fertName))))
+
+            selectDispatch (seed, fertName))
 
         ofStr " with "
 
@@ -1070,7 +1072,8 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
               match opt with
               | Choice1Of2 fert -> Some (Fertilizer.Opt.name fert)
               | Choice2Of2 _ -> None
-            dispatch (SetSelectedCropAndFertilizer (Some (seed, fert))))
+
+            selectDispatch (seed, fert))
       ]
 
       div
@@ -1102,7 +1105,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
         uiDispatch
 
     | _ -> emptyPairData pairData
-  ]]
+  ]
 
 
 let rankerOrSummary app dispatch =

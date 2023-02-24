@@ -63,7 +63,6 @@ module Class =
   let [<Literal>] graphControls = "graph-controls"
   let [<Literal>] pairImage = "pair-image"
   let [<Literal>] pairSelect = "pair-select"
-  let [<Literal>] summary = "summary"
   let [<Literal>] summaryControls = "summary-controls"
   let [<Literal>] back = "back"
 
