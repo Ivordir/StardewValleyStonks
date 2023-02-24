@@ -215,6 +215,7 @@ let [<ReactComponent>] Tabs (props: {|
   let label = props.Label
 
   let tabRefs = useRef (Array.create tabs.Length (None: Browser.Types.HTMLElement option))
+  let panelRef = useElementRef ()
 
   fragment [
     div [
@@ -242,8 +243,11 @@ let [<ReactComponent>] Tabs (props: {|
         ]))
     ]
     div [
+      prop.ref panelRef
       role "tabpanel"
       ariaLabelledBy (tabId label current)
+      onWheel (fun e ->
+        if panelRef.current |> Option.forall (fun x -> x.scrollHeight <= x.clientHeight) then handleEvent e)
       children [
         div [
           prop.id $"{lowerCase label}-{current |> Reflection.getCaseName |> lowerCase}"
