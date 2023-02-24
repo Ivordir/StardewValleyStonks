@@ -26,7 +26,6 @@ type private 'a Props = {|
 |}
 
 type private 'a State = {|
-  Focused: bool
   Hover: int option
   Scroll: bool
   Search: string
@@ -40,9 +39,6 @@ let [<Literal>] private optionId = "selected-option"
 // The app should only have at most one select list and one selected option present at any given time,
 // so the ids for these elements are not generated based off the given props.
 
-let private tryScroll (list: Browser.Types.HTMLElement) (index: int) (mode: string) =
-  list.children?item index |> Option.iter (fun elm -> elm?scrollIntoView {| block = mode |})
-
 let selectControl initialState inputRef (props: _ Props) (state: _ State) setState =
   div [
     className Class.selectControl
@@ -53,7 +49,6 @@ let selectControl initialState inputRef (props: _ Props) (state: _ State) setSta
         if state.Hover.IsSome then
           ariaControls listId
           ariaActiveDescendant optionId
-        onFocus (fun _ -> setState {| state with Focused = true |})
         onBlur (fun _ -> setState initialState)
 
         match props.ToString with
@@ -116,7 +111,6 @@ let selectList listRef clearHover (props: _ Props) (state: _ State) setState hov
             if state.Hover <> Some i then
               setState {|
                 state with
-                  Focused = true
                   Hover = Some i
                   Scroll = false
               |})
@@ -139,7 +133,6 @@ let [<ReactComponent>] private Select (props: _ Props) =
       props.Dispatch props.Options[index]
 
   let initialState = {|
-    Focused = false
     Hover = None
     Scroll = false
     Search = ""
@@ -160,9 +153,21 @@ let [<ReactComponent>] private Select (props: _ Props) =
     | None, Some _, Some input -> input.focus ()
     | _ -> ()
 
+    // manually scroll to avoid using scrollIntoView() which can scroll on parent elements
     match prev.Hover, state.Hover, listRef.current with
-    | None, Some _, Some list -> tryScroll list selectedIndex "center"
-    | Some _, Some i, Some list when state.Scroll -> tryScroll list i "nearest"
+    | None, Some _, Some list ->
+      list.children?item selectedIndex |> Option.iter (fun (elm: Browser.Types.HTMLElement) ->
+        let listBounds = list.getBoundingClientRect ()
+        let itemBounds = elm.getBoundingClientRect ()
+        list.scrollTop <- itemBounds.top - listBounds.top - (listBounds.height - itemBounds.height) / 2.0)
+    | Some _, Some i, Some list when state.Scroll ->
+      list.children?item i |> Option.iter (fun (elm: Browser.Types.HTMLElement) ->
+        let listBounds = list.getBoundingClientRect ()
+        let itemBounds = elm.getBoundingClientRect ()
+        if itemBounds.top < listBounds.top then
+          list.scrollBy (0, itemBounds.top - listBounds.top)
+        elif itemBounds.bottom > listBounds.bottom then
+          list.scrollBy (0, itemBounds.bottom - listBounds.bottom))
     | _ -> ())
 
   let setHover e index =
@@ -171,7 +176,6 @@ let [<ReactComponent>] private Select (props: _ Props) =
     if state.Hover <> index then
       setState {|
         state with
-          Focused = true
           Hover = index
           Scroll = true
       |}
@@ -180,7 +184,7 @@ let [<ReactComponent>] private Select (props: _ Props) =
 
   let clearHover e =
     handleEvent e
-    setState {| initialState with Focused = true |}
+    setState initialState
 
   div [
     className Class.select
