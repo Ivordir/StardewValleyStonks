@@ -265,8 +265,10 @@ let defaultUI = {
   OptimizationObjective = MaximizeGold
   SettingsTab = Crops
   OpenDetails = Set.ofArray [|
+    OpenDetails.CropFilters
     OpenDetails.Crops
     OpenDetails.Fertilizers
+    OpenDetails.Skills
     OpenDetails.RankerSummary
     OpenDetails.RankerGrowthCalendar
     OpenDetails.OptimizerSummary

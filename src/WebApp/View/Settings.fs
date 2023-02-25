@@ -15,96 +15,25 @@ open type React
 open Core.Operators
 open Core.ExtraTopLevelOperators
 
-module Skills =
-  let profession skills profession dispatch =
-    let selected = skills.Professions.Contains profession
-    label [
-      className [
-        Class.profession
-        if not (skills |> Skills.professionUnlocked profession) then Class.disabled
-      ]
-      children [
-        input [
-          prop.type'.checkbox
-          isChecked selected
-          onCheckedChange (curry SetProfession profession >> dispatch)
-        ]
-        Icon.profession profession
-      ]
-    ]
+let cropQualities qualities =
+  let qualities =
+    qualities
+    |> Qualities.indexed
+    |> Array.filter (fun (_, prob) -> prob > 0.0)
 
-  let cropQualities qualities =
-    let qualities =
-      qualities
-      |> Qualities.indexed
-      |> Array.filter (fun (_, prob) -> prob > 0.0)
-
-    let mapQualities (text: _ -> ReactElement) =
-      qualities |> Array.map (fun (quality, prob) ->
-        div [
-          className (quality |> Quality.name |> lowerCase)
-          style [ style.custom ("flexGrow", prob) ]
-          children (text prob)
-        ])
-
-    div [ className Class.cropQualities; children [
-      div [ className Class.cropQualitiesBars; children (mapQualities (konst none)) ]
-      div [ className Class.cropQualitiesProbs; children (mapQualities (percent2 >> ofStr)) ]
-    ]]
-
-  let skillBuffLevel skill dispatch =
-    div [ className Class.skillLevel; children [
-      Html.span [
-        labeled "Level" (Input.natWith (length.rem 2) None (Some Skill.maxLevel) skill.Level (SetLevel >> dispatch))
-        labeledHidden "Level" (Input.natRange 0u Skill.maxLevel skill.Level (SetLevel >> dispatch))
-      ]
-
-      labeled "Buff" (Input.nat (length.rem 2) skill.Buff (SetBuff >> dispatch))
-    ]]
-
-  let farming skills dispatch =
-    let farming = skills.Farming
-    div [ className Class.skill; children [
-      Icon.farming
-      skillBuffLevel farming (SetFarming >> dispatch)
-      div [ className Class.professions; children [
-        div (profession skills Tiller dispatch)
-        div [
-          profession skills Artisan dispatch
-          profession skills Agriculturist dispatch
-        ]
-      ]]
-      cropQualities (Skills.farmCropQualities skills)
-    ]]
-
-  let foraging skills dispatch =
-    let foraging = skills.Foraging
-    div [ className Class.skill; children [
-      Icon.foraging
-      skillBuffLevel foraging (SetForaging >> dispatch)
-      div [ className Class.professions; children [
-        div (profession skills Gatherer dispatch)
-        div (profession skills Botanist dispatch)
-      ]]
-      cropQualities (Skills.forageCropQualities skills)
-    ]]
-
-  let tab skills dispatch =
-    fragment [
-      farming skills dispatch
-      foraging skills dispatch
+  let mapQualities (text: _ -> ReactElement) =
+    qualities |> Array.map (fun (quality, prob) ->
       div [
-        Input.checkboxText
-          "Ignore Skill Level Unlocks"
-          skills.IgnoreSkillLevelRequirements
-          (SetIgnoreSkillLevelRequirements >> dispatch)
+        className (quality |> Quality.name |> lowerCase)
+        style [ style.custom ("flexGrow", prob) ]
+        children (text prob)
+      ])
 
-        Input.checkboxText
-          "Ignore Profession Conflicts"
-          skills.IgnoreProfessionConflicts
-          (SetIgnoreProfessionConflicts >> dispatch)
-      ]
-    ]
+  div [ className Class.cropQualities; children [
+    div [ className Class.cropQualitiesBars; children (mapQualities (konst none)) ]
+    div [ className Class.cropQualitiesProbs; children (mapQualities (percent2 >> ofStr)) ]
+  ]]
+
 
 let viewPrice price =
   fragment [
@@ -436,7 +365,8 @@ module Crops =
       then filters.Seasons |> Seasons.add season
       else filters.Seasons |> Seasons.remove season
 
-    div [
+
+    div [ className Class.cropFilters; children [
       input [
         className Class.inputBox
         placeholder "Search..."
@@ -447,26 +377,29 @@ module Crops =
 
       div [
         Input.checkboxText "In Season" filters.InSeason (SetInSeason >> dispatch)
-        Html.span [
-          if filters.InSeason then className Class.disabled
-          children (Enum.values |> Array.map (fun season ->
-            Input.checkboxWith
-              (Icon.season season)
-              (filters.Seasons |> Seasons.contains season)
-              (toggleSeason season >> SetSeasons >> dispatch)))
+        yield! (Enum.values |> Array.map (fun season ->
+          Html.span [
+            if filters.InSeason then className Class.disabled
+            children
+              (Input.checkboxWith
+                (Icon.season season)
+                (filters.Seasons |> Seasons.contains season)
+                (toggleSeason season >> SetSeasons >> dispatch))
+          ]
+        ))
+      ]
+
+      div [
+        selectFilter "Regrows" filters.Regrows (SetRegrows >> dispatch)
+        selectFilter "Giant" filters.Giant (SetGiant >> dispatch)
+        selectFilter "Forage" filters.Forage (SetForage >> dispatch)
+        button [
+          className Class.button
+          onClick (fun _ -> dispatch ClearFilters)
+          text "Clear"
         ]
       ]
-
-      selectFilter "Regrows" filters.Regrows (SetRegrows >> dispatch)
-      selectFilter "Giant" filters.Giant (SetGiant >> dispatch)
-      selectFilter "Forage" filters.Forage (SetForage >> dispatch)
-
-      button [
-        className Class.button
-        onClick (fun _ -> dispatch ClearFilters)
-        text "Clear"
-      ]
-    ]
+    ]]
 
   let tab app dispatch =
     let data = app.Data
@@ -477,23 +410,28 @@ module Crops =
     let crops = filteredCrops app |> Array.sortBy (sortKey data)
 
     fragment [
-      cropFilter cropTab.Filters (SetCropFilters >> cropTabDispatch)
+      detailsSection
+        ui.OpenDetails
+        OpenDetails.CropFilters
+        (ofStr "Filters")
+        (cropFilter cropTab.Filters (SetCropFilters >> cropTabDispatch))
+        uiDispatch
 
-      animatedDetails
+      detailsSection
         ui.OpenDetails
         OpenDetails.Crops
         (ofStr "Crops")
         (table data settings cropTab.CropSort crops dispatch)
         uiDispatch
 
-      animatedDetails
+      detailsSection
         ui.OpenDetails
         OpenDetails.Products
         (ofStr "Products")
         (products data settings cropTab crops dispatch)
         uiDispatch
 
-      animatedDetails
+      detailsSection
         ui.OpenDetails
         OpenDetails.Seeds
         (ofStr "Seeds")
@@ -537,7 +475,7 @@ module Fertilizers =
           Column.valueSortable (ofStr "Speed Bonus") Fertilizer.speed (percent >> ofStr)
 
           Column.valueSortable (ofStr "Crop Qualities") Fertilizer.quality (fun fertQuality ->
-            Skills.farmCropQualitiesFrom fertQuality settings.Game.Skills |> Skills.cropQualities)
+            Skills.farmCropQualitiesFrom fertQuality settings.Game.Skills |> cropQualities)
         |]
     ]
 
@@ -601,14 +539,14 @@ module Fertilizers =
     let fertilizers = data.Fertilizers.Values |> Seq.sortBy Fertilizer.name |> Array.ofSeq
 
     fragment [
-      animatedDetails
+      detailsSection
         ui.OpenDetails
         OpenDetails.Fertilizers
         (ofStr "Fertilizers")
         (table data settings ui.FertilizerSort fertilizers dispatch)
         uiDispatch
 
-      animatedDetails
+      detailsSection
         ui.OpenDetails
         OpenDetails.FertilizerPrices
         (ofStr "Prices")
@@ -617,7 +555,7 @@ module Fertilizers =
     ]
 
 
-module Misc =
+module Settings =
   let private date label (otherDate: Date) clamp (date: Date) dispatch =
     let clamp season day =
       if season = otherDate.Season
@@ -651,9 +589,85 @@ module Misc =
       date "End" startDate max endDate (SetEndDate >> dispatch)
     ]
 
+  let profession skills profession dispatch =
+    let selected = skills.Professions.Contains profession
+    label [
+      className [
+        Class.profession
+        if not (skills |> Skills.professionUnlocked profession) then Class.disabled
+      ]
+      children [
+        input [
+          prop.type'.checkbox
+          isChecked selected
+          onCheckedChange (curry SetProfession profession >> dispatch)
+        ]
+        Icon.profession profession
+      ]
+    ]
+
+  let skillBuffLevel skill dispatch =
+    div [ className Class.skillLevel; children [
+      Html.span [
+        labeled "Level" (Input.natWith (length.rem 2) None (Some Skill.maxLevel) skill.Level (SetLevel >> dispatch))
+        labeledHidden "Level" (Input.natRange 0u Skill.maxLevel skill.Level (SetLevel >> dispatch))
+      ]
+
+      labeled "Buff" (Input.nat (length.rem 2) skill.Buff (SetBuff >> dispatch))
+    ]]
+
+  let farming skills dispatch =
+    let farming = skills.Farming
+    div [ className Class.skill; children [
+      Icon.farming
+      skillBuffLevel farming (SetFarming >> dispatch)
+      div [ className Class.professions; children [
+        div (profession skills Tiller dispatch)
+        div [
+          profession skills Artisan dispatch
+          profession skills Agriculturist dispatch
+        ]
+      ]]
+      cropQualities (Skills.farmCropQualities skills)
+    ]]
+
+  let foraging skills dispatch =
+    let foraging = skills.Foraging
+    div [ className Class.skill; children [
+      Icon.foraging
+      skillBuffLevel foraging (SetForaging >> dispatch)
+      div [ className Class.professions; children [
+        div (profession skills Gatherer dispatch)
+        div (profession skills Botanist dispatch)
+      ]]
+      cropQualities (Skills.forageCropQualities skills)
+    ]]
+
+  let skills skills dispatch =
+    fragment [
+      farming skills dispatch
+      foraging skills dispatch
+      div [
+        Input.checkboxText
+          "Ignore Skill Level Unlocks"
+          skills.IgnoreSkillLevelRequirements
+          (SetIgnoreSkillLevelRequirements >> dispatch)
+
+        Input.checkboxText
+          "Ignore Profession Conflicts"
+          skills.IgnoreProfessionConflicts
+          (SetIgnoreProfessionConflicts >> dispatch)
+      ]
+    ]
+
   let multipliers multipliers dispatch =
-    div [ className Class.settingsGroup; children [
+    fragment [
       Input.checkboxText "Bear's Knowledge" multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
+
+      Input.checkboxText
+        "Apply Tiller to Foraged Grapes and Blackberries"
+        multipliers.TillerForForagedFruit
+        (SetTillerForForagedFruit >> dispatch)
 
       Select.options
         (length.rem 4)
@@ -662,15 +676,41 @@ module Misc =
         multipliers.ProfitMargin
         (SetProfitMargin >> dispatch)
       |> labeled "Profit Margin"
+    ]
+
+  let profit profit dispatch =
+    fragment [
+      Select.unitUnion
+        (length.rem 5)
+        profit.SeedStrategy
+        (SetSeedStrategy >> dispatch)
+      |> labeled "Seed Strategy"
+
+      Input.checkboxText "Pay For Fertilizer" profit.PayForFertilizer (SetPayForFertilizer >> dispatch)
 
       Input.checkboxText
-        "Apply Tiller to Foraged Grapes and Blackberries"
-        multipliers.TillerForForagedFruit
-        (SetTillerForForagedFruit >> dispatch)
-    ]]
+        "Pay For Destroyed Fertilizer"
+        profit.PayForDestroyedFertilizer
+        (SetPayForDestroyedFertilizer >> dispatch)
+    ]
 
-  let cropAmountSettings settings dispatch =
-    div [ className Class.settingsGroup; children [
+  let priceSettings settings dispatch =
+    fragment [
+      Input.checkboxText
+        "Joja Membership"
+        settings.Game.JojaMembership
+        (SetJojaMembership >> SetGameVariables >> dispatch)
+
+      multipliers settings.Game.Multipliers (SetMultipliers >> SetGameVariables >> dispatch)
+
+      profit settings.Profit (SetProfit >> dispatch)
+    ]
+
+  let cropSettings irrigated settings settingsDispatch =
+    let dispatch = SetCropAmount >> settingsDispatch
+    fragment [
+      Input.checkboxText "Irrigated" irrigated (SetIrrigated >> settingsDispatch)
+
       Html.span [
         Input.float
           (length.rem 4)
@@ -702,45 +742,67 @@ module Misc =
 
       Input.natWith (length.rem 2) None (Some CropAmount.maxLuckBuff) settings.LuckBuff (SetLuckBuff >> dispatch)
       |> labeled "Luck Buff"
-    ]]
+    ]
 
-  let mods data ui modData dispatch =
-    animatedDetails
-      ui.OpenDetails
-      OpenDetails.Mod
-      (ofStr "Mods")
-      (fragment [
-        let dispatch = SetModData >> SetGameVariables >> SetSettings >> dispatch
-        Input.checkboxText "Quality Products" modData.QualityProducts (SetQualityProducts >> dispatch)
-        ul [
-          if not modData.QualityProducts then className Class.disabled
-          children
-            (Crops.processors data
-            |> Array.filter ((<>) Processor.seedMaker)
-            |> Array.map (fun processor ->
-              li [
-                Input.checkboxWith
-                  (Icon.processor processor)
-                  (modData.QualityProcessors |> Set.contains processor)
-                  (curry SetQualityProcessors processor >> dispatch)
-              ]
-            ))
-        ]
-      ])
-      (SetUI >> dispatch)
+  let mods data modData dispatch =
+    fragment [
+      Input.checkboxText "Quality Products" modData.QualityProducts (SetQualityProducts >> dispatch)
+      ul [
+        if not modData.QualityProducts then className Class.disabled
+        children
+          (Crops.processors data
+          |> Array.filter ((<>) Processor.seedMaker)
+          |> Array.map (fun processor ->
+            li [
+              Input.checkboxWith
+                (Icon.processor processor)
+                (modData.QualityProcessors |> Set.contains processor)
+                (curry SetQualityProcessors processor >> dispatch)
+            ]
+          ))
+      ]
+    ]
 
-  let tab modsOpen data settings dispatch =
-    let appDispatch = dispatch
-    let dispatch = SetGameVariables >> SetSettings >> dispatch
+  let tab openDetails data settings dispatch =
+    let uiDispatch = SetUI >> dispatch
+    let settingsDispatch = SetSettings >> dispatch
+    let dispatch = SetGameVariables >> settingsDispatch
+
+    let game = settings.Game
+
     fragment [
       div [ className Class.date; children [
-        labeled "Location" (Select.unitUnion (length.rem 6) settings.Location (SetLocation >> dispatch))
-        dates settings.StartDate settings.EndDate dispatch
+        dates game.StartDate game.EndDate dispatch
+        labeled "Location" (Select.unitUnion (length.rem 6) game.Location (SetLocation >> dispatch))
       ]]
-      multipliers settings.Multipliers (SetMultipliers >> dispatch)
-      cropAmountSettings settings.CropAmount (SetCropAmount >> dispatch)
-      div (Input.checkboxText "Irrigated" settings.Irrigated (SetIrrigated >> dispatch))
-      mods data modsOpen settings.ModData appDispatch
+
+      detailsSection
+        openDetails
+        OpenDetails.Skills
+        (ofStr "Skills")
+        (skills game.Skills (SetSkills >> dispatch))
+        uiDispatch
+
+      detailsSection
+        openDetails
+        OpenDetails.Multipliers
+        (ofStr "Price Settings")
+        (priceSettings settings settingsDispatch)
+        uiDispatch
+
+      detailsSection
+        openDetails
+        OpenDetails.CropSettings
+        (ofStr "Crop Settings")
+        (cropSettings game.Irrigated game.CropAmount dispatch)
+        uiDispatch
+
+      detailsSection
+        openDetails
+        OpenDetails.Mod
+        (ofStr "Mods")
+        (mods data game.ModData (SetModData >> dispatch))
+        uiDispatch
     ]
 
 
@@ -797,7 +859,7 @@ module LoadSave =
   let importSave presets dispatch =
     Dialog.toggleEditWith
       "Import Save"
-      "Import Save Game"
+      (ofStr "Import Save Game")
       None
       (Option.bind snd >> Option.iter (fst >> LoadSaveGame >> dispatch))
       (fun _ save setSave ->
@@ -823,7 +885,7 @@ module LoadSave =
   let nuclearReset dispatch =
     Dialog.confirmAction
       "Nuclear Reset"
-      "Nuclear Reset"
+      (ofStr "Nuclear Reset")
       (fun () -> dispatch NuclearReset)
       (p "Note: This will reset Stardew Valley Stonks to its default settings, deleting all custom presets in the process.")
 
@@ -843,7 +905,7 @@ module LoadSave =
 
           Dialog.toggleEditWith
             "Edit"
-            "Rename"
+            (ofStr "Rename")
             preset.Name
             (curry RenamePreset i >> saveDispatch)
             (konst Input.text)
@@ -865,7 +927,7 @@ module LoadSave =
         children [
           Dialog.toggleEditWith
             "Save Current Settings"
-            "Save Current Settings As"
+            (ofStr "Save Current Settings As")
             "Untitled Settings"
             (fun name -> SavePreset (name, fst app.State) |> saveDispatch)
             (konst Input.text)
@@ -889,9 +951,8 @@ let section app dispatch =
   let settings, ui = app.State
   section [ prop.id "settings"; children [
     tabs "Settings" ui.SettingsTab (SetSettingsTab >> SetUI >> dispatch) (function
-      | Skills -> Skills.tab settings.Game.Skills (SetSkills >> SetGameVariables >> SetSettings >> dispatch)
       | Crops -> Crops.tab app dispatch
       | Fertilizers -> Fertilizers.tab app dispatch
-      | Misc -> Misc.tab ui app.Data settings.Game dispatch
-      | SettingsTab.LoadSettings -> LoadSave.tab app appDispatch)
+      | Settings -> Settings.tab ui.OpenDetails app.Data settings dispatch
+      | LoadSave -> LoadSave.tab app appDispatch)
   ]]

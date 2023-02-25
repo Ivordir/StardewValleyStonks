@@ -1087,7 +1087,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
 
     match crop, fert with
     | (Choice1Of2 crop | Choice2Of2 (Some crop)), (Choice1Of2 fert | Choice2Of2 (Some fert)) ->
-      animatedDetails
+      detailsSection
         ui.OpenDetails
         OpenDetails.RankerSummary
         (ofStr "Summary")
@@ -1097,7 +1097,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
           | XP -> SummaryTable.XP.ranker data settings timeNorm fert crop)
         uiDispatch
 
-      animatedDetails
+      detailsSection
         ui.OpenDetails
         OpenDetails.RankerGrowthCalendar
         (ofStr "Growth Calendar")
@@ -1129,7 +1129,7 @@ let private optimizerSummary openDetails data settings dispatch objective soluti
   fragment [
     match solution with
     | Some solution ->
-      animatedDetails
+      detailsSection
         openDetails
         OpenDetails.OptimizerSummary
         (ofStr "Summary")
@@ -1140,7 +1140,7 @@ let private optimizerSummary openDetails data settings dispatch objective soluti
           (objective, solution))
         dispatch
 
-      animatedDetails
+      detailsSection
         openDetails
         OpenDetails.OptimizerGrowthCalendar
         (ofStr "Growth Calendar")

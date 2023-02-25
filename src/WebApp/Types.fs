@@ -289,17 +289,20 @@ type OptimizationObjective =
 type SettingsTab =
   | Crops
   | Fertilizers
-  | Skills
-  | Misc
-  | [<CompiledName ("Load/Save")>] LoadSettings
+  | Settings
+  | [<CompiledName ("Load/Save")>] LoadSave
 
 [<RequireQualifiedAccess>]
 type OpenDetails =
-  | Fertilizers
-  | FertilizerPrices
+  | CropFilters
   | Crops
   | Products
   | Seeds
+  | Fertilizers
+  | FertilizerPrices
+  | Skills
+  | Multipliers
+  | CropSettings
   | Mod
   | RankerGrowthCalendar
   | RankerSummary

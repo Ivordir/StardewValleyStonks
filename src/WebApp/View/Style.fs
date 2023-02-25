@@ -21,6 +21,7 @@ module Values =
 [<RequireQualifiedAccess>]
 module Class =
   let [<Literal>] settingsGroup = "settings-group"
+  let [<Literal>] cropFilters = "crop-filters"
 
   let [<Literal>] icon = "icon"
   let [<Literal>] iconText = "icon-text"

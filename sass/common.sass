@@ -92,19 +92,6 @@ $arrow-length: 1em
     font-weight: 600
     content: ":"
 
-%focus-outline
-  outline: var(--border-thin) solid #d83700
-  outline-offset: var(--border-thin)
-
-:focus
-  @extend %focus-outline
-
-%hover-brightness
-  filter: brightness(1.15)
-
-%hover-scale
-  transform: scale(1.1)
-
 %button-unstyled
   padding: 0
   background: none
@@ -122,6 +109,19 @@ $arrow-length: 1em
 
   & > *
     image-rendering: initial
+
+%focus-outline
+  outline: var(--border-thin) solid #d83700
+  outline-offset: var(--border-thin)
+
+:focus
+  @extend %focus-outline
+
+%hover-brightness
+  filter: brightness(1.15)
+
+%hover-scale
+  transform: scale(1.1)
 
 
 :root
@@ -180,7 +180,7 @@ details
     list-style: none
     cursor: pointer
     font-size: 1.5rem
-    padding: 0.25em
+    padding: 0.5em 0.5em 0.25em 0.5em
 
     &::marker,
     &::-webkit-details-marker
@@ -194,5 +194,17 @@ details
     &:hover::before
       @extend %hover-scale
 
-  &[open] > summary::before
-    @extend %arrow-down
+    &:focus
+      outline-offset: calc(-1 * var(--border-thin))
+
+  & > div
+    display: flex
+    flex-direction: column
+    row-gap: 0.5em
+    padding: 0.5em
+
+  &[open]
+    margin-bottom: 0.5em
+
+    & > summary::before
+      @extend %arrow-down

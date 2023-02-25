@@ -268,14 +268,14 @@ let inline tabs label current dispatch tabpanel =
   |}
 
 
-let animatedDetails openDetails key (summaryContent: ReactElement) (children: ReactElement) dispatch =
+let detailsSection openDetails key (summaryContent: ReactElement) (children: ReactElement) dispatch =
   let open' = openDetails |> Set.contains key
   details [
     isOpen open'
     onToggle (curry SetDetailsOpen key >> dispatch)
     prop.children [
       summary summaryContent
-      children
+      div children
     ]
   ]
 
