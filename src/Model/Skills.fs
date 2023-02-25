@@ -21,7 +21,7 @@ type Fertilizer = {
 
 [<RequireQualifiedAccess>]
 module Fertilizer =
-  let [<Literal>] lossProbability = 0.1
+  let [<Literal>] destroyProbability = 0.1
   let [<Literal>] minSpeed = 0.0
 
   let name fertilizer = fertilizer.Name

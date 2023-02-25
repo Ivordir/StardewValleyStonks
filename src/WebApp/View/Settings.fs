@@ -536,9 +536,9 @@ module Fertilizers =
         if not settings.Profit.PayForFertilizer then className Class.disabled
         children [
           Input.checkboxText
-            "Replace Lost Fertilizer"
-            settings.Profit.ReplaceLostFertilizer
-            (SetReplaceLostFertilizer >> SetProfit >> dispatch)
+            "Pay For Destroyed Fertilizer"
+            settings.Profit.PayForDestroyedFertilizer
+            (SetPayForDestroyedFertilizer >> SetProfit >> dispatch)
         ]
       ]
 

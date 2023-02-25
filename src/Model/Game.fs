@@ -189,19 +189,19 @@ module Game =
     then CropAmount.giantCropProb vars.CropAmount
     else 0.0
 
-  let farmCropFertilizerLossProb vars crop =
+  let farmCropDestroyFertilizerProb vars crop =
     if crop.Giant && giantCropsPossible vars.Location
-    then Fertilizer.lossProbability * CropAmount.giantCropProb vars.CropAmount
+    then Fertilizer.destroyProbability * CropAmount.giantCropProb vars.CropAmount
     else 0.0
 
-  let forageCropFertilizerLossProb location =
+  let forageCropDestroyFertilizerProb location =
     if location = GingerIsland
-    then Fertilizer.lossProbability
+    then Fertilizer.destroyProbability
     else 0.0
 
-  let fertilizerLossProb vars = function
-    | FarmCrop crop -> farmCropFertilizerLossProb vars crop
-    | ForageCrop _ -> forageCropFertilizerLossProb vars.Location
+  let destroyFertilizerProb vars = function
+    | FarmCrop crop -> farmCropDestroyFertilizerProb vars crop
+    | ForageCrop _ -> forageCropDestroyFertilizerProb vars.Location
 
   let farmCropMainItemQuantity vars crop =
     if crop.Giant && giantCropsPossible vars.Location

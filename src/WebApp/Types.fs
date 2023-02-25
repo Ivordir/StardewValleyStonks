@@ -226,7 +226,7 @@ type SeedStrategy =
 type ProfitSettings = {
   SeedStrategy: SeedStrategy
   PayForFertilizer: bool
-  ReplaceLostFertilizer: bool
+  PayForDestroyedFertilizer: bool
 }
 
 type Settings = {

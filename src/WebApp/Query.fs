@@ -63,8 +63,8 @@ let timeNormalizationDivisor growthSpan crop = function
   | PerSeason -> float growthSpan.TotalDays / float Date.daysInSeason
 
 let replacedFertilizerPerHarvest settings crop =
-  if settings.Profit.ReplaceLostFertilizer
-  then Game.fertilizerLossProb settings.Game crop
+  if settings.Profit.PayForDestroyedFertilizer
+  then Game.destroyFertilizerProb settings.Game crop
   else 0.0
 
 let seedPriceValueFromVendor data settings vendor seed =

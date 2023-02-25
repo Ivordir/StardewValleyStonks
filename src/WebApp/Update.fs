@@ -71,7 +71,7 @@ type SelectionsMessage =
 type ProfitMessage =
   | SetSeedStrategy of SeedStrategy
   | SetPayForFertilizer of bool
-  | SetReplaceLostFertilizer of bool
+  | SetPayForDestroyedFertilizer of bool
 
 type SettingsMessage =
   | SetGameVariables of GameVariablesMessage
@@ -257,7 +257,7 @@ let profit msg profit =
   match msg with
   | SetSeedStrategy strategy -> { profit with SeedStrategy = strategy }
   | SetPayForFertilizer value -> { profit with PayForFertilizer = value }
-  | SetReplaceLostFertilizer value -> { profit with ReplaceLostFertilizer = value }
+  | SetPayForDestroyedFertilizer value -> { profit with PayForDestroyedFertilizer = value }
 
 let settings data msg (settings: Settings) =
   match msg with

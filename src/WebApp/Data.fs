@@ -197,7 +197,7 @@ let defaultSettings = {
   Profit = {
     SeedStrategy = BuyFirstSeed
     PayForFertilizer = true
-    ReplaceLostFertilizer = true
+    PayForDestroyedFertilizer = true
   }
 }
 
