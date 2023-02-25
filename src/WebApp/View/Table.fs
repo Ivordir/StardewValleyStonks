@@ -80,7 +80,10 @@ let private tableHeader key columns items sortCol ascending sortDispatch =
 
           th [
             scope "col"
-            if column.Disabled then className Class.disabled
+            className [
+              Class.columnSelect
+              if column.Disabled then Class.disabled
+            ]
             children [
               if keys.IsEmpty
               then Input.checkbox "Select All" false ignore
@@ -123,7 +126,10 @@ let private tableBody key columns items rowDisabled =
         fragment [
           column.Select |> ofOption (fun (selected, dispatch) ->
             td [
-              if column.Disabled then className Class.disabled
+              className [
+                Class.columnSelect
+                if column.Disabled then Class.disabled
+              ]
               children (selected key |> ofOption (fun selected ->
                 Input.checkbox "Select" selected (curry SetSelected key >> dispatch)))
             ])
@@ -203,10 +209,7 @@ let [<ReactComponent>] private CollapsibleTable (props: {|
   fragment [
     thead [
       tr [
-        th [
-          scope "col"
-          children (collapseButton "Expand All" "Collapse All" collapsed setCollapsed)
-        ]
+        td (collapseButton "Expand All" "Collapse All" collapsed setCollapsed)
         props.Header
       ]
     ]

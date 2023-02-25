@@ -14,8 +14,8 @@ module Values =
   let fontSize = int fontPx
 
   do
-    setPx "border-thin" (fontPx / 8.0)
-    setPx "border-med" (fontPx / 6.0)
+    setPx "border-thin" (max 1.0 (fontPx / 8.0))
+    setPx "border-med" (max 1.0 (fontPx / 6.0))
 
 
 [<RequireQualifiedAccess>]
@@ -65,7 +65,8 @@ module Class =
   let [<Literal>] summaryControls = "summary-controls"
   let [<Literal>] back = "back"
 
-  let [<Literal>] columnSort = "colunm-sort"
+  let [<Literal>] columnSelect = "column-select"
+  let [<Literal>] columnSort = "column-sort"
   let [<Literal>] collapseArrow = "collapse-arrow"
   let [<Literal>] expanded = "expanded"
   let [<Literal>] collapsed = "collapsed"

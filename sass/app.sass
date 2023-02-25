@@ -539,7 +539,15 @@ table, tr
 th, td
   // allows inner divs to take up full height
   height: 100%
+  text-align: left
   vertical-align: middle
+
+thead th:first-of-type,
+tfoot th:first-of-type
+  text-align: center
+
+thead th:first-of-type.column-sort > button
+  justify-content: center
 
 th, th > button
   font-weight: 500
@@ -551,22 +559,20 @@ tr
   &:nth-child(even)
     background: scale-color(#f9ba66, $lightness: 25%)
 
-tbody th
-  text-align: left
-
-th.colunm-sort
+.column-sort
   & > button
     @extend %button-unstyled
     width: 100%
     height: 100%
     display: flex
     align-items: center
-    justify-content: center
+    justify-content: start
+    padding: 0 0.25em
+    column-gap: 0.25em
 
   & > button::after
     @extend %arrow
     flex-shrink: 0
-    margin-left: 0.25em
 
   &[aria-sort=ascending] > button::after
     @extend %arrow-up
@@ -580,6 +586,9 @@ th.colunm-sort
   &:not([aria-sort]) > button:hover::after
     @extend %arrow-up
     opacity: 0.5
+
+.column-select
+  width: 0
 
 .collapse-arrow
   @extend %button-unstyled
@@ -644,14 +653,6 @@ tr
     // profit/xp column
     &:nth-last-child(2)
       min-width: 5em
-
-  // row header column in thead and tfoot
-  & th:nth-child(-n+2)
-    text-align: center
-
-  // row header column in tbody
-  & > tbody th:nth-child(-n+2)
-    text-align: left
 
 .input-items
   & > summary
