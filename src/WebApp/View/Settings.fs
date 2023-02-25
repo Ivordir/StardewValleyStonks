@@ -126,7 +126,15 @@ let private sortKeysByHighestCount table =
   |> Seq.map fst
   |> Array.ofSeq
 
-let private customColumn viewValue (editValue: _ -> _ -> ReactElement) defaultValue title key selection dispatch =
+let private customColumn
+  viewValue
+  (editValue: _ -> _ -> ReactElement)
+  defaultValue
+  (viewKey: _ -> ReactElement)
+  key
+  selection
+  dispatch
+  =
   Column.sortableOpt
     (ofStr "Custom")
     (fun item ->
@@ -136,7 +144,10 @@ let private customColumn viewValue (editValue: _ -> _ -> ReactElement) defaultVa
         value |> ofOption viewValue
 
         Dialog.toggleEdit
-          title
+          (fragment [
+            ofStr "Custom Price For "
+            viewKey key
+          ])
           (value |> Option.defaultValue defaultValue)
           (curry (if value.IsSome then EditCustom else AddCustom) key >> dispatch)
           (fun close v setValue ->
@@ -159,8 +170,8 @@ let private customColumn viewValue (editValue: _ -> _ -> ReactElement) defaultVa
         else None)
       (SelectCustom >> dispatch)
 
-let private customPriceColumn title key selection dispatch =
-  customColumn ofNat (Input.nat (length.rem 7.5)) 0u title key selection dispatch
+let private customPriceColumn viewKey key selection dispatch =
+  customColumn ofNat (Input.nat (length.rem 7.5)) 0u viewKey key selection dispatch
 
 module Crops =
   let seedVendors = refMemo (fun (data: GameData) -> sortKeysByHighestCount data.SeedPrices)
@@ -294,7 +305,7 @@ module Crops =
                   (fun preserveQuality -> setState (price, preserveQuality))
               ])
             (0u, false)
-            "Custom Sell Price"
+            (Icon.itemId data)
             Item.id
             settings.Selected.CustomSellPrices
             (SetCustomSellPrice >> selectDispatch)
@@ -318,18 +329,18 @@ module Crops =
       |> labeled "Seed Strategy"
 
       tableFromColumms
-        Crop.seed
-        crops
+        id
+        (crops |> Array.map Crop.seed)
         seedSort
         (SetSeedSort >> SetCropTabState >> SetUI >> dispatch)
         [|
-          Column.sortable (ofStr "Crop") (Icon.crop data) (Crop.name data.Items.Find)
+          Column.sortable (ofStr "Seed") (Icon.seed data) (toItem >> data.Items.Find >> Item.name)
           |> Column.markAsKey
 
           yield! seedVendors data |> Array.map (fun vendor ->
             Column.valueOptSortable
               (Icon.vendor vendor)
-              (Crop.seed >> Query.seedPriceValueFromVendor data settings vendor)
+              (Query.seedPriceValueFromVendor data settings vendor)
               (ofOption ofNat)
             |> Column.withSelect
               (fun seed ->
@@ -339,8 +350,8 @@ module Crops =
               (curry SelectSeedPrices vendor >> selectDispatch))
 
           customPriceColumn
-            "Custom Seed Price"
-            Crop.seed
+            (Icon.seed data)
+            id
             settings.Selected.CustomSeedPrices
             (SetCustomSeedPrice >> selectDispatch)
 
@@ -353,7 +364,7 @@ module Crops =
             (SelectUseSeedMaker >> selectDispatch)
           |> Column.withDisabled (not (Game.processorUnlocked data settings.Game Processor.seedMaker))
 
-          Column.create (ofStr "Raw Seeds") (konst none)
+          Column.create (ofStr "Raw") (konst none)
           |> Column.withSelect
             (fun seed ->
               if Crop.makesOwnSeeds data.Crops[seed]
@@ -361,7 +372,7 @@ module Crops =
               else None)
             (SelectUseHarvestedSeeds >> selectDispatch)
 
-          Column.create (ofStr "Forage Seeds") (konst none)
+          Column.create (ofStr "Forage") (konst none)
           |> Column.withSelect
             (fun seed ->
               if Crop.isForage data.Crops[seed]
@@ -564,7 +575,7 @@ module Fertilizers =
               (curry SelectFertilizerPrices vendor >> selectDispatch))
 
           customPriceColumn
-            "Custom Fertilizer Price"
+            Icon.fertilizerName
             id
             settings.Selected.CustomFertilizerPrices
             (SetCustomFertilizerPrice >> selectDispatch)

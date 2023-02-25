@@ -14,7 +14,7 @@ open Core.Operators
 
 let [<ReactComponent>] private Dialog (props: {|
     Cancel: bool
-    Title: string
+    Title: ReactElement
     Close: bool -> unit
     Children: (unit -> unit) -> ReactElement
   |}) =
@@ -48,7 +48,7 @@ let [<ReactComponent>] private Dialog (props: {|
   ]
 
 let [<ReactComponent>] private EditDialogToggle (props: {|
-    Title: string
+    Title: ReactElement
     Toggle: (unit -> unit) -> ReactElement
     State: 'a
     Dispatch: 'a -> unit
