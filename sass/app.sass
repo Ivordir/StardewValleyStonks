@@ -206,9 +206,12 @@ input[type=range]
 
 .checkbox
   cursor: pointer
+  position: relative
 
   & > input
     @extend %hidden-input
+    top: 0
+    left: 0
 
   & > input + img
     content: common.ui-img("Checkbox")
