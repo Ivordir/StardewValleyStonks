@@ -307,7 +307,7 @@ type OpenDetails =
   | OptimizerSummary
 
 type CropFilters = {
-  NameSearch: string
+  ItemNameSearch: string
   InSeason: bool
   Seasons: Seasons
   Regrows: bool option
@@ -318,9 +318,9 @@ type CropFilters = {
 [<RequireQualifiedAccess>]
 module CropFilters =
   let empty = {
-    NameSearch = ""
+    ItemNameSearch = ""
     InSeason = true
-    Seasons = Seasons.All
+    Seasons = Seasons.None
     Regrows = None
     Giant = None
     Forage = None

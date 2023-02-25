@@ -391,10 +391,21 @@ module Crops =
     let filters = ui.CropTab.Filters
 
     let optionFilter projection filterValue = filterValue |> Option.map (fun value -> projection >> (=) value)
+
+    let nameFilter =
+      if filters.ItemNameSearch = "" then None else
+      let itemNameMatchesSearch =
+        data.Items.Find
+        >> Item.name
+        >> lowerCase
+        >> strContains (lowerCase filters.ItemNameSearch)
+
+      Some (fun crop ->
+        crop |> Crop.seed |> toItem |> itemNameMatchesSearch
+        || crop |> Crop.items |> Seq.exists itemNameMatchesSearch)
+
     let filters = List.choose id [
-      if filters.NameSearch = ""
-      then None
-      else Some (fun crop -> (crop |> Crop.name data.Items.Find |> lowerCase).Contains (lowerCase filters.NameSearch))
+      nameFilter
       Some (if filters.InSeason then Game.cropIsInSeason settings.Game else Crop.growsInSeasons filters.Seasons)
       filters.Regrows |> optionFilter Crop.regrows
       filters.Giant |> optionFilter Crop.giant
@@ -429,9 +440,9 @@ module Crops =
       input [
         className Class.inputBox
         placeholder "Search..."
-        prop.type'.text
-        prop.value filters.NameSearch
-        onChange (SetNameSearch >> dispatch)
+        prop.type'.search
+        prop.value filters.ItemNameSearch
+        onChange (SetItemNameSearch >> dispatch)
       ]
 
       div [

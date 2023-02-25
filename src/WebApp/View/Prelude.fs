@@ -35,6 +35,7 @@ let percent value = sprintf "%.0f%%" (value * 100.0)
 let percent2 value = sprintf "%.2f%%" (value * 100.0)
 
 let inline lowerCase (str: string) = str.ToLower ()
+let inline strContains (text: string) (str: string) = str.Contains text
 let upperFirstChar (text: string) = text[0..0].ToUpper() + text[1..]
 
 let pluralize text = text + "s"

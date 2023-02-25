@@ -76,7 +76,7 @@ assert // valid ratios (no zeros)
 let private settingsCoders = Extra.empty |> Extra.withCustom Encode.date Decode.date
 
 let private encodeCropFilters filters = Encode.object [
-  nameof filters.NameSearch, Encode.string filters.NameSearch
+  nameof filters.ItemNameSearch, Encode.string filters.ItemNameSearch
   nameof filters.Seasons, Encode.seasons filters.Seasons
   nameof filters.InSeason, Encode.bool filters.InSeason
   if filters.Giant.IsSome then
@@ -90,7 +90,7 @@ let private encodeCropFilters filters = Encode.object [
 let private decodeCropFilters =
   let u = Unchecked.defaultof<CropFilters>
   Decode.object (fun get -> {
-    NameSearch = get.Required.Field (nameof u.NameSearch) Decode.string
+    ItemNameSearch = get.Required.Field (nameof u.ItemNameSearch) Decode.string
     Seasons = get.Required.Field (nameof u.Seasons) Decode.seasons
     InSeason = get.Required.Field (nameof u.InSeason) Decode.bool
     Regrows = get.Optional.Field (nameof u.Regrows) Decode.bool
