@@ -695,8 +695,8 @@ let private emptyPairData (pairData: PairData) =
 let rankBy (label: ReactElement) (metric: RankMetric) (timeNorm: TimeNormalization) dispatchMetric dispatchTimeNorm =
   fragment [
     label
-    labeledHidden "Metric" (Select.unitUnion (length.rem 3) metric dispatchMetric)
-    labeledHidden "Time Normalization" (Select.unitUnion (length.rem 6) timeNorm dispatchTimeNorm)
+    labeledHidden "Metric" (Select.unitUnion (length.em 3) metric dispatchMetric)
+    labeledHidden "Time Normalization" (Select.unitUnion (length.em 6) timeNorm dispatchTimeNorm)
   ]
 
 
@@ -926,7 +926,7 @@ module Ranker =
       div [ className Class.graphControls; children [
         Html.label [
           ofStr "Rank"
-          Select.unitUnion (length.rem 5) ranker.RankItem (SetRankItem >> dispatch)
+          Select.unitUnion (length.em 5) ranker.RankItem (SetRankItem >> dispatch)
         ]
 
         rankBy
@@ -1045,7 +1045,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
       div [
         selectSpecificOrBest
           "Crop"
-          (length.rem 12)
+          (length.em 12)
           (Crop.name data.Items.Find)
           (Icon.crop data)
           cropOptions
@@ -1062,7 +1062,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
 
         selectSpecificOrBest
           "Fertilizer"
-          (length.rem 15)
+          (length.em 15)
           Fertilizer.Opt.displayName
           (Option.defaultOrMap (ofStr "No Fertilizer") Icon.fertilizer)
           fertilizerOptions
@@ -1189,7 +1189,7 @@ let section app dispatch =
       | Ranker -> rankerOrSummary app uiDispatch
       | Optimizer ->
         fragment [
-          labeled "Maximize" (Select.unitUnion (length.rem 3) ui.OptimizationObjective (SetOptimizationObjective >> uiDispatch))
+          labeled "Maximize" (Select.unitUnion (length.em 3) ui.OptimizationObjective (SetOptimizationObjective >> uiDispatch))
           Optimizer {|
             OpenDetails = ui.OpenDetails
             Data = app.Data

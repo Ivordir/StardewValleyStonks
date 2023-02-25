@@ -100,7 +100,7 @@ let private customColumn
       (SelectCustom >> dispatch)
 
 let private customPriceColumn viewKey key selection dispatch =
-  customColumn ofNat (Input.nat (length.rem 7.5)) 0u viewKey key selection dispatch
+  customColumn ofNat (Input.nat (length.em 7.5)) 0u viewKey key selection dispatch
 
 module Crops =
   let seedVendors = refMemo (fun (data: GameData) -> sortKeysByHighestCount data.SeedPrices)
@@ -184,7 +184,7 @@ module Crops =
     let normalizedPrices = cropTab.NormalizeProductPrices
 
     fragment [
-      labeled "View with quality" (Select.enum (length.rem 4) productQuality (SetProductQuality >> cropTabDispatch))
+      labeled "View with quality" (Select.enum (length.em 4) productQuality (SetProductQuality >> cropTabDispatch))
 
       Input.checkboxText "Normalize Prices" normalizedPrices (SetNormalizeProductPrices >> cropTabDispatch)
 
@@ -227,7 +227,7 @@ module Crops =
             (Query.customSellPriceValue productQuality >> ofNat)
             (fun (price, preserveQuality) setState ->
               fragment [
-                Input.nat (length.rem 2) price (fun price -> setState (price, preserveQuality))
+                Input.nat (length.em 2) price (fun price -> setState (price, preserveQuality))
                 Input.checkboxText
                   "Scale with quality"
                   preserveQuality
@@ -252,7 +252,7 @@ module Crops =
         (SetJojaMembership >> SetGameVariables >> settingsDispatch)
 
       Select.unitUnion
-        (length.rem 5)
+        (length.em 5)
         settings.Profit.SeedStrategy
         (SetSeedStrategy >> SetProfit >> settingsDispatch)
       |> labeled "Seed Strategy"
@@ -349,7 +349,7 @@ module Crops =
 
   let private selectFilter name value dispatch =
     Select.options
-      (length.rem 2)
+      (length.em 2)
       (function
         | Some true -> ofStr "Yes"
         | Some false -> ofStr "No"
@@ -566,7 +566,7 @@ module Settings =
       labeled $"{label} Date" none
 
       Select.enum
-        (length.rem 4)
+        (length.em 4)
         date.Season
         (fun season -> dispatch {
           Season = season
@@ -575,7 +575,7 @@ module Settings =
       |> labeledHidden $"{label} Season"
 
       Input.natWith
-        (length.rem 2)
+        (length.em 2)
         (Date.firstDay |> clamp date.Season |> Some)
         (Date.lastDay |> clamp date.Season |> Some)
         date.Day
@@ -609,11 +609,11 @@ module Settings =
   let skillBuffLevel skill dispatch =
     div [ className Class.skillLevel; children [
       Html.span [
-        labeled "Level" (Input.natWith (length.rem 2) None (Some Skill.maxLevel) skill.Level (SetLevel >> dispatch))
+        labeled "Level" (Input.natWith (length.em 2) None (Some Skill.maxLevel) skill.Level (SetLevel >> dispatch))
         labeledHidden "Level" (Input.natRange 0u Skill.maxLevel skill.Level (SetLevel >> dispatch))
       ]
 
-      labeled "Buff" (Input.nat (length.rem 2) skill.Buff (SetBuff >> dispatch))
+      labeled "Buff" (Input.nat (length.em 2) skill.Buff (SetBuff >> dispatch))
     ]]
 
   let farming skills dispatch =
@@ -670,7 +670,7 @@ module Settings =
         (SetTillerForForagedFruit >> dispatch)
 
       Select.options
-        (length.rem 4)
+        (length.em 4)
         (fun margin -> ofStr (if margin = 1.0 then "Normal" else percent margin))
         [| 1.0..(-0.25)..0.25 |]
         multipliers.ProfitMargin
@@ -681,7 +681,7 @@ module Settings =
   let profit profit dispatch =
     fragment [
       Select.unitUnion
-        (length.rem 5)
+        (length.em 5)
         profit.SeedStrategy
         (SetSeedStrategy >> dispatch)
       |> labeled "Seed Strategy"
@@ -713,7 +713,7 @@ module Settings =
 
       Html.span [
         Input.float
-          (length.rem 4)
+          (length.em 4)
           10e-4
           (Some CropAmount.minPossibleGiantCropsPerTile)
           (Some CropAmount.maxPossibleGiantCropsPerTile)
@@ -731,7 +731,7 @@ module Settings =
       ]
 
       Select.options
-        (length.rem 4)
+        (length.em 4)
         (Option.defaultOrMap "None" ToolLevel.name >> ofStr)
         (Enum.values |> Array.map Some |> Array.append [| None |])
         settings.ShavingToolLevel
@@ -740,7 +740,7 @@ module Settings =
 
       Input.checkboxText "Special Charm" settings.SpecialCharm (SetSpecialCharm >> dispatch)
 
-      Input.natWith (length.rem 2) None (Some CropAmount.maxLuckBuff) settings.LuckBuff (SetLuckBuff >> dispatch)
+      Input.natWith (length.em 2) None (Some CropAmount.maxLuckBuff) settings.LuckBuff (SetLuckBuff >> dispatch)
       |> labeled "Luck Buff"
     ]
 
@@ -773,7 +773,7 @@ module Settings =
     fragment [
       div [ className Class.date; children [
         dates game.StartDate game.EndDate dispatch
-        labeled "Location" (Select.unitUnion (length.rem 6) game.Location (SetLocation >> dispatch))
+        labeled "Location" (Select.unitUnion (length.em 6) game.Location (SetLocation >> dispatch))
       ]]
 
       detailsSection
