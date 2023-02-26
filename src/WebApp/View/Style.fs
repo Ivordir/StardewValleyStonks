@@ -31,7 +31,6 @@ module Class =
   let [<Literal>] ok = "ok"
   let [<Literal>] cancel = "cancel"
   let [<Literal>] edit = "edit"
-  let [<Literal>] delete = "delete"
 
   let [<Literal>] fileInput = "file-input"
   let [<Literal>] fileDropzone = "file-dropzone"

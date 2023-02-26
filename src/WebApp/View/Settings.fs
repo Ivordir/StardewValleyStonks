@@ -178,9 +178,10 @@ module Crops =
     let normalizedPrices = cropTab.NormalizeProductPrices
 
     fragment [
-      labeled "View with quality" (Select.enum (length.em 4) productQuality (SetProductQuality >> cropTabDispatch))
-
-      Input.checkboxText "Normalize Prices" normalizedPrices (SetNormalizeProductPrices >> cropTabDispatch)
+      div [ className Class.settingsGroup; children [
+        labeled "View with quality" (Select.enum (length.em 4) productQuality (SetProductQuality >> cropTabDispatch))
+        Input.checkboxText "Normalize Prices" normalizedPrices (SetNormalizeProductPrices >> cropTabDispatch)
+      ]]
 
       let price =
         if normalizedPrices
@@ -240,16 +241,18 @@ module Crops =
     let selectDispatch = SetSelections >> settingsDispatch
 
     fragment [
-      Input.checkboxText
-        "Joja Membership"
-        settings.Game.JojaMembership
-        (SetJojaMembership >> SetGameVariables >> settingsDispatch)
+      div [ className Class.settingsGroup; children [
+        Select.unitUnion
+          (length.em 5)
+          settings.Profit.SeedStrategy
+          (SetSeedStrategy >> SetProfit >> settingsDispatch)
+        |> labeled "Seed Strategy"
 
-      Select.unitUnion
-        (length.em 5)
-        settings.Profit.SeedStrategy
-        (SetSeedStrategy >> SetProfit >> settingsDispatch)
-      |> labeled "Seed Strategy"
+        Input.checkboxText
+          "Joja Membership"
+          settings.Game.JojaMembership
+          (SetJojaMembership >> SetGameVariables >> settingsDispatch)
+      ]]
 
       tableFromColumms
         id
@@ -481,20 +484,22 @@ module Fertilizers =
     let fertilizers = fertilizers |> Array.map Fertilizer.name
 
     fragment [
-      Input.checkboxText
-        "Pay for Fertilizer"
-        settings.Profit.PayForFertilizer
-        (SetPayForFertilizer >> SetProfit >> dispatch)
+      div [ className Class.settingsGroup; children [
+        Input.checkboxText
+          "Pay for Fertilizer"
+          settings.Profit.PayForFertilizer
+          (SetPayForFertilizer >> SetProfit >> dispatch)
 
-      Html.span [
-        if not settings.Profit.PayForFertilizer then className Class.disabled
-        children [
-          Input.checkboxText
-            "Pay For Destroyed Fertilizer"
-            settings.Profit.PayForDestroyedFertilizer
-            (SetPayForDestroyedFertilizer >> SetProfit >> dispatch)
+        Html.span [
+          if not settings.Profit.PayForFertilizer then className Class.disabled
+          children [
+            Input.checkboxText
+              "Pay For Destroyed Fertilizer"
+              settings.Profit.PayForDestroyedFertilizer
+              (SetPayForDestroyedFertilizer >> SetProfit >> dispatch)
+          ]
         ]
-      ]
+      ]]
 
       tableFromColumms
         id
@@ -638,7 +643,7 @@ module Settings =
     fragment [
       farming skills dispatch
       foraging skills dispatch
-      div [
+      div [ className Class.settingsGroup; children [
         Input.checkboxText
           "Ignore Skill Level Unlocks"
           skills.IgnoreSkillLevelRequirements
@@ -648,7 +653,7 @@ module Settings =
           "Ignore Profession Conflicts"
           skills.IgnoreProfessionConflicts
           (SetIgnoreProfessionConflicts >> dispatch)
-      ]
+      ]]
     ]
 
   let multipliers multipliers dispatch =
@@ -762,7 +767,7 @@ module Settings =
     let game = settings.Game
 
     fragment [
-      div [ className Class.date; children [
+      div [ className Class.settingsGroup; children [
         dates game.StartDate game.EndDate dispatch
         labeled "Location" (Select.unitUnion (length.em 6) game.Location (SetLocation >> dispatch))
       ]]

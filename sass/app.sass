@@ -483,10 +483,6 @@ input[type=range]
     justify-content: center
     align-items: center
 
-.settings-group
-  display: flex
-  flex-direction: column
-
 .edit
   float: right
 
@@ -503,6 +499,16 @@ input[type=range]
   &:hover::before
     @extend %hover-scale
 
+.settings-group
+  display: flex
+  flex-wrap: wrap
+  align-items: center
+  column-gap: 2em
+  row-gap: 1em
+  padding: 0.5em
+
+.date > :last-child
+  margin-left: 0.5em
 
 .crop-qualities
   $transition: flex-grow 0.75s
@@ -546,10 +552,12 @@ input[type=range]
   display: flex
   flex-direction: column
   row-gap: 1em
+  width: max-content
 
   & > div
     display: flex
-    column-gap: 2em
+    column-gap: 1.5em
+    justify-content: space-between
 
 
 table, tr
