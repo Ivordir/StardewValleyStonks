@@ -493,24 +493,25 @@ input[type=range]
 
   width: 100%
 
-  &-bars
-    height: 1rem
+  & > div
     display: flex
 
-    & > div
-      transition: $transition
-      background-color: var(--color)
+    &:first-child
+      height: 1rem
 
-  &-probs
-    height: 1rem
-    display: flex
-    gap: 1rem
+      & > div
+        transition: $transition
+        background-color: var(--color)
 
-    & > div
-      transition: $transition
-      flex-basis: min-content
-      text-align: center
-      color: var(--color)
+    &:last-child
+      height: 1rem
+      gap: 1rem
+
+      & > div
+        transition: $transition
+        flex-basis: min-content
+        text-align: center
+        color: var(--color)
 
 .quality
   display: inline-block

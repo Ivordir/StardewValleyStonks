@@ -16,24 +16,18 @@ open Core.Operators
 open Core.ExtraTopLevelOperators
 
 let cropQualities qualities =
-  let qualities =
-    qualities
-    |> Qualities.indexed
-    |> Array.filter (fun (_, prob) -> prob > 0.0)
-
-  let mapQualities (text: _ -> ReactElement) =
-    qualities |> Array.map (fun (quality, prob) ->
-      div [
-        className (quality |> Quality.name |> lowerCase)
-        style [ style.custom ("flexGrow", prob) ]
-        children (text prob)
-      ])
+  let qualities = Qualities.indexed qualities
+  let mapQualities (text: _ -> string) = Array.map (fun (quality, prob) ->
+    div [
+      className (quality |> Quality.name |> lowerCase)
+      style [ style.custom ("flexGrow", prob) ]
+      prop.text (text prob)
+    ])
 
   div [ className Class.cropQualities; children [
-    div [ className Class.cropQualitiesBars; children (mapQualities (konst none)) ]
-    div [ className Class.cropQualitiesProbs; children (mapQualities (percent2 >> ofStr)) ]
+    div (qualities |> mapQualities (konst ""))
+    div (qualities |> Array.filter (fun (_, prob) -> prob > 0.0) |> mapQualities percent2)
   ]]
-
 
 let viewPrice price =
   fragment [
