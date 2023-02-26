@@ -91,12 +91,13 @@ input
   font-family: inherit
   font-size: inherit
 
-input[type=search]
-  max-width: 80ch
-
 input[type=range]
-  $scale: 3
-  $height: 6px * $scale
+  $scale: 1.5
+
+  @function fromPx($px)
+    @return calc(var(--border-thin) * $px * $scale)
+
+  $height: fromPx(6)
 
   -webkit-appearance: none
   background: transparent
@@ -114,13 +115,10 @@ input[type=range]
     box-shadow: none
     border: none
     border-radius: 0
-    width: 10px * $scale
+    width: fromPx(10)
     height: $height
-    image-rendering: pixelated
     background: common.ui-img("Range Thumb")
     background-size: contain
-    background-repeat: no-repeat
-    background-position: center
 
   &::-webkit-slider-thumb
     -webkit-appearance: none
@@ -131,10 +129,11 @@ input[type=range]
 
   @mixin track
     height: $height
-    image-rendering: pixelated
+    $width: 2
+    $img-scale: 11
     border-image-source: common.ui-img("Range Track")
-    border-image-slice: 2 fill
-    border-image-width: 2px * $scale
+    border-image-slice: ($img-scale * $width) fill
+    border-image-width: fromPx($width)
 
   &::-webkit-slider-runnable-track
     @include track
@@ -188,11 +187,12 @@ input[type=range]
 
 .input-box
   background: none
-  image-rendering: pixelated
+
+  $img-scale: 6
   border-image-source: common.ui-img("Input Box")
-  border-image-slice: 3 3 2 2 fill
+  border-image-slice: ($img-scale * 3) ($img-scale * 3) ($img-scale * 2) ($img-scale * 2) fill
   border-image-width: 0.5rem
-  padding: 0.5rem
+  padding: 0.625em 0.5em 0.5em 0.5em
 
   &::-webkit-outer-spin-button,
   &::-webkit-inner-spin-button
