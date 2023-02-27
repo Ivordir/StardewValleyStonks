@@ -96,7 +96,7 @@ let private customColumn
 let private customPriceColumn viewKey key selection dispatch =
   customColumn
     ofNat
-    (fun value setValue -> Input.nat (length.em 3) value setValue |> labeledHidden "Price")
+    (fun value setValue -> labeledHidden "Price" (Input.nat (length.em 3) value setValue))
     0u
     viewKey
     key
@@ -912,10 +912,10 @@ module LoadSave =
 
             Dialog.toggleEditWith
               "Edit"
-              (ofStr "Rename")
+              (ofStr $"Rename Preset '{preset.Name}'")
               preset.Name
               (curry RenamePreset i >> saveDispatch)
-              (konst Input.text)
+              (fun _ name setName -> labeled "Name" (Input.text name setName))
 
             button [
               className Class.button
