@@ -693,7 +693,7 @@ let private emptyPairData (pairData: PairData) =
   ]
 
 let rankBy (label: ReactElement) (metric: RankMetric) (timeNorm: TimeNormalization) dispatchMetric dispatchTimeNorm =
-  fragment [
+  div [
     label
     labeledHidden "Metric" (Select.unitUnion (length.em 3) metric dispatchMetric)
     labeledHidden "Time Normalization" (Select.unitUnion (length.em 6) timeNorm dispatchTimeNorm)
@@ -1041,7 +1041,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
       text "Back"
     ]
 
-    div [ className Class.summaryControls; children [
+    div [ prop.id "summary-controls"; children [
       div [
         selectSpecificOrBest
           "Crop"
@@ -1058,7 +1058,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
 
             selectDispatch (seed, fertName))
 
-        ofStr " with "
+        Html.span " with "
 
         selectSpecificOrBest
           "Fertilizer"
@@ -1078,7 +1078,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
 
       div
         (rankBy
-          (labeled "Show" none)
+          (Html.span "Show")
           metric
           timeNorm
           (fun metric -> setState (metric, timeNorm))
