@@ -610,35 +610,43 @@ module Settings =
       labeled "Buff" (Input.nat (length.em 2) skill.Buff (SetBuff >> dispatch))
     ]]
 
-  let farming skills dispatch =
-    let farming = skills.Farming
+  let skill skills skill professions qualities icon levelMsg dispatch =
     div [ className Class.skill; children [
-      Icon.farming
-      skillBuffLevel farming (SetFarming >> dispatch)
-      div [ className Class.professions; children [
-        profession skills Tiller dispatch
-        profession skills Artisan dispatch
-        profession skills Agriculturist dispatch
-      ]]
-      cropQualities (Skills.farmCropQualities skills)
+      icon
+      skillBuffLevel skill (levelMsg >> dispatch)
+      div [
+        className Class.professions
+        children (professions |> Array.map (fun prof -> profession skills prof dispatch))
+      ]
+      cropQualities (qualities skills)
     ]]
 
+  let farming skills dispatch =
+    skill
+      skills
+      skills.Farming
+      Profession.farmingProfessions
+      Skills.farmCropQualities
+      Icon.farming
+      SetFarming
+      dispatch
+
   let foraging skills dispatch =
-    let foraging = skills.Foraging
-    div [ className Class.skill; children [
+    skill
+      skills
+      skills.Foraging
+      Profession.foragingProfessions
+      Skills.forageCropQualities
       Icon.foraging
-      skillBuffLevel foraging (SetForaging >> dispatch)
-      div [ className Class.professions; children [
-        profession skills Gatherer dispatch
-        profession skills Botanist dispatch
-      ]]
-      cropQualities (Skills.forageCropQualities skills)
-    ]]
+      SetForaging
+      dispatch
 
   let skills skills dispatch =
     fragment [
       farming skills dispatch
+
       foraging skills dispatch
+
       div [ className Class.settingsGroup; children [
         Input.checkboxText
           "Ignore Skill Level Unlocks"

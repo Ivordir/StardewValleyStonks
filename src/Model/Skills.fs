@@ -135,6 +135,10 @@ type Profession =
   | Gatherer
   | Botanist
 
+module Profession =
+  let farmingProfessions = [| Tiller; Artisan; Agriculturist |]
+  let foragingProfessions = [| Gatherer; Botanist |]
+
 
 type Skills = {
   Farming: Skill
