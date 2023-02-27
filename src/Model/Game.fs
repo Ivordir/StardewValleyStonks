@@ -158,7 +158,7 @@ module GameVariables =
     JojaMembership = false
     Irrigated = false
     StartDate = { Season = Season.Spring; Day = Date.firstDay }
-    EndDate = { Season = Season.Fall; Day = Date.lastDay }
+    EndDate = { Season = Season.Winter; Day = Date.lastDay }
     Location = Farm
   }
 

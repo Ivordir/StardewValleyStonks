@@ -231,7 +231,7 @@ module SummaryTable =
     let quantity = quantity |> toPrecision |> ofStr
     rowCells
       itemCell
-      none
+      (ofStr "???")
       quantity
       (ofStr "???")
       (if seeds then quantity else none)

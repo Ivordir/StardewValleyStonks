@@ -180,7 +180,7 @@ module Crops =
     fragment [
       div [ className Class.settingsGroup; children [
         labeled "View with quality" (Select.enum (length.em 4) productQuality (SetProductQuality >> cropTabDispatch))
-        Input.checkboxText "Normalize Prices" normalizedPrices (SetNormalizeProductPrices >> cropTabDispatch)
+        Input.checkboxText "Show Normalized Prices" normalizedPrices (SetNormalizeProductPrices >> cropTabDispatch)
       ]]
 
       let price =
@@ -469,7 +469,7 @@ module Fertilizers =
             (Fertilizer.name >> Query.Price.fertilizerMinVendorAndPrice data settings >> viewPrice)
             (Fertilizer.name >> Query.Price.fertilizerMinPrice data settings)
 
-          Column.valueSortable (ofStr "Speed Bonus") Fertilizer.speed (percent >> ofStr)
+          Column.valueSortable (ofStr "Growth Rate") Fertilizer.speed (percent >> ofStr)
 
           Column.valueSortable (ofStr "Crop Qualities") Fertilizer.quality (fun fertQuality ->
             Skills.farmCropQualitiesFrom fertQuality settings.Game.Skills |> cropQualities)
