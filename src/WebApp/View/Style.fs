@@ -33,7 +33,6 @@ module Class =
   let [<Literal>] edit = "edit"
 
   let [<Literal>] fileInput = "file-input"
-  let [<Literal>] fileDropzone = "file-dropzone"
   let [<Literal>] inputBox = "input-box"
   let [<Literal>] checkbox = "checkbox"
 

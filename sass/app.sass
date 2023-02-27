@@ -5,6 +5,13 @@
   opacity: 0
   position: absolute
 
+%zebra-striping
+  &:nth-child(odd)
+    background-color: #f9ba66
+
+  &:nth-child(even)
+    background-color: scale-color(#f9ba66, $lightness: 25%)
+
 %square-button
   @extend %button-unstyled
   background-size: contain
@@ -81,6 +88,22 @@ dialog
   padding: 1rem
   min-width: 15rem
   max-width: calc(min(80ch, 40vw))
+
+  display: flex
+  flex-direction: column
+  row-gap: 1em
+  align-items: center
+
+  & > h1,
+  & > p
+    margin: 0
+
+  & > div
+    width: 100%
+    display: flex
+    align-items: center
+    justify-content: space-between
+    column-gap: 1em
 
 button
   font-family: inherit
@@ -588,6 +611,39 @@ input[type=range]
     justify-content: space-between
 
 
+#settings-load\/save
+  row-gap: 1em
+
+  & > div
+    display: flex
+    column-gap: 1em
+    justify-content: center
+
+  & > div:first-child
+    flex-direction: column
+    align-items: center
+    row-gap: 0.5em
+
+    & > span:first-child
+      font-size: 1.5rem
+
+    & > ul
+      border: black solid var(--border-thin)
+
+      & > li
+        @extend %zebra-striping
+        display: grid
+        grid-template-columns: minmax(min-content, 20em) max-content
+        align-items: center
+        column-gap: 1.5em
+        padding: 1em
+
+        & > div:last-child
+          display: grid
+          grid-template-columns: repeat(3, 1fr)
+          gap: 0.5em
+
+
 table, tr
   // ignored by browser, but needed for td and th 100% height
   height: 1px
@@ -613,11 +669,7 @@ th, th > button
   font-weight: 500
 
 tr
-  &:nth-child(odd)
-    background-color: #f9ba66
-
-  &:nth-child(even)
-    background-color: scale-color(#f9ba66, $lightness: 25%)
+  @extend %zebra-striping
 
 .column-sort
   & > button

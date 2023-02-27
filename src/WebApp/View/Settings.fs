@@ -890,59 +890,62 @@ module LoadSave =
       (fun () -> dispatch NuclearReset)
       (p "Note: This will reset Stardew Valley Stonks to its default settings, deleting all custom presets in the process.")
 
+  let presets presets loadDispatch saveDispatch =
+    div [
+      Html.span "Presets"
+      ul (presets |> List.mapi (fun i preset ->
+        li [
+          viewPreset preset
+
+          div [
+            button [
+              className Class.button
+              onClick (fun _ -> loadDispatch preset.Settings)
+              text "Load"
+            ]
+
+            Dialog.toggleEditWith
+              "Edit"
+              (ofStr "Rename")
+              preset.Name
+              (curry RenamePreset i >> saveDispatch)
+              (konst Input.text)
+
+            button [
+              className Class.button
+              onClick (fun _ -> DeletePreset i |> saveDispatch)
+              text "Delete"
+            ]
+          ]
+        ]
+      ))
+    ]
+
   let tab app dispatch =
     let saveDispatch = SetPresets >> dispatch
     let loadDispatch = LoadSettings >> SetState >> dispatch
     fragment [
-      ul (app.Presets |> List.mapi (fun i preset ->
-        li [
-          ofStr preset.Name
-
-          button [
-            className Class.button
-            onClick (fun _ -> loadDispatch preset.Settings)
-            text "Load"
-          ]
-
-          Dialog.toggleEditWith
-            "Edit"
-            (ofStr "Rename")
-            preset.Name
-            (curry RenamePreset i >> saveDispatch)
-            (konst Input.text)
-
-          button [
-            className Class.button
-            onClick (fun _ -> DeletePreset i |> saveDispatch)
-            text "Delete"
-          ]
-        ]
-      ))
+      presets app.Presets loadDispatch saveDispatch
 
       div [
-        style [
-          style.display.flex
-          style.flexDirection.column
-          style.width.maxContent
+        Dialog.toggleEditWith
+          "Save Current Settings"
+          (ofStr "New Preset")
+          "Untitled Preset"
+          (fun name -> SavePreset (name, fst app.State) |> saveDispatch)
+          (fun _ name setName -> labeled "Name" (Input.text name setName))
+
+        importSave app.Presets saveDispatch
+      ]
+
+      div [
+        button [
+          className Class.button
+          onClick (fun _ -> loadDispatch Data.defaultSettings)
+          text "Reset Settings"
         ]
-        children [
-          Dialog.toggleEditWith
-            "Save Current Settings"
-            (ofStr "Save Current Settings As")
-            "Untitled Settings"
-            (fun name -> SavePreset (name, fst app.State) |> saveDispatch)
-            (konst Input.text)
 
-          importSave app.Presets saveDispatch
-
-          button [
-            className Class.button
-            onClick (fun _ -> loadDispatch Data.defaultSettings)
-            text "Reset Settings"
-          ]
-
-          nuclearReset dispatch
-        ]
+        nuclearReset dispatch
       ]
     ]
 
