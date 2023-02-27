@@ -94,7 +94,29 @@ let private customColumn
       (SelectCustom >> dispatch)
 
 let private customPriceColumn viewKey key selection dispatch =
-  customColumn ofNat (Input.nat (length.em 7.5)) 0u viewKey key selection dispatch
+  customColumn
+    ofNat
+    (fun value setValue -> Input.nat (length.em 3) value setValue |> labeledHidden "Price")
+    0u
+    viewKey
+    key
+    selection
+    dispatch
+
+let private priceColumns prices selected custom priceValue icon vendors selectMsg customMsg dispatch =
+  vendors |> Array.map (fun vendor ->
+    Column.valueOptSortable
+      (Icon.NoText.vendor vendor)
+      (priceValue vendor)
+      (ofOption ofNat)
+    |> Column.withSelect
+      (fun key ->
+        if prices |> Table.find key |> Table.containsKey vendor
+        then Some (selected |> Map.find key |> Set.contains vendor)
+        else None)
+      (curry selectMsg vendor >> dispatch))
+  |> Array.insertEnd (customPriceColumn icon id custom (customMsg >> dispatch))
+
 
 module Crops =
   let seedVendors = refMemo (fun (data: GameData) -> sortKeysByHighestCount data.SeedPrices)
@@ -263,23 +285,17 @@ module Crops =
           Column.sortable (ofStr "Seed") (Icon.seed data) (toItem >> data.Items.Find >> Item.name)
           |> Column.markAsKey
 
-          yield! seedVendors data |> Array.map (fun vendor ->
-            Column.valueOptSortable
-              (Icon.NoText.vendor vendor)
-              (Query.seedPriceValueFromVendor data settings vendor)
-              (ofOption ofNat)
-            |> Column.withSelect
-              (fun seed ->
-                if data.SeedPrices[seed].ContainsKey vendor
-                then Some (settings.Selected.SeedPrices[seed].Contains vendor)
-                else None)
-              (curry SelectSeedPrices vendor >> selectDispatch))
-
-          customPriceColumn
-            (Icon.seed data)
-            id
-            settings.Selected.CustomSeedPrices
-            (SetCustomSeedPrice >> selectDispatch)
+          yield!
+            priceColumns
+              data.SeedPrices
+              settings.Selected.SeedPrices
+              settings.Selected.CustomSeedPrices
+              (Query.seedPriceValueFromVendor data settings)
+              (Icon.seed data)
+              (seedVendors data)
+              SelectSeedPrices
+              SetCustomSeedPrice
+              selectDispatch
 
           Column.create (Icon.NoText.processor Processor.seedMaker) (konst none)
           |> Column.withSelect
@@ -510,23 +526,17 @@ module Fertilizers =
           Column.valueSortable (ofStr "Fertilizer") id Icon.fertilizerName
           |> Column.markAsKey
 
-          yield! fertilizerVendors data |> Array.map (fun vendor ->
-            Column.valueOptSortable
-              (Icon.vendor vendor)
-              (data.FertilizerPrices.Find >> Table.tryFind vendor)
-              (ofOption ofNat)
-            |> Column.withSelect
-              (fun fertilizer ->
-                if data.FertilizerPrices[fertilizer].ContainsKey vendor
-                then Some (settings.Selected.FertilizerPrices[fertilizer].Contains vendor)
-                else None)
-              (curry SelectFertilizerPrices vendor >> selectDispatch))
-
-          customPriceColumn
-            Icon.fertilizerName
-            id
-            settings.Selected.CustomFertilizerPrices
-            (SetCustomFertilizerPrice >> selectDispatch)
+          yield!
+            priceColumns
+              data.FertilizerPrices
+              settings.Selected.FertilizerPrices
+              settings.Selected.CustomFertilizerPrices
+              (fun vendor -> data.FertilizerPrices.Find >> Table.tryFind vendor)
+              Icon.fertilizerName
+              (fertilizerVendors data)
+              SelectFertilizerPrices
+              SetCustomFertilizerPrice
+              selectDispatch
         |]
     ]
 
