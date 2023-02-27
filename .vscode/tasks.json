@@ -18,7 +18,7 @@
           "activeOnStart": true
         },
         "pattern": {
-          "regexp": "^🚨 Build failed$",
+          "regexp": "🚨 Build failed",
         }
       },
       "dependsOn": [ "Pandoc", "Fable" ]
@@ -38,7 +38,7 @@
           "activeOnStart": true
         },
         "pattern": {
-          "regexp": "^🚨 Build failed$",
+          "regexp": "🚨 Build failed",
         }
       },
       "dependsOn": [ "Fable" ]
