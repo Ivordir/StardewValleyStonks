@@ -40,6 +40,7 @@ module Class =
   let [<Literal>] disabled = "disabled"
 
   let [<Literal>] cropQualities = "crop-qualities"
+  let [<Literal>] preset = "preset"
 
   let [<Literal>] skill = "skill"
   let [<Literal>] skillLevel = "skill-level"

@@ -803,22 +803,33 @@ module Settings =
 
 
 module LoadSave =
-  let saveFileInput setSave =
-    div [
+  let viewPreset preset =
+    div [ className Class.preset; children [
+      Html.span preset.Name
+      if preset.UniqueId.IsSome then
+        let startDate = preset.Settings.Game.StartDate
+        Html.span $"{Season.name startDate.Season} {startDate.Day}"
+    ]]
+
+  let saveFileInput save setSave =
+    div [ className Class.fileInput; children [
       let loadFile (file: Browser.Types.File) =
         file.text().``then`` (fun text -> Some (file.name, Data.loadSaveGame text) |> setSave) |> ignore
 
-      label [ className Class.fileInput; children [
-        ofStr "Choose Save File"
-        input [
-          prop.type'.file
-          onChange loadFile
-          autoFocus true
+      div [
+        label [
+          ofStr "Choose Save File"
+          input [
+            prop.type'.file
+            onChange loadFile
+            autoFocus true
+          ]
         ]
-      ]]
+
+        save |> ofOption viewPreset
+      ]
 
       div [
-        className Class.fileDropzone
         onDrop (fun e ->
           handleEvent e
           if e.dataTransfer.files.length > 0 then
@@ -827,7 +838,7 @@ module LoadSave =
         onDragOver handleEvent
         text "or drag the file here"
       ]
-    ]
+    ]]
 
   let saveFileMessages presets = ofOption (fun (fileName, preset) ->
     fragment [
@@ -837,12 +848,6 @@ module LoadSave =
       match preset with
       | None -> ofStr "Failed to load the save game."
       | Some (preset, missing: string array) ->
-        div [
-          Html.span preset.Name
-          let startDate = preset.Settings.Game.StartDate
-          Html.span $"{Season.name startDate.Season} {startDate.Day}"
-        ]
-
         if missing.Length > 0 then
           ofStr "Warning: failed to load the following data from the save game:"
           ul (missing |> Array.map li)
@@ -874,7 +879,7 @@ module LoadSave =
             ofStr "."
           ]
 
-          saveFileInput setSave
+          saveFileInput (save |> Option.bind snd |> Option.map fst) setSave
           saveFileMessages presets save
         ])
 

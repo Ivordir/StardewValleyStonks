@@ -332,21 +332,43 @@ input[type=range]
   &:hover
     @extend %hover-brightness
 
-.file
-  &-dropzone
+
+.preset
+  display: flex
+  align-items: baseline
+  justify-content: space-between
+  column-gap: 1em
+
+  & > span:first-child
+    font-size: 1.25rem
+
+.file-input
+  display: block
+
+  & > div:first-child
+    display: flex
+    align-items: center
+    column-gap: 1em
+
+    & > label
+      display: inline-block
+      @extend .button
+      user-select: none
+      margin-bottom: 0.5em
+
+      & > input
+        @extend %hidden-input
+
+      &:focus-within
+        @extend %focus-outline
+
+  & > div:last-child
+    display: flex
+    align-items: center
+    justify-content: center
+    border: black solid var(--border-thin)
     background: lightgray
-    height: 5rem
-
-  &-input
-    display: inline-block
-    @extend button
-
-    & > input
-      @extend %hidden-input
-
-    &:focus-within
-      @extend %focus-outline
-
+    height: 10rem
 
 .professions
   display: grid
