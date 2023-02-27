@@ -133,7 +133,7 @@ module Crops =
     |> Seq.sortWith (Option.noneMaxCompareBy data.ProcessorUnlockLevel.TryFind)
     |> Array.ofSeq)
 
-  let table (data: GameData) settings cropSort crops dispatch =
+  let table data settings cropSort crops dispatch =
     let selectDispatch = SelectCrops >> SetSelections >> SetSettings >> dispatch
 
     tableFromColummsWithRowDisable
@@ -244,7 +244,9 @@ module Crops =
             (Query.customSellPriceValue productQuality >> ofNat)
             (fun (price, preserveQuality) setState ->
               fragment [
-                Input.nat (length.em 2) price (fun price -> setState (price, preserveQuality))
+                Input.nat (length.em 3) price (fun price -> setState (price, preserveQuality))
+                |> labeledHidden "Price"
+
                 Input.checkboxText
                   "Scale with quality"
                   preserveQuality
@@ -258,7 +260,7 @@ module Crops =
         |]
     ]
 
-  let seeds (data: GameData) settings seedSort crops dispatch =
+  let seeds data settings seedSort crops dispatch =
     let settingsDispatch = SetSettings >> dispatch
     let selectDispatch = SetSelections >> settingsDispatch
 
@@ -336,11 +338,11 @@ module Crops =
 
     let nameFilter =
       if filters.ItemNameSearch = "" then None else
-      let itemNameMatchesSearch =
-        data.Items.Find
-        >> Item.name
-        >> lowerCase
-        >> strContains (lowerCase filters.ItemNameSearch)
+      let itemNameMatchesSearch name =
+        data.Items[name]
+        |> Item.name
+        |> lowerCase
+        |> strContains (lowerCase filters.ItemNameSearch)
 
       Some (fun crop ->
         crop |> Crop.seed |> toItem |> itemNameMatchesSearch
@@ -420,6 +422,7 @@ module Crops =
     let cropTab = ui.CropTab
     let uiDispatch = SetUI >> dispatch
     let cropTabDispatch = SetCropTabState >> uiDispatch
+
     let crops = filteredCrops app |> Array.sortBy (sortKey data)
 
     fragment [
@@ -492,7 +495,7 @@ module Fertilizers =
         |]
     ]
 
-  let prices data settings fertPriceSort fertilizers dispatch =
+  let prices (data: GameData) settings fertPriceSort fertilizers dispatch =
     let uiDispatch = SetUI >> dispatch
     let dispatch = SetSettings >> dispatch
     let selectDispatch = SetSelections >> dispatch
@@ -688,7 +691,7 @@ module Settings =
       |> labeled "Profit Margin"
     ]
 
-  let profit profit dispatch =
+  let profitSettings profit dispatch =
     fragment [
       Select.unitUnion
         (length.em 5)
@@ -704,16 +707,16 @@ module Settings =
         (SetPayForDestroyedFertilizer >> dispatch)
     ]
 
-  let priceSettings settings dispatch =
+  let priceSettings game profit dispatch =
     fragment [
       Input.checkboxText
         "Joja Membership"
-        settings.Game.JojaMembership
+        game.JojaMembership
         (SetJojaMembership >> SetGameVariables >> dispatch)
 
-      multipliers settings.Game.Multipliers (SetMultipliers >> SetGameVariables >> dispatch)
+      multipliers game.Multipliers (SetMultipliers >> SetGameVariables >> dispatch)
 
-      profit settings.Profit (SetProfit >> dispatch)
+      profitSettings profit (SetProfit >> dispatch)
     ]
 
   let cropSettings irrigated settings settingsDispatch =
@@ -747,6 +750,7 @@ module Settings =
   let mods data modData dispatch =
     fragment [
       Input.checkboxText "Quality Products" modData.QualityProducts (SetQualityProducts >> dispatch)
+
       ul [
         if not modData.QualityProducts then className Class.disabled
         children
@@ -763,12 +767,10 @@ module Settings =
       ]
     ]
 
-  let tab openDetails data settings dispatch =
+  let tab openDetails data game profit dispatch =
     let uiDispatch = SetUI >> dispatch
     let settingsDispatch = SetSettings >> dispatch
     let dispatch = SetGameVariables >> settingsDispatch
-
-    let game = settings.Game
 
     fragment [
       div [ className Class.settingsGroup; children [
@@ -787,7 +789,7 @@ module Settings =
         openDetails
         OpenDetails.Multipliers
         (ofStr "Price Settings")
-        (priceSettings settings settingsDispatch)
+        (priceSettings game profit settingsDispatch)
         uiDispatch
 
       detailsSection
@@ -894,7 +896,7 @@ module LoadSave =
       (fun () -> dispatch NuclearReset)
       (p "Note: This will reset Stardew Valley Stonks to its default settings, deleting all custom presets in the process.")
 
-  let presets presets loadDispatch saveDispatch =
+  let presetList presets loadDispatch saveDispatch =
     div [
       Html.span "Presets"
       ul (presets |> List.mapi (fun i preset ->
@@ -925,21 +927,22 @@ module LoadSave =
       ))
     ]
 
-  let tab app dispatch =
+  let tab presets settings dispatch =
     let saveDispatch = SetPresets >> dispatch
     let loadDispatch = LoadSettings >> SetState >> dispatch
+
     fragment [
-      presets app.Presets loadDispatch saveDispatch
+      presetList presets loadDispatch saveDispatch
 
       div [
         Dialog.toggleEditWith
           "Save Current Settings"
           (ofStr "New Preset")
           "Untitled Preset"
-          (fun name -> SavePreset (name, fst app.State) |> saveDispatch)
+          (fun name -> SavePreset (name, settings) |> saveDispatch)
           (fun _ name setName -> labeled "Name" (Input.text name setName))
 
-        importSave app.Presets saveDispatch
+        importSave presets saveDispatch
       ]
 
       div [
@@ -957,10 +960,11 @@ let section app dispatch =
   let appDispatch = dispatch
   let dispatch = SetState >> dispatch
   let settings, ui = app.State
+
   section [ prop.id "settings"; children [
     tabs "Settings" ui.SettingsTab (SetSettingsTab >> SetUI >> dispatch) (function
       | Crops -> Crops.tab app dispatch
       | Fertilizers -> Fertilizers.tab app dispatch
-      | Settings -> Settings.tab ui.OpenDetails app.Data settings dispatch
-      | LoadSave -> LoadSave.tab app appDispatch)
+      | Settings -> Settings.tab ui.OpenDetails app.Data settings.Game settings.Profit dispatch
+      | LoadSave -> LoadSave.tab app.Presets settings appDispatch)
   ]]
