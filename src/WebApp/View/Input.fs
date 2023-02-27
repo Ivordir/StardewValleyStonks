@@ -99,6 +99,24 @@ let float width precision min max value dispatch =
     Dispatch = dispatch
   |}
 
+let private numberWithRange label number range =
+  Html.span [ className Class.numberAndRange; children [
+    labeled label number
+    labeledHidden label range
+  ]]
+
+let floatWithRange label width precision min max value dispatch =
+  numberWithRange
+    label
+    (float width precision (Some min) (Some max) value dispatch)
+    (floatRange precision min max value dispatch)
+
+let natWithRange label width min max value dispatch =
+  numberWithRange
+    label
+    (natWith width (Some min) (Some max) value dispatch)
+    (natRange min max value dispatch)
+
 
 let text (value: string) (dispatch: string -> unit) =
   input [

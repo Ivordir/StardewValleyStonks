@@ -606,11 +606,7 @@ module Settings =
 
   let skillBuffLevel skill dispatch =
     div [ className Class.skillLevel; children [
-      Html.span [
-        labeled "Level" (Input.natWith (length.em 2) None (Some Skill.maxLevel) skill.Level (SetLevel >> dispatch))
-        labeledHidden "Level" (Input.natRange 0u Skill.maxLevel skill.Level (SetLevel >> dispatch))
-      ]
-
+      Input.natWithRange "Level" (length.em 2) 0u Skill.maxLevel skill.Level (SetLevel >> dispatch)
       labeled "Buff" (Input.nat (length.em 2) skill.Buff (SetBuff >> dispatch))
     ]]
 
@@ -707,24 +703,14 @@ module Settings =
     fragment [
       Input.checkboxText "Irrigated" irrigated (SetIrrigated >> settingsDispatch)
 
-      Html.span [
-        Input.float
-          (length.em 4)
-          10e-4
-          (Some CropAmount.minPossibleGiantCropsPerTile)
-          (Some CropAmount.maxPossibleGiantCropsPerTile)
-          settings.PossibleGiantCropsPerTile
-          (SetPossibleGiantCropsPerTile >> dispatch)
-        |> labeled "Average Possible Giant Crops Per Tile"
-
-        Input.floatRange
-          10e-4
-          CropAmount.minPossibleGiantCropsPerTile
-          CropAmount.maxPossibleGiantCropsPerTile
-          settings.PossibleGiantCropsPerTile
-          (SetPossibleGiantCropsPerTile >> dispatch)
-        |> labeledHidden "Average Possible Giant Crops Per Tile"
-      ]
+      Input.floatWithRange
+        "Average Possible Giant Crops Per Tile"
+        (length.em 4)
+        10e-4
+        CropAmount.minPossibleGiantCropsPerTile
+        CropAmount.maxPossibleGiantCropsPerTile
+        settings.PossibleGiantCropsPerTile
+        (SetPossibleGiantCropsPerTile >> dispatch)
 
       Select.options
         (length.em 4)

@@ -33,6 +33,7 @@ module Class =
 
   let [<Literal>] fileInput = "file-input"
   let [<Literal>] inputBox = "input-box"
+  let [<Literal>] numberAndRange = "number-and-range"
   let [<Literal>] checkbox = "checkbox"
 
   let [<Literal>] disabled = "disabled"
