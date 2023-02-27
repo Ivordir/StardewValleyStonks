@@ -256,7 +256,10 @@ let [<ReactComponent>] Tabs (props: {|
       role "tabpanel"
       ariaLabelledBy (tabId label current)
       onWheel (fun e ->
-        if panelRef.current |> Option.forall (fun x -> x.scrollHeight <= x.clientHeight) then handleEvent e)
+        if panelRef.current |> Option.forall (fun x ->
+          x.scrollHeight <= x.clientHeight
+          && Browser.Dom.window?getComputedStyle(x)?getPropertyValue("overflow-y") <> "hidden")
+        then handleEvent e)
       children [
         div [
           prop.id $"{lowerCase label}-{current |> Reflection.getCaseName |> lowerCase}"
