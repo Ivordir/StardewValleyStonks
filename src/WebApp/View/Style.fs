@@ -15,7 +15,7 @@ module Values =
 
   do
     setPx "border-thin" (max 1.0 (fontPx / 8.0))
-    setPx "border-med" (max 1.0 (fontPx / 6.0))
+    setPx "border-med" (max 2.0 (fontPx / 6.0))
 
 
 [<RequireQualifiedAccess>]

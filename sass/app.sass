@@ -49,9 +49,7 @@ main
   box-sizing: border-box
 
   & > section
-    min-width: min-content
-    flex-basis: 0
-    flex-grow: 1
+    width: 50%
     display: flex
     flex-direction: column
     overflow: hidden
@@ -64,18 +62,11 @@ main
       overflow: auto
       overscroll-behavior: contain
 
+#settings
+  min-width: 42.5em
+
 footer
   scroll-snap-align: end
-
-@media (max-aspect-ratio: 1)
-  body
-    max-height: unset
-
-  main
-    display: block
-
-  .graph
-    height: 50vh
 
 ul
   list-style: none
@@ -198,6 +189,32 @@ input[type=range]
     flex-grow: 1
     display: flex
     flex-direction: column
+
+
+@media (max-width: 550px)
+  :root
+    font-size: 50%
+
+  html
+    scroll-snap-type: none
+
+  body
+    background-attachment: fixed
+    --border-thin: 1px
+    --border-med: 2px
+
+  main
+    height: unset
+    display: block
+
+    & > section
+      width: initial
+
+  #settings
+    margin-top: 1em
+
+  .graph
+    height: 50vh
 
 
 .label-hidden
