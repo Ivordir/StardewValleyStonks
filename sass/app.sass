@@ -50,17 +50,9 @@ main
 
   & > section
     width: 50%
-    display: flex
-    flex-direction: column
+    display: grid
+    grid-template-rows: max-content
     overflow: hidden
-
-    & > [role=tabpanel]
-      @extend %border-box
-      flex-grow: 1
-      display: flex
-      flex-direction: column
-      overflow: auto
-      overscroll-behavior: contain
 
 #settings
   min-width: 42.5em
@@ -183,17 +175,20 @@ input[type=range]
 
 [role=tabpanel]
   @extend %border-box
+  overflow: auto
+  overscroll-behavior: contain
 
   & > div
     padding: 1em
-    flex-grow: 1
+    height: 100%
+    box-sizing: border-box
     display: flex
     flex-direction: column
 
 
 @media (max-width: 550px)
   :root
-    font-size: 50%
+    font-size: calc(max(50%, 2vw))
 
   html
     scroll-snap-type: none
@@ -209,6 +204,7 @@ input[type=range]
 
     & > section
       width: initial
+      min-height: calc(50vh - 2rem)
 
   [role=tabpanel]
     overflow: hidden
@@ -217,7 +213,7 @@ input[type=range]
     margin-top: 1em
 
   .graph
-    height: 50vh
+    height: 0
 
 
 .label-hidden
@@ -521,7 +517,7 @@ input[type=range]
 
 .graph
   flex-grow: 1
-  overflow: hidden
+  min-height: 0
 
   &-controls
     display: flex
