@@ -101,9 +101,10 @@ $arrow-length: 1em
 
 %border-box
   image-rendering: pixelated
+  $img-scale: 4
   border-image-source: ui-img("Border Box")
-  border-image-slice: 12 fill
-  border-image-width: 0.75rem
+  border-image-slice: ($img-scale * 4) fill
+  border-image-width: 1rem
   border-image-outset: 0.75rem
   margin: 0.75rem
 
@@ -131,6 +132,7 @@ $arrow-length: 1em
 body
   margin: 0
   min-height: 100vh
+  image-rendering: pixelated
   background-image: ui-img("Background")
   background-size: cover
   background-position: center center
@@ -139,6 +141,9 @@ body
   & > span // noscript
     text-align: center
     margin-top: 1rem
+
+  & > *
+    image-rendering: initial
 
 header
   font-size: 2.5rem

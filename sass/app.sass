@@ -144,8 +144,8 @@ input[type=range]
 
 [role=tablist]
   display: flex
-  column-gap: 0.5rem
-  padding-inline: 0.75rem
+  column-gap: 0.5em
+  padding-inline: 0.75em
 
 [role=tab]
   @extend %button-unstyled
@@ -154,11 +154,11 @@ input[type=range]
   padding: 0.75rem 1rem 0.5rem 1rem
 
   @extend %border-box
-  border-image-width: 0.75rem 0.75rem 0 0.75rem
+  border-image-width: 1rem 1rem 0 1rem
   border-image-outset: 0.75rem 0.75rem 0 0.75rem
   margin: 0.75rem 0.75rem 0 0.75rem
 
-  outline-offset: calc(-1 * var(--border-thin))
+  outline-offset: 0
 
   &[aria-selected=true]
     z-index: 1
@@ -189,6 +189,7 @@ input[type=range]
   background: none
 
   $img-scale: 6
+  image-rendering: pixelated
   border-image-source: common.ui-img("Input Box")
   border-image-slice: ($img-scale * 3) ($img-scale * 3) ($img-scale * 2) ($img-scale * 2) fill
   border-image-width: 0.5rem
@@ -320,10 +321,11 @@ input[type=range]
 .button
   background: none
   image-rendering: pixelated
+  $img-scale: 7
   border-image-source: common.ui-img("Button")
-  border-image-slice: 2 fill
+  border-image-slice: ($img-scale * 2) fill
   border-image-width: 0.25em
-  padding: 0.5em
+  padding: 0.625em 0.5em 0.5em 0.5em
 
   &:hover
     @extend %hover-brightness
