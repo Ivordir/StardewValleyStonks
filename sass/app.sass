@@ -84,9 +84,12 @@ dialog
   & > div
     width: 100%
     display: flex
+    justify-content: space-around
     align-items: center
-    justify-content: space-between
     column-gap: 1em
+
+  & > div:last-child
+    justify-content: space-between
 
 button
   font-family: inherit
@@ -392,6 +395,7 @@ input[type=range]
     & > label
       display: inline-block
       @extend .button
+      cursor: pointer
       user-select: none
       margin-bottom: 0.5em
 
