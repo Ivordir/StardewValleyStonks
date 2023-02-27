@@ -362,8 +362,7 @@ module Crops =
       then filters.Seasons |> Seasons.add season
       else filters.Seasons |> Seasons.remove season
 
-
-    div [ className Class.cropFilters; children [
+    fragment [
       input [
         className Class.inputBox
         placeholder "Search..."
@@ -371,6 +370,7 @@ module Crops =
         prop.value filters.ItemNameSearch
         onChange (SetItemNameSearch >> dispatch)
       ]
+      |> labeledHidden "Search"
 
       div [
         Input.checkboxText "In Season" filters.InSeason (SetInSeason >> dispatch)
@@ -378,8 +378,8 @@ module Crops =
           Html.span [
             if filters.InSeason then className Class.disabled
             children
-              (Input.checkboxWith
-                (Icon.season season)
+              (Input.checkboxText
+                (Season.name season)
                 (filters.Seasons |> Seasons.contains season)
                 (toggleSeason season >> SetSeasons >> dispatch))
           ]
@@ -396,7 +396,7 @@ module Crops =
           text "Clear"
         ]
       ]
-    ]]
+    ]
 
   let tab app dispatch =
     let data = app.Data

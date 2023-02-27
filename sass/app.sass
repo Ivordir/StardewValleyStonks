@@ -599,7 +599,8 @@ input[type=range]
     width: 50%
     height: 50%
 
-.crop-filters
+
+#settings-crops > details:first-child > div
   display: flex
   flex-direction: column
   row-gap: 1em
@@ -610,6 +611,11 @@ input[type=range]
     column-gap: 1.5em
     justify-content: space-between
 
+  & > label:first-child
+    width: 100%
+
+    & > input
+      width: 100%
 
 #settings-load\/save
   row-gap: 1em
