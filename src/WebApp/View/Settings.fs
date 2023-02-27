@@ -74,7 +74,7 @@ let private customColumn
           (value |> Option.defaultValue defaultValue)
           (curry (if value.IsSome then EditCustom else AddCustom) key >> dispatch)
           (fun close v setValue ->
-            fragment [
+            div [
               editValue v setValue
 
               if value.IsSome then

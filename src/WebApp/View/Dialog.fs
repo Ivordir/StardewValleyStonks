@@ -12,6 +12,9 @@ open type React
 
 open Core.Operators
 
+// assume there can only be one open dialog at any time
+let [<Literal>] dialogTitleId = "dialog-title"
+
 let [<ReactComponent>] private Dialog (props: {|
     Cancel: bool
     Title: ReactElement
@@ -27,9 +30,13 @@ let [<ReactComponent>] private Dialog (props: {|
 
   dialog [
     prop.ref ref
+    ariaLabelledBy dialogTitleId
     Interop.mkAttr "onClose" (fun _ -> props.Close false)
     children [
-      h1 props.Title
+      h1 [
+        prop.id dialogTitleId
+        children props.Title
+      ]
       props.Children (fun () -> ref.current |> Option.iter (fun m -> m.close ()))
       div [
         if props.Cancel then
