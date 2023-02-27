@@ -409,7 +409,7 @@ module SummaryTable =
     ]
 
   let private rankerProfitSummary data settings timeNorm (profitSummary: Query.ProfitSummary) =
-    table [ className Class.summaryTable; children [
+    table [
       profitHeader "Item" (settings.Profit.SeedStrategy <> IgnoreSeeds)
 
       tbody [
@@ -427,7 +427,7 @@ module SummaryTable =
         else ofNat 0u
 
       profitFooter timeNorm profitSummary.TimeNormalization profitSummary.NetProfit seeds
-    ]]
+    ]
 
   let private optimizerProfitSummary data settings total (summaries: Query.ProfitSummary array) =
     let header = profitHeaderCells "Crop / Item" (settings.Profit.SeedStrategy <> IgnoreSeeds)
@@ -473,7 +473,7 @@ module SummaryTable =
         key, row, body)
     |])
 
-    table [ className Class.summaryTable; children [
+    table [
       Table.collapsibleHeaderAndBodies true header bodies
 
       tfoot [
@@ -482,7 +482,7 @@ module SummaryTable =
           yield! totalRowCells gold2 (Some total) none
         ]
       ]
-    ]]
+    ]
 
   let private keyValue (key: string) (valueCell: ReactElement) =
     fragment [
@@ -523,7 +523,7 @@ module SummaryTable =
   let private profitTooltip data settings timeNorm (profitSummary: Query.ProfitSummary) =
     let summary = profitSummary.CropSummaries[0]
     let seed = Crop.seed summary.Crop
-    table [ className Class.summaryTable; children [
+    table [
       profitHeader "Item" false
 
       tbody [
@@ -551,7 +551,7 @@ module SummaryTable =
       ]
 
       profitFooter timeNorm profitSummary.TimeNormalization profitSummary.NetProfit none
-    ]]
+    ]
 
   let private mergeCropHarvests (dateSpan: Optimizer.FertilizerDateSpan) =
     let regrowHarvests = dateSpan.RegrowCrop |> Option.map (fun (_, crop, harvests) -> FarmCrop crop, harvests)
@@ -621,7 +621,7 @@ module SummaryTable =
       ]
 
     let private tableSummary data total (summaries: Query.XpSummary array) =
-      table [ className Class.summaryTable; children [
+      table [
         thead [
           tr [
             thCol "Crop"
@@ -655,7 +655,7 @@ module SummaryTable =
             td []
           ]
         ]
-      ]]
+      ]
 
     let optimizer data settings total dateSpans =
       dateSpans

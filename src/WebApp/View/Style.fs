@@ -66,7 +66,6 @@ module Class =
   let [<Literal>] collapseArrow = "collapse-arrow"
   let [<Literal>] expanded = "expanded"
   let [<Literal>] collapsed = "collapsed"
-  let [<Literal>] summaryTable = "summary-table"
   let [<Literal>] inputItems = "input-items"
 
   let [<Literal>] select = "select"

@@ -661,7 +661,7 @@ tr
     // unfortunately, this will cause the table to recompute its layout even for well behaved browsers
     position: absolute
 
-.summary-table
+#visualization table
   --border: black solid var(--border-thin)
 
   border-collapse: collapse
@@ -687,6 +687,10 @@ tr
     // profit/xp column
     &:nth-last-child(2)
       min-width: 5em
+
+  & thead th,
+  & tfoot th
+    padding-top: 0.625em
 
 .input-items
   & > summary
