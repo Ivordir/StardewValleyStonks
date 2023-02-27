@@ -54,19 +54,19 @@
   "ForageCropData": {
     "Spring": {
       "SeedRecipeUnlockLevel": 1,
-      "Items": [ 16, 18, 20, 22 ]
+      "Foragables": [ 16, 18, 20, 22 ]
     },
     "Summer": {
       "SeedRecipeUnlockLevel": 4,
-      "Items": [ 396, 398, 402 ]
+      "Foragables": [ 396, 398, 402 ]
     },
     "Fall": {
       "SeedRecipeUnlockLevel": 6,
-      "Items": [ 404, 406, 408, 410 ]
+      "Foragables": [ 404, 406, 408, 410 ]
     },
     "Winter": {
       "SeedRecipeUnlockLevel": 7,
-      "Items": [ 412, 414, 416, 418 ]
+      "Foragables": [ 412, 414, 416, 418 ]
     }
   },
 

@@ -115,7 +115,7 @@ module Encode =
 
   let forageCrop (crop: ForageCrop) = Encode.object [
     nameof crop.Seed, seedId crop.Seed
-    nameof crop.Items, crop.Items |> mapSeq itemId
+    nameof crop.Foragables, crop.Foragables |> mapSeq itemId
     nameof crop.SeedRecipeUnlockLevel, Encode.uint32 crop.SeedRecipeUnlockLevel
     nameof crop.Season, season crop.Season
     nameof crop.Stages, crop.Stages |> mapSeq Encode.uint32
@@ -258,7 +258,7 @@ module Decode =
       let field name decoder = get.Required.Field name decoder
       {
         Seed = field (nameof u.Seed) seedId
-        Items = field (nameof u.Items) (Decode.array itemId)
+        Foragables = field (nameof u.Foragables) (Decode.array itemId)
         SeedRecipeUnlockLevel = field (nameof u.SeedRecipeUnlockLevel) Decode.uint32
         Season = field (nameof u.Season) season
         Stages = field (nameof u.Stages) (Decode.array Decode.uint32)

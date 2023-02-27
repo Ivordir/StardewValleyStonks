@@ -48,7 +48,7 @@ module GrowthCalendar =
     |> Array.concat
     |> Array.tail
 
-  let private regrowCropCalendarDays (data: GameData) settings (days: nat array) fertilizer stageList (season, crop, harvests) =
+  let private regrowCropCalendarDays data settings (days: nat array) fertilizer stageList (season, crop, harvests) =
     let totalDays = Array.sum days[(season + 1)..]
     let stages, time = Game.growthTimeAndStages settings.Game fertilizer (FarmCrop crop)
     let usedDays = Growth.daysNeededFor crop.RegrowTime time harvests

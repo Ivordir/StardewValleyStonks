@@ -475,14 +475,14 @@ module private Profit =
 
     // This is necessary, since any quality of an item can be used to craft forage seeds.
     // The only restriction is that one of each item is needed/consumed per craft.
-    let allocatedToForageSeeds = crop.Items |> Array.map (fun item -> string item @ "Forage Seeds")
+    let allocatedToForageSeeds = crop.Foragables |> Array.map (fun item -> string item @ "Forage Seeds")
 
     let constraints = Array.concat [|
       // x seeds are made
       [| "Seeds" === seedTarget |]
 
       // cannot use more than the harvested quantity for each (item, quality)
-      Array.allPairs crop.Items validQualities |> Array.map (fun (item, quality) ->
+      Array.allPairs crop.Foragables validQualities |> Array.map (fun (item, quality) ->
         string item @ string quality <== quantities[quality])
 
       // all items set aside to craft forage seeds are all used to do so
@@ -495,8 +495,8 @@ module private Profit =
     | Some price when seedTarget > 0.0 -> variables.Add (BoughtSeeds, [| "Profit", -float price; "Seeds", 1.0 |])
     | _ -> ()
 
-    for i = 0 to crop.Items.Length - 1 do
-      let item = crop.Items[i]
+    for i = 0 to crop.Foragables.Length - 1 do
+      let item = crop.Foragables[i]
       let prices = prices[i]
       let forageSeedsAllocation = allocatedToForageSeeds[i]
       for quality in validQualities do
@@ -506,7 +506,7 @@ module private Profit =
         variables.Add (UsedToCraftForageSeeds itemQuality, [| forageSeedsAllocation, 1.0; oneItem |])
 
     if seedTarget > 0.0 && Selected.unlockedUseSeedsFromSeedMaker data settings (ForageCrop crop) then
-      let item = crop.Items[0]
+      let item = crop.Foragables[0]
       let quantity = Processor.seedMakerExpectedQuantity crop.Seed
       for quality in validQualities do
         variables.Add (MadeSeeds (item, quality), [| "Seeds", quantity; string item @ string quality, 1.0 |])
@@ -528,8 +528,8 @@ module private Profit =
     assert (solution.status = Optimal)
     solution
 
-  let private forageCropNetProfitPerHarvest data settings (crop: ForageCrop) seedPrice =
-    let prices = crop.Items |> cropItemNormalizedPricesByQuality data settings crop.Seed
+  let private forageCropNetProfitPerHarvest data settings crop seedPrice =
+    let prices = crop.Foragables |> cropItemNormalizedPricesByQuality data settings crop.Seed
     let quantities = Game.forageCropItemQuantityByQuality settings.Game crop
     if Selected.unlockedForageSeedsAnyUsage settings crop then
       let solution = forageCropNetProfitSolution data settings crop 1.0 seedPrice prices quantities
@@ -538,8 +538,8 @@ module private Profit =
       trySeedCost data settings seedPrice (ForageCrop crop) prices [| quantities |] 1u |> Option.map (fun cost ->
         forageCropProfitPerHarvestCalc prices quantities - cost)
 
-  let private forageCropIgnoreSeedsProfitPerHarvest data settings (crop: ForageCrop) =
-    let prices = crop.Items |> cropItemNormalizedPricesByQuality data settings crop.Seed
+  let private forageCropIgnoreSeedsProfitPerHarvest data settings crop =
+    let prices = crop.Foragables |> cropItemNormalizedPricesByQuality data settings crop.Seed
     let quantities = Game.forageCropItemQuantityByQuality settings.Game crop
     if Selected.unlockedForageSeedsSellAndUse settings crop |> fst then
       let solution = forageCropNetProfitSolution data settings crop 0.0 None prices quantities
@@ -881,7 +881,7 @@ module private ProfitSummary =
       | SoldItem (item, quality), quantity -> Some (item, (quality, quantity))
       | _ -> None)
 
-    let soldsoldQuantities = crop.Items |> Array.map (fun item ->
+    let soldsoldQuantities = crop.Foragables |> Array.map (fun item ->
       soldQuantities
       |> Array.tryFind (fst >> (=) item)
       |> Option.defaultOrMap Qualities.zero snd)

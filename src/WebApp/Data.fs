@@ -64,7 +64,7 @@ assert // crop amounts have values in the valid ranges
 
 assert // forage crops have a number of items in the supported range
   gameData.ForageCrops.Values |> Seq.forall (fun crop ->
-    let len = nat crop.Items.Length
+    let len = nat crop.Foragables.Length
     ForageCrop.minItems <= len && len <= ForageCrop.maxItems)
 
 assert // valid ratios (no zeros)

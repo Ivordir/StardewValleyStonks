@@ -123,7 +123,7 @@ module Icon =
   let foraging = fromClassIsName "Foraging"
 
   let item item = fromPathAndName (Path.item item.Id) item.Name
-  let itemId (data: GameData) itemId = item data.Items[itemId]
+  let itemId data itemId = item data.Items[itemId]
   let seed data seed = seed |> toItem |> itemId data
 
   let private withQuality quality name img =
@@ -185,7 +185,7 @@ module Icon =
       fromClassNameAndAlt name name
 
     let item item = fromPathAndAlt (Path.item item.Id) item.Name
-    let itemId (data: GameData) itemId = item data.Items[itemId]
+    let itemId data itemId = item data.Items[itemId]
 
     let vendor (VendorName name) = fromPathAndAlt (Path.vendor name) name
 

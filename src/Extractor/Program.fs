@@ -51,7 +51,7 @@ module FarmCropOverride =
 
 type ForageCropData = {
   SeedRecipeUnlockLevel: nat
-  Items: ItemId array
+  Foragables: ItemId array
 }
 
 type Config = {
@@ -245,14 +245,14 @@ let parseCrop farmCropOverrides forageCropData seed (data: string) =
         | Some data -> data
         | None -> failwith $"No data was provided for {Season.name season} Forage in the config."
 
-      if data.Items[0] <> itemId then
+      if data.Foragables[0] <> itemId then
         failwith "The main item provided for {Season.name season} Forage does not match {itemId}."
 
       ForageCrop {
         Season = season
         Stages = growthStages
         Seed = seed
-        Items = data.Items
+        Foragables = data.Foragables
         SeedRecipeUnlockLevel = data.SeedRecipeUnlockLevel
       }
 

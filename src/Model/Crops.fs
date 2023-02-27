@@ -376,7 +376,7 @@ module FarmCrop =
 
 type ForageCrop = {
   Seed: SeedId
-  Items: ItemId array
+  Foragables: ItemId array
   SeedRecipeUnlockLevel: nat
   Season: Season
   Stages: nat array
@@ -391,7 +391,7 @@ module ForageCrop =
 
   let seed crop = crop.Seed
   let seedItem crop = crop |> seed |> toItem
-  let items crop = crop.Items
+  let foragables crop = crop.Foragables
   let seedRecipeUnlockLevel crop = crop.SeedRecipeUnlockLevel
 
   let seedRecipeUnlocked skills crop = skills.Foraging.Level >= crop.SeedRecipeUnlockLevel
@@ -448,11 +448,11 @@ module Crop =
 
   let mainItem = function
     | FarmCrop crop -> crop.Item
-    | ForageCrop crop -> crop.Items[0]
+    | ForageCrop crop -> crop.Foragables[0]
 
   let items = function
     | FarmCrop crop -> FarmCrop.items crop
-    | ForageCrop crop -> ForageCrop.items crop
+    | ForageCrop crop -> ForageCrop.foragables crop
 
   let seed = function
     | FarmCrop crop -> FarmCrop.seed crop

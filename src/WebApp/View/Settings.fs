@@ -187,7 +187,7 @@ module Crops =
 
     let forageItems = crops |> Array.collect (function
       | FarmCrop _ -> [||]
-      | ForageCrop crop -> crop.Items |> Array.insertStart (ForageCrop.seedItem crop))
+      | ForageCrop crop -> crop.Foragables |> Array.insertStart (ForageCrop.seedItem crop))
 
     let items =
       Array.append nonForageItems forageItems
@@ -360,7 +360,7 @@ module Crops =
     |> Seq.filter (fun crop -> filters |> Seq.forall (fun predicate -> predicate crop))
     |> Array.ofSeq
 
-  let sortKey (data: GameData) = Crop.name data.Items.Find
+  let sortKey data = Crop.name data.Items.Find
 
   let private selectFilter name value dispatch =
     Select.options
