@@ -180,6 +180,7 @@ input[type=range]
 .label-hidden
   @extend %colon
   font-size: 0
+  user-select: none
 
 .label-text
   @extend %colon
@@ -207,6 +208,7 @@ input[type=range]
 
 .checkbox
   cursor: pointer
+  user-select: none
   position: relative
 
   & > input
@@ -363,6 +365,8 @@ input[type=range]
     & > label
       padding: 0.5em
       width: 100%
+      cursor: pointer
+      user-select: none
 
       & > input
         @extend %hidden-input
