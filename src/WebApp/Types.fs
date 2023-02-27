@@ -103,6 +103,9 @@ module Array =
       current <- reduction current (mapping array1[i] array2[i])
     current
 
+  let inline insertStart value array = array |> Array.insertAt 0 value
+  let inline insertEnd value array = array |> Array.insertAt array.Length value
+
 
 [<RequireQualifiedAccess>]
 module Fertilizer =

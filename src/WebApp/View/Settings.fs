@@ -165,7 +165,7 @@ module Crops =
 
     let forageItems = crops |> Array.collect (function
       | FarmCrop _ -> [||]
-      | ForageCrop crop -> Array.append [| ForageCrop.seedItem crop |] crop.Items)
+      | ForageCrop crop -> crop.Items |> Array.insertStart (ForageCrop.seedItem crop))
 
     let items =
       Array.append nonForageItems forageItems
@@ -723,7 +723,7 @@ module Settings =
       Select.options
         (length.em 4)
         (Option.defaultOrMap "None" ToolLevel.name >> ofStr)
-        (Enum.values |> Array.map Some |> Array.append [| None |])
+        (Enum.values |> Array.map Some |> Array.insertStart None)
         settings.ShavingToolLevel
         (SetShavingToolLevel >> dispatch)
       |> labeled "Shaving Enchantment"

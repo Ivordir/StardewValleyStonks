@@ -56,7 +56,7 @@ module GrowthCalendar =
     let stageImages = stages |> stageImages crop.Seed item
 
     let harvestItem = div (Icon.NoText.item item)
-    let firstHarvest = Array.append stageImages [| harvestItem |]
+    let firstHarvest = stageImages |> Array.insertEnd harvestItem
     let regrow = Array.create (int crop.RegrowTime.Value) (div (Icon.regrowStage crop.Seed item))
     regrow[regrow.Length - 1] <- harvestItem
     let filler = max 0 (int totalDays - int usedDays)
@@ -1022,7 +1022,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
     pairData.Crops
     |> Array.sortBy (Settings.Crops.sortKey data)
     |> Array.map Choice1Of2
-    |> Array.append [| bestCrop |]
+    |> Array.insertStart bestCrop
 
   let fertilizerOptions =
     // array.sort moves undefined elements to the end of the array even with a compare function
@@ -1031,7 +1031,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
     |> Array.map Some
     |> Array.sortBy (Option.get >> Fertilizer.Opt.name)
     |> Array.map (Option.get >> Choice1Of2)
-    |> Array.append [| bestFert |]
+    |> Array.insertStart bestFert
 
   let crop = seed |> Option.defaultOrMap bestCrop (data.Crops.Find >> Choice1Of2)
   let fert = fertName |> Option.defaultOrMap bestFert (Option.map data.Fertilizers.Find >> Choice1Of2)
