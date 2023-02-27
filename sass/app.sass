@@ -434,6 +434,7 @@ input[type=range]
   width: max-content
 
   & > span:first-child
+    width: 100%
     font-size: 2rem
     text-align: center
 
@@ -578,7 +579,7 @@ input[type=range]
 
     &:last-child
       height: 1rem
-      gap: 1rem
+      column-gap: 1em
 
       & > div
         transition: $transition
@@ -795,9 +796,6 @@ tr
 
   & th, & td
     padding: 0.5em 0.25em
-
-  & tbody th > *
-    min-width: max-content
 
   & tr > :first-child
     padding-left: 0.5em
