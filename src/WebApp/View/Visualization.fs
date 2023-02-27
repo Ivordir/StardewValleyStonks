@@ -898,7 +898,6 @@ module Ranker =
 
   let ranker ranker (data, settings) dispatch =
     let pairData = pairData ranker.RankMetric ranker.TimeNormalization data settings
-    if Array.isEmpty pairData.Pairs then emptyPairData pairData else
     let pairs =
       match ranker.RankItem with
       | RankCropsAndFertilizers -> pairData.Pairs
@@ -923,23 +922,26 @@ module Ranker =
       | Error a, Error b -> Enum.bitSetOrder (int a) (int b))
 
     fragment [
-      div [ className Class.graphControls; children [
-        Html.label [
-          ofStr "Rank"
-          Select.unitUnion (length.em 5) ranker.RankItem (SetRankItem >> dispatch)
+      div [
+        div [
+          div [
+            ofStr "Rank"
+            labeledHidden "Rank Item" (Select.unitUnion (length.em 5) ranker.RankItem (SetRankItem >> dispatch))
+          ]
+
+          rankBy
+            (ofStr "By")
+            ranker.RankMetric
+            ranker.TimeNormalization
+            (SetRankMetric >> dispatch)
+            (SetTimeNormalization >> dispatch)
         ]
 
-        rankBy
-          (ofStr "By")
-          ranker.RankMetric
-          ranker.TimeNormalization
-          (SetRankMetric >> dispatch)
-          (SetTimeNormalization >> dispatch)
-
         Input.checkboxText "Show Invalid" ranker.ShowInvalid (SetShowInvalid >> dispatch)
-      ]]
+      ]
+
       if Array.isEmpty pairs then
-        div "No valid pairs of crops and fertilizers!"
+        emptyPairData pairData
       else
         div [
           className Class.graph

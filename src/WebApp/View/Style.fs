@@ -54,7 +54,6 @@ module Class =
   let [<Literal>] date = "date"
 
   let [<Literal>] graph = "graph"
-  let [<Literal>] graphControls = "graph-controls"
   let [<Literal>] pairImage = "pair-image"
   let [<Literal>] pairSelect = "pair-select"
   let [<Literal>] back = "back"
