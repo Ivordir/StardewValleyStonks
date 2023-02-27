@@ -116,20 +116,12 @@ module Icon =
 
   let private fromPathAndName = fromPath >> fromImageAndText
 
-  let arrowInto = fromClassNameAndAlt "arrow-right" "into"
-
-  let seasonNoText season =
-    let name = Season.name season
-    fromClassNameAndAlt name name
-
   let season = Season.name >> fromClassIsName
 
   let profession (profession: Profession) = profession |> string |> fromClassIsName
   let farming = fromClassIsName "Farming"
   let foraging = fromClassIsName "Foraging"
 
-  let itemNoText item = fromPathAndAlt (Path.item item.Id) item.Name
-  let itemIdNoText (data: GameData) itemId = itemNoText data.Items[itemId]
   let item item = fromPathAndName (Path.item item.Id) item.Name
   let itemId (data: GameData) itemId = item data.Items[itemId]
   let seed data seed = seed |> toItem |> itemId data
@@ -175,7 +167,6 @@ module Icon =
     | FarmCrop crop -> crop.Item |> itemId data
     | ForageCrop crop -> crop.Seed |> seed data
 
-  let vendorNoText (VendorName name) = fromPathAndAlt (Path.vendor name) name
   let vendor (VendorName name) = fromPathAndName (Path.vendor name) name
 
   let processor (ProcessorName processor) =
@@ -187,6 +178,23 @@ module Icon =
       ]
 
     fromImageAndText img processor
+
+  module NoText =
+    let season season =
+      let name = Season.name season
+      fromClassNameAndAlt name name
+
+    let item item = fromPathAndAlt (Path.item item.Id) item.Name
+    let itemId (data: GameData) itemId = item data.Items[itemId]
+
+    let vendor (VendorName name) = fromPathAndAlt (Path.vendor name) name
+
+    let processor (ProcessorName processor) =
+      img [
+        className Class.iconProcessor
+        src (Path.processor processor)
+        alt processor
+      ]
 
 
 let private labelWith (css: string) (label: string) element =

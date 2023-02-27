@@ -55,7 +55,7 @@ module GrowthCalendar =
     let item = data.Items[crop.Item]
     let stageImages = stages |> stageImages crop.Seed item
 
-    let harvestItem = div (Icon.itemNoText item)
+    let harvestItem = div (Icon.NoText.item item)
     let firstHarvest = Array.append stageImages [| harvestItem |]
     let regrow = Array.create (int crop.RegrowTime.Value) (div (Icon.regrowStage crop.Seed item))
     regrow[regrow.Length - 1] <- harvestItem
@@ -86,7 +86,7 @@ module GrowthCalendar =
 
         let stages, time = Game.growthTimeAndStages settings.Game span.Fertilizer crop
         let stageImages = stageImages seed item stages
-        let harvestItem = [| div (Icon.itemIdNoText data (Crop.mainItem crop)) |]
+        let harvestItem = [| div (Icon.NoText.itemId data (Crop.mainItem crop)) |]
         if bridgeCrop then
           let filler = max 0 (int remainingDays - int time)
           let days = int remainingDays + int days[season] - int time - filler

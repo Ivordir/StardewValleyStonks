@@ -35,7 +35,7 @@ let viewPrice price =
     | Some (source, price) ->
       ofNat price
       match source with
-      | NonCustom vendor -> Icon.vendorNoText vendor
+      | NonCustom vendor -> Icon.NoText.vendor vendor
       | Custom () -> none
     | None -> ofStr "???"
   ]
@@ -139,7 +139,7 @@ module Crops =
           (fun crop ->
             Html.span [ className Class.seasons; children (Enum.values |> Array.map (fun season ->
               if Crop.growsInSeason season crop
-              then Icon.seasonNoText season
+              then Icon.NoText.season season
               else div []
             ))
           ])
@@ -207,7 +207,7 @@ module Crops =
 
           yield! processors data |> Array.map (fun processor ->
             Column.valueOptSortable
-              (Icon.processor processor)
+              (Icon.NoText.processor processor)
               (Item.id >> GameData.product data processor >> Option.map price)
               (ofOption ofFloat)
             |> Column.withSelect
@@ -265,7 +265,7 @@ module Crops =
 
           yield! seedVendors data |> Array.map (fun vendor ->
             Column.valueOptSortable
-              (Icon.vendor vendor)
+              (Icon.NoText.vendor vendor)
               (Query.seedPriceValueFromVendor data settings vendor)
               (ofOption ofNat)
             |> Column.withSelect
@@ -281,7 +281,7 @@ module Crops =
             settings.Selected.CustomSeedPrices
             (SetCustomSeedPrice >> selectDispatch)
 
-          Column.create (Icon.processor Processor.seedMaker) (konst none)
+          Column.create (Icon.NoText.processor Processor.seedMaker) (konst none)
           |> Column.withSelect
             (fun seed ->
               if Crop.canGetOwnSeedsFromSeedMaker data.Crops[seed]
