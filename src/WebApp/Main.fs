@@ -61,5 +61,5 @@ let localStorageSub dispatch =
 Program.mkSimple Data.LocalStorage.loadApp update view
 |> Program.withErrorHandler (fun (msg, e) -> console.error (errorWithMessage msg e))
 |> Program.withSubscription (fun _ -> [ [ "localStorage" ], localStorageSub ])
-|> Program.withReactBatched "app"
+|> Program.withReactSynchronous "app"
 |> Program.run

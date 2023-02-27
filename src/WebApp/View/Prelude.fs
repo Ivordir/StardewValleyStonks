@@ -278,15 +278,41 @@ let inline tabs label current dispatch tabpanel =
     Panel = tabpanel
   |}
 
+let [<ReactComponent>] private LazyDetailsContent (props: {|
+  key: string
+  Open: bool
+  Content: ReactElement
+|}) =
+  let openedOnce, setOpenedOnce = useState props.Open
 
-let detailsSection openDetails key (summaryContent: ReactElement) (children: ReactElement) dispatch =
+  if props.Open && not openedOnce then
+    setOpenedOnce true
+
+  if openedOnce
+  then props.Content
+  else none
+
+let private detailsSectionWith delayRender openDetails key (summaryContent: ReactElement) children dispatch =
   let open' = openDetails |> Set.contains key
   details [
     isOpen open'
     onToggle (curry SetDetailsOpen key >> dispatch)
     prop.children [
       summary summaryContent
-      div children
+      if delayRender then
+        div (LazyDetailsContent {|
+          key = string key
+          Open = open'
+          Content = children
+        |})
+      else
+        div children
     ]
   ]
+
+let detailsSection openDetails key summary children dispatch =
+  detailsSectionWith false openDetails key summary children dispatch
+
+let lazyDetails openDetails key summary children dispatch =
+  detailsSectionWith true openDetails key summary children dispatch
 

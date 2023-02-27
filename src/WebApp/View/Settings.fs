@@ -7,6 +7,7 @@ open StardewValleyStonks.WebApp.View
 open StardewValleyStonks.WebApp.View.Table
 
 open Feliz
+open Elmish.React
 
 open type Html
 open type prop
@@ -117,6 +118,11 @@ let private priceColumns prices selected custom priceValue icon vendors selectMs
       (curry selectMsg vendor >> dispatch))
   |> Array.insertEnd (customPriceColumn icon id custom (customMsg >> dispatch))
 
+let private lazyTable table data settings sort items dispatch =
+  lazyView2
+    (fun (data, settings, sort, items) dispatch -> table data settings sort items dispatch)
+    (data, settings, sort, items)
+    dispatch
 
 module Crops =
   let seedVendors = refMemo (fun (data: GameData) -> sortKeysByHighestCount data.SeedPrices)
@@ -433,25 +439,25 @@ module Crops =
         (cropFilter cropTab.Filters (SetCropFilters >> cropTabDispatch))
         uiDispatch
 
-      detailsSection
+      lazyDetails
         ui.OpenDetails
         OpenDetails.Crops
         (ofStr "Crops")
-        (table data settings cropTab.CropSort crops dispatch)
+        (lazyTable table data settings cropTab.CropSort crops dispatch)
         uiDispatch
 
-      detailsSection
+      lazyDetails
         ui.OpenDetails
         OpenDetails.Products
         (ofStr "Products")
-        (products data settings cropTab crops dispatch)
+        (lazyTable products data settings cropTab crops dispatch)
         uiDispatch
 
-      detailsSection
+      lazyDetails
         ui.OpenDetails
         OpenDetails.Seeds
         (ofStr "Seeds")
-        (seeds data settings cropTab.SeedSort crops dispatch)
+        (lazyTable seeds data settings cropTab.SeedSort crops dispatch)
         uiDispatch
     ]
 
@@ -551,18 +557,18 @@ module Fertilizers =
     let fertilizers = data.Fertilizers.Values |> Seq.sortBy Fertilizer.name |> Array.ofSeq
 
     fragment [
-      detailsSection
+      lazyDetails
         ui.OpenDetails
         OpenDetails.Fertilizers
         (ofStr "Fertilizers")
-        (table data settings ui.FertilizerSort fertilizers dispatch)
+        (lazyTable table data settings ui.FertilizerSort fertilizers dispatch)
         uiDispatch
 
-      detailsSection
+      lazyDetails
         ui.OpenDetails
         OpenDetails.FertilizerPrices
         (ofStr "Prices")
-        (prices data settings ui.FertilizerPriceSort fertilizers dispatch)
+        (lazyTable prices data settings ui.FertilizerPriceSort fertilizers dispatch)
         uiDispatch
     ]
 
