@@ -37,19 +37,20 @@ html
 header
   scroll-snap-align: start
 
-$column-min-width: 42.5rem
 $column-gap: 1rem
-$two-column-min-width: 3 * $column-gap + 2 * $column-min-width
-$one-column-min-width: 2 * $column-gap + $column-min-width
-$two-column-min-height: calc(max(30rem, 100vh - 2 * $column-gap))
-$one-column-min-height: calc(max(30rem, (100vh - 3 * $column-gap) / 2))
+$visualization-min-width: 37.5rem
+$settings-min-width: 42.5rem
+$two-column-min-width: $visualization-min-width + $settings-min-width + 3 * $column-gap
+$one-column-min-width: max($visualization-min-width, $settings-min-width) + 2 * $column-gap
+$two-column-min-height: calc(100vh - 2 * $column-gap)
+$one-column-min-height: calc(max($visualization-min-width, (100vh - 3 * $column-gap) / 2))
 
 main
   scroll-snap-align: start
 
   height: 100vh
   display: grid
-  grid-template-columns: repeat(2, minmax($column-min-width, 1fr))
+  grid-template-columns: minmax($visualization-min-width, 1fr) minmax($settings-min-width, 1fr)
   gap: $column-gap
   padding: $column-gap
   box-sizing: border-box
@@ -370,6 +371,7 @@ input[type=range]
 
 .button
   background: none
+  color: black
   image-rendering: pixelated
   $img-scale: 7
   border-image-source: common.ui-img("Button")
@@ -484,6 +486,11 @@ input[type=range]
   grid-template-columns: repeat(4, 1fr)
 
 .calendar
+  display: flex
+  flex-direction: column
+  align-items: center
+  row-gap: 2em
+
   &-season
     padding: var(--border-thin)
     min-width: min-content
@@ -497,7 +504,7 @@ input[type=range]
 
   &-days
     display: grid
-    grid-template-columns: repeat(7, minmax(4rem, 1fr))
+    grid-template-columns: repeat(7, minmax(4rem, 7rem))
     grid-auto-rows: 1fr
     gap: var(--border-thin)
 
@@ -509,7 +516,6 @@ input[type=range]
       justify-content: center
       outline: var(--border-thin) solid black
       padding: 10%
-      $counter-offset: 4%
 
       & > img
         width: 50%
@@ -522,6 +528,7 @@ input[type=range]
         counter-increment: day
         content: counter(day)
         position: absolute
+        $counter-offset: 5%
         top: $counter-offset
         left: calc(#{$counter-offset} + 0.125rem)
 
@@ -810,10 +817,6 @@ tr
     // last 4 columns
     &:nth-last-child(-n+4)
       text-align: right
-
-    // profit/xp column
-    &:nth-last-child(2)
-      min-width: 5em
 
   & thead th,
   & tfoot th
