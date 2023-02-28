@@ -215,7 +215,7 @@ input[type=range]
   #settings
     margin-top: 1em
 
-  .graph
+  #graph
     height: 0
 
 
@@ -519,14 +519,25 @@ input[type=range]
         top: $counter-offset
         left: calc(#{$counter-offset} + 0.125rem)
 
-.graph
+#graph
   flex-grow: 1
   min-height: 0
 
   &-controls
     display: flex
-    justify-content: center
+    flex-wrap: wrap
+    row-gap: 1em
+    column-gap: 2em
     align-items: center
+    justify-content: center
+
+    & > div,
+    & > div > div
+      display: flex
+      flex-wrap: wrap
+      row-gap: 1em
+      align-items: center
+      column-gap: 0.5em
 
 .recharts-wrapper
   overflow: hidden
@@ -624,22 +635,6 @@ input[type=range]
 
 #visualization-ranker
   row-gap: 1rem
-
-  & > div:first-child
-    display: flex
-    flex-wrap: wrap
-    row-gap: 1em
-    column-gap: 2em
-    align-items: center
-    justify-content: center
-
-    & > div,
-    & > div > div
-      display: flex
-      flex-wrap: wrap
-      row-gap: 1em
-      align-items: center
-      column-gap: 0.5em
 
 #settings-crops > details:first-child > div
   display: flex

@@ -923,7 +923,7 @@ module Ranker =
       | Error a, Error b -> Enum.bitSetOrder (int a) (int b))
 
     fragment [
-      div [
+      div [ prop.id "graph-controls"; children [
         div [
           div [
             ofStr "Rank"
@@ -939,13 +939,13 @@ module Ranker =
         ]
 
         Input.checkboxText "Show Invalid" ranker.ShowInvalid (SetShowInvalid >> dispatch)
-      ]
+      ]]
 
       if Array.isEmpty pairs then
         emptyPairData pairData
       else
         div [
-          className Class.graph
+          prop.id "graph"
           // rerender only if computed pairs or RankMetric changes
           children (lazyView2 (fst >> graph ranker data settings) (pairs, ranker.RankMetric) dispatch)
         ]
