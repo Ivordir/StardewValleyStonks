@@ -362,7 +362,7 @@ input[type=range]
     & > li
       padding: $padding
 
-      &.select-empty
+      &.empty
         text-align: center
         padding: 1.5 * $padding
 
@@ -697,6 +697,11 @@ input[type=range]
           display: grid
           grid-template-columns: repeat(3, 1fr)
           gap: 0.5em
+
+        &.empty
+          min-width: 35rem
+          display: flex
+          justify-content: center
 
 
 table, tr

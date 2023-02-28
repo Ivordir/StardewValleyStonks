@@ -68,4 +68,4 @@ module Class =
   let [<Literal>] select = "select"
   let [<Literal>] selectControl = "select-control"
   let [<Literal>] selectList = "select-list"
-  let [<Literal>] selectEmpty = "select-empty"
+  let [<Literal>] empty = "empty"

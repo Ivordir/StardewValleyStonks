@@ -903,34 +903,45 @@ module LoadSave =
       (p "Note: This will reset Stardew Valley Stonks to its default settings, deleting all custom presets in the process.")
 
   let presetList presets loadDispatch saveDispatch =
-    div [
-      Html.span "Presets"
-      ul (presets |> List.mapi (fun i preset ->
-        li [
-          viewPreset preset
-
-          div [
-            button [
-              className Class.button
-              onClick (fun _ -> loadDispatch preset.Settings)
-              text "Load"
-            ]
-
-            Dialog.toggleEditWith
-              "Edit"
-              (ofStr $"Rename Preset '{preset.Name}'")
-              preset.Name
-              (curry RenamePreset i >> saveDispatch)
-              (fun _ name setName -> labeled "Name" (Input.text name setName))
-
-            button [
-              className Class.button
-              onClick (fun _ -> DeletePreset i |> saveDispatch)
-              text "Delete"
-            ]
+    let presets =
+      if presets |> List.isEmpty then
+        [
+          li [
+            className Class.empty
+            ariaHidden true
+            text "No presets..."
           ]
         ]
-      ))
+      else
+        presets |> List.mapi (fun i preset ->
+          li [
+            viewPreset preset
+
+            div [
+              button [
+                className Class.button
+                onClick (fun _ -> loadDispatch preset.Settings)
+                text "Load"
+              ]
+
+              Dialog.toggleEditWith
+                "Edit"
+                (ofStr $"Rename Preset '{preset.Name}'")
+                preset.Name
+                (curry RenamePreset i >> saveDispatch)
+                (fun _ name setName -> labeled "Name" (Input.text name setName))
+
+              button [
+                className Class.button
+                onClick (fun _ -> DeletePreset i |> saveDispatch)
+                text "Delete"
+              ]
+            ]
+          ])
+
+    div [
+      Html.span "Presets"
+      ul presets
     ]
 
   let tab presets settings dispatch =

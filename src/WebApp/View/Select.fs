@@ -89,7 +89,7 @@ let selectList listRef clearHover (props: _ Props) (state: _ State) setState hov
     if Array.isEmpty state.Options then
       children [
         li [
-          className Class.selectEmpty
+          className Class.empty
           ariaHidden true
           text "No results found..."
         ]
