@@ -118,7 +118,7 @@ module Icon =
 
   let season = Season.name >> fromClassIsName
 
-  let profession (profession: Profession) = profession |> string |> fromClassIsName
+  let profession (profession: Profession) = profession |> Reflection.getCaseName |> fromClassIsName
   let farming = fromClassIsName "Farming"
   let foraging = fromClassIsName "Foraging"
 

@@ -5,6 +5,7 @@ open StardewValleyStonks.WebApp
 open StardewValleyStonks.WebApp.Update
 open StardewValleyStonks.WebApp.View
 
+open Fable.Core
 open Feliz
 open Elmish.React
 
@@ -403,7 +404,7 @@ module SummaryTable =
           none)
 
         tr (footerProfitRowCells
-          (ofStr $"Total {timeNorm |> string |> lowerCase}")
+          (ofStr $"Total {timeNorm |> Reflection.getCaseName |> lowerCase}")
           (profit |> formatNormalizedValue gold2 normDivisor |> ofStr)
           none)
     ]
@@ -499,7 +500,7 @@ module SummaryTable =
         (formatNormalizationDivisor timeNorm normDivisor |> ofStr)
 
       keyValue
-        $"{key} {timeNorm |> string |> lowerCase}"
+        $"{key} {timeNorm |> Reflection.getCaseName |> lowerCase}"
         (value |> formatNormalizedValue valueFormat normDivisor |> ofStr)
     ]
 
