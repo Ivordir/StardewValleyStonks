@@ -1187,18 +1187,23 @@ let section app dispatch =
   let settings, ui = app.State
   let uiDispatch = SetUI >> dispatch
 
-  section [ prop.id "visualization"; children [
-    tabs "Visualization" ui.Mode (SetAppMode >> uiDispatch) (function
-      | Ranker -> rankerOrSummary app uiDispatch
-      | Optimizer ->
-        fragment [
-          labeled "Maximize" (Select.unitUnion (length.em 3) ui.OptimizationObjective (SetOptimizationObjective >> uiDispatch))
-          Optimizer {|
-            OpenDetails = ui.OpenDetails
-            Data = app.Data
-            Settings = settings
-            Objective = ui.OptimizationObjective
-            Dispatch = SetUI >> dispatch
-          |}
-        ])
-  ]]
+  section [
+    prop.id "visualization"
+    if ui.Mode = Ranker && ui.Ranker.SelectedCropAndFertilizer.IsNone then
+      className "visualization-graph"
+    children [
+      tabs "Visualization" ui.Mode (SetAppMode >> uiDispatch) (function
+        | Ranker -> rankerOrSummary app uiDispatch
+        | Optimizer ->
+          fragment [
+            labeled "Maximize" (Select.unitUnion (length.em 3) ui.OptimizationObjective (SetOptimizationObjective >> uiDispatch))
+            Optimizer {|
+              OpenDetails = ui.OpenDetails
+              Data = app.Data
+              Settings = settings
+              Objective = ui.OptimizationObjective
+              Dispatch = SetUI >> dispatch
+            |}
+          ])
+    ]
+  ]

@@ -37,25 +37,30 @@ html
 header
   scroll-snap-align: start
 
+$column-min-width: 42.5rem
+$column-gap: 1rem
+$two-column-min-width: 3 * $column-gap + 2 * $column-min-width
+$one-column-min-width: 2 * $column-gap + $column-min-width
+$two-column-min-height: calc(max(30rem, 100vh - 2 * $column-gap))
+$one-column-min-height: calc(max(30rem, (100vh - 3 * $column-gap) / 2))
+
 main
   scroll-snap-align: start
 
-  display: flex
-  flex-flow: row
-  overflow: hidden
   height: 100vh
-  padding: 1em
-  column-gap: 1em
+  display: grid
+  grid-template-columns: repeat(2, minmax($column-min-width, 1fr))
+  gap: $column-gap
+  padding: $column-gap
   box-sizing: border-box
 
   & > section
-    width: 50%
     display: grid
     grid-template-rows: max-content
     overflow: hidden
 
-#settings
-  min-width: 42.5em
+#graph
+  overflow: hidden
 
 footer
   scroll-snap-align: end
@@ -189,34 +194,35 @@ input[type=range]
     flex-direction: column
 
 
-@media (max-width: 550px)
-  :root
-    font-size: calc(max(50%, 2vw))
-
+@media (max-width: $two-column-min-width)
   html
     scroll-snap-type: none
 
-  body
-    background-attachment: fixed
-    --border-thin: 1px
-    --border-med: 2px
-
   main
     height: unset
-    display: block
+    grid-template-columns: 1fr
+    min-width: min-content
 
     & > section
-      width: initial
-      min-height: calc(50vh - 2rem)
+      min-height: $one-column-min-height
+      overflow: unset
 
   [role=tabpanel]
-    overflow: hidden
+    overflow: unset
 
-  #settings
-    margin-top: 1em
+  .visualization-graph
+    height: $one-column-min-height
 
-  #graph
-    height: 0
+    & > [role=tabpanel]
+      overflow: hidden
+
+@media (max-width: $one-column-min-width)
+  :root
+    font-size: calc(max(50%, 2vw))
+
+  body
+    --border-thin: 1px
+    --border-med: 2px
 
 
 .label-hidden
