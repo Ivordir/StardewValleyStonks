@@ -1079,13 +1079,12 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
             selectDispatch (seed, fert))
       ]
 
-      div
-        (rankBy
-          (Html.span "Show")
-          metric
-          timeNorm
-          (fun metric -> setState (metric, timeNorm))
-          (fun timeNorm -> setState (metric, timeNorm)))
+      rankBy
+        (Html.span "Show")
+        metric
+        timeNorm
+        (fun metric -> setState (metric, timeNorm))
+        (fun timeNorm -> setState (metric, timeNorm))
     ]]
 
     match crop, fert with
