@@ -172,7 +172,7 @@ module GrowthCalendar =
         children (fromDateSpan app.Data settings true dateSpan)
       ]
 
-let private fertilizerAndCropHarvests data fertilizer crop =
+let private fertilizerAndCrop data fertilizer crop =
   div [
     Icon.crop data crop
 
@@ -462,7 +462,7 @@ module SummaryTable =
 
         let row =
           rowCells
-            (fertilizerAndCropHarvests data profitSummary.Fertilizer summary.Crop)
+            (fertilizerAndCrop data profitSummary.Fertilizer summary.Crop)
             none
             (ofNat summary.Harvests)
             (summary.NetProfit |> ofOption (gold2 >> ofStr))
@@ -615,11 +615,7 @@ module SummaryTable =
       | Ok summary -> verticalSummary timeNorm summary
       | Error e -> invalidReasons settings crop e
 
-    let tooltip data settings timeNorm fertilizer crop =
-      fragment [
-        fertilizerAndCropHarvests data fertilizer crop
-        ranker data settings timeNorm fertilizer crop
-      ]
+    let tooltip = ranker
 
     let private tableSummary data total (summaries: Query.XpSummary array) =
       table [
@@ -637,7 +633,7 @@ module SummaryTable =
         tbody (summaries |> Array.collect (fun xpSummary ->
           xpSummary.CropSummaries |> Array.map (fun summary ->
             tr [
-              th [ scope "row"; children (fertilizerAndCropHarvests data xpSummary.Fertilizer summary.Crop) ]
+              th [ scope "row"; children (fertilizerAndCrop data xpSummary.Fertilizer summary.Crop) ]
               td (ofNat summary.Harvests)
               td (summary.XpPerItem |> xp |> ofStr)
               td (summary.ItemQuantity |> round2 |> ofFloat)
@@ -737,13 +733,14 @@ module Ranker =
     ]
 
   let private chartProfitTooltip data settings timeNorm roi fertilizer crop profit =
-    div [
+    fragment [
       match Query.Ranker.profitSummary data settings timeNorm fertilizer crop with
       | Some profitSummary ->
         let summary = profitSummary.CropSummaries[0]
-        fertilizerAndCropHarvests data fertilizer crop
         let unit = "harvest" |> pluralizeTo summary.Harvests
-        ofStr $" ({summary.Harvests} {unit})"
+
+        Html.span $" ({summary.Harvests} {unit})"
+
         match profit with
         | Ok profit ->
           assert
@@ -757,7 +754,6 @@ module Ranker =
         else SummaryTable.Profit.tooltip data settings timeNorm profitSummary
 
       | None ->
-        fertilizerAndCropHarvests data fertilizer crop
         match profit with
         | Ok _ -> assert false; none
         | Error e -> invalidReasons settings crop e
@@ -770,9 +766,14 @@ module Ranker =
       let seed, fertilizer = pairs[index]
       let crop = data.Crops[seed]
       let fertilizer = Option.map data.Fertilizers.Find fertilizer
-      match rankItem with
-      | Gold | ROI -> chartProfitTooltip data settings timeNorm (rankItem = ROI) fertilizer crop result
-      | XP -> SummaryTable.XP.tooltip data settings timeNorm fertilizer crop
+
+      div [ prop.id "chart-tooltip"; children [
+        h1 (fertilizerAndCrop data fertilizer crop)
+
+        match rankItem with
+        | Gold | ROI -> chartProfitTooltip data settings timeNorm (rankItem = ROI) fertilizer crop result
+        | XP -> SummaryTable.XP.tooltip data settings timeNorm fertilizer crop
+      ]]
     | _ -> none
 
   let private svgRectPath x y width height =

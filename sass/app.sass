@@ -551,6 +551,22 @@ input[type=range]
       align-items: center
       column-gap: 0.5em
 
+  &-tooltip
+    @extend %border-box
+    padding: 1em
+    display: flex
+    flex-direction: column
+    align-items: center
+    row-gap: 1em
+
+    & > h1
+      font-size: 1.25rem
+      font-weight: 500
+      margin: 0
+
+    & > span
+      font-size: 1.125rem
+
 .recharts-tooltip-wrapper:focus
   outline: none
 
