@@ -385,21 +385,18 @@ let private sortAndPartitionVariables vars request (solution: int Solution) =
   solution.variables
   |> Array.choose (fun (i, n) ->
     let season, variable = request.Variables[i]
-    let cropAndOrder =
-      match variable with
-      | DayUsedForRegrowCrop
-      | DayUsedForBridgeCrop -> None
-      | PlantCrop crop -> Some (crop, 0)
-      | PlantBridgeCrop crop -> Some (crop, 1)
-      | PlantCropUnreplacedFertilizer crop -> Some (crop, 2)
-      | PlantRegrowCropFixedHarvests (crop, _) -> Some (FarmCrop crop, 3)
-      | PlantRegrowCropFirstHarvests (crop, _) -> Some (FarmCrop crop, 3)
-      | PlantRegrowCropRegrowHarvests crop -> Some (FarmCrop crop, 4)
-
-    cropAndOrder |> Option.map (fun (crop, order) ->
+    (match variable with
+    | DayUsedForRegrowCrop
+    | DayUsedForBridgeCrop -> None
+    | PlantCrop crop -> Some (crop, 0)
+    | PlantBridgeCrop crop -> Some (crop, 1)
+    | PlantCropUnreplacedFertilizer crop -> Some (crop, 2)
+    | PlantRegrowCropFixedHarvests (crop, _) -> Some (FarmCrop crop, 3)
+    | PlantRegrowCropFirstHarvests (crop, _) -> Some (FarmCrop crop, 3)
+    | PlantRegrowCropRegrowHarvests crop -> Some (FarmCrop crop, 4))
+    |> Option.map (fun (crop, order) ->
       let growthTime = Game.growthTime vars request.Fertilizer crop
       (season, order, growthTime), (variable, nat n)))
-
   |> Array.sortBy fst
   |> Array.partition (snd >> fst >> function
     | PlantRegrowCropFixedHarvests _

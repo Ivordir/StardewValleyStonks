@@ -514,9 +514,9 @@ module SummaryTable =
     ]
 
   let private tooltipBoughtRow itemCell price quantity =
-    match price with
+    (match price with
     | Some (_, price) -> profitRow itemCell (price, true) quantity
-    | None -> unknownProfitRow false itemCell quantity
+    | None -> unknownProfitRow false itemCell quantity)
     |> ofOption tr
 
   let private tooltipProfitRow itemCell price quantity = profitRow itemCell (price, false) quantity |> ofOption tr

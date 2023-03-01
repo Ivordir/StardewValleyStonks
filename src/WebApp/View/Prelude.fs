@@ -240,10 +240,10 @@ let [<ReactComponent>] Tabs (props: {|
           tabIndex (if active then 0 else -1)
           onClick (fun _ -> dispatch tab)
           onKeyDown (fun e ->
-            match e.key with
+            (match e.key with
             | "ArrowRight" -> Some (if i = tabs.Length - 1 then 0 else i + 1)
             | "ArrowLeft" -> Some (if i = 0 then tabs.Length - 1 else i - 1)
-            | _ -> None
+            | _ -> None)
             |> Option.iter (fun i ->
               tabRefs.current[i] |> Option.iter (fun elm -> elm.focus ())
               dispatch tabs[i]))
