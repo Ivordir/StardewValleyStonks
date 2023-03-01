@@ -470,7 +470,12 @@ module Fertilizers =
     let selectDispatch = SetSelections >> SetSettings >> dispatch
 
     fragment [
-      Input.checkboxText "Allow No Fertilizer" settings.Selected.NoFertilizer (SelectNoFertilizer >> selectDispatch)
+      div [ className Class.settingsGroup; children [
+        Input.checkboxText
+          "Allow No Fertilizer"
+          settings.Selected.NoFertilizer
+          (SelectNoFertilizer >> selectDispatch)
+      ]]
 
       tableFromColummsWithRowDisable
         (Fertilizer.name >> Query.fertilizerCost data settings >> Option.isNone)

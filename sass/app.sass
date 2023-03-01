@@ -73,7 +73,7 @@ dialog
   margin: auto
   padding: 1rem
   min-width: 15rem
-  max-width: calc(min(80ch, 40vw))
+  max-width: calc(min(60ch, 40vw))
 
   display: flex
   flex-direction: column
@@ -190,6 +190,7 @@ input[type=range]
     box-sizing: border-box
     display: flex
     flex-direction: column
+    row-gap: 1em
 
 
 @media (max-width: $two-column-min-width)
@@ -216,7 +217,7 @@ input[type=range]
 
 @media (max-width: $one-column-min-width)
   :root
-    font-size: calc(max(50%, 2vw))
+    font-size: calc(max(75%, 2vw))
 
   body
     --border-thin: 1px
@@ -575,7 +576,6 @@ input[type=range]
   display: flex
   flex-direction: column
   row-gap: 1em
-  margin-block: 1em
 
   & > div
     display: flex
@@ -606,7 +606,7 @@ input[type=range]
   align-items: center
   column-gap: 2em
   row-gap: 1em
-  padding: 0.5em
+  padding-inline: 0.5em
 
 .date > :last-child
   margin-left: 0.5em
@@ -649,8 +649,14 @@ input[type=range]
     width: 50%
     height: 50%
 
-#visualization-ranker
-  row-gap: 1rem
+#visualization-optimizer
+  & > label
+    margin-left: 0.5em
+
+  & > div:last-child
+    display: flex
+    flex-direction: column
+    row-gap: 1em
 
 #settings-crops > details:first-child > div
   display: flex
@@ -660,8 +666,9 @@ input[type=range]
 
   & > div
     display: flex
-    column-gap: 1.5em
+    align-items: center
     justify-content: space-between
+    column-gap: 1.5em
 
   & > label:first-child
     width: 100%
@@ -670,8 +677,6 @@ input[type=range]
       width: 100%
 
 #settings-load\/save
-  row-gap: 1em
-
   & > div
     display: flex
     column-gap: 1em
