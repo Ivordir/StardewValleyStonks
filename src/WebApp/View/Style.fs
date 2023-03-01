@@ -52,7 +52,6 @@ module Class =
   let [<Literal>] seasons = "seasons"
   let [<Literal>] date = "date"
 
-  let [<Literal>] pairImage = "pair-image"
   let [<Literal>] pairSelect = "pair-select"
   let [<Literal>] back = "back"
 
