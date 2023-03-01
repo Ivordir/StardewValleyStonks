@@ -18,16 +18,16 @@ module Values =
 
 [<RequireQualifiedAccess>]
 module Class =
-  let [<Literal>] settingsGroup = "settings-group"
-
   let [<Literal>] icon = "icon"
   let [<Literal>] iconText = "icon-text"
   let [<Literal>] iconProcessor = "icon-processor"
+  let [<Literal>] quality = "quality"
 
   let [<Literal>] button = "button"
   let [<Literal>] ok = "ok"
   let [<Literal>] cancel = "cancel"
   let [<Literal>] edit = "edit"
+  let [<Literal>] back = "back"
 
   let [<Literal>] fileInput = "file-input"
   let [<Literal>] inputBox = "input-box"
@@ -36,23 +36,22 @@ module Class =
 
   let [<Literal>] disabled = "disabled"
 
-  let [<Literal>] cropQualities = "crop-qualities"
+  let [<Literal>] seasons = "seasons"
+  let [<Literal>] date = "date"
+
+  let [<Literal>] settingsGroup = "settings-group"
+
   let [<Literal>] preset = "preset"
 
   let [<Literal>] skill = "skill"
   let [<Literal>] skillLevel = "skill-level"
   let [<Literal>] professions = "professions"
+  let [<Literal>] cropQualities = "crop-qualities"
 
   let [<Literal>] calendar = "calendar"
   let [<Literal>] calendarSeason = "calendar-season"
   let [<Literal>] calendarHeader = "calendar-header"
   let [<Literal>] calendarDays = "calendar-days"
-
-  let [<Literal>] quality = "quality"
-  let [<Literal>] seasons = "seasons"
-  let [<Literal>] date = "date"
-
-  let [<Literal>] back = "back"
 
   let [<Literal>] columnSelect = "column-select"
   let [<Literal>] columnSort = "column-sort"
