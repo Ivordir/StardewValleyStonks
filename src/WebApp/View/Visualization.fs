@@ -786,7 +786,6 @@ module Ranker =
     let i: int = fst props?payload
 
     Svg.path [
-      svg.className Class.pairSelect
       svg.onClick (fun _ -> selectPair i)
       svg.x x
       svg.y y
