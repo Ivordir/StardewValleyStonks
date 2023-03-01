@@ -227,11 +227,13 @@ input[type=range]
     --border-thin: 1px
     --border-med: 2px
 
+.hidden-text
+  font-size: 0
+  user-select: none
 
 .label-hidden
   @extend %colon
-  font-size: 0
-  user-select: none
+  @extend .hidden-text
 
 .label-text
   @extend %colon
@@ -582,6 +584,7 @@ input[type=range]
 
 .recharts-cartesian-axis-tick-value
   fill: black
+  user-select: none
 
 .recharts-cartesian-axis-line,
 .recharts-cartesian-axis-tick-line

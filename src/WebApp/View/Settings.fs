@@ -208,7 +208,7 @@ module Crops =
     fragment [
       div [ className Class.settingsGroup; children [
         labeled "View with quality" (Select.enum (length.em 4) productQuality (SetProductQuality >> cropTabDispatch))
-        Input.checkboxText "Show Normalized Prices" normalizedPrices (SetNormalizeProductPrices >> cropTabDispatch)
+        Input.checkbox "Show Normalized Prices" normalizedPrices (SetNormalizeProductPrices >> cropTabDispatch)
       ]]
 
       let price =
@@ -253,7 +253,7 @@ module Crops =
                 Input.nat (length.em 3) price (fun price -> setState (price, preserveQuality))
                 |> labeledHidden "Price"
 
-                Input.checkboxText
+                Input.checkbox
                   "Scale with quality"
                   preserveQuality
                   (fun preserveQuality -> setState (price, preserveQuality))
@@ -278,7 +278,7 @@ module Crops =
           (SetSeedStrategy >> SetProfit >> settingsDispatch)
         |> labeled "Seed Strategy"
 
-        Input.checkboxText
+        Input.checkbox
           "Joja Membership"
           settings.Game.JojaMembership
           (SetJojaMembership >> SetGameVariables >> settingsDispatch)
@@ -397,12 +397,12 @@ module Crops =
       |> labeledHidden "Search"
 
       div [
-        Input.checkboxText "In Season" filters.InSeason (SetInSeason >> dispatch)
+        Input.checkbox "In Season" filters.InSeason (SetInSeason >> dispatch)
         yield! (Enum.values |> Array.map (fun season ->
           Html.span [
             if filters.InSeason then className Class.disabled
             children
-              (Input.checkboxText
+              (Input.checkbox
                 (Season.name season)
                 (filters.Seasons |> Seasons.contains season)
                 (toggleSeason season >> SetSeasons >> dispatch))
@@ -471,7 +471,7 @@ module Fertilizers =
 
     fragment [
       div [ className Class.settingsGroup; children [
-        Input.checkboxText
+        Input.checkbox
           "Allow No Fertilizer"
           settings.Selected.NoFertilizer
           (SelectNoFertilizer >> selectDispatch)
@@ -515,7 +515,7 @@ module Fertilizers =
 
     fragment [
       div [ className Class.settingsGroup; children [
-        Input.checkboxText
+        Input.checkbox
           "Pay for Fertilizer"
           settings.Profit.PayForFertilizer
           (SetPayForFertilizer >> SetProfit >> dispatch)
@@ -523,7 +523,7 @@ module Fertilizers =
         Html.span [
           if not settings.Profit.PayForFertilizer then className Class.disabled
           children [
-            Input.checkboxText
+            Input.checkbox
               "Pay For Destroyed Fertilizer"
               settings.Profit.PayForDestroyedFertilizer
               (SetPayForDestroyedFertilizer >> SetProfit >> dispatch)
@@ -672,12 +672,12 @@ module Settings =
       foraging skills dispatch
 
       div [ className Class.settingsGroup; children [
-        Input.checkboxText
+        Input.checkbox
           "Ignore Skill Level Unlocks"
           skills.IgnoreSkillLevelRequirements
           (SetIgnoreSkillLevelRequirements >> dispatch)
 
-        Input.checkboxText
+        Input.checkbox
           "Ignore Profession Conflicts"
           skills.IgnoreProfessionConflicts
           (SetIgnoreProfessionConflicts >> dispatch)
@@ -686,9 +686,9 @@ module Settings =
 
   let multipliers multipliers dispatch =
     fragment [
-      Input.checkboxText "Bear's Knowledge" multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
+      Input.checkbox "Bear's Knowledge" multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
 
-      Input.checkboxText
+      Input.checkbox
         "Apply Tiller to Foraged Grapes and Blackberries"
         multipliers.TillerForForagedFruit
         (SetTillerForForagedFruit >> dispatch)
@@ -710,9 +710,9 @@ module Settings =
         (SetSeedStrategy >> dispatch)
       |> labeled "Seed Strategy"
 
-      Input.checkboxText "Pay For Fertilizer" profit.PayForFertilizer (SetPayForFertilizer >> dispatch)
+      Input.checkbox "Pay For Fertilizer" profit.PayForFertilizer (SetPayForFertilizer >> dispatch)
 
-      Input.checkboxText
+      Input.checkbox
         "Pay For Destroyed Fertilizer"
         profit.PayForDestroyedFertilizer
         (SetPayForDestroyedFertilizer >> dispatch)
@@ -720,7 +720,7 @@ module Settings =
 
   let priceSettings game profit dispatch =
     fragment [
-      Input.checkboxText
+      Input.checkbox
         "Joja Membership"
         game.JojaMembership
         (SetJojaMembership >> SetGameVariables >> dispatch)
@@ -733,7 +733,7 @@ module Settings =
   let cropSettings irrigated settings settingsDispatch =
     let dispatch = SetCropAmount >> settingsDispatch
     fragment [
-      Input.checkboxText "Irrigated" irrigated (SetIrrigated >> settingsDispatch)
+      Input.checkbox "Irrigated" irrigated (SetIrrigated >> settingsDispatch)
 
       Input.floatWithRange
         "Average Possible Giant Crops Per Tile"
@@ -752,7 +752,7 @@ module Settings =
         (SetShavingToolLevel >> dispatch)
       |> labeled "Shaving Enchantment"
 
-      Input.checkboxText "Special Charm" settings.SpecialCharm (SetSpecialCharm >> dispatch)
+      Input.checkbox "Special Charm" settings.SpecialCharm (SetSpecialCharm >> dispatch)
 
       Input.natWith (length.em 2) None (Some CropAmount.maxLuckBuff) settings.LuckBuff (SetLuckBuff >> dispatch)
       |> labeled "Luck Buff"
@@ -760,7 +760,7 @@ module Settings =
 
   let mods data modData dispatch =
     fragment [
-      Input.checkboxText "Quality Products" modData.QualityProducts (SetQualityProducts >> dispatch)
+      Input.checkbox "Quality Products" modData.QualityProducts (SetQualityProducts >> dispatch)
 
       ul [
         if not modData.QualityProducts then className Class.disabled

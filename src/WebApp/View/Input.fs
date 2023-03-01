@@ -127,14 +127,8 @@ let text (value: string) (dispatch: string -> unit) =
   ]
 
 
-let private checkboxLabel (children: ReactElement list) =
-  label [
-    className Class.checkbox
-    prop.children children
-  ]
-
 let checkboxWith children value dispatch =
-  checkboxLabel [
+  label [ className Class.checkbox; prop.children [
     input [
       prop.type'.checkbox
       isChecked value
@@ -144,18 +138,15 @@ let checkboxWith children value dispatch =
     img [ alt "" ]
 
     children
-  ]
+  ]]
 
-let checkboxText (text: string) value msg = checkboxWith (Html.span text) value msg
+let checkbox (text: string) value msg = checkboxWith (Html.span text) value msg
 
-let checkbox labelText value dispatch =
-  checkboxLabel [
-    input [
-      prop.type'.checkbox
-      isChecked value
-      onCheckedChange dispatch
-      ariaLabel labelText
-    ]
-
-    img [ alt "" ]
-  ]
+let checkboxHiddenText (labelText: string) value dispatch =
+  checkboxWith
+    (Html.span [
+      className Class.hiddenText
+      prop.text labelText
+    ])
+    value
+    dispatch

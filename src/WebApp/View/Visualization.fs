@@ -958,7 +958,7 @@ module Ranker =
             (SetTimeNormalization >> dispatch)
         ]
 
-        Input.checkboxText "Show Invalid" ranker.ShowInvalid (SetShowInvalid >> dispatch)
+        Input.checkbox "Show Invalid" ranker.ShowInvalid (SetShowInvalid >> dispatch)
       ]]
 
       if Array.isEmpty pairs then

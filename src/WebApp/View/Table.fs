@@ -86,8 +86,8 @@ let private tableHeader key columns items sortCol ascending sortDispatch =
             ]
             children [
               if keys.IsEmpty
-              then Input.checkbox "Select All" false ignore
-              else Input.checkbox "Select All" allSelected (curry SetManySelected keys >> dispatch)
+              then Input.checkboxHiddenText "Select All" false ignore
+              else Input.checkboxHiddenText "Select All" allSelected (curry SetManySelected keys >> dispatch)
             ]
           ])
 
@@ -131,7 +131,7 @@ let private tableBody key columns items rowDisabled =
                 if column.Disabled then Class.disabled
               ]
               children (selected key |> ofOption (fun selected ->
-                Input.checkbox "Select" selected (curry SetSelected key >> dispatch)))
+                Input.checkboxHiddenText "Select" selected (curry SetSelected key >> dispatch)))
             ])
 
           if column.Key then
