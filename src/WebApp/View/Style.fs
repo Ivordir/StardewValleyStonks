@@ -11,8 +11,6 @@ module Values =
     let fontSize: string = Browser.Dom.window?getComputedStyle(root)?getPropertyValue("font-size")
     (fontSize.Substring(0, fontSize.Length - 2)) |> float |> ceil
 
-  let fontSize = int fontPx
-
   do
     setPx "border-thin" (max 1.0 (fontPx / 8.0))
     setPx "border-med" (max 2.0 (fontPx / 6.0))

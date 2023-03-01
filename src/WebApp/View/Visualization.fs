@@ -707,40 +707,33 @@ module Ranker =
 
   type private Pairs = (SeedId * FertilizerName option) array
 
-  let private selectFromGraph (pairs: Pairs) rankItem dispatch i =
-    let crop, fert = pairs[i]
-    (match rankItem with
-    | RankCropsAndFertilizers -> (Some crop, Some fert)
-    | RankCrops -> (Some crop, None)
-    | RankFertilizers -> (None, Some fert))
-    |> Some
-    |> SetSelectedCropAndFertilizer
-    |> dispatch
+  let private iconSize = Values.fontPx * 1.5 |> round
+  let private iconGap = Values.fontPx * 0.25 |> round |> max 1.0
+  let private barGap = iconGap
 
-  let private pairImage (pairs: Pairs) (data: GameData) selectPair (props: IXAxisTickProperties) =
+  let private pairImage (pairs: Pairs) (data: GameData) (props: IXAxisTickProperties) =
     let index: int = props?payload?value
     let seed, fert = pairs[index]
-    Svg.svg [
-      svg.className Class.pairImage
-      svg.onClick (fun _ -> selectPair index)
-      svg.x (props.x - 10.0)
-      svg.y props.y
-      svg.width 20
-      svg.height 40
-      svg.children [
-        Svg.image [
-          svg.href (Icon.Path.item (Crop.mainItem data.Crops[seed]))
-          svg.width 20
-          svg.height 20
-        ]
-        fert |> ofOption (fun fert ->
-          Svg.image [
-            svg.href (Icon.Path.fertilizer fert)
-            svg.width 20
-            svg.height 20
-            svg.y 20
-          ])
+    let item = Crop.mainItem data.Crops[seed]
+
+    fragment [
+      Svg.image [
+        svg.href (Icon.Path.item item)
+        svg.x (props.x - iconSize / 2.0)
+        svg.y (props.y + iconGap)
+        svg.width iconSize
+        svg.height iconSize
+        svg.children [ Svg.title (Item.name data.Items[item]) ]
       ]
+      fert |> ofOption (fun fert ->
+        Svg.image [
+          svg.href (Icon.Path.fertilizer fert)
+          svg.width iconSize
+          svg.height iconSize
+          svg.x (props.x - iconSize / 2.0)
+          svg.y (props.y + iconSize + iconGap * 2.0)
+          svg.children [ Svg.title fert ]
+        ])
     ]
 
   let private chartProfitTooltip data settings timeNorm roi fertilizer crop profit =
@@ -791,6 +784,7 @@ module Ranker =
     let width: float = props?width + gap
     let height: float = props?height
     let i: int = fst props?payload
+
     Svg.path [
       svg.className Class.pairSelect
       svg.onClick (fun _ -> selectPair i)
@@ -801,98 +795,124 @@ module Ranker =
       svg.d (svgRectPath x y width height)
     ]
 
-  let private errorBar (pairs: Pairs) props =
+  let private errorBar data metric (pairs: Pairs) props =
     let x: float = props?x
     let y: float = props?y
     let width: float = props?width
     let height: float = props?height
-    match snd props?payload with
-    | Ok _ ->
-      Svg.path [
-        svg.fill "blue"
-        svg.radius 0
-        svg.x x
-        svg.y y
-        svg.width width
-        svg.height height
-        svg.d (svgRectPath x y width height)
-      ]
-    | Error (flags: Query.InvalidReasons) ->
-      let seed, fert = pairs[fst props?payload]
-      let maxHeight = width * 3.0
-      let y: float = props?background?height - maxHeight
-      Svg.svg [
-        svg.x x
-        svg.y y
-        svg.width width
-        svg.height maxHeight
-        svg.children [
+    let index, value = props?payload
+    let seed, fert = pairs[index]
+    let cropDesc = Crop.name data.Items.Find data.Crops[seed]
+    let fertDesc = fert |> Option.defaultOrMap "" (fun fert -> $" with {fert}")
+    let valueDesc = value |> Option.ofResult |> Option.defaultOrMap "???" (fun value ->
+      $"{round2 (value * if metric = ROI then 100.0 else 1.0)}{RankMetric.unit metric}")
+
+    fragment [
+      Svg.title $"{cropDesc}{fertDesc}: {valueDesc}"
+
+      match value with
+      | Ok _ ->
+        Svg.path [
+          svg.radius 0
+          svg.x x
+          svg.y y
+          svg.width width
+          svg.height height
+          svg.d (svgRectPath x y width height)
+          svg.tabIndex 0
+          svg.onFocus ignore
+        ]
+
+      | Error (flags: Query.InvalidReasons) ->
+        let gap = width / 4.0
+        let maxErrors = 3
+        let maxHeight = width * (float maxErrors) + gap * (float (maxErrors - 1))
+        let y: float = props?background?height - maxHeight
+
+        let errors = [
           if flags.HasFlag Query.InvalidReasons.NoFertilizerPrice then
-            fert |> ofOption (fun fert ->
-              Svg.image [
-                svg.href (Icon.Path.fertilizer fert)
-                svg.height width
-              ])
+            Icon.Path.fertilizer fert.Value, "No fertilizer price"
           if flags.HasFlag Query.InvalidReasons.NotEnoughSeeds then
-            Svg.image [
-              svg.href (Icon.Path.item (toItem seed))
-              svg.height width
-              svg.y width
-            ]
+            Icon.Path.item (toItem seed), "No seed source"
           if flags.HasFlag Query.InvalidReasons.NotEnoughDays then
+            "img/Time.png", "No harvests possible"
+        ]
+
+        Svg.g [
+          svg.tabIndex 0
+          svg.onFocus ignore
+          svg.children (errors |> List.mapi (fun i (path, alt) ->
             Svg.image [
-              svg.href "img/Time.png"
+              svg.href path
+              svg.x x
+              svg.y (y + (width + gap) * float (maxErrors - 1 - i))
               svg.width width
               svg.height width
-              svg.y (width * 2.0)
+              svg.children [ Svg.title alt ]
             ]
+          ))
         ]
-      ]
+    ]
 
-  let private graph ranker data settings pairs dispatch =
+  let private chart ranker data settings pairs dispatch =
     let pairs, indexedValues =
       pairs
       |> Array.mapi (fun i (pair, value) -> pair, (i, value))
       |> Array.unzip
 
-    let barGap = 4.0
-    let selectPair = selectFromGraph pairs ranker.RankItem dispatch
+    let selectPair i =
+      let crop, fert = pairs[i]
+      (match ranker.RankItem with
+      | RankCropsAndFertilizers -> (Some crop, Some fert)
+      | RankCrops -> (Some crop, None)
+      | RankFertilizers -> (None, Some fert))
+      |> Some
+      |> SetSelectedCropAndFertilizer
+      |> dispatch
+
     Recharts.responsiveContainer [
-      responsiveContainer.debounce 200
-      responsiveContainer.width (length.percent 100)
+      responsiveContainer.debounce 100
       responsiveContainer.chart (Recharts.barChart [
         barChart.data indexedValues
-        barChart.barSize 40
         barChart.barGap barGap
+        Interop.mkBarChartAttr "title" "Bar chart"
         barChart.children [
-          Recharts.yAxis [
-            yAxis.unit (RankMetric.unit ranker.RankMetric)
-            yAxis.domain (domain.constant 0, domain.auto)
-            if ranker.RankMetric = ROI then Interop.mkYAxisAttr "tickFormatter" (fun x -> x * 100.0)
-            yAxis.width (Values.fontSize * 4)
-          ]
           Recharts.tooltip [
             tooltip.content (chartTooltip pairs data settings ranker.TimeNormalization ranker.RankMetric)
           ]
+
           Recharts.bar [
-            bar.dataKey (snd >> function Ok y -> y | Error _ -> 0.0)
-            bar.fill "blue"
+            bar.dataKey (snd >> Result.defaultValue 0.0)
+            bar.barSize (float iconSize * 1.5 |> round |> int)
             bar.onClick (fun props -> props?payload |> fst |> selectPair)
+            Interop.mkBarAttr "shape" (errorBar data ranker.RankMetric pairs)
             Interop.mkBarAttr "background" (barBackground barGap selectPair)
-            Interop.mkBarAttr "shape" (errorBar pairs)
           ]
+
+          Recharts.yAxis [
+            yAxis.unit (RankMetric.unit ranker.RankMetric)
+            yAxis.domain (domain.constant 0, domain.auto)
+            yAxis.width (Values.fontPx * 4.0)
+            Interop.mkYAxisAttr "tickSize" (Values.fontPx / 2.0)
+            if ranker.RankMetric = ROI then Interop.mkYAxisAttr "tickFormatter" (fun x -> x * 100.0)
+          ]
+
+          Recharts.xAxis [
+            xAxis.dataKey (fst: _ -> int)
+            xAxis.tick (pairImage pairs data)
+            xAxis.interval 0
+            xAxis.height (iconSize * 2.0 + iconGap * 3.0 + 10.0)
+            Interop.mkXAxisAttr "tickSize" 0
+          ]
+
           Recharts.brush [
             brush.startIndex (ranker.BrushSpan |> fst |> int |> clampIndex pairs)
             brush.endIndex (ranker.BrushSpan |> snd |> int |> clampIndex pairs)
-            brush.height 30
+            brush.height (int Values.fontPx * 2)
+            Interop.mkBrushAttr "travellerWidth" (Values.fontPx / 2.0)
             Interop.mkBrushAttr "onChange" (fun i -> SetBrushSpan (i?startIndex, i?endIndex) |> dispatch)
           ]
-          Recharts.xAxis [
-            xAxis.dataKey (fst: _ -> int)
-            xAxis.tick (pairImage pairs data selectPair)
-            xAxis.interval 0
-            xAxis.height 50
-          ]
+
         ]
       ])
     ]
@@ -923,7 +943,7 @@ module Ranker =
       | Error a, Error b -> Enum.bitSetOrder (int a) (int b))
 
     fragment [
-      div [ prop.id "graph-controls"; children [
+      div [ prop.id "chart-controls"; children [
         div [
           div [
             ofStr "Rank"
@@ -945,9 +965,9 @@ module Ranker =
         emptyPairData pairData
       else
         div [
-          prop.id "graph"
+          prop.id "chart"
           // rerender only if computed pairs or RankMetric changes
-          children (lazyView2 (fst >> graph ranker data settings) (pairs, ranker.RankMetric) dispatch)
+          children (lazyView3 (konst (chart ranker data settings)) ranker.RankMetric pairs dispatch)
         ]
     ]
 
@@ -1188,8 +1208,7 @@ let section app dispatch =
 
   section [
     prop.id "visualization"
-    if ui.Mode = Ranker && ui.Ranker.SelectedCropAndFertilizer.IsNone then
-      className "visualization-graph"
+    if ui.Mode = Ranker && ui.Ranker.SelectedCropAndFertilizer.IsNone then className "visualization-chart"
     children [
       tabs "Visualization" ui.Mode (SetAppMode >> uiDispatch) (function
         | Ranker -> rankerOrSummary app uiDispatch

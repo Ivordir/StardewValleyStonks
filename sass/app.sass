@@ -60,9 +60,6 @@ main
     grid-template-rows: max-content
     overflow: hidden
 
-#graph
-  overflow: hidden
-
 footer
   scroll-snap-align: end
 
@@ -211,7 +208,7 @@ input[type=range]
   [role=tabpanel]
     overflow: unset
 
-  .visualization-graph
+  .visualization-chart
     height: $one-column-min-height
 
     & > [role=tabpanel]
@@ -532,9 +529,10 @@ input[type=range]
         top: $counter-offset
         left: calc(#{$counter-offset} + 0.125rem)
 
-#graph
+#chart
   flex-grow: 1
   min-height: 0
+  overflow: hidden
 
   &-controls
     display: flex
@@ -552,17 +550,22 @@ input[type=range]
       align-items: center
       column-gap: 0.5em
 
-.recharts-wrapper
-  overflow: hidden
-
 .recharts-tooltip-wrapper:focus
   outline: none
 
 .recharts-bar-rectangle
   cursor: pointer
 
-.pair-image
-  cursor: pointer
+  & > path
+    fill: #0060b6
+
+.recharts-cartesian-axis-tick-value
+  fill: black
+
+.recharts-cartesian-axis-line,
+.recharts-cartesian-axis-tick-line
+  stroke: black
+  stroke-width: 1.5
 
 .pair-select
   cursor: pointer

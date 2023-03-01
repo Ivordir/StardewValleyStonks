@@ -246,7 +246,7 @@ let defaultRanker = {
   RankMetric = Gold
   TimeNormalization = PerSeason
   ShowInvalid = false
-  BrushSpan = 0u, 24u
+  BrushSpan = 0u, 20u
   SelectedCropAndFertilizer = None
 }
 

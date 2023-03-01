@@ -75,6 +75,10 @@ module Result =
     | Ok x -> x
     | Error _ -> invalidArg "result" "The result value was Error."
 
+  let defaultValue defaultValue = function
+    | Ok x -> x
+    | Error _ -> defaultValue
+
   let isOk = function
     | Ok _ -> true
     | Error _ -> false
