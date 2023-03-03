@@ -121,19 +121,16 @@ module GrowthCalendar =
     |> Array.chunkBySize (int Date.daysInSeason)
     |> Array.zip (Date.seasonSpan span.StartDate span.EndDate)
     |> Array.map (fun (season, days) ->
-      div [
-        className Class.calendarSeason
-        children [
-          div [
-            className Class.calendarHeader
-            children (Icon.season season)
-          ]
-          div [
-            className Class.calendarDays
-            children days
-          ]
+      div [ className Class.calendarSeason; children [
+        div [ className Class.calendarHeader; children [
+          Icon.season season
+          span.Fertilizer |> ofOption Icon.fertilizer
+        ]]
+        div [
+          className Class.calendarDays
+          children days
         ]
-      ])
+      ]])
 
   let optimizer data settings dateSpan = fromDateSpan data settings false dateSpan
 

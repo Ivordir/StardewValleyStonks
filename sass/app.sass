@@ -544,11 +544,20 @@ input[type=range]
     min-width: min-content
 
   &-header
-    display: flex
-    justify-content: center
-    align-items: center
-    font-size: 2rem
-    margin-bottom: 0.25em
+    display: grid
+    grid-template-columns: repeat(3, 1fr)
+    place-items: center
+    padding: 1em
+    column-gap: 1em
+
+    & > span:last-child
+      font-size: 1.25rem
+      grid-column: 3
+
+    & > span:first-child
+      font-size: 2rem
+      grid-column: 2
+
 
   &-days
     display: grid
