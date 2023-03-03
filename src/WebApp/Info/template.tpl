@@ -9,7 +9,13 @@
   <link rel="stylesheet" href="/sass/info.sass">
 </head>
 <body>
-  <header>Stardew Valley Stonks</header>
+  <header>
+    <a href="https://ivordir.github.io/StardewValleyStonks/">
+      <img src="/public/img/Title/Stardew.png" alt="Stardew">
+      <img src="/public/img/Title/Valley.png" alt="Valley">
+      <img src="/public/img/Title/Stonks.png" alt="Stonks">
+    </a>
+  </header>
   <main>
     <nav>
       $toc$
