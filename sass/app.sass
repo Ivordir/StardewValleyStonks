@@ -24,7 +24,7 @@
     @extend %square-button
     width: $width
     height: $width
-    background-image: common.ui-img("#{$name}")
+    background-image: common.ui-img($name)
 
 @include square-button(Ok, 2.5rem)
 @include square-button(Cancel, 2.5rem)
@@ -150,7 +150,7 @@ input[type=range]
     border-radius: 0
     width: fromPx(10)
     height: $height
-    background: common.ui-img("Range Thumb")
+    background: common.ui-img(Range Thumb)
     background-size: contain
 
   &::-webkit-slider-thumb
@@ -164,7 +164,7 @@ input[type=range]
     height: $height
     $width: 2
     $img-scale: 11
-    border-image-source: common.ui-img("Range Track")
+    border-image-source: common.ui-img(Range Track)
     border-image-slice: ($img-scale * $width) fill
     border-image-width: fromPx($width)
 
@@ -259,7 +259,7 @@ input[type=range]
 
   $img-scale: 6
   image-rendering: pixelated
-  border-image-source: common.ui-img("Input Box")
+  border-image-source: common.ui-img(Input Box)
   border-image-slice: ($img-scale * 3) ($img-scale * 3) ($img-scale * 2) ($img-scale * 2) fill
   border-image-width: 0.5rem
   padding: 0.625em 0.5em 0.5em 0.5em
@@ -285,7 +285,7 @@ input[type=range]
     left: 0
 
   & > input + img
-    content: common.ui-img("Checkbox")
+    content: common.ui-img(Checkbox)
     vertical-align: text-bottom
     width: 1.5em
     height: 1.5em
@@ -294,7 +294,7 @@ input[type=range]
       margin-right: 0.5em
 
   & > input:checked + img
-    content: common.ui-img("Checkedbox")
+    content: common.ui-img(Checkedbox)
 
   & > input:focus + img
     @extend %focus-outline
@@ -328,7 +328,7 @@ input[type=range]
     position: relative
 
   & > img
-    content: common.ui-img("Select Spinner")
+    content: common.ui-img(Select Spinner)
     height: 1rem + 2 * $padding
     border: var(--border)
     border-left: none
@@ -396,7 +396,7 @@ input[type=range]
   color: black
   image-rendering: pixelated
   $img-scale: 7
-  border-image-source: common.ui-img("Button")
+  border-image-source: common.ui-img(Button)
   border-image-slice: ($img-scale * 2) fill
   border-image-width: 0.25em
   padding: 0.625em 0.5em 0.5em 0.5em
