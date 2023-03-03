@@ -22,9 +22,9 @@
     "bundle-report": "pnpm build:pandoc && pnpm build:fable && parcel build --public-url './' --reporter @parcel/reporter-bundle-analyzer"
   },
   "dependencies": {
-    "preact": "^10.12.0",
+    "preact": "^10.13.0",
     "react-error-boundary": "^3.1.4",
-    "recharts": "^2.4.0",
+    "recharts": "^2.4.3",
     "yalps": "^0.3.0"
   },
   "devDependencies": {
