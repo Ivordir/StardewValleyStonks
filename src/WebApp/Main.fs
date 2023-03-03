@@ -11,6 +11,11 @@ open Elmish
 open Elmish.React
 
 open type Html
+open type prop
+open type React
+
+open Core.Operators
+open Core.ExtraTopLevelOperators
 
 open StardewValleyStonks.WebApp
 open type StardewValleyStonks.WebApp.Update.AppMessage
@@ -35,23 +40,36 @@ let update msg app =
     Browser.Dom.window.location.reload ()
     app
 
+let viewError (e: exn) dispatch =
+  div [ prop.id "app-error"; children [
+    Html.span [
+      Icon.errorWith (Html.span [
+        ofStr """
+          Whoops, something went wrong. Please try reloading the page.
+          If this message remains after reloading the page, try doing a
+        """
+        Settings.LoadSave.nuclearReset dispatch
+      ])
+    ]
+
+    details [
+      summary "Error Message"
+      div (sprintf "%A" e)
+    ]
+  ]]
+
+[<ReactComponent(import="ErrorBoundary", from="react-error-boundary")>]
+let ErrorBoundary (fallbackRender: {| error: exn |} -> ReactElement, children: ReactElement seq) = imported ()
+
 let view app dispatch =
   try
-    React.fragment [
+    ErrorBoundary ((fun e -> viewError e.error dispatch), [
       Visualization.section app (SetState >> dispatch)
       Settings.section app dispatch
-    ]
+    ])
   with e ->
-    console.error e
-    div [
-      ofStr "Whoops, something went wrong. Please try reloading the page. If this message remains after reloading the page, try doing a "
-      Settings.LoadSave.nuclearReset dispatch
-      br []
-      details [
-        summary "Error Message"
-        ofStr (sprintf "%A" e)
-      ]
-    ]
+    console.log e
+    viewError e dispatch
 
 let localStorageSub dispatch =
   Data.LocalStorage.subscribe (SyncPresets >> dispatch)
