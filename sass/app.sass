@@ -241,13 +241,11 @@ input[type=range]
     --border-thin: 1px
     --border-med: 2px
 
-.hidden-text
-  font-size: 0
-  user-select: none
 
 .label-hidden
   @extend %colon
-  @extend .hidden-text
+  font-size: 0
+  user-select: none
 
 .label-text
   @extend %colon
@@ -301,6 +299,9 @@ input[type=range]
 
   &:hover > input + img
     @extend %hover-scale
+
+  &.hidden-text > span:first-child
+    font-size: 0
 
 .select
   $padding: 0.5rem

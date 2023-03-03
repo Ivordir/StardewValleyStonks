@@ -33,9 +33,9 @@ module Class =
   let [<Literal>] inputBox = "input-box"
   let [<Literal>] numberAndRange = "number-and-range"
   let [<Literal>] checkbox = "checkbox"
+  let [<Literal>] hiddenText = "hidden-text"
   let [<Literal>] labelText = "label-text"
   let [<Literal>] labelHidden = "label-hidden"
-  let [<Literal>] hiddenText = "hidden-text"
 
   let [<Literal>] disabled = "disabled"
 
