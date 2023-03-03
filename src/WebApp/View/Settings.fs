@@ -996,6 +996,6 @@ let section app dispatch =
     tabs "Settings" ui.SettingsTab (SetSettingsTab >> SetUI >> dispatch) (function
       | Crops -> Crops.tab app dispatch
       | Fertilizers -> Fertilizers.tab app dispatch
-      | Settings -> Settings.tab ui.OpenDetails app.Data settings.Game settings.Profit dispatch
+      | Misc -> Settings.tab ui.OpenDetails app.Data settings.Game settings.Profit dispatch
       | LoadSave -> LoadSave.tab app.Presets settings appDispatch)
   ]]

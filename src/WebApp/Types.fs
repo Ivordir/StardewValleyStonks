@@ -296,7 +296,7 @@ type OptimizationObjective =
 type SettingsTab =
   | Crops
   | Fertilizers
-  | Settings
+  | Misc
   | [<CompiledName ("Load/Save")>] LoadSave
 
 [<RequireQualifiedAccess>]
