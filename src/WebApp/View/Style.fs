@@ -21,6 +21,7 @@ module Class =
   let [<Literal>] icon = "icon"
   let [<Literal>] iconText = "icon-text"
   let [<Literal>] iconProcessor = "icon-processor"
+  let [<Literal>] iconMessage = "icon-message"
   let [<Literal>] quality = "quality"
 
   let [<Literal>] button = "button"
@@ -43,7 +44,8 @@ module Class =
   let [<Literal>] date = "date"
 
   let [<Literal>] settingsGroup = "settings-group"
-
+  let [<Literal>] messages = "messages"
+  let [<Literal>] messagesLarge = "messages-large"
   let [<Literal>] preset = "preset"
 
   let [<Literal>] skill = "skill"

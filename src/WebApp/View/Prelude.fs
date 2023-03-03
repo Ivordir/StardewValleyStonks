@@ -95,6 +95,20 @@ module Icon =
 
   let private fromClassName name = fromClassNameAndAlt name ""
 
+  let private messageWithChildren (name: string) (children: ReactElement) =
+    Html.span [ className Class.iconMessage; prop.children [
+      fromClassName name
+      Html.span children
+    ]]
+
+  let warningWith children = messageWithChildren "warning" children
+  let errorWith children = messageWithChildren "error" children
+
+  let private message name text = messageWithChildren name (ofStr text)
+
+  let warning text = message "warning" text
+  let error text = message "error" text
+
   let private fromImageAndText img text =
     Html.span [ className Class.iconText; children [
       img

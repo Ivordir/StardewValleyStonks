@@ -18,17 +18,17 @@ open Core.ExtraTopLevelOperators
 
 let noHarvestsMessage settings crop =
   if Game.cropIsInSeason settings.Game crop
-  then "No harvests possible!"
-  else "Crop not in season!"
-  |> ofStr
+  then "No harvests possible."
+  else "Crop is not in season."
+  |> Icon.warning
 
 let invalidReasons settings crop (reasons: Query.InvalidReasons) =
-  div [
+  div [ className Class.messages; children [
     if reasons.HasFlag Query.InvalidReasons.NotEnoughDays then noHarvestsMessage settings crop
-    if reasons.HasFlag Query.InvalidReasons.NoFertilizerPrice then ofStr "No fertilizer price!"
-    if reasons.HasFlag Query.InvalidReasons.NotEnoughSeeds then ofStr "No seed source!"
-    if reasons.HasFlag Query.InvalidReasons.NoInvestment then ofStr "No investment!"
-  ]
+    if reasons.HasFlag Query.InvalidReasons.NotEnoughSeeds then Icon.warning "No seed source."
+    if reasons.HasFlag Query.InvalidReasons.NoFertilizerPrice then Icon.warning "No fertilizer price."
+    if reasons.HasFlag Query.InvalidReasons.NoInvestment then Icon.warning "No investment."
+  ]]
 
 
 module GrowthCalendar =
@@ -684,10 +684,10 @@ let private pairData metric timeNorm data settings =
   }
 
 let private emptyPairData (pairData: PairData) =
-  div [
-    if Array.isEmpty pairData.Crops then ofStr "No crops selected!"
-    if Array.isEmpty pairData.Fertilizers then ofStr "No fertilizers selected!"
-  ]
+  div [ className [ Class.messages; Class.messagesLarge ]; children [
+    if Array.isEmpty pairData.Crops then Icon.warning "No crops selected."
+    if Array.isEmpty pairData.Fertilizers then Icon.warning "No fertilizers selected."
+  ]]
 
 let rankBy (label: ReactElement) (metric: RankMetric) (timeNorm: TimeNormalization) dispatchMetric dispatchTimeNorm =
   div [

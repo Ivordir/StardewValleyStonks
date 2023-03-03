@@ -30,6 +30,9 @@
 @include square-button(Cancel, 2.5rem)
 @include square-button(Edit, 1.5rem)
 
+@include common.icon-img(Warning, UI)
+@include common.icon-img(Error, UI)
+
 
 html
   scroll-snap-type: y mandatory
@@ -439,6 +442,30 @@ input[type=range]
     border: black solid var(--border-thin)
     background: lightgray
     height: 10rem
+
+.messages
+  display: flex
+  flex-direction: column
+  align-items: flex-start
+  row-gap: 0.5em
+
+  &-large
+    margin: 25% auto auto auto
+    font-size: 1.5rem
+
+.icon-message
+  display: flex
+  column-gap: 0.5em
+
+  & > :last-child
+    margin-top: 0.375em
+    display: flex
+    flex-direction: column
+    row-gap: 0.25em
+
+    & > ul
+      padding-left: 1em
+      list-style: unset
 
 .professions
   display: grid

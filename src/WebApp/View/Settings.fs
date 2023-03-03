@@ -858,21 +858,25 @@ module LoadSave =
     ]]
 
   let saveFileMessages presets = ofOption (fun (fileName, preset) ->
-    fragment [
+    div [ className Class.messages; children [
       if fileName <> "SaveGameInfo" then
-        ofStr $"It appears you have chosen a file named \"{fileName}\". Please choose the file named \"SaveGameInfo\"."
+        Icon.warning $"""It appears you have chosen a file named "{fileName}". Please choose the file named "SaveGameInfo"."""
 
       match preset with
-      | None -> ofStr "Failed to load the save game."
+      | None -> Icon.error "Failed to load the save game."
       | Some (preset, missing: string array) ->
-        if missing.Length > 0 then
-          ofStr "Warning: failed to load the following data from the save game:"
-          ul (missing |> Array.map li)
-          ofStr "Click \"Ok\" if you want to continue anyways."
-
         if preset.UniqueId |> Option.exists (fun uniqueId -> presets |> List.exists (Preset.hasId uniqueId)) then
-          ofStr "This save game has been previously imported. Clicking \"Ok\" will update/overwrite the existing preset."
-    ])
+          Icon.warning """This save game has been previously imported. Clicking "Ok" will update/overwrite the existing preset."""
+
+        if missing.Length > 0 then
+          div [
+            Icon.warningWith (fragment [
+              Html.span "Warning: failed to load the following data from the save game:"
+              ul (missing |> Array.map li)
+              Html.span """Click "Ok" if you want to continue anyways."""
+            ])
+          ]
+    ]])
 
   let importSave presets dispatch =
     Dialog.toggleEditWith
@@ -897,15 +901,20 @@ module LoadSave =
           ]
 
           saveFileInput (save |> Option.bind snd |> Option.map fst) setSave
+
           saveFileMessages presets save
         ])
 
   let nuclearReset dispatch =
     Dialog.confirmAction
       "Nuclear Reset"
-      (ofStr "Nuclear Reset")
+      (Icon.warning "Nuclear Reset")
       (fun () -> dispatch NuclearReset)
-      (p "Note: This will reset Stardew Valley Stonks to its default settings, deleting all custom presets in the process.")
+      (p [
+        ofStr "Warning: This will reset Stardew Valley Stonks to its default settings, "
+        strong "deleting"
+        ofStr " all custom presets in the process."
+      ])
 
   let presetList presets loadDispatch saveDispatch =
     let presets =
