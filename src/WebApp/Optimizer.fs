@@ -30,7 +30,8 @@ But one harvest may not provide enough low quality items to create enough of the
 In this case, the seed cost monotonically decreases as the the number of harvests increase,
 until the mimimum possible seed cost is eventually reached.
 This is not exactly linear, and considering the rarity of this case,
-a variable will be created for each number of harvests below the required number of harvests to reach the minimum seed cost.
+a variable will be created for each number of harvests below
+the required number of harvests to reach the minimum seed cost.
 
 On top of this, crops can grow in two consecutive seasons.
 If a crop is planted at the end of the season and grows into the next season,
