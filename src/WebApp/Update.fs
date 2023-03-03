@@ -316,7 +316,7 @@ let ui msg ui =
   match msg with
   | SetAppMode mode -> { ui with Mode = mode }
   | SetRanker msg -> { ui with Ranker = ranker msg ui.Ranker }
-  | SetOptimizationObjective mode -> { ui with OptimizationObjective = mode }
+  | SetOptimizationObjective objective -> { ui with OptimizationObjective = objective }
   | SetSettingsTab tab -> { ui with SettingsTab = tab }
   | SetDetailsOpen (details, selected) -> { ui with OpenDetails = ui.OpenDetails |> setSelected selected details }
   | SetCropTabState msg -> { ui with CropTab = cropTab msg ui.CropTab }

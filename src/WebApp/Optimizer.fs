@@ -255,9 +255,9 @@ let private createModels startSeason endSeason constraintsAndVariables fertilize
 
     request, model)
 
-let private fertilizerAndCropData data settings mode (seasons: _ array) =
+let private fertilizerAndCropData data settings objective (seasons: _ array) =
   let fertilizerFilter, objectiveValue, objectiveValueWithFertilizer, regrowCropData =
-    match mode with
+    match objective with
     | MaximizeGold ->
       removeStrictlyWorseFertilizers,
       (fun crop data (fertilizer: Fertilizer option) fertCost ->
@@ -308,7 +308,7 @@ let private fertilizerAndCropData data settings mode (seasons: _ array) =
   fertilizerData, cropData, regrowCropData, objectiveValue
 
 
-let private createRequests data settings mode =
+let private createRequests data settings objective =
   let seasons, days =
     if settings.Game.Location = Farm then
       Date.seasonSpan settings.Game.StartDate settings.Game.EndDate,
@@ -318,7 +318,7 @@ let private createRequests data settings mode =
       [| Date.totalDays settings.Game.StartDate settings.Game.EndDate |]
 
   let fertilizerData, cropData, regrowCropData, objectiveValue =
-    fertilizerAndCropData data settings mode seasons
+    fertilizerAndCropData data settings objective seasons
 
   let rec nextSeasonModels prevDays startSeason endSeason regrowCropVars regrowValues constraintsAndVariables models =
     let totalDays = prevDays + days[startSeason]
@@ -471,25 +471,25 @@ let createWorker () =
   let mutable inProgressRequest = None
   let mutable nextRequest = None
 
-  let postWorker data settings mode =
-    let requests, models = Array.unzip (createRequests data settings mode)
+  let postWorker data settings objective =
+    let requests, models = Array.unzip (createRequests data settings objective)
     inProgressRequest <- Some (settings, requests)
     worker.postMessage (models: Worker.Input)
 
-  let queue data settings mode =
+  let queue data settings objective =
     if inProgressRequest.IsNone
-    then postWorker data settings mode
-    else nextRequest <- Some (data, settings, mode)
+    then postWorker data settings objective
+    else nextRequest <- Some (data, settings, objective)
 
   let subscribe dispatch =
     worker.onmessage <- (fun e ->
       match e.data, inProgressRequest with
       | :? Worker.Output as solutions, Some (settings, requests) ->
         match nextRequest with
-        | Some (data, settings, mode) ->
+        | Some (data, settings, objective) ->
           // old request finished solving, ignore and send most recent request to worker
           nextRequest <- None
-          postWorker data settings mode
+          postWorker data settings objective
         | None ->
           // finished solving most recent request, dispatch solution
           inProgressRequest <- None
