@@ -33,10 +33,7 @@ let [<ReactComponent>] private Dialog (props: {|
     ariaLabelledBy dialogTitleId
     Interop.mkAttr "onClose" (fun _ -> props.Close false)
     children [
-      h1 [
-        prop.id dialogTitleId
-        children props.Title
-      ]
+      h1 props.Title
       props.Children (fun () -> ref.current |> Option.iter (fun m -> m.close ()))
       div [
         if props.Cancel then
@@ -77,15 +74,18 @@ let [<ReactComponent>] private EditDialogToggle (props: {|
       |})
   ]
 
+let private toggleButton (css: string) (label: IReactProperty) toggle =
+  button [
+    className css
+    Interop.mkAttr "aria-has-popup" "dialog"
+    onClick (ignore >> toggle)
+    label
+  ]
+
 let toggleEditWith (buttonText: string) title state dispatch children =
   EditDialogToggle {|
     Title = title
-    Toggle = fun toggle ->
-      button [
-        className Class.button
-        onClick (ignore >> toggle)
-        text buttonText
-      ]
+    Toggle = toggleButton Class.button (text buttonText)
     State = state
     Dispatch = dispatch
     Children = children
@@ -94,12 +94,7 @@ let toggleEditWith (buttonText: string) title state dispatch children =
 let toggleEdit title state dispatch children =
   EditDialogToggle {|
     Title = title
-    Toggle = fun toggle ->
-      button [
-        className Class.edit
-        onClick (ignore >> toggle)
-        ariaLabel "Edit"
-      ]
+    Toggle = toggleButton Class.edit (ariaLabel "Edit")
     State = state
     Dispatch = dispatch
     Children = children
