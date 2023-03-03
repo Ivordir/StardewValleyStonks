@@ -46,7 +46,7 @@ $settings-min-width: 42.5rem
 $two-column-min-width: $visualization-min-width + $settings-min-width + 3 * $column-gap
 $one-column-min-width: max($visualization-min-width, $settings-min-width) + 2 * $column-gap
 $two-column-min-height: calc(100vh - 2 * $column-gap)
-$one-column-min-height: calc(max($visualization-min-width, (100vh - 3 * $column-gap) / 2))
+$one-column-min-height: calc(max($settings-min-width, (100vh - 3 * $column-gap) / 2))
 
 main
   scroll-snap-align: start

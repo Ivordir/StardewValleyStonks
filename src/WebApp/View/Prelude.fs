@@ -156,7 +156,7 @@ module Icon =
     fromImageAndText img name
 
   let itemQuality item quality = item.Id |> Path.item |> fromPath |> withQuality quality item.Name
-  let itemIdQuality (data: GameData) item quality = itemQuality data.Items[item] quality
+  let itemIdQuality data item quality = itemQuality data.Items[item] quality
 
   let product data product =
     match product with

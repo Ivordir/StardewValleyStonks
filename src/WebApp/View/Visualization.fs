@@ -875,7 +875,6 @@ module Ranker =
       responsiveContainer.chart (Recharts.barChart [
         barChart.data indexedValues
         barChart.barGap barGap
-        Interop.mkBarChartAttr "title" "Bar chart"
         barChart.children [
           Recharts.tooltip [
             tooltip.content (chartTooltip pairs data settings ranker.TimeNormalization ranker.RankMetric)

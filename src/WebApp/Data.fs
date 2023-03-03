@@ -211,8 +211,8 @@ let defaultPresets = [
           defaultSettings.Selected with
             Crops =
               defaultSettings.Selected.Crops - Set.ofArray [|
-                476u<_>; 478u<_>; 485u<_>; 486u<_>; 489u<_>; 494u<_>
-                499u<_>; 802u<_>; 831u<_>; 833u<_>; 885u<_>
+                347u<_>; 476u<_>; 478u<_>; 485u<_>; 486u<_>; 489u<_>
+                494u<_>; 499u<_>; 802u<_>; 831u<_>; 833u<_>; 885u<_>
               |]
             Fertilizers = Set.ofArray [| "Basic Fertilizer"; "Speed-Gro" |]
             Products = defaultSettings.Selected.Products |> Map.map (fun _ products ->
