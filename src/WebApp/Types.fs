@@ -214,7 +214,7 @@ module Selections =
 
       UseSeedMaker =
         data.Crops.Values
-        |> Crop.chooseSeeds Crop.canGetOwnSeedsFromSeedMaker
+        |> Crop.chooseSeeds (Crop.canGetOwnSeedsFromSeedMaker data.Items.Find)
         |> Set.ofSeq
 
       UseForageSeeds = Set.ofSeq data.ForageCrops.Keys

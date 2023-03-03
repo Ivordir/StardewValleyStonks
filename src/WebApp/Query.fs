@@ -128,7 +128,7 @@ module Selected =
   let unlockedUseSeedsFromSeedMaker data settings crop =
     Processor.seedMaker |> Game.processorUnlocked data settings.Game
     && settings.Selected.UseSeedMaker.Contains (Crop.seed crop)
-    && Crop.canGetOwnSeedsFromSeedMaker crop
+    && Crop.canGetOwnSeedsFromSeedMaker data.Items.Find crop
 
   let unlockedForageSeedsSellAndUse settings crop =
     if ForageCrop.seedRecipeUnlocked settings.Game.Skills crop then

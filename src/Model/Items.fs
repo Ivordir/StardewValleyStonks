@@ -7,6 +7,7 @@ type Category =
   | Flower
   | Forage
   | ArtisanGood
+  | OtherCrop
   | Other
 
 [<RequireQualifiedAccess>]
@@ -129,6 +130,11 @@ module Processor =
     if preservesQuality modData processor
     then quality
     else Quality.Normal
+
+  let seedMakerAccepts item =
+    match item.Category with
+    | Seeds | ArtisanGood | Other -> false
+    | _ -> true
 
   let seedMakerExpectedQuantity (seed: SeedId) =
     seedMakerSeedProb * seedMakerExpectedSeedOutput

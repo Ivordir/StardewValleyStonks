@@ -308,7 +308,7 @@ module Crops =
           Column.create (Icon.NoText.processor Processor.seedMaker) (konst none)
           |> Column.withSelect
             (fun seed ->
-              if Crop.canGetOwnSeedsFromSeedMaker data.Crops[seed]
+              if Crop.canGetOwnSeedsFromSeedMaker data.Items.Find data.Crops[seed]
               then Some (settings.Selected.UseSeedMaker.Contains seed)
               else None)
             (SelectUseSeedMaker >> selectDispatch)

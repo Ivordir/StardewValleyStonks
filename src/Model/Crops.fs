@@ -492,7 +492,7 @@ module Crop =
     | FarmCrop _ -> false
     | ForageCrop _ -> true
 
-  let canGetOwnSeedsFromSeedMaker crop = seedItem crop <> mainItem crop
+  let canGetOwnSeedsFromSeedMaker item crop = crop |> mainItem |> item |> Processor.seedMakerAccepts
 
   let makesOwnSeeds crop = crop |> items |> Array.contains (seedItem crop)
 

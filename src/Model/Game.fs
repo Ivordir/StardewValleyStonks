@@ -99,7 +99,7 @@ module GameData =
     let seeds =
       crops
       |> Seq.choose (fun crop ->
-        if Crop.canGetOwnSeedsFromSeedMaker crop
+        if Crop.canGetOwnSeedsFromSeedMaker items.Find crop
         then Some (Crop.mainItem crop, Crop.seed crop)
         else None)
       |> Table.ofSeq

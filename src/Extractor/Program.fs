@@ -152,10 +152,10 @@ let parseItem overrrides itemData itemId =
         | "Basic -80" -> Flower
         | "Basic -81" -> Forage
         | "Basic -26" -> ArtisanGood
+        | "Basic -17" -> OtherCrop // sweet gem berry
+        | "Crafting" // (coffee)
         | "Basic" // sugar, flour, etc
         | "Basic -16" // building resources (fiber)
-        | "Basic -17" // sweet gem berry
-        | "Crafting" // (coffee)
           -> Other
         | str -> failwith $"Unexpected item category for item {itemId}: {str}"
 
