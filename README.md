@@ -12,7 +12,7 @@ Finally, the current settings can be stored a preset for later use. You can even
 
 View the live app at: https://ivordir.github.io/StardewValleyStonks/
 
-The [info page](https://ivordir.github.io/StardewValleyStonks/info.html) explains the webapp in more detail and lists limitations with the ranker and optimizer.
+The [info page](https://ivordir.github.io/StardewValleyStonks/info.html) explains the webapp in more detail and lists limitations with the Ranker and Optimizer.
 
 # Technologies that make this site possible
 - [Fable](https://github.com/fable-compiler/Fable): the F\# to JS compiler

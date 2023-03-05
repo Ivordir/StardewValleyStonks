@@ -98,14 +98,16 @@ $arrow-length: 1em
   border: none
   color: black
 
+$border-box-outset: 0.75rem
+
 %border-box
   image-rendering: pixelated
   $img-scale: 4
   border-image-source: ui-img(Border Box)
   border-image-slice: ($img-scale * 4) fill
   border-image-width: 1rem
-  border-image-outset: 0.75rem
-  margin: 0.75rem
+  border-image-outset: $border-box-outset
+  margin: $border-box-outset
 
   & > *
     image-rendering: initial
@@ -182,16 +184,18 @@ img
 
 dl
   display: grid
-  grid-template-columns: auto auto
-  justify-content: start
+  grid-template-columns: fit-content(13em) auto
   gap: 0.5em
   margin: 0
 
 dt
   @extend %colon
+  justify-self: end
+  text-align: right
 
 dd
   margin: 0
+  justify-self: start
 
 details
   & > summary

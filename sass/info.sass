@@ -1,7 +1,76 @@
 @use 'common'
 
+$padding: 1rem
+$gap: 1rem
+
+@function width($width)
+  @return $width + 2 * $padding + 2 * common.$border-box-outset
+
+$content-min-width: width(30rem)
+$content-max-width: width(60rem)
+$nav-min-width: width(10rem)
+
 main
-  display: flex
+  display: grid
+  grid-template-columns: minmax($nav-min-width, 1fr) minmax($content-min-width, $content-max-width) 1fr
+  justify-content: center
+  gap: $gap
+  padding: $padding
+
+nav
+  @extend %border-box
+  position: sticky
+  top: $gap + common.$border-box-outset
+  justify-self: end
+  width: max-content
+  height: min-content
+  padding: $padding
+  font-size: 1.25rem
 
 #content
-  flex-grow: 1
+  @extend %border-box
+  padding: $padding
+
+  display: flex
+  flex-flow: column
+  row-gap: 1em
+
+
+@media (max-width: $nav-min-width + $content-min-width + 2 * $padding + 3 * $gap)
+  main
+    display: flex
+    flex-direction: column
+    row-gap: $gap
+
+  nav
+    position: unset
+
+
+ul
+  padding-left: 1em
+  display: flex
+  flex-direction: column
+  row-gap: 0.5em
+
+  & ul
+    margin-top: 0.5em
+
+h1, h2, h3, h4, h5, h6, p, ul
+  margin: 0
+
+h1
+  font-size: 1.75rem
+  margin-top: 0.5em
+
+blockquote
+  margin: 0.5em 0
+  padding: 0.5em
+  background: white
+  border-radius: 0.5em
+
+nav > ul
+  list-style: none
+  padding: 0
+
+dt
+  font-weight: bold
