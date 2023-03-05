@@ -25,7 +25,7 @@ let floatRange
     prop.max max
     step precision
     prop.value value
-    onChange dispatch
+    onChange (debouncer 5 dispatch)
   ]
 
 let natRange (min: nat) (max: nat) (value: nat) dispatch =
