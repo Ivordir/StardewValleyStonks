@@ -758,25 +758,8 @@ module Settings =
       |> labeled "Luck Buff"
     ]
 
-  let mods data modData dispatch =
-    fragment [
-      Input.checkbox "Quality Products" modData.QualityProducts (SetQualityProducts >> dispatch)
-
-      ul [
-        if not modData.QualityProducts then className Class.disabled
-        children
-          (Crops.processors data
-          |> Array.filter ((<>) Processor.seedMaker)
-          |> Array.map (fun processor ->
-            li [
-              Input.checkboxWith
-                (Icon.processor processor)
-                (modData.QualityProcessors |> Set.contains processor)
-                (curry SetQualityProcessors processor >> dispatch)
-            ]
-          ))
-      ]
-    ]
+  let mods qualityArtisanProducts dispatch =
+    Input.checkbox "Quality Artisan Products" qualityArtisanProducts (SetQualityArtisanProducts >> dispatch)
 
   let tab openDetails data game profit dispatch =
     let uiDispatch = SetUI >> dispatch
@@ -814,7 +797,7 @@ module Settings =
         openDetails
         OpenDetails.Mod
         (ofStr "Mods")
-        (mods data game.ModData (SetModData >> dispatch))
+        (mods game.QualityArtisanProducts dispatch)
         uiDispatch
     ]
 

@@ -137,29 +137,29 @@ type Location =
 // Settings / parameters about the state of the (save) game.
 // Also includes other context such as the location to plant at and mod data.
 type GameVariables = {
-  Skills: Skills
-  Multipliers: Multipliers
-  ModData: ModData
-  CropAmount: CropAmountSettings
-  JojaMembership: bool
-  Irrigated: bool
   StartDate: Date
   EndDate: Date
   Location: Location
+  Skills: Skills
+  Multipliers: Multipliers
+  CropAmount: CropAmountSettings
+  JojaMembership: bool
+  Irrigated: bool
+  QualityArtisanProducts: bool
 }
 
 [<RequireQualifiedAccess>]
 module GameVariables =
   let common = {
-    Skills = Skills.zero
-    Multipliers = Multipliers.common
-    ModData = ModData.common
-    CropAmount = CropAmountSettings.common
-    JojaMembership = false
-    Irrigated = false
     StartDate = { Season = Season.Spring; Day = Date.firstDay }
     EndDate = { Season = Season.Winter; Day = Date.lastDay }
     Location = Farm
+    Skills = Skills.zero
+    Multipliers = Multipliers.common
+    CropAmount = CropAmountSettings.common
+    JojaMembership = false
+    Irrigated = false
+    QualityArtisanProducts = false
   }
 
 
@@ -261,21 +261,21 @@ module Game =
   let itemPriceByQuality vars forage item = Item.priceByQuality vars.Skills vars.Multipliers forage item
 
   let productPriceAndQuality data vars quality product =
-    Product.priceAndQuality data.Items.Find vars.Skills vars.Multipliers vars.ModData quality product
+    Product.priceAndQuality data.Items.Find vars.Skills vars.Multipliers vars.QualityArtisanProducts quality product
 
   let productPrice data vars quality product =
-    Product.price data.Items.Find vars.Skills vars.Multipliers vars.ModData quality product
+    Product.price data.Items.Find vars.Skills vars.Multipliers vars.QualityArtisanProducts quality product
 
   let productPriceByQuality data vars product =
-    Product.priceByQuality data.Items.Find vars.Skills vars.Multipliers vars.ModData product
+    Product.priceByQuality data.Items.Find vars.Skills vars.Multipliers vars.QualityArtisanProducts product
 
   let productNormalizedPrice data vars quality product =
-    Product.normalizedPrice data.Items.Find vars.Skills vars.Multipliers vars.ModData quality product
+    Product.normalizedPrice data.Items.Find vars.Skills vars.Multipliers vars.QualityArtisanProducts quality product
 
   let productNormalizedPriceByQuality data vars product =
-    Product.normalizedPriceByQuality data.Items.Find vars.Skills vars.Multipliers vars.ModData product
+    Product.normalizedPriceByQuality data.Items.Find vars.Skills vars.Multipliers vars.QualityArtisanProducts product
 
-  let productQuality vars quality product = Product.outputQuality vars.ModData quality product
+  let productQuality vars quality product = Product.outputQuality vars.QualityArtisanProducts quality product
 
   let seedItemSellPrice data vars seed = itemPrice vars false data.Items[toItem seed] Quality.Normal
 

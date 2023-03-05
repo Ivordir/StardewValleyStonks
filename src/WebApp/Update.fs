@@ -24,20 +24,16 @@ type MultipliersMessage =
   | SetBearsKnowledge of bool
   | SetTillerForForagedFruit of bool
 
-type ModDataMessage =
-  | SetQualityProducts of bool
-  | SetQualityProcessors of Processor * bool
-
 type GameVariablesMessage =
-  | SetSkills of SkillsMessage
-  | SetMultipliers of MultipliersMessage
-  | SetModData of ModDataMessage
-  | SetCropAmount of CropAmountMessage
-  | SetJojaMembership of bool
-  | SetIrrigated of bool
   | SetStartDate of Date
   | SetEndDate of Date
   | SetLocation of Location
+  | SetSkills of SkillsMessage
+  | SetMultipliers of MultipliersMessage
+  | SetCropAmount of CropAmountMessage
+  | SetJojaMembership of bool
+  | SetIrrigated of bool
+  | SetQualityArtisanProducts of bool
 
 type SelectionMessage<'a when 'a: comparison> =
   | SetSelected of 'a * bool
@@ -173,23 +169,17 @@ let multipliers msg multipliers =
   | SetBearsKnowledge value -> { multipliers with BearsKnowledge = value }
   | SetTillerForForagedFruit value -> { multipliers with TillerForForagedFruit = value }
 
-let modData msg modData =
-  match msg with
-  | SetQualityProducts value -> { modData with QualityProducts = value }
-  | SetQualityProcessors (processor, selected) ->
-    { modData with QualityProcessors = modData.QualityProcessors |> setSelected selected processor }
-
 let gameVariables msg vars =
   match msg with
-  | SetSkills msg -> { vars with Skills = skills msg vars.Skills }
-  | SetMultipliers msg -> { vars with Multipliers = multipliers msg vars.Multipliers }
-  | SetModData msg -> { vars with ModData = modData msg vars.ModData }
-  | SetCropAmount msg -> { vars with CropAmount = cropAmount msg vars.CropAmount }
-  | SetJojaMembership value -> { vars with JojaMembership = value }
-  | SetIrrigated value -> { vars with Irrigated = value }
   | SetStartDate date -> { vars with StartDate = date }
   | SetEndDate date -> { vars with EndDate = date }
   | SetLocation location -> { vars with Location = location }
+  | SetSkills msg -> { vars with Skills = skills msg vars.Skills }
+  | SetMultipliers msg -> { vars with Multipliers = multipliers msg vars.Multipliers }
+  | SetCropAmount msg -> { vars with CropAmount = cropAmount msg vars.CropAmount }
+  | SetJojaMembership value -> { vars with JojaMembership = value }
+  | SetIrrigated value -> { vars with Irrigated = value }
+  | SetQualityArtisanProducts value -> { vars with QualityArtisanProducts = value }
 
 let private select msg set =
   match msg with

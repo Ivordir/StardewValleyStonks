@@ -105,11 +105,6 @@ module Item =
 [<Fable.Core.Erase>]
 type Processor = ProcessorName of string
 
-type ModData = {
-  QualityProducts: bool
-  QualityProcessors: Processor Set
-}
-
 [<RequireQualifiedAccess>]
 module Processor =
   let [<Literal>] seedMakerExpectedSeedOutput = 2.0
@@ -121,10 +116,8 @@ module Processor =
   let seedMaker = ProcessorName "Seed Maker"
   let mill = ProcessorName "Mill"
 
-  let preservesQuality modData processor =
-    processor <> seedMaker
-    && modData.QualityProducts
-    && modData.QualityProcessors.Contains processor
+  let preservesQuality qualityArtisanProducts processor =
+    qualityArtisanProducts && processor <> seedMaker
 
   let outputQuality modData quality processor =
     if preservesQuality modData processor
@@ -139,18 +132,6 @@ module Processor =
   let seedMakerExpectedQuantity (seed: SeedId) =
     seedMakerSeedProb * seedMakerExpectedSeedOutput
     + if nat seed = nat Item.ancientSeeds then seedMakerAncientSeedProb else 0.0
-
-
-[<RequireQualifiedAccess>]
-module ModData =
-  let common = {
-    QualityProducts = false
-    QualityProcessors = Set.ofArray [|
-      Processor.preservesJar
-      Processor.keg
-      ProcessorName "Oil Maker"
-    |]
-  }
 
 
 type ProcessedItem = {
