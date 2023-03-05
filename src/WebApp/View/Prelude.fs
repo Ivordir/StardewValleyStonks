@@ -12,7 +12,6 @@ type prop with
   static member inline onToggle (handler: bool -> unit) =
     Interop.mkAttr "onToggle" (fun (e: Browser.Types.Event) -> handler e.target?``open``)
 
-
 type Html with
   static member inline text (n: nat) = string n |> Html.text
 
@@ -158,12 +157,6 @@ module Icon =
   let itemQuality item quality = item.Id |> Path.item |> fromPath |> withQuality quality item.Name
   let itemIdQuality data item quality = itemQuality data.Items[item] quality
 
-  let product data product =
-    match product with
-    | SeedsFromSeedMaker item
-    | Processed { Item = item } -> itemId data item
-    | product -> fromClassAndName (Reflection.getCaseName product) (Product.name data.Items.Find product)
-
   let productQuality data product quality =
     match product with
     | SeedsFromSeedMaker item
@@ -182,16 +175,6 @@ module Icon =
     | ForageCrop crop -> crop.Seed |> seed data
 
   let vendor (VendorName name) = fromPathAndName (Path.vendor name) name
-
-  let processor (ProcessorName processor) =
-    let img =
-      img [
-        className Class.iconProcessor
-        src (Path.processor processor)
-        alt ""
-      ]
-
-    fromImageAndText img processor
 
   module NoText =
     let season season =
