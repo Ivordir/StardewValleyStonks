@@ -717,6 +717,7 @@
       "Item": 271,
       "Amount": {
         "ExtraCropChance": 0.1,
+        "CanDouble": false,
         "FarmLevelsPerYieldIncrease": 10
       },
       "Seasons": [
@@ -853,8 +854,7 @@
       "Amount": {
         "MinCropYield": 4,
         "MaxCropYield": 4,
-        "ExtraCropChance": 0.02,
-        "CanDouble": false
+        "ExtraCropChance": 0.02
       },
       "Seasons": [
         "Spring",
@@ -942,8 +942,7 @@
       "Seed": 475,
       "Item": 192,
       "Amount": {
-        "ExtraCropChance": 0.2,
-        "CanDouble": false
+        "ExtraCropChance": 0.2
       },
       "Seasons": [
         "Spring"
@@ -1015,8 +1014,7 @@
       "Seed": 480,
       "Item": 256,
       "Amount": {
-        "ExtraCropChance": 0.05,
-        "CanDouble": false
+        "ExtraCropChance": 0.05
       },
       "Seasons": [
         "Summer"
@@ -1036,8 +1034,7 @@
       "Amount": {
         "MinCropYield": 3,
         "MaxCropYield": 3,
-        "ExtraCropChance": 0.02,
-        "CanDouble": false
+        "ExtraCropChance": 0.02
       },
       "Seasons": [
         "Summer"
@@ -1055,8 +1052,7 @@
       "Seed": 482,
       "Item": 260,
       "Amount": {
-        "ExtraCropChance": 0.03,
-        "CanDouble": false
+        "ExtraCropChance": 0.03
       },
       "Seasons": [
         "Summer"
@@ -1149,8 +1145,7 @@
       "Seed": 488,
       "Item": 272,
       "Amount": {
-        "ExtraCropChance": 0.002,
-        "CanDouble": false
+        "ExtraCropChance": 0.002
       },
       "Seasons": [
         "Fall"
@@ -1225,8 +1220,7 @@
       "Amount": {
         "MinCropYield": 2,
         "MaxCropYield": 2,
-        "ExtraCropChance": 0.1,
-        "CanDouble": false
+        "ExtraCropChance": 0.1
       },
       "Seasons": [
         "Fall"
@@ -1274,8 +1268,7 @@
       "Seed": 745,
       "Item": 400,
       "Amount": {
-        "ExtraCropChance": 0.02,
-        "CanDouble": false
+        "ExtraCropChance": 0.02
       },
       "Seasons": [
         "Spring"
@@ -1338,6 +1331,7 @@
         "MinCropYield": 4,
         "MaxCropYield": 7,
         "ExtraCropChance": 0.01,
+        "CanDouble": false,
         "FarmingQualities": false
       },
       "ExtraItem": [

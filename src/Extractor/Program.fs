@@ -197,7 +197,7 @@ let parseCropAmount seed overrides scythe (cropAmount: string) =
       MaxCropYield = maxHarvest
       FarmLevelsPerYieldIncrease = uint increasePerLevel
       ExtraCropChance = extraChance
-      CanDouble = overrides.CanDouble |> Option.defaultValue scythe
+      CanDouble = overrides.CanDouble |> Option.defaultValue (not scythe)
       FarmingQualities = overrides.FarmingDistribution |> Option.defaultValue true
     }
 
