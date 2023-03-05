@@ -121,14 +121,14 @@ dialog
   & > div:last-child
     justify-content: space-between
 
-button
+input, button
   font-family: inherit
   font-size: inherit
-  cursor: pointer
+  line-height: inherit
+  word-spacing: inherit
 
-input
-  font-family: inherit
-  font-size: inherit
+button
+  cursor: pointer
 
 input[type=range]
   $scale: 1.5
@@ -731,6 +731,10 @@ input[type=range]
     width: 50%
     height: 50%
 
+#visualization-ranker > details:first-of-type > div
+  align-items: center
+  row-gap: 1em
+
 #visualization-optimizer
   & > label
     margin-left: 0.5em
@@ -741,8 +745,6 @@ input[type=range]
     row-gap: 1em
 
 #settings-crops > details:first-child > div
-  display: flex
-  flex-direction: column
   row-gap: 1em
   width: max-content
 
@@ -827,7 +829,7 @@ tr
     display: flex
     align-items: center
     justify-content: start
-    padding: 0.25em 0
+    padding: 0.25em 0.125em
     column-gap: 0.125em
 
   & > button::after
@@ -920,7 +922,17 @@ tr
     font-size: 1rem
     padding: 0
 
+    &:focus
+      outline: none
+
+      &::before
+        @extend %focus-outline
+
   & > ul
+    display: flex
+    flex-direction: column
+    row-gap: 0.25em
+    margin-top: 0.25em
     margin-left: common.$arrow-length + 0.5em
 
 #settings table
