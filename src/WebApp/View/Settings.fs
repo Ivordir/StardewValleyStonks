@@ -207,7 +207,7 @@ module Crops =
 
     fragment [
       div [ className Class.settingsGroup; children [
-        labeled "View with quality" (Select.enum (length.em 4) productQuality (SetProductQuality >> cropTabDispatch))
+        labeled "View with Quality" (Select.enum (length.em 4) productQuality (SetProductQuality >> cropTabDispatch))
         Input.checkbox "Show Normalized Prices" normalizedPrices (SetNormalizeProductPrices >> cropTabDispatch)
       ]]
 
@@ -524,7 +524,7 @@ module Fertilizers =
           if not settings.Profit.PayForFertilizer then className Class.disabled
           children [
             Input.checkbox
-              "Pay For Destroyed Fertilizer"
+              "Pay for Destroyed Fertilizer"
               settings.Profit.PayForDestroyedFertilizer
               (SetPayForDestroyedFertilizer >> SetProfit >> dispatch)
           ]
@@ -710,10 +710,10 @@ module Settings =
         (SetSeedStrategy >> dispatch)
       |> labeled "Seed Strategy"
 
-      Input.checkbox "Pay For Fertilizer" profit.PayForFertilizer (SetPayForFertilizer >> dispatch)
+      Input.checkbox "Pay for Fertilizer" profit.PayForFertilizer (SetPayForFertilizer >> dispatch)
 
       Input.checkbox
-        "Pay For Destroyed Fertilizer"
+        "Pay for Destroyed Fertilizer"
         profit.PayForDestroyedFertilizer
         (SetPayForDestroyedFertilizer >> dispatch)
     ]
