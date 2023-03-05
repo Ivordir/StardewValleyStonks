@@ -686,7 +686,7 @@ module Settings =
 
   let multipliers multipliers dispatch =
     fragment [
-      Input.checkbox "Bear's Knowledge" multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
+      Input.checkboxWith Icon.bearsKnowledge multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
 
       Input.checkbox
         "Apply Tiller to Foraged Grapes and Blackberries"
@@ -752,10 +752,10 @@ module Settings =
         (SetShavingToolLevel >> dispatch)
       |> labeled "Shaving Enchantment"
 
-      Input.checkbox "Special Charm" settings.SpecialCharm (SetSpecialCharm >> dispatch)
+      Input.checkboxWith Icon.specialCharm settings.SpecialCharm (SetSpecialCharm >> dispatch)
 
       Input.natWith (length.em 2) None (Some CropAmount.maxLuckBuff) settings.LuckBuff (SetLuckBuff >> dispatch)
-      |> labeled "Luck Buff"
+      |> labelWith Class.labelText Icon.luckBuff
     ]
 
   let mods qualityArtisanProducts dispatch =

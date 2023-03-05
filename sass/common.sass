@@ -34,13 +34,10 @@ $arrow-length: 1em
 %season
   height: 1.25em
 
-@mixin season($name)
-  .#{to-lower-case($name)}
-    @extend %season
-    content: url("/public/img/Seasons/#{$name}.png")
-
 @each $season in Spring Summer Fall Winter
-  @include season($season)
+  .#{to-lower-case($season)}
+    @extend %season
+    content: url("/public/img/Seasons/#{$season}.png")
 
 .icon
   width: 1.5em
@@ -57,8 +54,8 @@ $arrow-length: 1em
       vertical-align: text-bottom
       margin-right: 0.375em
 
-@mixin icon-img($name, $folder)
-  .#{to-lower-case($name)}
+@mixin icon-img($name, $folder, $className: $name)
+  .#{to-lower-case($className)}
     @extend .icon
     content: url("/public/img/#{$folder}/#{$name}.png")
 

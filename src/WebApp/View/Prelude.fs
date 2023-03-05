@@ -135,6 +135,10 @@ module Icon =
   let farming = fromClassIsName "Farming"
   let foraging = fromClassIsName "Foraging"
 
+  let bearsKnowledge = fromClassAndName "bears-knowledge" "Bear's Knowledge"
+  let specialCharm = fromClassAndName "special-charm" "Special Charm"
+  let luckBuff = fromClassAndName "random" "Luck Buff"
+
   let item item = fromPathAndName (Path.item item.Id) item.Name
   let itemId data itemId = item data.Items[itemId]
   let seed data seed = seed |> toItem |> itemId data
@@ -194,14 +198,16 @@ module Icon =
       ]
 
 
-let private labelWith (css: string) (label: string) element =
+let labelWith (css: string) (label: ReactElement) element =
   Html.label [
-    Html.span [ className css; prop.text label ]
+    Html.span [ className css; children label ]
     element
   ]
 
-let labeled label element = labelWith Class.labelText label element
-let labeledHidden label element = labelWith Class.labelHidden label element
+let labelText className text element = labelWith className (ofStr text) element
+
+let labeled label element = labelText Class.labelText label element
+let labeledHidden label element = labelText Class.labelHidden label element
 
 
 // https://www.w3.org/TR/wai-aria-1.1/#tab
