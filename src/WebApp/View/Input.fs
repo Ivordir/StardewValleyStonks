@@ -140,17 +140,7 @@ let checkboxWith children value dispatch =
     children
   ]]
 
-let checkbox (text: string) value msg = checkboxWith (Html.span text) value msg
+let checkbox (text: string) value dispatch = checkboxWith (Html.span text) value dispatch
 
 let checkboxHiddenText (labelText: string) value dispatch =
-  label [ className [ Class.checkbox; Class.hiddenText ]; prop.children [
-    Html.span labelText
-
-    input [
-      prop.type'.checkbox
-      isChecked value
-      onCheckedChange dispatch
-    ]
-
-    img [ alt "" ]
-  ]]
+  checkboxWith (Html.span [ className Class.hiddenText; prop.text labelText ]) value dispatch

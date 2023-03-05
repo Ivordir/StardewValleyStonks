@@ -305,8 +305,9 @@ input[type=range]
   &:hover > input + img
     @extend %hover-scale
 
-  &.hidden-text > span:first-child
-    font-size: 0
+.hidden-text
+  font-size: 0
+  position: absolute
 
 .select
   $padding: 0.5rem
