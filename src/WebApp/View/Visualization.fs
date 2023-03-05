@@ -597,10 +597,10 @@ module SummaryTable =
       ]
 
   module XP =
-    let private verticalSummary timeNorm (xpSummary: Query.XpSummary) =
+    let private verticalSummary includeHarvests timeNorm (xpSummary: Query.XpSummary) =
       let summary = xpSummary.CropSummaries[0]
       dl [
-        keyValue "Harvests" (ofNat summary.Harvests)
+        if includeHarvests then keyValue "Harvests" (ofNat summary.Harvests)
         keyValue "XP" (summary.XpPerItem |> xp |> ofStr)
         keyValue "Quantity" (summary.ItemQuantity |> round2 |> ofFloat)
         keyValue "Total XP" (xpSummary.Xp |> round2 |> xpFloat |> ofStr)
@@ -609,10 +609,10 @@ module SummaryTable =
 
     let ranker data settings timeNorm fertilizer crop =
       match Query.Ranker.xpSummary data settings timeNorm fertilizer crop with
-      | Ok summary -> verticalSummary timeNorm summary
+      | Ok summary -> verticalSummary true timeNorm summary
       | Error e -> invalidReasons settings crop e
 
-    let tooltip = ranker
+    let tooltip = verticalSummary false
 
     let private tableSummary data total (summaries: Query.XpSummary array) =
       table [
@@ -729,14 +729,15 @@ module Ranker =
         ])
     ]
 
+  let private harvestsText harvests =
+    let unit = "harvest" |> pluralizeTo harvests
+    Html.span $" ({harvests} {unit})"
+
   let private chartProfitTooltip data settings timeNorm roi fertilizer crop profit =
     fragment [
       match Query.Ranker.profitSummary data settings timeNorm fertilizer crop with
       | Some profitSummary ->
-        let summary = profitSummary.CropSummaries[0]
-        let unit = "harvest" |> pluralizeTo summary.Harvests
-
-        Html.span $" ({summary.Harvests} {unit})"
+        harvestsText profitSummary.CropSummaries[0].Harvests
 
         match profit with
         | Ok profit ->
@@ -756,6 +757,15 @@ module Ranker =
         | Error e -> invalidReasons settings crop e
       ]
 
+  let private chartXPTooltip data settings timeNorm fertilizer crop =
+    fragment [
+      match Query.Ranker.xpSummary data settings timeNorm fertilizer crop with
+      | Ok summary ->
+        harvestsText summary.CropSummaries[0].Harvests
+        SummaryTable.XP.tooltip timeNorm summary
+      | Error e -> invalidReasons settings crop e
+    ]
+
   let private chartTooltip (pairs: Pairs) (data: GameData) settings timeNorm rankItem props =
     match props?payload with
     | Some (payload: _ array) when payload.Length > 0 && props?active ->
@@ -769,7 +779,7 @@ module Ranker =
 
         match rankItem with
         | Gold | ROI -> chartProfitTooltip data settings timeNorm (rankItem = ROI) fertilizer crop result
-        | XP -> SummaryTable.XP.tooltip data settings timeNorm fertilizer crop
+        | XP -> chartXPTooltip data settings timeNorm fertilizer crop
       ]]
     | _ -> none
 
