@@ -840,11 +840,15 @@ module Ranker =
         let errors = [
           if flags.HasFlag Query.InvalidReasons.NoFertilizerPrice then
             Icon.Path.fertilizer fert.Value, "No fertilizer price"
+
           if flags.HasFlag Query.InvalidReasons.NotEnoughSeeds then
             Icon.Path.item (toItem seed), if seedStrategy = BuyFirstSeed then "No seed price" else "No seed source"
 
           if flags.HasFlag Query.InvalidReasons.NotEnoughDays then
             "img/Time.png", "No harvests possible"
+
+          if flags.HasFlag Query.InvalidReasons.NoInvestment then
+            "img/Gold.png", "No investment"
         ]
 
         Svg.g [
