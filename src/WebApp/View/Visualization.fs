@@ -1146,14 +1146,7 @@ let rankerOrSummary app dispatch =
   | None -> lazyView3 Ranker.ranker ranker (app.Data, settings) (SetRanker >> dispatch)
 
 
-// The solver typically takes < 50ms, but with
-//   StartSeason = Spring, StopSeason = Fall, Location = Greenhouse, and FarmingLevel in [0..7],
-// it can take around 600ms if all fertilizers and crops are selected.
-// For this reason, the solver is put in a web worker with a debouncer.
-
-let private workerQueue, private workerSubscribe =
-  let queue, subscribe = Optimizer.createWorker ()
-  debouncer 200 (fun (data, settings, objective) -> queue data settings objective), subscribe
+let private workerQueue, private workerSubscribe = Optimizer.createWorker ()
 
 let private optimizerSummary openDetails data settings dispatch objective solution =
   fragment [
@@ -1202,7 +1195,7 @@ let [<ReactComponent>] Optimizer (props: {|
 
   useEffect ((fun () ->
     setState (solution, true)
-    workerQueue (data, settings, objective)
+    workerQueue data settings objective
   ), [| box data; settings; objective |])
 
   div [
