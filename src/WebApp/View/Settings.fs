@@ -30,6 +30,24 @@ let cropQualities qualities =
     div (qualities |> Array.filter (fun (_, prob) -> prob > 0.0) |> mapQualities percent2)
   ]]
 
+let private payForFertilizerSettings profit dispatch =
+  fragment [
+    Input.checkbox
+      "Pay for Fertilizer"
+      profit.PayForFertilizer
+      (SetPayForFertilizer >> dispatch)
+
+    Html.span [
+      if not profit.PayForFertilizer then className Class.disabled
+      children [
+        Input.checkbox
+          "Pay for Destroyed Fertilizer"
+          profit.PayForDestroyedFertilizer
+          (SetPayForDestroyedFertilizer >> dispatch)
+      ]
+    ]
+  ]
+
 let viewPrice price =
   fragment [
     match price with
@@ -514,22 +532,7 @@ module Fertilizers =
     let fertilizers = fertilizers |> Array.map Fertilizer.name
 
     fragment [
-      div [ className Class.settingsGroup; children [
-        Input.checkbox
-          "Pay for Fertilizer"
-          settings.Profit.PayForFertilizer
-          (SetPayForFertilizer >> SetProfit >> dispatch)
-
-        Html.span [
-          if not settings.Profit.PayForFertilizer then className Class.disabled
-          children [
-            Input.checkbox
-              "Pay for Destroyed Fertilizer"
-              settings.Profit.PayForDestroyedFertilizer
-              (SetPayForDestroyedFertilizer >> SetProfit >> dispatch)
-          ]
-        ]
-      ]]
+      div [ className Class.settingsGroup; children (payForFertilizerSettings settings.Profit (SetProfit >> dispatch)) ]
 
       tableFromColumms
         id
@@ -710,12 +713,7 @@ module Settings =
         (SetSeedStrategy >> dispatch)
       |> labeled "Seed Strategy"
 
-      Input.checkbox "Pay for Fertilizer" profit.PayForFertilizer (SetPayForFertilizer >> dispatch)
-
-      Input.checkbox
-        "Pay for Destroyed Fertilizer"
-        profit.PayForDestroyedFertilizer
-        (SetPayForDestroyedFertilizer >> dispatch)
+      payForFertilizerSettings profit dispatch
     ]
 
   let priceSettings game profit dispatch =
