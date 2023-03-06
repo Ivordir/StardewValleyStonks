@@ -29,9 +29,7 @@
     <span>Stardew Valley Stonks v0.0.1</span>
     <span>
       Source code available on
-      <a href="https://www.github.com/Ivordir/StardewValleyStonks" target="_blank" rel="noopener noreferrer">
-        Github
-      </a>
+      <a href="https://www.github.com/Ivordir/StardewValleyStonks">Github</a>
     </span>
   </footer>
 </body>
