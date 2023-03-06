@@ -118,11 +118,11 @@ For any chosen tile, there are 9 different ways a giant crop can spawn on top of
 
 If the size of the field is set to a finite size, say 5x5 tiles,
 then the tiles near the edges have less possible ways for giant crops to spawn on them.
+By finding the number of possible spawning orientations for each tile and taking the average,
+it turns out that the average number of orientations is 3.24 for our 5x5 field example.
 
 ![The number of giant crop orienations for each tile on a 5x5 field.](/public/img/Field%20Layouts/Example%20Orientations%20Per%20Tile.png)
 
-By finding the number of possible spawning orientations for each tile and taking the average,
-it turns out that the average number of orientations is 3.24 for our 5x5 field example.
 Doing this same process for your crop field can be annoying,
 since other obstacles in the field like sprinklers and jumino huts block certain spawning locations as well.
 So, included below are precomputed averages for various field layouts.
@@ -235,11 +235,13 @@ But on top of this, the Optimizer accounts for the following additional constrai
 
 - Regrow crops must "end" the season, since they remain in the ground until they become out of season.
   As a consequence, there can only be at most one regrow crop per season.
-- Giant crops and wild seeds may destroy their fertilizer after becoming fully grown.
+
+- Giant crops and Wild Seeds may destroy their fertilizer after becoming fully grown.
   Fertilizer should be replaced between harvests (accounting for some cost) in order to
   uphold the growth time and expected profit per harvest (i.e., linearity of the objective function).
-  But if it is the last crop of the season, then the fertilizer for its last harvest does not have to be replaced.
+  But if it is the last crop of the season, then the fertilizer destroyed by the last harvest does not have to be replaced.
   Of course, this is mutually exclusive with a regrow crop which must also be the last crop of the season.
+
 - Crops can grow in two consecutive seasons.
   If a crop is planted at the end of the season and grows into the next season,
   then the fertilizer it was planted in is not lost, but rather carried over to the next season.
@@ -267,8 +269,8 @@ the numerous contraints can be described in a more declarative fashion.
 To obtain the optimal solution, all we have to do is properly formulate our constraints and variables,
 which should be much more straightforward compared to the dynamic programming method.
 
-Due to the cross-season capability of crops detailed above,
-it is necessary (in the worst case) to solve a subproblem for each unique combination of fertilizer, starting season, and ending season.
+Currenty, the Optimizer handles the cross-season capability of crops detailed above
+by solving (in the worst case) a subproblem for each unique combination of fertilizer, starting season, and ending season.
 For example, a starting season of Spring and an ending season of Fall has 6 possible combinations:
 
 - Spring – Spring
@@ -294,7 +296,7 @@ algorithm is used to piece together a sequence of non-overlapping subproblems th
 > Because of this, I made [my own](https://github.com/Ivordir/YALPS) linear programming solver based upon the one linked above.
 > I targeted any low hanging fruit for performance improvement,
 > such that I hope you did not encounter the Optimizer taking a noticable amount of time.
-> There still plenty of areas available for improvement, particularly with the integer solver,
+> There are still plenty of areas available for improvement, particularly with the integer solver,
 > but I stopped when a sufficient level of performance was achieved so that I could focus on Stardew Valley Stonks.
 
 # Limitations
