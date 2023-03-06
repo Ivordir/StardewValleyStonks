@@ -25,7 +25,8 @@ let noHarvestsMessage settings crop =
 let invalidReasons settings crop (reasons: Query.InvalidReasons) =
   div [ className Class.messages; children [
     if reasons.HasFlag Query.InvalidReasons.NotEnoughDays then noHarvestsMessage settings crop
-    if reasons.HasFlag Query.InvalidReasons.NotEnoughSeeds then Icon.warning "No seed source."
+    if reasons.HasFlag Query.InvalidReasons.NotEnoughSeeds then
+      Icon.warning (if settings.Profit.SeedStrategy = BuyFirstSeed then "No seed price." else "No seed source.")
     if reasons.HasFlag Query.InvalidReasons.NoFertilizerPrice then Icon.warning "No fertilizer price."
     if reasons.HasFlag Query.InvalidReasons.NoInvestment then Icon.warning "No investment."
   ]]
@@ -802,7 +803,7 @@ module Ranker =
       svg.d (svgRectPath x y width height)
     ]
 
-  let private errorBar data metric (pairs: Pairs) props =
+  let private errorBar data seedStrategy metric (pairs: Pairs) props =
     let x: float = props?x
     let y: float = props?y
     let width: float = props?width
@@ -840,7 +841,8 @@ module Ranker =
           if flags.HasFlag Query.InvalidReasons.NoFertilizerPrice then
             Icon.Path.fertilizer fert.Value, "No fertilizer price"
           if flags.HasFlag Query.InvalidReasons.NotEnoughSeeds then
-            Icon.Path.item (toItem seed), "No seed source"
+            Icon.Path.item (toItem seed), if seedStrategy = BuyFirstSeed then "No seed price" else "No seed source"
+
           if flags.HasFlag Query.InvalidReasons.NotEnoughDays then
             "img/Time.png", "No harvests possible"
         ]
@@ -891,7 +893,7 @@ module Ranker =
             bar.dataKey (snd >> Result.defaultValue 0.0)
             bar.barSize (float iconSize * 1.5 |> round |> int)
             bar.onClick (fun props -> props?payload |> fst |> selectPair)
-            Interop.mkBarAttr "shape" (errorBar data ranker.RankMetric pairs)
+            Interop.mkBarAttr "shape" (errorBar data settings.Profit.SeedStrategy ranker.RankMetric pairs)
             Interop.mkBarAttr "background" (barBackground barGap selectPair)
           ]
 
