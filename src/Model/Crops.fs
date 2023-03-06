@@ -104,7 +104,7 @@ module ToolLevel =
 type CropAmountSettings = {
   SpecialCharm: bool
   LuckBuff: nat
-  PossibleGiantCropsPerTile: float
+  GiantCropOrientationsPerTile: float
   ShavingToolLevel: ToolLevel option
 }
 
@@ -113,7 +113,7 @@ module CropAmountSettings =
   let common = {
     SpecialCharm = false
     LuckBuff = 0u
-    PossibleGiantCropsPerTile = 3.0
+    GiantCropOrientationsPerTile = 3.0
     ShavingToolLevel = None
   }
 
@@ -132,8 +132,8 @@ module CropAmount =
   let [<Literal>] minYield = 1u
   let [<Literal>] minExtraCropChance = 0.0
   let [<Literal>] maxExtraCropChance = 1.0
-  let [<Literal>] minPossibleGiantCropsPerTile = 0.0
-  let [<Literal>] maxPossibleGiantCropsPerTile = 9.0
+  let [<Literal>] minGiantCropOrientationsPerTile = 0.0
+  let [<Literal>] maxGiantCropOrientationsPerTile = 9.0
   let [<Literal>] maxLuckBuff = 1499u
   let [<Literal>] baseGiantProb = 0.01
   let [<Literal>] giantYield = 2u
@@ -219,7 +219,7 @@ module CropAmount =
   let expectedGiantCropYield settings =
     float giantYield + (settings.ShavingToolLevel |> Option.defaultOrMap 0.0 expectedQuantityFromGiantCropShaving)
 
-  let noGiantCropProb settings = (1.0 - baseGiantProb) ** settings.PossibleGiantCropsPerTile
+  let noGiantCropProb settings = (1.0 - baseGiantProb) ** settings.GiantCropOrientationsPerTile
   let inline giantCropProb settings = 1.0 - noGiantCropProb settings
 
   let expectedGiantQuantity skills settings amount =

@@ -736,13 +736,13 @@ module Settings =
       Input.checkbox "Irrigated" irrigated (SetIrrigated >> settingsDispatch)
 
       Input.floatWithRange
-        "Average Possible Giant Crops Per Tile"
+        "Average Giant Crop Orientations Per Tile"
         (length.em 4)
         10e-4
-        CropAmount.minPossibleGiantCropsPerTile
-        CropAmount.maxPossibleGiantCropsPerTile
-        settings.PossibleGiantCropsPerTile
-        (SetPossibleGiantCropsPerTile >> dispatch)
+        CropAmount.minGiantCropOrientationsPerTile
+        CropAmount.maxGiantCropOrientationsPerTile
+        settings.GiantCropOrientationsPerTile
+        (SetGiantCropOrientationsPerTile >> dispatch)
 
       Select.options
         (length.em 4)
