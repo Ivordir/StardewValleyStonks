@@ -8,7 +8,7 @@ $gap: 1rem
 
 $content-min-width: width(30rem)
 $content-max-width: width(60rem)
-$nav-min-width: width(10rem)
+$nav-min-width: width(8rem)
 
 main
   display: grid
@@ -48,10 +48,27 @@ section
   main
     display: flex
     flex-direction: column
+    align-items: center
     row-gap: $gap
 
   nav
     position: unset
+
+@media (max-width: 40rem)
+  dl
+    display: flex
+    flex-direction: column
+    row-gap: 0.25em
+
+  dt
+    text-align: unset
+    margin-top: 0.75em
+
+    &:first-child
+      margin-top: 0.5em
+
+  dd
+    margin-left: 1em
 
 
 ul
