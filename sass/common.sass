@@ -133,8 +133,13 @@ $border-box-outset: 0.75rem
 
 body
   margin: 0
+  display: flex
+  flex-direction: column
+  align-items: center
   min-width: min-content
   min-height: 100vh
+  width: 100%
+
   image-rendering: pixelated
   background-image: ui-img(Background)
   background-size: cover
@@ -149,19 +154,19 @@ body
   & > *
     image-rendering: initial
 
+$header-padding: 1.5em
 header
-  padding: 1.5em
+  padding: $header-padding
+  width: 100%
+  max-width: 100vw
+  box-sizing: border-box
 
   & > a
     display: flex
     flex-wrap: wrap
-    align-items: center
     justify-content: center
     row-gap: 1em
     column-gap: 2em
-
-    & > img
-      height: 5rem
 
 footer
   display: flex
@@ -178,6 +183,17 @@ footer
   & > span
     @extend %border-box
     padding: 0.625em 0.75em 0.5em 0.75em
+
+
+$title-img-max-width: 428
+$title-img-height: 84
+@media (max-width: calc(2 * $header-padding + $title-img-max-width * 1px))
+  header > a > div
+    width: 100%
+    aspect-ratio: #{$title-img-max-width} / $title-img-height
+    display: flex
+    justify-content: center
+
 
 img
   user-select: none
