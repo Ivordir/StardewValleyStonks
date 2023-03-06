@@ -107,15 +107,16 @@ dt
   font-weight: bold
 
 figure
-  width: 40%
+  display: flex
+  flex-direction: column
+  align-items: center
+  row-gap: 0.5em
   margin: 0.5em 0
 
   & > img
     max-width: 100%
     height: auto
-
-  & > figcaption
-    text-align: center
+    max-height: 20rem
 
 table
   border-collapse: collapse
@@ -130,3 +131,6 @@ table
   & th
     font-size: 1.1em
     font-weight: normal
+
+#giant-crops > ul figure
+  width: max-content
