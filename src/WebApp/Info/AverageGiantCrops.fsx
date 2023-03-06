@@ -72,6 +72,7 @@ printInfinite (iridiumSprinklerField 1 1)
 print iridiumSprinklerJuminoField
 printfn ""
 
+print (pressuredIridiumSprinklerField 1 1)
 print (pressuredIridiumSprinklerField 2 2)
 print (pressuredIridiumSprinklerField 3 3)
 print (pressuredIridiumSprinklerField 4 4)

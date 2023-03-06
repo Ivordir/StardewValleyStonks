@@ -1,6 +1,6 @@
 # Stardew Valley Stonks ![Github Pages Status](https://github.com/Ivordir/StardewValleyStonks/actions/workflows/main.yaml/badge.svg)
 
-Stardew Valley Stonks is a webapp that has two main functions.
+Stardew Valley Stonks is a web app that has two main functions.
 - The Ranker displays a bar chart of the best crops, fertilizers, or pairs thereof, for the chosen ranking metric.
   Hovering or clicking on a bar opens a more detailed view showing how its value was calculated.
 - The Optimizer uses a linear programming solver to display a near-optimal plan of fertilizers and crop plantings which maximize net gold or xp.

@@ -22,7 +22,7 @@ nav
   position: sticky
   top: $gap + common.$border-box-outset
   justify-self: end
-  width: max-content
+  width: fit-content
   height: min-content
   padding: $padding
   font-size: 1.25rem
@@ -33,7 +33,15 @@ nav
 
   display: flex
   flex-flow: column
-  row-gap: 1em
+  row-gap: 2em
+
+section
+  display: flex
+  flex-direction: column
+  row-gap: 0.5em
+
+  & > h2
+    margin-top: 0.5em
 
 
 @media (max-width: $nav-min-width + $content-min-width + 2 * $padding + 3 * $gap)
@@ -55,22 +63,53 @@ ul
   & ul
     margin-top: 0.5em
 
+nav > ul
+  list-style: none
+  padding: 0
+
 h1, h2, h3, h4, h5, h6, p, ul
   margin: 0
 
 h1
   font-size: 1.75rem
-  margin-top: 0.5em
+
+h2
+  font-size: 1.25rem
 
 blockquote
+  display: flex
+  flex-direction: column
+  row-gap: 0.5em
   margin: 0.5em 0
-  padding: 0.5em
+  padding: 0.5em 0.75em
+
   background: white
   border-radius: 0.5em
 
-nav > ul
-  list-style: none
-  padding: 0
-
 dt
   font-weight: bold
+
+figure
+  width: 40%
+  margin: 0.5em 0
+
+  & > img
+    max-width: 100%
+    height: auto
+
+  & > figcaption
+    text-align: center
+
+table
+  border-collapse: collapse
+  $border: solid black 1px
+  border: $border
+  margin: 0.5em 0
+
+  & td, & th
+    border: $border
+    padding: 0.375em 0.5em 0.25em 0.5em
+
+  & th
+    font-size: 1.1em
+    font-weight: normal
