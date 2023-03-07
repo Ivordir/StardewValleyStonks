@@ -49,8 +49,7 @@ $visualization-min-width: 37.5rem
 $settings-min-width: 42.5rem
 $two-column-min-width: $visualization-min-width + $settings-min-width + 3 * $column-gap
 $one-column-min-width: max($visualization-min-width, $settings-min-width) + 2 * $column-gap
-$two-column-min-height: calc(100vh - 2 * $column-gap)
-$one-column-min-height: calc(max($settings-min-width, (100vh - 3 * $column-gap) / 2))
+$one-column-min-height: calc((100vh - 3 * $column-gap) / 2)
 
 main
   scroll-snap-align: start
@@ -229,14 +228,14 @@ input[type=range]
     min-width: min-content
 
     & > section
-      min-height: $one-column-min-height
+      min-height: calc(max($settings-min-width, $one-column-min-height))
       overflow: unset
 
   [role=tabpanel]
     overflow: unset
 
   .visualization-chart
-    height: $one-column-min-height
+    height: calc(max(60rem, $one-column-min-height))
 
     & > [role=tabpanel]
       overflow: hidden
