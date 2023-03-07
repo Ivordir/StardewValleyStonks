@@ -7,7 +7,6 @@ type Category =
   | Flower
   | Forage
   | ArtisanGood
-  | OtherCrop
   | Other
 
 [<RequireQualifiedAccess>]
@@ -57,6 +56,7 @@ type Item = {
 [<RequireQualifiedAccess>]
 module Item =
   let [<Literal>] ancientSeeds = 499u<ItemNum>
+  let [<Literal>] sweetGemBerry = 417u<ItemNum>
   let [<Literal>] blackberry = 410u<ItemNum>
   let [<Literal>] grape = 398u<ItemNum>
 
@@ -116,18 +116,10 @@ module Processor =
   let seedMaker = ProcessorName "Seed Maker"
   let mill = ProcessorName "Mill"
 
-  let preservesQuality qualityArtisanProducts processor =
-    qualityArtisanProducts && processor <> seedMaker
-
-  let outputQuality modData quality processor =
-    if preservesQuality modData processor
-    then quality
-    else Quality.Normal
-
   let seedMakerAccepts item =
     match item.Category with
-    | Seeds | ArtisanGood | Other -> false
-    | _ -> true
+    | Fruit | Vegetable | Flower | Forage -> true
+    | _ -> item.Id = Item.sweetGemBerry
 
   let seedMakerExpectedQuantity (seed: SeedId) =
     seedMakerSeedProb * seedMakerExpectedSeedOutput
