@@ -16,13 +16,10 @@
       <div><img src="/public/img/Title/Stonks.png" alt="Stonks"></div>
     </a>
   </header>
-  <main>
-    <nav>
-      $toc$
-    </nav>
-    <div id="content">
-      $body$
-    </div>
+  <main id="main">
+    <nav id="toc">$toc$</nav>
+    <div id="content">$body$</div>
+    <a id="top-link" href="#main">Back To Top<a/>
   </main>
   <footer>
     <span>Stardew Valley v1.5.6 © ConcernedApe</span>

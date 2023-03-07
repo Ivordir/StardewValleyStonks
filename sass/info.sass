@@ -27,6 +27,13 @@ nav
   padding: $padding
   font-size: 1.25rem
 
+#top-link
+  @extend .button
+  display: none
+  position: sticky
+  bottom: 1em
+  text-decoration: none
+
 #content
   @extend %border-box
   padding: $padding
@@ -53,6 +60,9 @@ section
 
   nav
     position: unset
+
+  #top-link
+    display: block
 
 @media (max-width: 40rem)
   dl

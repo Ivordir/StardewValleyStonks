@@ -399,19 +399,6 @@ input[type=range]
       &[aria-selected=true]
         background-color: $background-hover
 
-.button
-  background: none
-  color: black
-  image-rendering: pixelated
-  $img-scale: 7
-  border-image-source: common.ui-img(Button)
-  border-image-slice: ($img-scale * 2) fill
-  border-image-width: 0.25em
-  padding: 0.625em 0.5em 0.5em 0.5em
-
-  &:hover
-    @extend %hover-brightness
-
 
 .preset
   display: flex

@@ -98,8 +98,20 @@ $arrow-length: 1em
   border: none
   color: black
 
-$border-box-outset: 0.75rem
+.button
+  background: none
+  color: black
+  image-rendering: pixelated
+  $img-scale: 7
+  border-image-source: ui-img(Button)
+  border-image-slice: ($img-scale * 2) fill
+  border-image-width: 0.25em
+  padding: 0.625em 0.5em 0.5em 0.5em
 
+  &:hover
+    @extend %hover-brightness
+
+$border-box-outset: 0.75rem
 %border-box
   image-rendering: pixelated
   $img-scale: 4
