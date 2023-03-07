@@ -168,14 +168,14 @@ body
     padding: 1em
 
   & > *
+    box-sizing: border-box
+    width: 100%
     image-rendering: initial
 
 $header-padding: 1.5em
 header
   padding: $header-padding
-  width: 100%
   max-width: 100vw
-  box-sizing: border-box
 
   & > a
     display: flex
@@ -186,15 +186,16 @@ header
 
 footer
   display: flex
+  flex-wrap: wrap
   align-items: center
   justify-content: space-evenly
   text-align: center
-  flex-wrap: wrap
-  font-size: 1.25rem
+
   gap: 1em
-  min-height: 15vh
-  box-sizing: border-box
   padding: 1em
+  min-height: 15vh
+
+  font-size: 1.25rem
 
   & > span
     @extend %border-box
