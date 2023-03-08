@@ -59,6 +59,7 @@ module Item =
   let [<Literal>] sweetGemBerry = 417u<ItemNum>
   let [<Literal>] blackberry = 410u<ItemNum>
   let [<Literal>] grape = 398u<ItemNum>
+  let [<Literal>] coffee = 395u<ItemNum>
 
   let id item = item.Id
   let name item = item.Name
@@ -173,11 +174,17 @@ module Product =
     | SeedsFromSeedMaker _ -> Processor.seedMaker
     | Processed p -> p.Processor
 
-  let outputQuality modData quality product =
-    product |> processor |> Processor.outputQuality modData quality
+  let preservesQuality getItem qualityArtisanProducts = function
+    | Jam _ | Pickles _ | Wine _ | Juice _ -> qualityArtisanProducts
+    | SeedsFromSeedMaker _ -> false
+    | Processed p ->
+      qualityArtisanProducts
+      && (p.Item |> getItem |> Item.category = ArtisanGood || p.Item = Item.coffee)
 
-  let private artisanMultiplier skills multipliers =
-    Category.multiplier skills ArtisanGood * multipliers.ProfitMargin
+  let outputQuality getItem qualityArtisanProducts quality product =
+    if preservesQuality getItem qualityArtisanProducts product
+    then quality
+    else Quality.Normal
 
   let preservesJarPrice basePrice = basePrice * 2u + 50u
   let winePrice basePrice = basePrice * 3u
@@ -192,7 +199,7 @@ module Product =
   let private multiplierAndPrice getItem skills multipliers product =
     match product with
     | Jam item | Pickles item | Wine item | Juice item ->
-      artisanMultiplier skills multipliers,
+      Category.multiplier skills ArtisanGood * multipliers.ProfitMargin,
       item |> getItem |> Item.sellPrice |> productPrice product
 
     | SeedsFromSeedMaker itemId
@@ -201,17 +208,17 @@ module Product =
       Item.multiplier skills multipliers false item,
       item.SellPrice
 
-  let priceAndQuality getItem skills multipliers modData quality product =
+  let priceAndQuality getItem skills multipliers qap quality product =
     let multiplier, price = multiplierAndPrice getItem skills multipliers product
-    let quality = outputQuality modData quality product
+    let quality = outputQuality getItem qap quality product
     Item.priceCalc multiplier price quality, quality
 
-  let price getItem skills multipliers modData quality product =
-    priceAndQuality getItem skills multipliers modData quality product |> fst
+  let price getItem skills multipliers qap quality product =
+    priceAndQuality getItem skills multipliers qap quality product |> fst
 
-  let priceByQuality getItem skills multipliers modData product =
+  let priceByQuality getItem skills multipliers qap product =
     let multiplier, price = multiplierAndPrice getItem skills multipliers product
-    if product |> processor |> Processor.preservesQuality modData
+    if product |> preservesQuality getItem qap
     then Item.priceByQualityCalc multiplier price
     else Item.priceCalc multiplier price Quality.Normal |> Qualities.create
 
@@ -221,9 +228,9 @@ module Product =
     | Processed { Ratio = Some (i, o) } -> float o / float i
     | _ -> 1.0
 
-  let normalizedPrice getItem skills multipliers modData quality product =
-    float (price getItem skills multipliers modData quality product) * quantityPerInput product
+  let normalizedPrice getItem skills multipliers qap quality product =
+    float (price getItem skills multipliers qap quality product) * quantityPerInput product
 
-  let normalizedPriceByQuality getItem skills multipliers modData product =
+  let normalizedPriceByQuality getItem skills multipliers qap product =
     let quantity = quantityPerInput product
-    priceByQuality getItem skills multipliers modData product |> Qualities.map (fun price -> float price * quantity)
+    priceByQuality getItem skills multipliers qap product |> Qualities.map (fun price -> float price * quantity)

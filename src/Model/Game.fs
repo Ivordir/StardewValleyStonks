@@ -275,7 +275,8 @@ module Game =
   let productNormalizedPriceByQuality data vars product =
     Product.normalizedPriceByQuality data.Items.Find vars.Skills vars.Multipliers vars.QualityArtisanProducts product
 
-  let productQuality vars quality product = Product.outputQuality vars.QualityArtisanProducts quality product
+  let productQuality data vars quality product =
+    Product.outputQuality data.Items.Find vars.QualityArtisanProducts quality product
 
   let seedItemSellPrice data vars seed = itemPrice vars false data.Items[toItem seed] Quality.Normal
 
