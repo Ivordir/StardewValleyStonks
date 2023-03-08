@@ -23,12 +23,18 @@ let noHarvestsMessage settings crop =
   |> Icon.warning
 
 let invalidReasons settings crop (reasons: Query.InvalidReasons) =
-  div [ className Class.messages; children [
-    if reasons.HasFlag Query.InvalidReasons.NotEnoughDays then noHarvestsMessage settings crop
+  ul [ className Class.messages; children [
+    if reasons.HasFlag Query.InvalidReasons.NotEnoughDays then
+      li (noHarvestsMessage settings crop)
+
     if reasons.HasFlag Query.InvalidReasons.NotEnoughSeeds then
-      Icon.warning (if settings.Profit.SeedStrategy = BuyFirstSeed then "No seed price." else "No seed source.")
-    if reasons.HasFlag Query.InvalidReasons.NoFertilizerPrice then Icon.warning "No fertilizer price."
-    if reasons.HasFlag Query.InvalidReasons.NoInvestment then Icon.warning "No investment."
+      li (Icon.warning (if settings.Profit.SeedStrategy = BuyFirstSeed then "No seed price." else "No seed source."))
+
+    if reasons.HasFlag Query.InvalidReasons.NoFertilizerPrice then
+      li (Icon.warning "No fertilizer price.")
+
+    if reasons.HasFlag Query.InvalidReasons.NoInvestment then
+      li (Icon.warning "No investment.")
   ]]
 
 
@@ -682,9 +688,12 @@ let private pairData metric timeNorm data settings =
   }
 
 let private emptyPairData (pairData: PairData) =
-  div [ className [ Class.messages; Class.messagesLarge ]; children [
-    if Array.isEmpty pairData.Crops then Icon.warning "No crops selected."
-    if Array.isEmpty pairData.Fertilizers then Icon.warning "No fertilizers selected."
+  let noCrops = Array.isEmpty pairData.Crops
+  let noFerts = Array.isEmpty pairData.Fertilizers
+  ul [ className [ Class.messages; Class.messagesLarge ]; children [
+    if noCrops then li (Icon.warning "No crops selected.")
+    if noFerts then li (Icon.warning "No fertilizers selected.")
+    if not (noCrops || noFerts) then li (Icon.warning "No valid entries.")
   ]]
 
 let rankBy (label: ReactElement) (metric: RankMetric) (timeNorm: TimeNormalization) dispatchMetric dispatchTimeNorm =

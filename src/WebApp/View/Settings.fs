@@ -838,26 +838,27 @@ module LoadSave =
       ]
     ]]
 
-  let saveFileMessages presets = ofOption (fun (fileName, preset) ->
-    div [ className Class.messages; children [
-      if fileName <> "SaveGameInfo" then
-        Icon.warning $"""It appears you have chosen a file named "{fileName}". Please choose the file named "SaveGameInfo"."""
+  let saveFileMessages presets save =
+    ul [ className Class.messages; children [
+      save |> ofOption (fun (fileName, preset) ->
+        fragment [
+          if fileName <> "SaveGameInfo" then
+            li (Icon.warning $"""It appears you have chosen a file named "{fileName}". Please choose the file named "SaveGameInfo".""")
 
-      match preset with
-      | None -> Icon.error "Failed to load the save game."
-      | Some (preset, missing: string array) ->
-        if preset.UniqueId |> Option.exists (fun uniqueId -> presets |> List.exists (Preset.hasId uniqueId)) then
-          Icon.warning """This save game has been previously imported. Clicking "Ok" will update/overwrite the existing preset."""
+          match preset with
+          | None -> li (Icon.error "Failed to load the save game.")
+          | Some (preset, missing: string array) ->
+            if preset.UniqueId |> Option.exists (fun uniqueId -> presets |> List.exists (Preset.hasId uniqueId)) then
+              li (Icon.warning """This save game has been previously imported. Clicking "Ok" will update/overwrite the existing preset.""")
 
-        if missing.Length > 0 then
-          div [
-            Icon.warningWith (fragment [
-              Html.span "Warning: failed to load the following data from the save game:"
-              ul (missing |> Array.map li)
-              Html.span """Click "Ok" if you want to continue anyways."""
-            ])
-          ]
-    ]])
+            if missing.Length > 0 then
+              li (Icon.warningWith (fragment [
+                Html.span "Warning: failed to load the following data from the save game:"
+                ul (missing |> Array.map li)
+                Html.span """Click "Ok" if you want to continue anyways."""
+              ]))
+        ])
+    ]]
 
   let importSave presets dispatch =
     Dialog.toggleEditWith
