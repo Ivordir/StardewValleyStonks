@@ -123,7 +123,7 @@ it turns out that the average number of orientations is 3.24 for our 5x5 field e
 
 ![The number of giant crop orienations for each tile on a 5x5 field.](/public/img/Field%20Layouts/Example%20Orientations%20Per%20Tile.png)
 
-Doing this same process for your crop field can be annoying,
+Doing this same process for your crop field can be tedious,
 since other obstacles in the field like sprinklers and jumino huts block certain spawning locations as well.
 So, included below are precomputed averages for various field layouts.
 Making a rough estimate for your field using the values below should be good enough.
@@ -175,9 +175,6 @@ The Ranker supports ranking three different set of items: crops, fertilizers, an
 
 - Ranking fertilizers, unsurprisingly, does the reverse.
   It will cause the Ranker to choose the best crop for each fertilizer — the crop that gives the highest rank value.
-
-  > This can be useful if you have gotten some fertilizer for free and want to determine what crop would be most
-  > beneficial to plant on the fertilizer. Just make sure to also disable the "pay for fertilizer" setting.
 
 - Ranking "all pairs" shows all possible combinations of crops and fertilizers on the chart.
   You can use the brush at the bottom of the chart to show more or less bars on the chart.
@@ -288,7 +285,7 @@ algorithm is used to piece together a sequence of non-overlapping subproblems th
 > Surprisingly, I was only able to find [one](https://www.npmjs.com/package/javascript-lp-solver) linear programming solver available on NPM that:
 >
 > - could solve problems with integer variables
-> - and was not a web assembly port of an existing solver (these tend to have megabyte bundle sizes which is not ideal)
+> - and was not a WebAssembly port of an existing solver (these tend to have megabyte bundle sizes which is not ideal)
 >
 > While the solver linked above is wonderful, its performance, however, was lacking for this use case.
 > That is, the solver should idealy be able solve all subproblems in under 100ms to provide
@@ -309,19 +306,20 @@ In rough order of importance, these are:
   The Ranker can provide the ROI for **individual** crops,
   but not across multiple crops like the Optmizer does for gold or xp.
 
-  > For example, at the start of the game, you have little gold but comparatively lots of energy.
+  > For example, at the very start of the game, you have little gold but comparatively lots of energy.
   > I'm not a speedrunner, but the goal in this case could be to prioritize ROI and scale up as fast as possible,
   > so that you are able to plant enough high-profiting crops to meet your energy capacity.
+  > In this case, the Optimizer may not be giving the "best" recommendation, but it could still be giving a decent one.
 
 - When the "seed strategy" is set to "buy first", the Optimizer will **only** buy seeds
   and will never use other sources like the Seed Maker or crafted Wild Seeds.
   The Ranker does not have this limitation.
 
-- The Ranker and Optimizer do not factor in the change of variables over time (e.g., farming level).
+- The Ranker and Optimizer do not factor in the change of variables over time (i.e., farming level).
   Both the Ranker and Optimizer will be more accurate if used over a shorter time period,
-  or if variables do not change over time (e.g., you have the maximum farming level).
-  Then again, you can manually change the variable in question and check whether
-  a certain crop or output from the Optimizer keeps getting recommended even as the variable changes.
+  or if variables do not change over time (i.e., you have the maximum farming level).
+
+  > One workaround is to manually check the recommendations for the next few farming levels and see whether the same crops keep getting recommended.
 
 - The Ranker and Optimizer consider raw numbers (gold, xp, etc.), but not other logistical factors like:
   - Processing Time and Capacity
@@ -347,7 +345,7 @@ In rough order of importance, these are:
     - Deluxe Speed-Gro can only be bought on Thursday from the Oasis (if that matters).
     - Strawberry Seeds can only be bought at the Egg Festival.
 
-    > For example, the Sweet Gem Berry is often highly ranked,
+    > For example, the Sweet Gem Berry is often highly ranked in terms of gold,
     > but it is hard to get any significant amount of Rare Seeds.
 
 - The Ranker and Optimizer operate on a fixed start and end date with a maximum time span of 1 year.
