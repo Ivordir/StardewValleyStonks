@@ -691,13 +691,6 @@ module Settings =
 
   let multipliers multipliers dispatch =
     fragment [
-      Input.checkboxWith Icon.bearsKnowledge multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
-
-      Input.checkbox
-        "Apply Tiller to Foraged Grapes and Blackberries"
-        multipliers.TillerForForagedFruit
-        (SetTillerForForagedFruit >> dispatch)
-
       Select.options
         (length.em 4)
         (fun margin -> ofStr (if margin = 1.0 then "Normal" else percent margin))
@@ -705,10 +698,17 @@ module Settings =
         multipliers.ProfitMargin
         (SetProfitMargin >> dispatch)
       |> labeled "Profit Margin"
+
+      Input.checkboxWith Icon.bearsKnowledge multipliers.BearsKnowledge (SetBearsKnowledge >> dispatch)
+
+      Input.checkbox
+        "Apply Tiller to Foraged Grapes and Blackberries"
+        multipliers.TillerForForagedFruit
+        (SetTillerForForagedFruit >> dispatch)
     ]
 
   let profitSettings profit dispatch =
-    fragment [
+    div [ className Class.settingsColumn; children [
       Select.unitUnion
         (length.em 5)
         profit.SeedStrategy
@@ -716,25 +716,25 @@ module Settings =
       |> labeled "Seed Strategy"
 
       payForFertilizerSettings profit dispatch
-    ]
+    ]]
 
   let priceSettings game profit dispatch =
-    fragment [
-      Input.checkbox
-        "Joja Membership"
-        game.JojaMembership
-        (SetJojaMembership >> SetGameVariables >> dispatch)
-
-      multipliers game.Multipliers (SetMultipliers >> SetGameVariables >> dispatch)
-
+    div [ className Class.settingsColumns; children [
       profitSettings profit (SetProfit >> dispatch)
-    ]
+
+      div [ className Class.settingsColumn; children [
+        multipliers game.Multipliers (SetMultipliers >> SetGameVariables >> dispatch)
+
+        Input.checkbox
+          "Joja Membership"
+          game.JojaMembership
+          (SetJojaMembership >> SetGameVariables >> dispatch)
+      ]]
+    ]]
 
   let cropSettings irrigated settings settingsDispatch =
     let dispatch = SetCropAmount >> settingsDispatch
     fragment [
-      Input.checkbox "Irrigated" irrigated (SetIrrigated >> settingsDispatch)
-
       Input.floatWithRange
         "Average Giant Crop Orientations Per Tile"
         (length.em 4)
@@ -751,6 +751,8 @@ module Settings =
         settings.ShavingToolLevel
         (SetShavingToolLevel >> dispatch)
       |> labeled "Shaving Enchantment"
+
+      Input.checkbox "Irrigated" irrigated (SetIrrigated >> settingsDispatch)
 
       Input.checkboxWith Icon.specialCharm settings.SpecialCharm (SetSpecialCharm >> dispatch)
 
