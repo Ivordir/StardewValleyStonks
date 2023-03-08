@@ -230,7 +230,7 @@ module Crops =
 
     fragment [
       div [ className Class.settingsGroup; children [
-        labeled "View with Quality" (Select.enum (length.em 4) productQuality (SetProductQuality >> cropTabDispatch))
+        labeled "Show Prices for Quality" (Select.enum (length.em 4) productQuality (SetProductQuality >> cropTabDispatch))
         Input.checkbox "Show Normalized Prices" normalizedPrices (SetNormalizeProductPrices >> cropTabDispatch)
       ]]
 

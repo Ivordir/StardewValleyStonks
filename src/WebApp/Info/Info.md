@@ -102,9 +102,9 @@ Quality Artisan Products
 : if you play with the [quality artisan products](https://www.moddrop.com/stardew-valley/mods/707502-quality-artisan-products) mod, you can enable this setting.
   Items placed in kegs, etc., will retain their quality once processed into an artisan product.
 
-View with Quality
+Show Prices for Quality
 : this setting changes the prices shown in the products table in the crops tab.
-  It only effects the prices in the "raw" column unless the "quality artisan products" setting is enabled.
+  It only affects the prices in the "raw" column unless the "quality artisan products" setting is enabled.
 
 Show Normalized Prices
 : the prices displayed in the products table are unit sell prices with this setting disabled.
