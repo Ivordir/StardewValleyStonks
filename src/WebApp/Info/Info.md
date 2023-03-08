@@ -44,22 +44,6 @@ Ignore Profession Conflicts
 : level 10 professions are mutually exclusive with one another. Additionally, level 10 professions require the corresponding level 5 profession to be taken.
   Enabling this setting disables the automatic toggling of required professions or untoggling of exclusive professions.
 
-Joja Membership
-: if enabled, this lowers most seed prices at JojaMart to match Pierre's.
-
-Bear's Knowledge
-: increases the sell price of Blackberries by a factor of 3. You can check your in-game wallet to see if you have this unlocked.
-
-Apply Tiller to Foraged Grapes and Blackberries
-: the Tiller profession applies to Grapes grown from Grape Starter and Blackberries harvested from bushes,
-  but it does not apply to Grapes and Blackberries harvested from Wild Seeds.
-  However, combining a stack of foraged Grapes or Blackberries with another item stack of its tiller-benefitting counterpart
-  causes all items in the new stack to benefit from the Tiller profession.
-  Enabling this setting mimics this behaviour and will apply the Tiller profession to Grapes and Blackberries harvested from Wild Seeds.
-
-Profit Margin
-: this corresponds to the profit margin setting found under advanced game options when creating a new Stardew Valley game.
-
 Seed Strategy
 : the "buy first" strategy mandates that the first seed for a crop must be bought.
   Subsequent plantings of the same crop may continue to buy seeds or use alternative seed sources like the Seed Maker (if it is available/unlocked).
@@ -78,8 +62,21 @@ Pay for Destroyed Fertilizer
   Enabling this setting accounts for the cost of replacing the destroyed fertilizer between harvests.
   This setting is ignored if the "pay for fertilizer" setting is disabled.
 
-Irrigated
-: enable this setting to apply the irrigation growth speed bonus (25%) to Rice and Taro.
+Profit Margin
+: this corresponds to the profit margin setting found under advanced game options when creating a new Stardew Valley game.
+
+Bear's Knowledge
+: increases the sell price of Blackberries by a factor of 3. You can check your in-game wallet to see if you have this unlocked.
+
+Apply Tiller to Foraged Grapes and Blackberries
+: the Tiller profession applies to Grapes grown from Grape Starter and Blackberries harvested from bushes,
+  but it does not apply to Grapes and Blackberries harvested from Wild Seeds.
+  However, combining a stack of foraged Grapes or Blackberries with another item stack of its tiller-benefitting counterpart
+  causes all items in the new stack to benefit from the Tiller profession.
+  Enabling this setting mimics this behaviour and will apply the Tiller profession to Grapes and Blackberries harvested from Wild Seeds.
+
+Joja Membership
+: if enabled, this lowers most seed prices at JojaMart to match Pierre's.
 
 Average Giant Crop Orientations Per Tile
 : this setting represents the number of different possible ways a giant crop can spawn on a tile, averaged across all farm tiles.
@@ -90,13 +87,16 @@ Shaving Enchantment
   This affects the number of items harvested from a giant crop.
   Surprisingly, gold and steel axes provide the highest expected shaved items.
 
+Irrigated
+: enable this setting to apply the irrigation growth speed bonus (25%) to Rice and Taro.
+
 Special Charm
 : you can check your in-game wallet to see if you have this unlocked.
-  This setting has little effect but is included nevertheless.
+  This setting has a very small effect on the number of crops harvested.
 
 Luck Buff
 : this is the in-game luck buff you have at the time of harvesting.
-  This setting has little effect but is included nevertheless.
+  This setting has a very small effect on the number of crops harvested.
 
 Quality Artisan Products
 : if you play with the [quality artisan products](https://www.moddrop.com/stardew-valley/mods/707502-quality-artisan-products) mod, you can enable this setting.
