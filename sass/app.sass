@@ -675,29 +675,34 @@ input[type=range]
   margin-left: 0.5em
 
 .crop-qualities
-  $transition: flex-grow 0.75s
-
   width: 100%
 
   & > div
     display: flex
 
     &:first-child
-      height: 1rem
+      height: 1.5rem
+      margin-bottom: 0.25em
 
       & > div
-        transition: $transition
         background-color: var(--color)
 
-    &:last-child
-      height: 1rem
-      column-gap: 1em
+    &:last-child > div
+      min-width: min-content
+      text-align: center
 
-      & > div
-        transition: $transition
-        flex-basis: min-content
-        text-align: center
+      & > span
+        display: inline-block
         color: var(--color)
+        background-color: #282828
+        border-radius: 0.5em
+
+        &:not(:empty)
+          padding: 0.5em 0.5em 0.25em 0.5em
+
+@media (prefers-reduced-motion: no-preference)
+  .crop-qualities > div > div
+    transition: flex-grow 0.75s
 
 .quality
   display: inline-block

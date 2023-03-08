@@ -79,9 +79,9 @@ $arrow-length: 1em
     --color: #{$color}
     --img: url("/public/img/Qualities/#{$quality}.png")
 
-@include quality(Iridium, purple)
-@include quality(Gold, gold)
-@include quality(Silver, silver)
+@include quality(Iridium, scale-color(mix(#db67c4, #801fe2), $lightness: 25%))
+@include quality(Gold, mix(#ffff18, #efc90b))
+@include quality(Silver, mix(#dadfe5, #a0a0a0))
 @include quality(Normal, white)
 
 

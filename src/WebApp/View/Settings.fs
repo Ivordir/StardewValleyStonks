@@ -17,17 +17,22 @@ open Core.Operators
 open Core.ExtraTopLevelOperators
 
 let cropQualities qualities =
-  let qualities = Qualities.indexed qualities
-  let mapQualities (text: _ -> string) = Array.map (fun (quality, prob) ->
-    div [
-      className (quality |> Quality.name |> lowerCase)
-      style [ style.custom ("flexGrow", prob) ]
-      prop.text (text prob)
-    ])
+  let mapQualities (content: _ -> _ -> ReactElement) =
+    div (qualities |> Qualities.indexed |> Array.map (fun (quality, prob) ->
+      div [
+        className (quality |> Quality.name |> lowerCase)
+        style [ style.custom ("flexGrow", prob) ]
+        children (content quality prob)
+      ]
+    ))
 
   div [ className Class.cropQualities; children [
-    div (qualities |> mapQualities (konst ""))
-    div (qualities |> Array.filter (fun (_, prob) -> prob > 0.0) |> mapQualities percent2)
+    mapQualities (fun _ _ -> none)
+    mapQualities (fun quality prob ->
+      fragment [
+        Html.span [ className Class.labelHidden; text (Quality.name quality) ]
+        Html.span (if prob = 0.0 then "" else percent2 prob)
+      ])
   ]]
 
 let private payForFertilizerSettings profit dispatch =
