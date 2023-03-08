@@ -112,7 +112,7 @@ dialog
   & > div
     width: 100%
     display: flex
-    justify-content: space-around
+    justify-content: center
     align-items: center
     column-gap: 1em
 
@@ -188,7 +188,7 @@ input[type=range]
   @extend %button-unstyled
   min-width: 5em
   font-size: 1.5rem
-  padding: 0.75rem 1rem 0.5rem 1rem
+  padding: 0.5em 0.625em 0.375em 0.625em
 
   @extend %border-box
   border-image-width: 1rem 1rem 0 1rem
@@ -408,7 +408,7 @@ input[type=range]
   & > div:first-child
     display: flex
     align-items: center
-    column-gap: 1em
+    column-gap: 1.5em
 
     & > label
       display: inline-block
@@ -602,11 +602,11 @@ input[type=range]
 
   &-tooltip
     @extend %border-box
-    padding: 1em
     display: flex
     flex-direction: column
     align-items: center
     row-gap: 1em
+    padding: 1em
 
     & > h1
       font-size: 1.25rem
@@ -752,6 +752,10 @@ input[type=range]
     & > input
       width: 100%
 
+#settings-misc,
+#settings-load\/save
+  padding-top: 2em
+
 #settings-load\/save
   & > div
     display: flex
@@ -767,7 +771,7 @@ input[type=range]
       font-size: 1.5rem
 
     & > ul
-      border: black solid var(--border-thin)
+      @extend %border-box
 
       & > li
         @extend %zebra-striping
@@ -786,6 +790,7 @@ input[type=range]
           min-width: 35rem
           display: flex
           justify-content: center
+          font-size: 1.25rem
 
 
 table, tr
@@ -953,18 +958,19 @@ tr
       border-top: var(--border)
       border-bottom: var(--border)
 
-      &.disabled
-        opacity: 1
-
-        & > *
-          @extend .disabled
-
 // price columns
-#settings-crops > details:nth-child(2),
-#settings-fertilizers > details:first-child
+#crops-details,
+#fertilizers-details
   & table td:nth-child(3) > img
     vertical-align: text-bottom
     margin-left: 0.25em
+
+tr, thead th
+  &.disabled
+    opacity: 1
+
+    & > *
+      @extend .disabled
 
 
 .disabled

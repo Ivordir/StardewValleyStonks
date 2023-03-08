@@ -36,11 +36,11 @@ nav
 
 #content
   @extend %border-box
-  padding: $padding
+  padding: 0 $padding $padding $padding
 
   display: flex
   flex-flow: column
-  row-gap: 2em
+  row-gap: 1em
 
 section
   display: flex
@@ -99,6 +99,7 @@ h1, h2, h3, h4, h5, h6, p, ul
 
 h1
   font-size: 1.75rem
+  padding-top: 0.5em
 
 h2
   font-size: 1.25rem
@@ -110,7 +111,7 @@ blockquote
   margin: 0.5em 0
   padding: 0.5em 0.75em
 
-  background: white
+  background: #fff0ba
   border-radius: 0.5em
 
 dt
@@ -128,9 +129,12 @@ figure
     height: auto
     max-height: calc(min(20rem, 50vh))
 
+  & > figcaption
+    text-align: center
+
 table
   border-collapse: collapse
-  $border: solid black 1px
+  $border: 1px solid black
   border: $border
   margin: 0.5em 0
 
@@ -143,4 +147,4 @@ table
     font-weight: normal
 
 #giant-crops > ul figure
-  width: max-content
+  max-width: max-content
