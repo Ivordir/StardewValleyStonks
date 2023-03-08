@@ -7,10 +7,10 @@
 
 %zebra-striping
   &:nth-child(odd)
-    background-color: #f9ba66
+    background-color: common.$bg
 
   &:nth-child(even)
-    background-color: scale-color(#f9ba66, $lightness: 25%)
+    background-color: common.$bg-light
 
 %square-button
   @extend %button-unstyled
@@ -309,9 +309,9 @@ input[type=range]
 
 .select
   $padding: 0.5rem
-  $background: #f9ba66
-  $background-hover: #f5deb3
-  --border: #5b2b2a solid var(--border-med)
+  $background: common.$bg
+  $background-hover: common.$bg-light
+  --border: var(--border-med) solid #{common.$border-color}
 
   display: inline-flex
   cursor: pointer
@@ -427,8 +427,8 @@ input[type=range]
     display: flex
     align-items: center
     justify-content: center
-    border: black solid var(--border-thin)
-    background: lightgray
+    border: var(--border-thin) solid common.$border-color
+    background: common.$bg-light
     height: 10rem
 
 .messages
@@ -562,6 +562,7 @@ input[type=range]
       justify-content: center
       outline: var(--border-thin) solid black
       padding: 10%
+      background-color: common.$bg-light
 
       & > img
         width: 50%
@@ -872,7 +873,7 @@ tr
 
 tr
   &.expanded
-    border-bottom: black dashed var(--border-thin)
+    border-bottom: var(--border-thin) dashed common.$border-color
 
   &.collapsed ~ tr
     visibility: collapse
@@ -882,7 +883,7 @@ tr
     position: absolute
 
 #visualization table
-  --border: black solid var(--border-thin)
+  --border: var(--border-thin) solid #{common.$border-color}
 
   border-collapse: collapse
 
@@ -927,7 +928,7 @@ tr
     margin-left: common.$arrow-length + 0.5em
 
 #settings table
-  --border: black solid var(--border-thin)
+  --border: var(--border-thin) solid #{common.$border-color}
 
   border-collapse: separate
   border-spacing: 0
