@@ -623,16 +623,12 @@ module Settings =
   let profession skills profession dispatch =
     let selected = skills.Professions.Contains profession
     div [
-      label [
-        if not (skills |> Skills.professionUnlocked profession) then className Class.disabled
-        children [
-          input [
-            prop.type'.checkbox
-            isChecked selected
-            onCheckedChange (curry SetProfession profession >> dispatch)
-          ]
-          Icon.profession profession
-        ]
+      if not (skills |> Skills.professionUnlocked profession) then className Class.disabled
+      children [
+        Input.checkboxWith
+          (Icon.profession profession)
+          selected
+          (curry SetProfession profession >> dispatch)
       ]
     ]
 
@@ -646,11 +642,11 @@ module Settings =
     div [ className Class.skill; children [
       icon
       skillBuffLevel skill (levelMsg >> dispatch)
+      cropQualities (qualities skills)
       div [
         className Class.professions
         children (professions |> Array.map (fun prof -> profession skills prof dispatch))
       ]
-      cropQualities (qualities skills)
     ]]
 
   let farming skills dispatch =
@@ -675,9 +671,10 @@ module Settings =
 
   let skills skills dispatch =
     fragment [
-      farming skills dispatch
-
-      foraging skills dispatch
+      div [
+        farming skills dispatch
+        foraging skills dispatch
+      ]
 
       div [ className Class.settingsGroup; children [
         Input.checkbox

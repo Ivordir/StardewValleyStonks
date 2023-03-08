@@ -455,11 +455,51 @@ input[type=range]
       padding-left: 1em
       list-style: unset
 
+.settings-columns
+  display: flex
+  flex-wrap: wrap
+  gap: 0.5em 1em
+
+.settings-column
+  display: flex
+  flex-direction: column
+  row-gap: 0.5em
+  margin-right: auto
+
+#skills-details
+  display: flex
+  flex-direction: column
+  align-items: center
+  row-gap: 1.5em
+
+  & > div:first-child
+    display: flex
+    flex-wrap: wrap
+    justify-content: space-around
+    gap: 1em
+
+.skill
+  @extend %border-box-inner
+  display: flex
+  flex-direction: column
+  align-items: center
+  row-gap: 1.5em
+  padding: calc(common.$border-box-outset + 1.5em)
+
+  & > span:first-child
+    font-size: 1.5rem
+
+  &-level
+    display: flex
+    flex-wrap: wrap
+    column-gap: 2em
+    row-gap: 1em
+
 .professions
   display: grid
   grid-template-columns: repeat(2, 1fr)
   width: max-content
-  gap: 0.5em
+  gap: 1em
 
   & > div
     display: flex
@@ -468,43 +508,6 @@ input[type=range]
     &:first-child,
     &:last-child:nth-child(2)
       grid-row: span 2
-
-    & > label
-      padding: 0.5em
-      width: 100%
-      cursor: pointer
-      user-select: none
-
-      & > input
-        @extend %hidden-input
-
-      & > input:checked + *
-        color: green
-
-      &:hover
-        background: white
-
-      &:focus-within
-        @extend %focus-outline
-        outline-offset: 0
-
-.skill
-  display: flex
-  flex-direction: column
-  row-gap: 1em
-  padding: 0.5em
-  width: max-content
-
-  & > span:first-child
-    width: 100%
-    font-size: 1.5rem
-    text-align: center
-
-  &-level
-    display: flex
-    flex-wrap: wrap
-    column-gap: 2em
-    row-gap: 1em
 
 .number-and-range
   display: flex

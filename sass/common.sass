@@ -121,6 +121,12 @@ $border-box-outset: 0.75rem
   border-image-outset: $border-box-outset
   margin: $border-box-outset
 
+  &-inner
+    @extend %border-box
+    border-image-outset: 0
+    margin: 0
+    padding: $border-box-outset
+
   & > *
     image-rendering: initial
 

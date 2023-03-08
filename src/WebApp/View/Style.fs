@@ -43,6 +43,8 @@ module Class =
   let [<Literal>] seasons = "seasons"
   let [<Literal>] date = "date"
 
+  let [<Literal>] settingsColumns = "settings-columns"
+  let [<Literal>] settingsColumn = "settings-column"
   let [<Literal>] settingsGroup = "settings-group"
   let [<Literal>] messages = "messages"
   let [<Literal>] messagesLarge = "messages-large"
