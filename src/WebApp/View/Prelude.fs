@@ -299,19 +299,22 @@ let [<ReactComponent>] private LazyDetailsContent (props: {|
 
 let private detailsSectionWith delayRender openDetails key (summaryContent: ReactElement) children dispatch =
   let open' = openDetails |> Set.contains key
+  let id = $"{key |> Reflection.getCaseName |> lowerCase}-details"
   details [
     isOpen open'
     onToggle (curry SetDetailsOpen key >> dispatch)
     prop.children [
       summary summaryContent
-      if delayRender then
-        div (LazyDetailsContent {|
-          key = string key
-          Open = open'
-          Content = children
-        |})
-      else
-        div children
+      div [ prop.id id; prop.children [
+        if delayRender then
+          LazyDetailsContent {|
+            key = id
+            Open = open'
+            Content = children
+          |}
+        else
+          children
+      ]]
     ]
   ]
 
