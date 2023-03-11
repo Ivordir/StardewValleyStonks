@@ -378,7 +378,7 @@ Other less important limitations include:
   > For example, Summer Forage provides Grapes which can then be put into the Seed Maker to make Grape Starter.
   > When Fall comes, these seeds can then be planted.
 
-- The Ranker and Optimizer make other reasonable assumptions:
+- The Optimizer makes other reasonable assumptions:
   - Regrow crops stay in the ground until they are out of season (or the end date is reached).
     This means there is at most one regrow crop per season.
   - There is at most one fertilizer per season.
