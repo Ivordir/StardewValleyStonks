@@ -674,6 +674,22 @@ details
   cursor: pointer
   fill: transparent
 
+.recharts-brush > rect:first-child
+  fill: common.$bg-light
+  stroke: common.$border-color
+  stroke-opacity: calc(2 / 3)
+  stroke-width: var(--border-thin)
+
+.recharts-brush-slide
+  fill-opacity: calc(2 / 3)
+  fill: common.$border-color
+
+.recharts-brush-traveller > rect:first-child
+  fill: common.$border-color
+
+.recharts-brush-texts > text
+  fill: black
+
 #summary-controls
   display: flex
   flex-direction: column
