@@ -202,7 +202,7 @@ The Ranker can normalize the above rank metrics to a per season or per day basis
 Note that there is actually a slight difference between the "per season" and "per day" settings explained below.
 
 - Normalizing by season divides the rank value by the number of **days the crop is in season**.
-  It then divides this value again by 28.
+  It then multiplies this value by 28.
 
 - Normalizing by day divides the rank value by the number of **days needing watering**.
 
