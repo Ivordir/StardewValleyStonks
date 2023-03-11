@@ -11,6 +11,8 @@
 $bg-light: #ffd284
 $bg: #f9ba66
 $border-color: #5b2b2a
+$blue: #0060b6
+$purple: #ae00ff
 
 
 $arrow-length: 1em
@@ -228,6 +230,15 @@ $title-img-height: 84
 
 img
   user-select: none
+
+a
+  color: scale-color($blue, $lightness: -20%)
+
+  &:visited
+    color: scale-color($purple, $lightness: -25%)
+
+  &:focus
+    @extend %focus-outline
 
 dl
   display: grid
