@@ -116,13 +116,14 @@ $arrow-length: 1em
   &:hover
     @extend %hover-brightness
 
-$border-box-outset: 0.75rem
+$border-box-width: 1rem
+$border-box-outset: $border-box-width * 0.75
 %border-box
   image-rendering: pixelated
   $img-scale: 4
   border-image-source: ui-img(Border Box)
   border-image-slice: ($img-scale * 4) fill
-  border-image-width: 1rem
+  border-image-width: $border-box-width
   border-image-outset: $border-box-outset
   margin: $border-box-outset
 
@@ -236,37 +237,5 @@ dt
   @extend %colon
   text-align: right
 
-dd
+dd, h1, h2, h3, h4, h5, h6, p, ul
   margin: 0
-
-details
-  & > summary
-    list-style: none
-    cursor: pointer
-    user-select: none
-    font-size: 1.5rem
-    padding: 0.5em 0.5em 0.25em 0.5em
-
-    &::marker,
-    &::-webkit-details-marker
-      display: none
-
-    &::before
-      @extend %arrow
-      @extend %arrow-right
-      margin-right: 0.5em
-
-    &:hover::before
-      @extend %hover-scale
-
-    &:focus
-      outline-offset: calc(-1 * var(--border-thin))
-
-  & > div
-    display: flex
-    flex-direction: column
-    row-gap: 0.5em
-    padding: 0.5em
-
-  &[open] > summary::before
-    @extend %arrow-down

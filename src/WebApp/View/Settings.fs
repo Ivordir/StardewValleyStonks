@@ -606,7 +606,7 @@ module Settings =
       |> labeledHidden $"{label} Season"
 
       Input.natWith
-        (length.em 2)
+        (length.em 1.5)
         (Date.firstDay |> clamp date.Season |> Some)
         (Date.lastDay |> clamp date.Season |> Some)
         date.Day
@@ -634,8 +634,8 @@ module Settings =
 
   let skillBuffLevel skill dispatch =
     div [ className Class.skillLevel; children [
-      Input.natWithRange "Level" (length.em 2) 0u Skill.maxLevel skill.Level (SetLevel >> dispatch)
-      labeled "Buff" (Input.nat (length.em 2) skill.Buff (SetBuff >> dispatch))
+      Input.natWithRange "Level" (length.em 1.5) 0u Skill.maxLevel skill.Level (SetLevel >> dispatch)
+      labeled "Buff" (Input.natWith (length.em 1.5) None (Some 999u) skill.Buff (SetBuff >> dispatch))
     ]]
 
   let skill skills skill professions qualities icon levelMsg dispatch =
@@ -763,7 +763,7 @@ module Settings =
   let mods qualityArtisanProducts dispatch =
     Input.checkbox "Quality Artisan Products" qualityArtisanProducts (SetQualityArtisanProducts >> dispatch)
 
-  let tab openDetails data game profit dispatch =
+  let tab openDetails game profit dispatch =
     let uiDispatch = SetUI >> dispatch
     let settingsDispatch = SetSettings >> dispatch
     let dispatch = SetGameVariables >> settingsDispatch
@@ -939,8 +939,8 @@ module LoadSave =
             ]
           ])
 
-    div [
-      Html.span "Presets"
+    section [
+      h1 "Presets"
       ul presets
     ]
 
@@ -982,6 +982,6 @@ let section app dispatch =
     tabs "Settings" ui.SettingsTab (SetSettingsTab >> SetUI >> dispatch) (function
       | Crops -> Crops.tab app dispatch
       | Fertilizers -> Fertilizers.tab app dispatch
-      | Misc -> Settings.tab ui.OpenDetails app.Data settings.Game settings.Profit dispatch
+      | Misc -> Settings.tab ui.OpenDetails settings.Game settings.Profit dispatch
       | LoadSave -> LoadSave.tab app.Presets settings appDispatch)
   ]]

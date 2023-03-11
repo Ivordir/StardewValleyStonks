@@ -85,7 +85,6 @@ footer
 ul
   list-style: none
   padding: 0
-  margin: 0
 
 dialog
   @extend %border-box
@@ -101,13 +100,10 @@ dialog
   align-items: center
   justify-content: space-between
 
-  & > h1,
-  & > p
-    margin: 0
-
   & > h1
     font-size: 1.5rem
     font-weight: normal
+    text-align: center
 
   & > div
     width: 100%
@@ -178,6 +174,39 @@ input[type=range]
   &::-moz-range-track
     @include track
 
+details
+  & > summary
+    display: flex
+    align-items: center
+    list-style: none
+    cursor: pointer
+    user-select: none
+    font-size: 1.25rem
+    padding: 0.5em 0.5em 0.375em 0.5em
+    background-color: common.$bg-light
+    border: common.$border-color solid var(--border-thin)
+
+    &::marker,
+    &::-webkit-details-marker
+      display: none
+
+    &::before
+      @extend %arrow
+      @extend %arrow-right
+      margin: 0 0.5em 0.25em 0
+
+    &:hover::before
+      @extend %hover-scale
+
+  & > div
+    display: flex
+    flex-direction: column
+    row-gap: 0.5em
+    margin: 1em 0
+
+  &[open] > summary::before
+    @extend %arrow-down
+
 
 [role=tablist]
   display: flex
@@ -210,7 +239,7 @@ input[type=range]
   overscroll-behavior: contain
 
   & > div
-    padding: 1em
+    padding: 1.5em
     height: 100%
     box-sizing: border-box
     display: flex
@@ -480,11 +509,14 @@ input[type=range]
 
 .skill
   @extend %border-box-inner
+  $border-width: 0.75rem
+  border-image-width: $border-width
+
   display: flex
   flex-direction: column
   align-items: center
   row-gap: 1.5em
-  padding: calc(common.$border-box-outset + 1.5em)
+  padding: calc($border-width + 0.75em)
 
   & > span:first-child
     font-size: 1.5rem
@@ -492,7 +524,7 @@ input[type=range]
   &-level
     display: flex
     flex-wrap: wrap
-    column-gap: 2em
+    column-gap: 1em
     row-gap: 1em
 
 .professions
@@ -611,7 +643,6 @@ input[type=range]
     & > h1
       font-size: 1.25rem
       font-weight: normal
-      margin: 0
 
     & > span
       font-size: 1.125rem
@@ -732,11 +763,12 @@ input[type=range]
   & > div:last-child
     display: flex
     flex-direction: column
-    row-gap: 1em
+    row-gap: 0.5em
 
     transition: opacity 0.25s
 
 #cropfilters-details
+  margin-inline: auto
   row-gap: 1em
   width: max-content
 
@@ -752,23 +784,23 @@ input[type=range]
     & > input
       width: 100%
 
-#settings-misc,
 #settings-load\/save
   padding-top: 2em
 
-#settings-load\/save
   & > div
     display: flex
     column-gap: 1em
     justify-content: center
 
-  & > div:first-child
+  & > section:first-child
+    display: flex
     flex-direction: column
     align-items: center
     row-gap: 0.5em
 
-    & > span:first-child
+    & > h1
       font-size: 1.5rem
+      font-weight: normal
 
     & > ul
       @extend %border-box
