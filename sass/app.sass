@@ -86,6 +86,9 @@ ul
   list-style: none
   padding: 0
 
+dl
+  font-size: 1.125rem
+
 dialog
   @extend %border-box
   margin: auto
@@ -466,6 +469,9 @@ details
   align-items: flex-start
   row-gap: 0.5em
 
+  &:empty
+    display: none
+
   &-large
     margin: 25% auto auto auto
     font-size: 1.5rem
@@ -515,7 +521,7 @@ details
   display: flex
   flex-direction: column
   align-items: center
-  row-gap: 1.5em
+  row-gap: 1em
   padding: calc($border-width + 0.75em)
 
   & > span:first-child
@@ -579,7 +585,6 @@ details
       font-size: 2rem
       grid-column: 2
 
-
   &-days
     display: grid
     grid-template-columns: repeat(7, minmax(4rem, 7rem))
@@ -592,7 +597,7 @@ details
       aspect-ratio: 1
       align-items: center
       justify-content: center
-      outline: var(--border-thin) solid black
+      outline: var(--border-thin) solid common.$border-color
       padding: 10%
       background-color: common.$bg-light
 
@@ -637,7 +642,7 @@ details
     display: flex
     flex-direction: column
     align-items: center
-    row-gap: 1em
+    row-gap: 0.5em
     padding: 1em
 
     & > h1
@@ -763,7 +768,7 @@ details
   & > div:last-child
     display: flex
     flex-direction: column
-    row-gap: 0.5em
+    row-gap: 1em
 
     transition: opacity 0.25s
 
@@ -948,6 +953,8 @@ tr
 
 .input-items
   & > summary
+    background-color: unset
+    border: unset
     font-size: 1rem
     padding: 0
 

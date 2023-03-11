@@ -832,12 +832,13 @@ module LoadSave =
       ]
 
       div [
+        ariaHidden true
+        onDragOver handleEvent
         onDrop (fun e ->
           handleEvent e
           if e.dataTransfer.files.length > 0 then
             loadFile e.dataTransfer.files[0])
 
-        onDragOver handleEvent
         text "or drag the file here"
       ]
     ]]
