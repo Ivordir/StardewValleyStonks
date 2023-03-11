@@ -897,6 +897,7 @@ module Ranker =
       responsiveContainer.chart (Recharts.barChart [
         barChart.data indexedValues
         barChart.barGap barGap
+        barChart.margin (0, int Values.fontPx * 2, 0, 0)
         barChart.children [
           Recharts.tooltip [
             tooltip.content (chartTooltip pairs data settings ranker.TimeNormalization ranker.RankMetric)
@@ -913,7 +914,7 @@ module Ranker =
           Recharts.yAxis [
             yAxis.unit (RankMetric.unit ranker.RankMetric)
             yAxis.domain (domain.constant 0, domain.auto)
-            yAxis.width (Values.fontPx * 4.0)
+            yAxis.width (Values.fontPx * 5.0)
             Interop.mkYAxisAttr "tickSize" (Values.fontPx / 2.0)
             if ranker.RankMetric = ROI then Interop.mkYAxisAttr "tickFormatter" (fun x -> x * 100.0)
           ]
