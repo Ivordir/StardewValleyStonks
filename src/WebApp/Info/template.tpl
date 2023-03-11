@@ -19,7 +19,7 @@
   <main id="main">
     <nav id="toc">$toc$</nav>
     <div id="content">$body$</div>
-    <a id="top-link" href="#main">Back To Top<a/>
+    <a id="top-link" href="#main">Back To Top</a>
   </main>
   <footer>
     <span>Stardew Valley v1.5.6 © ConcernedApe</span>
