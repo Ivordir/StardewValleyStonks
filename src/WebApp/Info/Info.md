@@ -285,7 +285,7 @@ algorithm is used to piece together a sequence of non-overlapping subproblems th
 > Surprisingly, I was only able to find [one](https://www.npmjs.com/package/javascript-lp-solver) linear programming solver available on NPM that:
 >
 > - could solve problems with integer variables
-> - and was not a WebAssembly port of an existing solver (these tend to have megabyte bundle sizes which is not ideal)
+> - and was not a WebAssembly port of an existing solver (these tend to have large bundle sizes which is not ideal)
 >
 > While the solver linked above is wonderful, its performance, however, was lacking for this use case.
 > That is, the solver should idealy be able solve all subproblems in under 100ms to provide
