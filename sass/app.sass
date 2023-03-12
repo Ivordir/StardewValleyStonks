@@ -168,7 +168,7 @@ dl
 dialog
   @extend %border-box
   margin: auto
-  padding: 1rem
+  padding: 1em
   min-height: 10rem
   min-width: 15rem
   max-width: calc(min(60ch, 40vw))
@@ -281,7 +281,7 @@ details
     display: flex
     flex-direction: column
     row-gap: 0.5em
-    margin: 1em 0
+    margin-block: 1em
 
   &[open] > summary::before
     @extend %arrow-down
@@ -352,10 +352,14 @@ details
     font-size: clamp(75%, 2vw, 100%)
 
 
+.hidden-text
+  font-size: 0
+  position: absolute
+  user-select: none
+
 .label-hidden
   @extend %colon
-  font-size: 0
-  user-select: none
+  @extend .hidden-text
 
 .label-text
   @extend %colon
@@ -410,10 +414,6 @@ details
   &:hover > input + img
     @extend %hover-scale
 
-.hidden-text
-  font-size: 0
-  position: absolute
-
 .select
   $padding: 0.5rem
   $background: common.$bg
@@ -447,7 +447,7 @@ details
     box-sizing: border-box
     border: var(--border)
     background-color: $background
-    padding: 0 $padding
+    padding-inline: $padding
 
     display: flex
     align-items: center
@@ -458,7 +458,7 @@ details
       border: none
       position: absolute
       padding: 0
-      width: calc(100% - 2 * #{$padding})
+      width: calc(100% - 2 * $padding)
       height: 100%
 
       &:not(:placeholder-shown) + *
@@ -605,8 +605,7 @@ details
   &-level
     display: flex
     flex-wrap: wrap
-    column-gap: 1em
-    row-gap: 1em
+    gap: 1em
 
 .professions
   display: grid
@@ -689,7 +688,7 @@ details
         position: absolute
         $counter-offset: 5%
         top: $counter-offset
-        left: calc(#{$counter-offset} + 0.125rem)
+        left: calc($counter-offset + 0.125rem)
 
 #chart
   flex-grow: 1
@@ -700,8 +699,7 @@ details
   &-controls
     display: flex
     flex-wrap: wrap
-    row-gap: 1em
-    column-gap: 2em
+    gap: 1em 2em
     align-items: center
     justify-content: center
 
@@ -709,9 +707,8 @@ details
     & > div > div
       display: flex
       flex-wrap: wrap
-      row-gap: 1em
       align-items: center
-      column-gap: 0.5em
+      gap: 1em 0.5em
 
   &-tooltip
     @extend %border-box
@@ -799,8 +796,7 @@ details
   display: flex
   flex-wrap: wrap
   align-items: center
-  column-gap: 2em
-  row-gap: 1em
+  gap: 1em 2em
   padding-inline: 0.5em
 
 .date > :last-child
@@ -854,8 +850,8 @@ details
   row-gap: 1em
 
 #visualization-optimizer
-  & > label
-    margin-left: 0.5em
+  & > label:first-child
+    margin-inline: 0.5em
 
   & > div:last-child
     display: flex
@@ -941,7 +937,7 @@ tfoot th
 thead th:first-of-type.column-sort > button
   justify-content: center
 
-th, th > button
+th
   font-weight: normal
 
 tr
@@ -1028,8 +1024,7 @@ tr
   & > tbody:empty
     display: none
 
-  // all cells
-  & tr > *
+  & > * > tr > *
     padding: 0.5em
 
     &:empty
