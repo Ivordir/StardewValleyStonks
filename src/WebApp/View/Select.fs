@@ -58,8 +58,7 @@ let selectControl initialState inputRef (props: _ Props) (state: _ State) setSta
           Interop.mkAttr "aria-autocomplete" "list"
           value state.Search
           onChange (fun str ->
-            let lower = lowerCase str
-            let options = props.Options |> Array.filter (fun opt -> (opt |> toString |> lowerCase).Contains lower)
+            let options = props.Options |> Array.filter (toString >> lowerCase >> strContains (lowerCase str))
             setState {|
               state with
                 Search = str

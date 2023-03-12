@@ -128,7 +128,8 @@ let private customPriceColumn viewKey key selection dispatch =
     dispatch
 
 let private priceColumns prices selected custom priceValue icon vendors selectMsg customMsg dispatch =
-  vendors |> Array.map (fun vendor ->
+  vendors
+  |> Array.map (fun vendor ->
     Column.valueOptSortable
       (Icon.NoText.vendor vendor)
       (priceValue vendor)
@@ -206,7 +207,7 @@ module Crops =
             else fun a b -> compare b a))
       |]
 
-  let products (data: GameData) settings cropTab crops dispatch =
+  let products data settings cropTab crops dispatch =
     let cropTabDispatch = SetCropTabState >> SetUI >> dispatch
     let selectDispatch = SetSelections >> SetSettings >> dispatch
 
@@ -424,11 +425,12 @@ module Crops =
         yield! (Enum.values |> Array.map (fun season ->
           Html.span [
             if filters.InSeason then className Class.disabled
-            children
-              (Input.checkbox
+            children [
+              Input.checkbox
                 (Season.name season)
                 (filters.Seasons |> Seasons.contains season)
-                (toggleSeason season >> SetSeasons >> dispatch))
+                (toggleSeason season >> SetSeasons >> dispatch)
+            ]
           ]
         ))
       ]
@@ -537,7 +539,10 @@ module Fertilizers =
     let fertilizers = fertilizers |> Array.map Fertilizer.name
 
     fragment [
-      div [ className Class.settingsGroup; children (payForFertilizerSettings settings.Profit (SetProfit >> dispatch)) ]
+      div [
+        className Class.settingsGroup
+        children (payForFertilizerSettings settings.Profit (SetProfit >> dispatch))
+      ]
 
       tableFromColumms
         id
@@ -621,13 +626,12 @@ module Settings =
     ]
 
   let profession skills profession dispatch =
-    let selected = skills.Professions.Contains profession
     div [
       if not (skills |> Skills.professionUnlocked profession) then className Class.disabled
       children [
         Input.checkboxWith
           (Icon.profession profession)
-          selected
+          (skills.Professions.Contains profession)
           (curry SetProfession profession >> dispatch)
       ]
     ]
@@ -844,26 +848,24 @@ module LoadSave =
     ]]
 
   let saveFileMessages presets save =
-    ul [ className Class.messages; children [
-      save |> ofOption (fun (fileName, preset) ->
-        fragment [
-          if fileName <> "SaveGameInfo" then
-            li (Icon.warning $"""It appears you have chosen a file named "{fileName}". Please choose the file named "SaveGameInfo".""")
+    save |> ofOption (fun (fileName, preset) ->
+      ul [ className Class.messages; children [
+        if fileName <> "SaveGameInfo" then
+          li (Icon.warning $"""It appears you have chosen a file named "{fileName}". Please choose the file named "SaveGameInfo".""")
 
-          match preset with
-          | None -> li (Icon.error "Failed to load the save game.")
-          | Some (preset, missing: string array) ->
-            if preset.UniqueId |> Option.exists (fun uniqueId -> presets |> List.exists (Preset.hasId uniqueId)) then
-              li (Icon.warning """This save game has been previously imported. Clicking "Ok" will update/overwrite the existing preset.""")
+        match preset with
+        | None -> li (Icon.error "Failed to load the save game.")
+        | Some (preset, missing: string array) ->
+          if preset.UniqueId |> Option.exists (fun uniqueId -> presets |> List.exists (Preset.hasId uniqueId)) then
+            li (Icon.warning """This save game has been previously imported. Clicking "Ok" will update/overwrite the existing preset.""")
 
-            if missing.Length > 0 then
-              li (Icon.warningWith (fragment [
-                Html.span "Warning: failed to load the following data from the save game:"
-                ul (missing |> Array.map li)
-                Html.span """Click "Ok" if you want to continue anyways."""
-              ]))
-        ])
-    ]]
+          if missing.Length > 0 then
+            li (Icon.warningWith (fragment [
+              Html.span "Warning: failed to load the following data from the save game:"
+              ul (missing |> Array.map li)
+              Html.span """Click "Ok" if you want to continue anyways."""
+            ]))
+      ]])
 
   let importSave presets dispatch =
     Dialog.toggleEditWith

@@ -133,6 +133,7 @@ module GrowthCalendar =
           Icon.season season
           span.Fertilizer |> ofOption Icon.fertilizer
         ]]
+
         div [
           className Class.calendarDays
           children days
@@ -141,8 +142,7 @@ module GrowthCalendar =
 
   let optimizer data settings dateSpan = fromDateSpan data settings false dateSpan
 
-  let ranker app fertilizer crop =
-    let settings, _ = app.State
+  let ranker data settings fertilizer crop =
     match Query.bestGrowthSpan settings.Game fertilizer crop with
     | None -> noHarvestsMessage settings crop
     | Some span ->
@@ -173,7 +173,7 @@ module GrowthCalendar =
 
       div [
         className Class.calendar
-        children (fromDateSpan app.Data settings true dateSpan)
+        children (fromDateSpan data settings true dateSpan)
       ]
 
 let private fertilizerAndCrop data fertilizer crop =
@@ -480,7 +480,6 @@ module SummaryTable =
 
     table [
       Table.collapsibleHeaderAndBodies true header bodies
-
       tfoot [
         tr [
           td []
@@ -510,7 +509,6 @@ module SummaryTable =
 
   let private roiSummary settings timeNorm (profitSummary: Query.ProfitSummary) =
     let investment, roi = profitSummary.InvestmentAndROI (settings.Profit.SeedStrategy = BuyFirstSeed)
-
     dl [
       keyValue "Investment" (investment |> Option.defaultOrMap "???" gold |> ofStr)
       keyValue "ROI" (roi |> Option.defaultOrMap "???" percent2 |> ofStr)
@@ -678,8 +676,7 @@ let private pairData metric timeNorm data settings =
 
   let data = crops |> Array.collect (fun crop ->
     let profit = rankValue data settings timeNorm crop
-    fertilizers |> Array.map (fun fert ->
-      (Crop.seed crop, Fertilizer.Opt.name fert), profit fert))
+    fertilizers |> Array.map (fun fert -> (Crop.seed crop, Fertilizer.Opt.name fert), profit fert))
 
   {
     Crops = crops
@@ -728,6 +725,7 @@ module Ranker =
         svg.height iconSize
         svg.children [ Svg.title (Item.name data.Items[item]) ]
       ]
+
       fert |> ofOption (fun fert ->
         Svg.image [
           svg.href (Icon.Path.fertilizer fert)
@@ -1145,7 +1143,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
         ui.OpenDetails
         OpenDetails.RankerGrowthCalendar
         (ofStr "Growth Calendar")
-        (GrowthCalendar.ranker app fert crop)
+        (GrowthCalendar.ranker data settings fert crop)
         uiDispatch
 
     | _ -> emptyPairData pairData
@@ -1229,7 +1227,9 @@ let section app dispatch =
         | Ranker -> rankerOrSummary app uiDispatch
         | Optimizer ->
           fragment [
-            labeled "Maximize" (Select.unitUnion (length.em 3) ui.OptimizationObjective (SetOptimizationObjective >> uiDispatch))
+            Select.unitUnion (length.em 3) ui.OptimizationObjective (SetOptimizationObjective >> uiDispatch)
+            |> labeled "Maximize"
+
             Optimizer {|
               OpenDetails = ui.OpenDetails
               Data = app.Data

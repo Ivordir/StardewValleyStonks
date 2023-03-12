@@ -33,8 +33,13 @@ let [<ReactComponent>] private Dialog (props: {|
     ariaLabelledBy dialogTitleId
     Interop.mkAttr "onClose" (fun _ -> props.Close false)
     children [
-      h1 [ prop.id dialogTitleId; children props.Title ]
+      h1 [
+        prop.id dialogTitleId
+        children props.Title
+      ]
+
       props.Children (fun () -> ref.current |> Option.iter (fun m -> m.close ()))
+
       div [
         if props.Cancel then
           button [
@@ -42,6 +47,7 @@ let [<ReactComponent>] private Dialog (props: {|
             onClick (fun _ -> props.Close false)
             ariaLabel "Cancel"
           ]
+
         button [
           className Class.ok
           onClick (fun _ -> props.Close true)

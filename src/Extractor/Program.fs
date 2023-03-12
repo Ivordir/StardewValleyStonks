@@ -77,8 +77,7 @@ module Decode =
         Giant = field (nameof u.Giant) Decode.bool
         Amount = field (nameof u.Amount) (Decode.Auto.generateDecoder ())
         ExtraItem = field (nameof u.ExtraItem) (Decode.tuple2 Decode.itemId Decode.float)
-      }
-    )
+      })
 
   let config =
     let u = Unchecked.defaultof<Config>
@@ -107,8 +106,7 @@ module Decode =
         DataOutputPath = field (nameof u.DataOutputPath) Decode.string
         CropImageOutputPath = field (nameof u.CropImageOutputPath) Decode.string
         ItemImageOutputPath = field (nameof u.ItemImageOutputPath) Decode.string
-      }
-    )
+      })
 
 [<AutoOpen>]
 module Constants =
@@ -192,6 +190,7 @@ let parseCropAmount seed overrides scythe (cropAmount: string) =
     let extraChance = float extraChance
     if extraChance < CropAmount.minExtraCropChance || CropAmount.maxExtraCropChance < extraChance then
       failwith $"The extra crop chance for crop {seed} was not in the range [{CropAmount.minExtraCropChance}, {CropAmount.maxExtraCropChance}]."
+
     {
       MinCropYield = minHarvest
       MaxCropYield = maxHarvest
