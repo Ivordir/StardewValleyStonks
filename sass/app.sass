@@ -12,6 +12,82 @@
   &:nth-child(even)
     background-color: common.$bg-light
 
+$arrow-length: 1em
+
+%arrow
+  content: ""
+  display: inline-block
+  background-size: contain
+  background-repeat: no-repeat
+  background-position: center center
+  width: $arrow-length
+  height: $arrow-length
+
+%arrow-left
+  background-image: common.ui-img(Arrow Left)
+
+%arrow-right
+  background-image: common.ui-img(Arrow Right)
+
+%arrow-up
+  background-image: common.ui-img(Arrow Up)
+
+%arrow-down
+  background-image: common.ui-img(Arrow Down)
+
+%season
+  height: 1.25em
+
+@each $season in Spring Summer Fall Winter
+  .#{to-lower-case($season)}
+    @extend %season
+    content: url("/public/img/Seasons/#{$season}.png")
+
+.icon
+  width: 1.5em
+  height: 1.5em
+
+  &-processor
+    width: 1.25em
+
+  &-text
+    display: inline-block
+    width: max-content
+
+    & > :first-child
+      vertical-align: text-bottom
+      margin-right: 0.375em
+
+@mixin icon-img($name, $folder, $className: $name)
+  .#{to-lower-case($className)}
+    @extend .icon
+    content: url("/public/img/#{$folder}/#{$name}.png")
+
+@each $product in Jam Pickles Wine Juice
+  @include icon-img($product, Products)
+
+@each $profession in Tiller Artisan Agriculturist Gatherer Botanist
+  @include icon-img($profession, Skills)
+
+%skill
+  width: 1.25em
+  height: 1.25em
+
+@each $skill in Farming Foraging
+  .#{to-lower-case($skill)}
+    @extend %skill
+    content: url("/public/img/Skills/#{$skill}.png")
+
+@mixin quality($quality, $color)
+  .#{to-lower-case(#{$quality})}
+    --color: #{$color}
+    --img: url("/public/img/Qualities/#{$quality}.png")
+
+@include quality(Iridium, scale-color(mix(#db67c4, #801fe2), $lightness: 25%))
+@include quality(Gold, mix(#ffff18, #efc90b))
+@include quality(Silver, mix(#dadfe5, #a0a0a0))
+@include quality(Normal, white)
+
 %square-button
   @extend %button-unstyled
   background-size: contain
@@ -30,12 +106,12 @@
 @include square-button(Cancel, 2.5rem)
 @include square-button(Edit, 1.5rem)
 
-@include common.icon-img(Bears Knowledge, Misc, bears-knowledge)
-@include common.icon-img(Special Charm, Misc, special-charm)
-@include common.icon-img(Random, Misc)
+@include icon-img(Bears Knowledge, Misc, bears-knowledge)
+@include icon-img(Special Charm, Misc, special-charm)
+@include icon-img(Random, Misc)
 
-@include common.icon-img(Warning, UI)
-@include common.icon-img(Error, UI)
+@include icon-img(Warning, UI)
+@include icon-img(Error, UI)
 
 
 html
@@ -907,7 +983,7 @@ tr
 .collapse-arrow
   @extend %button-unstyled
   height: 1.5em
-  width: common.$arrow-length
+  width: $arrow-length
   margin-left: 0.125em
   display: flex
   align-items: center
@@ -986,7 +1062,7 @@ tr
     flex-direction: column
     row-gap: 0.25em
     margin-top: 0.25em
-    margin-left: common.$arrow-length + 0.5em
+    margin-left: $arrow-length + 0.5em
 
 #settings table
   --border: var(--border-thin) solid #{common.$border-color}
