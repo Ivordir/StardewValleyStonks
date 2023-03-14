@@ -128,7 +128,7 @@ let text (value: string) (dispatch: string -> unit) =
 
 
 let checkboxWith children value dispatch =
-  label [ className Class.checkbox; prop.children [
+  Html.label [ className Class.checkbox; prop.children [
     input [
       prop.type'.checkbox
       isChecked value
@@ -143,7 +143,7 @@ let checkboxWith children value dispatch =
 let checkbox (text: string) value dispatch = checkboxWith (Html.span text) value dispatch
 
 let checkboxHiddenText (labelText: string) value dispatch =
-  label [ className Class.checkbox; prop.children [
+  Html.label [ className Class.checkbox; prop.children [
     Html.span [
       className Class.hiddenText
       prop.text labelText

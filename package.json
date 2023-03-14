@@ -13,7 +13,7 @@
   "scripts": {
     "postinstall": "dotnet tool restore && dotnet paket install",
     "watch:pandoc": "chokidar --initial src/WebApp/Info/* -c 'pnpm build:pandoc'",
-    "watch:fable": "dotnet fable watch src/WebApp --noCache -s -o fable",
+    "watch:fable": "dotnet fable watch src/WebApp -s -o fable",
     "watch": "parcel",
     "build:pandoc": "pandoc -s --toc --section-divs -M title=Info --template=src/WebApp/Info/template.tpl -o public/info.html src/WebApp/Info/Info.md",
     "build:fable": "dotnet fable src/WebApp -s -o fable",

@@ -823,7 +823,7 @@ module LoadSave =
         file.text().``then`` (fun text -> Some (file.name, Data.loadSaveGame text) |> setSave) |> ignore
 
       div [
-        label [
+        Html.label [
           ofStr "Choose Save File"
           input [
             prop.type'.file
