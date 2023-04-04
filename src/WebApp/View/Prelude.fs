@@ -178,7 +178,7 @@ module Icon =
     | FarmCrop crop -> crop.Item |> itemId data
     | ForageCrop crop -> crop.Seed |> seed data
 
-  let vendor (VendorName name) = fromPathAndName (Path.vendor name) name
+  let vendor name = fromPathAndName (Path.vendor name) name
 
   module NoText =
     let season season =
@@ -188,9 +188,9 @@ module Icon =
     let item item = fromPathAndAlt (Path.item item.Id) item.Name
     let itemId data itemId = item data.Items[itemId]
 
-    let vendor (VendorName name) = fromPathAndAlt (Path.vendor name) name
+    let vendor name = fromPathAndAlt (Path.vendor name) name
 
-    let processor (ProcessorName processor) =
+    let processor processor =
       img [
         className Class.iconProcessor
         src (Path.processor processor)
