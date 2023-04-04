@@ -83,7 +83,7 @@ let [<ReactComponent>] private EditDialogToggle (props: {|
 let private toggleButton (css: string) (label: IReactProperty) toggle =
   button [
     className css
-    Interop.mkAttr "aria-has-popup" "dialog"
+    Interop.mkAttr "aria-haspopup" "dialog"
     onClick (ignore >> toggle)
     label
   ]
