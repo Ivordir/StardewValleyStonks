@@ -38,11 +38,11 @@ module GameData =
   let private implicitProduct data item processor =
     let itemId = item.Id
     match item.Category, processor with
-    | Fruit, ProcessorName "Preserves Jar" -> Some (Jam itemId)
-    | Fruit, ProcessorName "Keg" -> Some (Wine itemId)
-    | Vegetable, ProcessorName "Preserves Jar" -> Some (Pickles itemId)
-    | Vegetable, ProcessorName "Keg" -> Some (Juice itemId)
-    | _, ProcessorName "Seed Maker" -> data.Seed.TryFind itemId |> Option.map (toItem >> SeedsFromSeedMaker)
+    | Fruit, "Preserves Jar" -> Some (Jam itemId)
+    | Fruit, "Keg" -> Some (Wine itemId)
+    | Vegetable, "Preserves Jar" -> Some (Pickles itemId)
+    | Vegetable, "Keg" -> Some (Juice itemId)
+    | _, "Seed Maker" -> data.Seed.TryFind itemId |> Option.map (toItem >> SeedsFromSeedMaker)
     | _ -> None
 
   let product data processor item =

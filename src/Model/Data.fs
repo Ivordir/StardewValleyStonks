@@ -12,10 +12,6 @@ let [<Literal>] private SeedPriceTypeField = "Type"
 let [<Literal>] private FixedSeedPrice = "Fixed"
 let [<Literal>] private ScalingSeedPrice = "Scaling"
 
-let private encodeProcessor (ProcessorName processor) = Encode.string processor
-let private decodeProcessor = Decode.string |> Decode.map ProcessorName
-let private processorCoders = Extra.empty |> Extra.withCustom encodeProcessor decodeProcessor
-
 [<RequireQualifiedAccess>]
 module Encode =
   let mapSeq encoder (seq: _ seq) = seq |> Seq.map encoder |> Encode.seq
@@ -30,14 +26,8 @@ module Encode =
 
   let table keyString encodeValue table = table |> Table.toSeq |> keyValues keyString encodeValue
 
-  let vendor (VendorName vendor) = Encode.string vendor
-
-  let processor = encodeProcessor
-
   let seedId (seed: SeedId) = Encode.uint32 (nat seed)
   let itemId (item: ItemId) = Encode.uint32 (nat item)
-
-  let processedItem = Encode.Auto.generateEncoder<ProcessedItem> (extra = processorCoders)
 
   let season (season: Season) = Season.name season |> Encode.string
 
@@ -63,18 +53,18 @@ module Encode =
     | FixedPrice (v, p) ->
       Encode.object [
         SeedPriceTypeField, Encode.string FixedSeedPrice
-        SeedPriceVendorField, vendor v
+        SeedPriceVendorField, Encode.string v
         SeedPricePriceField, Encode.uint32 p
       ]
     | ScalingPrice (v, None) ->
       Encode.object [
         SeedPriceTypeField, Encode.string ScalingSeedPrice
-        SeedPriceVendorField, vendor v
+        SeedPriceVendorField, Encode.string v
       ]
     | ScalingPrice (v, Some p) ->
       Encode.object [
         SeedPriceTypeField, Encode.string ScalingSeedPrice
-        SeedPriceVendorField, vendor v
+        SeedPriceVendorField, Encode.string v
         SeedPricePriceField, Encode.uint32 p
       ]
 
@@ -123,7 +113,7 @@ module Encode =
 
   let extractedData (data: ExtractedData) = Encode.object [
     nameof data.Items, data.Items |> mapSeq (Encode.Auto.generateEncoder ())
-    nameof data.Products, data.Products |> table string (mapSeq processedItem)
+    nameof data.Products, data.Products |> table string (mapSeq (Encode.Auto.generateEncoder ()))
     nameof data.FarmCrops, data.FarmCrops |> mapSeq farmCrop
     nameof data.ForageCrops, data.ForageCrops |> mapSeq forageCrop
   ]
@@ -183,14 +173,8 @@ module Decode =
       Speed = get.Optional.Field (nameof u.Speed) Decode.float |> Option.defaultValue 0.0
     })
 
-  let vendor = Decode.string |> Decode.map VendorName
-
-  let processor = decodeProcessor
-
   let itemId = natMeasure<ItemNum>
   let seedId = natMeasure<SeedNum>
-
-  let processedItem = Decode.Auto.generateDecoder<ProcessedItem> (extra = processorCoders)
 
   let season =
     Decode.string |> Decode.andThen (fun str ->
@@ -210,7 +194,7 @@ module Decode =
   let seedPrice: SeedPrice Decoder =
     Decode.map3 (fun a b c -> a, b, c)
       (Decode.field SeedPriceTypeField Decode.string)
-      (Decode.field SeedPriceVendorField vendor)
+      (Decode.field SeedPriceVendorField Decode.string)
       (Decode.optional SeedPricePriceField Decode.uint32)
     |> Decode.andThen (fun (kind, vendor, price) -> fun path value ->
       match kind, price with
@@ -270,7 +254,7 @@ module Decode =
       let field name decode = get.Required.Field name decode
       {
         Items = field (nameof u.Items) (Decode.Auto.generateDecoder ())
-        Products = field (nameof u.Products) (tableParse parseItemId (Decode.array processedItem))
+        Products = field (nameof u.Products) (tableParse parseItemId (Decode.Auto.generateDecoder ()))
         FarmCrops = field (nameof u.FarmCrops) (Decode.array farmCrop)
         ForageCrops = field (nameof u.ForageCrops) (Decode.array forageCrop)
       })
@@ -281,8 +265,8 @@ module Decode =
       let field name decode = get.Required.Field name decode
       {
         Fertilizers = field (nameof u.Fertilizers) (Decode.array fertilizer)
-        FertilizerPrices = field (nameof u.FertilizerPrices) (table id (table VendorName Decode.uint32))
-        GenerateSeedPrices = field (nameof u.GenerateSeedPrices) (table VendorName (Decode.array seedId))
+        FertilizerPrices = field (nameof u.FertilizerPrices) (table id (table id Decode.uint32))
+        GenerateSeedPrices = field (nameof u.GenerateSeedPrices) (table id (Decode.array seedId))
         SeedPrices = field (nameof u.SeedPrices) (tableParse parseSeedId (Decode.array seedPrice))
-        ProcessorUnlockLevel = field (nameof u.ProcessorUnlockLevel) (table ProcessorName Decode.uint32)
+        ProcessorUnlockLevel = field (nameof u.ProcessorUnlockLevel) (table id Decode.uint32)
       })

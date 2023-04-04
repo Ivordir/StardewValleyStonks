@@ -103,8 +103,7 @@ module Item =
     priceByQualityCalc (multiplier skills multipliers forage item) item.SellPrice
 
 
-[<Fable.Core.Erase>]
-type Processor = ProcessorName of string
+type Processor = string
 
 [<RequireQualifiedAccess>]
 module Processor =
@@ -112,10 +111,10 @@ module Processor =
   let [<Literal>] seedMakerSeedProb = 0.975
   let [<Literal>] seedMakerAncientSeedProb = 0.005
 
-  let preservesJar = ProcessorName "Preserves Jar"
-  let keg = ProcessorName "Keg"
-  let seedMaker = ProcessorName "Seed Maker"
-  let mill = ProcessorName "Mill"
+  let preservesJar = "Preserves Jar"
+  let keg = "Keg"
+  let seedMaker = "Seed Maker"
+  let mill = "Mill"
 
   let seedMakerAccepts item =
     match item.Category with

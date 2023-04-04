@@ -32,7 +32,7 @@
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "Build Extractor",
-      "program": "${workspaceFolder}/src/Extractor/bin/Debug/net6.0/StardewValleyStonks.Extractor.dll",
+      "program": "${workspaceFolder}/src/Extractor/bin/Debug/net7.0/StardewValleyStonks.Extractor.dll",
       "args": [],
       "cwd": "${workspaceFolder}/src/Extractor/",
       "stopAtEntry": false,

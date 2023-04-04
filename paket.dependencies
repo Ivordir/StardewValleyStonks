@@ -1,17 +1,17 @@
 source https://api.nuget.org/v3/index.json
 
 storage: none
-framework net6.0
+framework net7.0
 
 nuget FSharp.Core
 nuget Fable.Core
-nuget Fable.React < 9.0
+nuget Fable.React
 nuget Fable.Browser.Url
 nuget Fable.Browser.Worker
-nuget Fable.Elmish.React < 4.0
+nuget Fable.Elmish.React
 nuget Thoth.Json
-nuget Feliz < 2.0
-nuget Feliz.CompilerPlugins < 2.0
+nuget Feliz
+nuget Feliz.CompilerPlugins
 nuget Feliz.Recharts
 nuget Fable.YALPS
 

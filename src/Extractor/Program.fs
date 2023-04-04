@@ -91,7 +91,7 @@ module Decode =
         Products =
           field
             (nameof u.Products)
-            (Decode.tableParse Decode.parseItemId (Decode.array Decode.processedItem))
+            (Decode.tableParse Decode.parseItemId (Decode.Auto.generateDecoder ()))
         SkipCrops = field (nameof u.SkipCrops) (Decode.set Decode.seedId)
         FarmCropOverrides =
           field

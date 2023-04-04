@@ -2,13 +2,12 @@ namespace StardewValleyStonks
 
 open Fable.Core
 
-[<Erase>]
-type Vendor = VendorName of string
+type Vendor = string
 
 module Vendor =
-  let pierre = VendorName "Pierre"
-  let joja = VendorName "Joja"
-  let oasis = VendorName "Oasis"
+  let pierre = "Pierre"
+  let joja = "Joja"
+  let oasis = "Oasis"
 
 
 type FertilizerName = string

@@ -28,7 +28,7 @@ Also, don't forget the [credits](https://ivordir.github.io/StardewValleyStonks/i
 
 # Running Local Server
 ## Requirements:
-- [dotnet SDK 6.0](https://dotnet.microsoft.com/download)
+- [dotnet SDK 7](https://dotnet.microsoft.com/download)
 - [Node.js](https://nodejs.org/)
 - [pnpm](https://pnpm.io/)
 - [pandoc](https://pandoc.org/)
