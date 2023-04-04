@@ -254,7 +254,7 @@ module Decode =
       let field name decode = get.Required.Field name decode
       {
         Items = field (nameof u.Items) (Decode.Auto.generateDecoder ())
-        Products = field (nameof u.Products) (tableParse parseItemId (Decode.array (Decode.Auto.generateDecoder ())))
+        Products = field (nameof u.Products) (tableParse parseItemId (Decode.Auto.generateDecoder ()))
         FarmCrops = field (nameof u.FarmCrops) (Decode.array farmCrop)
         ForageCrops = field (nameof u.ForageCrops) (Decode.array forageCrop)
       })
