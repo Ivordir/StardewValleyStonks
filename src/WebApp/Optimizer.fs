@@ -7,7 +7,7 @@ Basically, this is an unbounded knapsack problem with some extra bells and whist
 First consider a single season:
 Given a set of fertilizers and crops, the goal is find some
 (fertilizer, a set of crops, and a number of harvests for each crop)
-that provides the maxiumum possible profit.
+that provides the maximum possible profit.
 
 There are also the following caveats:
 
@@ -28,7 +28,7 @@ If the stockpile seeds strategy is chosen, the seed maker is available, and item
 then using the lowest quality input into the seedmaker will minimize the seed cost.
 But one harvest may not provide enough low quality items to create enough of these low cost seeds.
 In this case, the seed cost monotonically decreases as the the number of harvests increase,
-until the mimimum possible seed cost is eventually reached.
+until the minimum possible seed cost is eventually reached.
 This is not exactly linear, and considering the rarity of this case,
 a variable will be created for each number of harvests below
 the required number of harvests to reach the minimum seed cost.
@@ -246,7 +246,7 @@ let private createModels startSeason endSeason constraintsAndVariables fertilize
     }
 
     // Need to convert lists into arrays in order to be sent to web worker.
-    // Similarly, need to convert variable keys into indicies.
+    // Similarly, need to convert variable keys into indices.
     let model =
       Model.createAllInteger
         Maximize

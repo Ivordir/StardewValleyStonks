@@ -159,7 +159,7 @@ module CropAmount =
   The below random value must be less than doubleHarvestCutoff for a double harvest to happen.
 
   Rand ~ U_[0, 1)
-  That is, a continuous uniform variable whose cummulative distribution function is:
+  That is, a continuous uniform variable whose cumulative distribution function is:
           { 0                     for x < 0
   F(x) = { (x - 0) / (1 - 0) = x for x in [0, 1)
           { 1                     for x >= 1
@@ -169,7 +169,7 @@ module CropAmount =
   = P(Rand < DoubleHarvestCutoff)
   = sum_(l=-100)^100 P(RolledDailyLuck = l, Rand <= doubleHarvestCutoff(l))      // for all possible l, what is the probability that Rand <= doubleHarvestCutoff(l)?
   = sum_(l=-100)^100 P(RolledDailyLuck = l) * P(Rand <= doubleHarvestCutoff(l))  => RolledDailyLuck and Rand are independent
-  = sum_(l=-100)^100 f_RolledDailyLuck(l) * F_Rand(doubleHarvestCutoff(l))       => definition of probability mass function and cummulative distribution function
+  = sum_(l=-100)^100 f_RolledDailyLuck(l) * F_Rand(doubleHarvestCutoff(l))       => definition of probability mass function and cumulative distribution function
   = sum_(l=-100)^100 (1 / 201) * doubleHarvestCutoff(l)                          => substitution, l is in {-100...100} and 0 <= doubleHarvestCutoff(l) <= 1
   = (1 / 201) * 201 * (doubleHarvestCutoff(100) + doubleHarvestCutoff(-100)) / 2 => doubleHarvestCutoff is linear
   = (doubleHarvestCutoff(100) + doubleHarvestCutoff(-100)) / 2

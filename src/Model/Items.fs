@@ -26,7 +26,7 @@ type [<Measure>] ItemNum
 type ItemId = uint<ItemNum>
 
 [<AutoOpen>]
-module MeasureConverions =
+module MeasureConversions =
   let inline toSeed (item: ItemId): SeedId = item * 1u<_>
   let inline toItem (seed: SeedId): ItemId = seed * 1u<_>
 
@@ -134,9 +134,9 @@ type ProcessedItem = {
 
 [<RequireQualifiedAccess>]
 module ProcessedItem =
-  let item processsed = processsed.Item
-  let processor processsed = processsed.Processor
-  let ratio processsed = processsed.Ratio
+  let item processed = processed.Item
+  let processor processed = processed.Processor
+  let ratio processed = processed.Ratio
 
 
 type Product =

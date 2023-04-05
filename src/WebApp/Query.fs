@@ -28,7 +28,7 @@ let private consecutiveInSeasonDays startDate endDate seasons =
       else list
 
   let consecutiveDays = nextSeason 0 0 0u []
-  // 4 seasons can be splitted into at most 2 groups of consecutive seasons
+  // 4 seasons can be split into at most 2 groups of consecutive seasons
   assert (consecutiveDays.Length <= 2)
   Array.ofList consecutiveDays
 

@@ -125,25 +125,25 @@ module Constants =
   let [<Literal>] itemSpriteSheetPath = "Content/Maps/springobjects"
 
 
-let parseItem overrrides itemData itemId =
+let parseItem overrides itemData itemId =
   match itemData |> Table.tryFind itemId with
   | None -> failwith $"Could not find data for item with id: {itemId}"
   | Some (str: string) ->
-    let splitted = str.Split '/'
-    if splitted.Length < 5 then failwith $"Unexpected item data format for item {itemId}: {str}"
+    let split = str.Split '/'
+    if split.Length < 5 then failwith $"Unexpected item data format for item {itemId}: {str}"
 
-    let overrides = overrrides |> Table.tryFind itemId |> Option.defaultValue ItemOverride.none
+    let overrides = overrides |> Table.tryFind itemId |> Option.defaultValue ItemOverride.none
 
     let sellPrice =
       match overrides.SellPrice with
       | Some price -> price
-      | None -> nat splitted[1]
+      | None -> nat split[1]
 
     let category =
       match overrides.Category with
       | Some category -> category
       | None ->
-        match splitted[3] with
+        match split[3] with
         | "Seeds -74" -> Seeds
         | "Basic -75" -> Vegetable
         | "Basic -79" -> Fruit
@@ -159,7 +159,7 @@ let parseItem overrrides itemData itemId =
 
     {
       Id = itemId
-      Name = splitted[4]
+      Name = split[4]
       SellPrice = sellPrice
       Category = category
     }
@@ -210,9 +210,9 @@ let parseCrop farmCropOverrides forageCropData seed (data: string) =
     let itemId = nat itemId * 1u<_>
 
     let growthStages =
-      let splitted = growthStages.Split ' '
-      if Array.isEmpty splitted then failwith $"The crop {seed} had no growth stages." else
-      let stages = splitted |> Array.map uint
+      let split = growthStages.Split ' '
+      if Array.isEmpty split then failwith $"The crop {seed} had no growth stages." else
+      let stages = split |> Array.map uint
       if stages |> Array.contains 0u then failwith $"The crop {seed} had a growth stage of 0."
       stages
 

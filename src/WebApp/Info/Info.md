@@ -262,11 +262,11 @@ Stardew Valley Stonks uses an integer [linear programming](https://en.wikipedia.
 This is in contrast to a [dynammic programming](https://en.wikipedia.org/wiki/Dynamic_programming) approach
 which could become more and more unwieldy as the number and types of constraints increase — a situation ripe for bugs.
 By formulating the problem in terms of a linear programming problem,
-the numerous contraints can be described in a more declarative fashion.
+the numerous constraints can be described in a more declarative fashion.
 To obtain the optimal solution, all we have to do is properly formulate our constraints and variables,
 which should be much more straightforward compared to the dynamic programming method.
 
-Currenty, the Optimizer handles the cross-season capability of crops detailed above
+Currently, the Optimizer handles the cross-season capability of crops detailed above
 by solving (in the worst case) a subproblem for each unique combination of fertilizer, starting season, and ending season.
 For example, a starting season of Spring and an ending season of Fall has 6 possible combinations:
 
@@ -278,7 +278,7 @@ For example, a starting season of Spring and an ending season of Fall has 6 poss
 - Fall – Fall
 
 If all 6 fertilizers are selected and no fertilizer is allowed the this gives 7 x 6 = 42 subproblems that need to be solved.
-For each subproblem, the Optimizer constructs a model containing a set of variables and contraints and gives it the solver.
+For each subproblem, the Optimizer constructs a model containing a set of variables and constraints and gives it the solver.
 Once all the subproblems have been solved, a [weighted interval scheduling](https://en.wikipedia.org/wiki/Interval_scheduling)
 algorithm is used to piece together a sequence of non-overlapping subproblems that provide the maximum value.
 
@@ -292,7 +292,7 @@ algorithm is used to piece together a sequence of non-overlapping subproblems th
 > immediate, interactive feedback to the user which is constantly editing settings.
 > Because of this, I made [my own](https://github.com/Ivordir/YALPS) linear programming solver based upon the one linked above.
 > I targeted any low hanging fruit for performance improvement,
-> such that I hope you did not encounter the Optimizer taking a noticable amount of time.
+> such that I hope you did not encounter the Optimizer taking a noticeable amount of time.
 > There are still plenty of areas available for improvement, particularly with the integer solver,
 > but I stopped when a sufficient level of performance was achieved so that I could focus on Stardew Valley Stonks.
 
@@ -323,7 +323,7 @@ In rough order of importance, these are:
 
 - The Ranker and Optimizer consider raw numbers (gold, xp, etc.), but not other logistical factors like:
   - Processing Time and Capacity
-    - Harvesting and replanting is assummed to happen all on the same day, even when using the Seed Maker.
+    - Harvesting and replanting is assumed to happen all on the same day, even when using the Seed Maker.
 
     > For example, cranberries can be more profitable than pumpkins if turned into wine.
     > However, each harvested crop gives (about) 2 cranberries and the regrow time is 5 days -- less than
@@ -335,7 +335,7 @@ In rough order of importance, these are:
   - Time Investment
 
     > For example, hops is often highly ranked when the keg is available,
-    > but are you willing to sacrafice time every morning to harvest all those hops and refill all your kegs?
+    > but are you willing to sacrifice time every morning to harvest all those hops and refill all your kegs?
     > Sometimes yes, but sometimes Starfruit might be "better"
     > even if it makes a little less gold and has a higher upfront investment.
     > Food for thought...
