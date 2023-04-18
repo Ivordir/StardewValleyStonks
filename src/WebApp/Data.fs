@@ -263,7 +263,7 @@ let defaultUI = {
   Mode = Ranker
   Ranker = defaultRanker
   OptimizationObjective = MaximizeGold
-  SettingsTab = Crops
+  SettingsTab = Misc
   OpenDetails = Set.ofArray [|
     OpenDetails.CropFilters
     OpenDetails.Crops
