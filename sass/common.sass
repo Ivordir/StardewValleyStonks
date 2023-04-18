@@ -123,6 +123,10 @@ header
     justify-content: center
     gap: 1em 2em
 
+    & > div
+      display: flex
+      align-items: center
+
 footer
   display: flex
   flex-wrap: wrap
@@ -147,7 +151,6 @@ $title-img-height: 84
   header > a > div
     width: 100%
     aspect-ratio: #{$title-img-max-width} / $title-img-height
-    display: flex
     justify-content: center
 
 
