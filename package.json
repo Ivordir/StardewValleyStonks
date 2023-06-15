@@ -22,17 +22,17 @@
     "bundle-report": "pnpm build:pandoc && pnpm build:fable && parcel build --public-url './' --reporter @parcel/reporter-bundle-analyzer"
   },
   "dependencies": {
-    "preact": "^10.13.2",
+    "preact": "^10.15.1",
     "react-error-boundary": "^3.1.4",
-    "recharts": "^2.5.0",
+    "recharts": "^2.6.2",
     "yalps": "^0.5.5"
   },
   "devDependencies": {
-    "@parcel/config-default": "^2.8.3",
-    "@parcel/reporter-bundle-analyzer": "^2.8.3",
-    "@parcel/transformer-sass": "^2.8.3",
+    "@parcel/config-default": "^2.9.2",
+    "@parcel/reporter-bundle-analyzer": "^2.9.2",
+    "@parcel/transformer-sass": "^2.9.2",
     "chokidar-cli": "^3.0.0",
-    "parcel": "^2.8.3",
+    "parcel": "^2.9.2",
     "parcel-reporter-static-files-copy": "^1.5.0",
     "process": "^0.11.10"
   },
