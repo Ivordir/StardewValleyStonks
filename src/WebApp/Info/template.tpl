@@ -24,7 +24,7 @@
   </main>
   <footer>
     <span>Stardew Valley v1.5.6 © ConcernedApe</span>
-    <span>Stardew Valley Stonks v0.1.1</span>
+    <span>Stardew Valley Stonks v0.1.2</span>
     <span>
       Source code available on
       <a href="https://www.github.com/Ivordir/StardewValleyStonks">Github</a>
