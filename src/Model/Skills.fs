@@ -1,7 +1,5 @@
 namespace StardewValleyStonks
 
-open Fable.Core
-
 type Vendor = string
 
 module Vendor =
@@ -56,17 +54,10 @@ module Quality =
   let name (quality: Quality) = Enum.name quality
 
 
-[<Erase>]
-type 'a Qualities = ByQuality of 'a array
+type 'a Qualities = private ByQuality of 'a array
 
 [<RequireQualifiedAccess>]
 module Qualities =
-  #if FABLE_COMPILER
-  let inline unwrap (qualities: 'a Qualities) = unbox<'a array> qualities
-  #else
-  let inline unwrap (ByQuality arr) = arr
-  #endif
-
   let inline create value = Array.create Quality.count value |> ByQuality
 
   let inline init initializer = Array.init Quality.count (enum<Quality> >> initializer) |> ByQuality
@@ -76,23 +67,23 @@ module Qualities =
   let zero = create 0.0
   let multipliers = ByQuality [| 1.0; 1.25; 1.5; 2.0 |]
 
-  let inline item (quality: Quality) qualities = (unwrap qualities)[int quality]
-  let inline private itemi index qualities = (unwrap qualities)[index]
+  let inline item (quality: Quality) (ByQuality qualities) = qualities[int quality]
+  let inline private itemi index (ByQuality qualities) = qualities[index]
 
-  let inline updateQuality (quality: Quality) value qualities =
-    qualities |> unwrap |> Array.updateAt (int quality) value |> ByQuality
+  let inline updateQuality (quality: Quality) value (ByQuality qualities) =
+    qualities |> Array.updateAt (int quality) value |> ByQuality
 
   let inline addNormal value qualities =
     let value = value + (qualities |> item Quality.Normal)
     qualities |> updateQuality Quality.Normal value
 
-  let inline map mapping qualities = qualities |> unwrap |> Array.map mapping |> ByQuality
-  let inline map2 mapping a b = Array.map2 mapping (unwrap a) (unwrap b) |> ByQuality
+  let inline map mapping (ByQuality qualities) = qualities |> Array.map mapping |> ByQuality
+  let inline map2 mapping (ByQuality a) (ByQuality b) = Array.map2 mapping a b |> ByQuality
 
-  let indexed qualities = qualities |> unwrap |> Array.mapi (fun i x -> enum<Quality> i, x)
-  let inline toArray qualities = qualities |> unwrap |> Array.copy
+  let indexed (ByQuality qualities) = qualities |> Array.mapi (fun i x -> enum<Quality> i, x)
+  let inline toArray (ByQuality qualities) = qualities |> Array.copy
 
-  let inline sum qualities = qualities |> unwrap |> Array.sum
+  let inline sum (ByQuality qualities) = qualities |> Array.sum
 
   let mult (scalar: float) qualities =
     let arr = toArray qualities

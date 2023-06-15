@@ -30,21 +30,12 @@ module Option =
     | None -> defaultValue
 
 
-open Fable.Core
-
 type Dictionary<'a, 'b> = System.Collections.Generic.Dictionary<'a, 'b>
 
-[<Erase>]
-type Table<'a, 'b> = ReadOnlyDictionary of Dictionary<'a, 'b>
+type Table<'a, 'b> = private ReadOnlyDictionary of Dictionary<'a, 'b>
 
 [<RequireQualifiedAccess>]
 module Table =
-  #if FABLE_COMPILER
-  let inline unwrap (table: Table<'a, 'b>) = unbox<Dictionary<'a, 'b>> table
-  #else
-  let inline unwrap (ReadOnlyDictionary dict) = dict
-  #endif
-
   let inline empty () = Dictionary () |> ReadOnlyDictionary
 
   #if FABLE_COMPILER
@@ -65,19 +56,19 @@ module Table =
   let inline ofKeys value keys = keys |> Seq.map (fun k -> k, value k) |> ofSeq
   let inline ofValues key values = values |> Seq.map (fun v -> key v, v) |> ofSeq
 
-  let inline toSeq (table: Table<'k, 'v>) =
+  let inline toSeq (ReadOnlyDictionary table) =
     #if FABLE_COMPILER
     unbox<('k * 'v) seq> table
     #else
-    table |> unwrap |> Seq.map (fun (KeyValue kv) -> kv)
+    table |> Seq.map (fun (KeyValue kv) -> kv)
     #endif
 
-  let inline keys table = (unwrap table).Keys
-  let inline values table = (unwrap table).Values
-  let inline count table = (unwrap table).Count
+  let inline keys (ReadOnlyDictionary table) = table.Keys
+  let inline values (ReadOnlyDictionary table) = table.Values
+  let inline count (ReadOnlyDictionary table) = table.Count
 
-  let inline containsKey key table = (unwrap table).ContainsKey key
-  let inline find key table = (unwrap table)[key]
+  let inline containsKey key (ReadOnlyDictionary table) = table.ContainsKey key
+  let inline find key (ReadOnlyDictionary table) = table[key]
   let tryFind key table =
     if table |> containsKey key
     then Some (table |> find key)
