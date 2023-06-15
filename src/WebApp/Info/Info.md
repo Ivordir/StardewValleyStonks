@@ -393,7 +393,7 @@ Other less important limitations include:
 - The [Stardew Valley Wiki](https://www.stardewvalleywiki.com/Stardew_Valley_Wiki) is a fantastic resource, you should check it out!
   Major props to everyone who contributed to make it what it is today.
 - [Stardew Valley Profits](https://thorinair.github.io/Stardew-Profits/): the OG profit calculator which gave inspiration for the Ranker.
-- The [Stardew Valley Planner](https://stardew.info/planner/) was used for the field layout images in the [giant crops][] section.
+- The [Stardew Valley Planner](https://stardew.info/planner/) was used for the field layout images in the [giant crops]() section.
 - I build off the shoulders of giants, so you can also check out the
   list of [technologies that made this site possible](https://github.com/Ivordir/StardewValleyStonks/#technologies-that-make-this-site-possible)
   if you're interested.
