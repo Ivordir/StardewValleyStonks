@@ -131,7 +131,7 @@ module Selected =
     && Crop.canGetOwnSeedsFromSeedMaker data.Items.Find crop
 
   let unlockedForageSeedsSellAndUse settings crop =
-    if ForageCrop.seedRecipeUnlocked settings.Game.Skills crop then
+    if Game.forageCropSeedRecipeUnlocked settings.Game crop then
       settings.Selected.SellRaw.Contains (ForageCrop.seedItem crop),
       settings.Selected.UseForageSeeds.Contains crop.Seed
     else

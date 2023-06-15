@@ -203,6 +203,9 @@ module Game =
     | FarmCrop crop -> farmCropDestroyFertilizerProb vars crop
     | ForageCrop _ -> forageCropDestroyFertilizerProb vars.Location
 
+  let forageCropSeedRecipeUnlocked vars crop =
+    vars.Skills.IgnoreSkillLevelRequirements || ForageCrop.seedRecipeUnlocked vars.Skills crop
+
   let farmCropMainItemQuantity vars crop =
     if crop.Giant && giantCropsPossible vars.Location
     then CropAmount.expectedGiantQuantity vars.Skills vars.CropAmount crop.Amount
