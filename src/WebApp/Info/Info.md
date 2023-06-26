@@ -216,7 +216,7 @@ These entries will appear at the end of the x-axis on the bar chart, and the rea
 This setting can be useful to show you why certain crops are not appearing in the recommendations from the Optimizer.
 
 # Optimizer
-This section is for nerds and details the optimization problem and how the Optimizer works.
+For those interested, this section details the optimization problem and how the Optimizer works.
 
 ## Problem Description
 The core optimization problem can be classified as an unbounded [knapsack problem](https://en.wikipedia.org/wiki/Knapsack_problem).
@@ -254,8 +254,8 @@ Put together, a well formed solution must plant crops in the following form/orde
   - zero or more non-regrow harvests in this next season
 - at most one of the following:
   - a harvest with unreplaced fertilizer
-  - harvests of a regrow crop for the remaining days/season(s) until it goes out of season or the end date is reached, whichever comes first.
-- repeat all the above if the end date has not been reached
+  - harvests of a regrow crop for the remaining days/season(s) until it goes out of season or the end date is reached, whichever comes first
+- repeat all the above starting in the next season if the end date has not been reached
 
 ## Solution
 Stardew Valley Stonks uses an integer [linear programming](https://en.wikipedia.org/wiki/Linear_programming) solver to find the optimal solution.
@@ -277,7 +277,7 @@ For example, a starting season of Spring and an ending season of Fall has 6 poss
 - Summer – Fall
 - Fall – Fall
 
-If all 6 fertilizers are selected and no fertilizer is allowed the this gives 7 x 6 = 42 subproblems that need to be solved.
+If all 7 fertilizers are selected (this includes no fertilizer), then this gives 7 x 6 = 42 subproblems that need to be solved.
 For each subproblem, the Optimizer constructs a model containing a set of variables and constraints and gives it the solver.
 Once all the subproblems have been solved, a [weighted interval scheduling](https://en.wikipedia.org/wiki/Interval_scheduling)
 algorithm is used to piece together a sequence of non-overlapping subproblems that provide the maximum value.
