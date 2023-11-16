@@ -18,7 +18,7 @@ open Core.Operators
 
 type private 'a Props = {|
   Width: Styles.ICssUnit
-  ToString: ('a -> string) option
+  DisplayString: ('a -> string) option
   Display: 'a -> ReactElement
   Options: 'a array
   Selected: 'a
@@ -51,7 +51,7 @@ let selectControl initialState inputRef (props: _ Props) (state: _ State) setSta
           ariaActiveDescendant optionId
         onBlur (fun _ -> setState initialState)
 
-        match props.ToString with
+        match props.DisplayString with
         | Some toString ->
           prop.type'.search
           placeholder " "
@@ -203,7 +203,7 @@ let [<ReactComponent>] private Select (props: _ Props) =
       | " ", Some hover
       | "Enter", Some hover
       | "Tab", Some hover ->
-        if e.key <> " " || props.ToString.IsNone then
+        if e.key <> " " || props.DisplayString.IsNone then
           state.Options |> Array.tryItem hover |> Option.iter props.Dispatch
           clearHover e
 
@@ -217,7 +217,7 @@ let [<ReactComponent>] private Select (props: _ Props) =
       | " ", None
       | "Enter", None
       | "ArrowDown", None ->
-        if e.key <> " " || props.ToString.IsNone then
+        if e.key <> " " || props.DisplayString.IsNone then
           setHover e selectedIndex
 
       | "ArrowUp", None -> setHover e 0
@@ -246,7 +246,7 @@ let private ignoreSame selected dispatch value =
 let search width toString display options selected dispatch =
   Select {|
     Width = width
-    ToString = Some toString
+    DisplayString = Some toString
     Display = display
     Options = options
     Selected = selected
@@ -256,7 +256,7 @@ let search width toString display options selected dispatch =
 let options width display options selected dispatch =
   Select {|
     Width = width
-    ToString = None
+    DisplayString = None
     Display = display
     Options = options
     Selected = selected
