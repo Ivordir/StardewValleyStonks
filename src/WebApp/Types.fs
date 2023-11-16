@@ -188,7 +188,7 @@ module Selections =
       |> Array.append (data.ForageCrops.Keys |> Seq.map toItem |> Array.ofSeq)
 
     let chooseSeeds predicate crops = crops |> Seq.choose (fun crop ->
-      if predicate crop then Some (seed crop) else None)
+      if predicate crop then Some (Crop.seed crop) else None)
 
     {
       Crops = Set.ofSeq data.Crops.Keys
