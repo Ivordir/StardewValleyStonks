@@ -187,6 +187,9 @@ module Selections =
       |> Array.collect Crop.items
       |> Array.append (data.ForageCrops.Keys |> Seq.map toItem |> Array.ofSeq)
 
+    let chooseSeeds predicate crops = crops |> Seq.choose (fun crop ->
+      if predicate crop then Some (seed crop) else None)
+
     {
       Crops = Set.ofSeq data.Crops.Keys
       SeedPrices = mapOfSets data.SeedPrices
@@ -209,12 +212,12 @@ module Selections =
 
       UseHarvestedSeeds =
         data.Crops.Values
-        |> Crop.chooseSeeds Crop.makesOwnSeeds
+        |> chooseSeeds Crop.makesOwnSeeds
         |> Set.ofSeq
 
       UseSeedMaker =
         data.Crops.Values
-        |> Crop.chooseSeeds (Crop.canGetOwnSeedsFromSeedMaker data.Items.Find)
+        |> chooseSeeds (Crop.canGetOwnSeedsFromSeedMaker data.Items.Find)
         |> Set.ofSeq
 
       UseForageSeeds = Set.ofSeq data.ForageCrops.Keys
