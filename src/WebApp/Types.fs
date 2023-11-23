@@ -181,14 +181,18 @@ module Selections =
     |> Map.ofSeq
 
   let createAllSelected (data: GameData) =
+    let seedSet predicate =
+      data.Crops.Values
+      |> Seq.choose (fun crop -> if predicate crop then Some (Crop.seed crop) else None)
+      |> Set.ofSeq
+
+    let forageCrops = seedSet Crop.isForage
+
     let items =
       data.Crops.Values
       |> Array.ofSeq
       |> Array.collect Crop.items
-      |> Array.append (data.ForageCrops.Keys |> Seq.map toItem |> Array.ofSeq)
-
-    let chooseSeeds predicate crops = crops |> Seq.choose (fun crop ->
-      if predicate crop then Some (Crop.seed crop) else None)
+      |> Array.append (forageCrops |> Seq.map toItem |> Array.ofSeq)
 
     {
       Crops = Set.ofSeq data.Crops.Keys
@@ -210,17 +214,9 @@ module Selections =
           |> Set.ofArray)
         |> Map.ofSeq
 
-      UseHarvestedSeeds =
-        data.Crops.Values
-        |> chooseSeeds Crop.makesOwnSeeds
-        |> Set.ofSeq
-
-      UseSeedMaker =
-        data.Crops.Values
-        |> chooseSeeds (Crop.canGetOwnSeedsFromSeedMaker data.Items.Find)
-        |> Set.ofSeq
-
-      UseForageSeeds = Set.ofSeq data.ForageCrops.Keys
+      UseHarvestedSeeds = seedSet Crop.makesOwnSeeds
+      UseSeedMaker = seedSet (Crop.canGetOwnSeedsFromSeedMaker data.Items.Find)
+      UseForageSeeds = forageCrops
 
       CustomSeedPrices = Selection.empty
       CustomFertilizerPrices = Selection.empty

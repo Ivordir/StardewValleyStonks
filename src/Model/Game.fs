@@ -23,8 +23,6 @@ type GameData = {
   Fertilizers: Table<FertilizerName, Fertilizer>
   FertilizerPrices: Table<FertilizerName, Table<Vendor, nat>>
   Crops: Table<SeedId, Crop>
-  FarmCrops: Table<SeedId, FarmCrop>
-  ForageCrops: Table<SeedId, ForageCrop>
   SeedPrices: Table<SeedId, Table<Vendor, SeedPrice>>
   Seed: Table<ItemId, SeedId>
   Items: Table<ItemId, Item>
@@ -118,8 +116,6 @@ module GameData =
         |> Table.ofKeys (supplemental.FertilizerPrices.TryFind >> Option.defaultWith Table.empty)
 
       Crops = crops |> Table.ofValues Crop.seed
-      FarmCrops = extracted.FarmCrops |> Table.ofValues _.Seed
-      ForageCrops = extracted.ForageCrops |> Table.ofValues _.Seed
       SeedPrices = seedPrices
 
       Seed = seeds

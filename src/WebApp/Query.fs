@@ -203,12 +203,12 @@ module Price =
 
   let private itemSelectedRawPriceValue data settings seed item quality =
     if settings.Selected.SellRaw.Contains item
-    then Some (Game.itemPrice settings.Game (data.ForageCrops.ContainsKey seed) data.Items[item] quality)
+    then Some (Game.itemPrice settings.Game (Crop.isForage data.Crops[seed]) data.Items[item] quality)
     else None
 
   let private itemSelectedRawPriceValueByQuality data settings seed item =
     if settings.Selected.SellRaw.Contains item
-    then Some (Game.itemPriceByQuality settings.Game (data.ForageCrops.ContainsKey seed) data.Items[item])
+    then Some (Game.itemPriceByQuality settings.Game (Crop.isForage data.Crops[seed]) data.Items[item])
     else None
 
   let private selectedCustomSellPriceValue selected item (quality: Quality) =

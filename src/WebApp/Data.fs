@@ -47,25 +47,31 @@ assert // non-zero total growth times
   gameData.Crops.Values |> Seq.forall (Crop.growthTime >> (<>) 0u)
 
 assert // non-zero regrow times
-  gameData.FarmCrops.Values |> Seq.forall (_.RegrowTime >> Option.contains 0u >> not)
+  gameData.Crops.Values |> Seq.forall (Crop.regrowTime >> Option.contains 0u >> not)
 
 assert // supported/valid extra item quantities
-  gameData.FarmCrops.Values |> Seq.forall (fun crop ->
-    crop.ExtraItem |> Option.forall (fun (item, quantity) ->
-      if crop.RegrowTime.IsSome && nat item = nat crop.Seed
-      then quantity >= 1.0
-      else quantity >= FarmCrop.minExtraItemQuantity))
+  gameData.Crops.Values |> Seq.forall (function
+    | FarmCrop crop ->
+      crop.ExtraItem |> Option.forall (fun (item, quantity) ->
+        if crop.RegrowTime.IsSome && nat item = nat crop.Seed
+        then quantity >= 1.0
+        else quantity >= FarmCrop.minExtraItemQuantity)
+    | ForageCrop _ -> true)
 
 assert // crop amounts have values in the valid ranges
-  gameData.FarmCrops.Values |> Seq.forall (fun crop ->
-    let amount = crop.Amount
-    CropAmount.minExtraCropChance <= amount.ExtraCropChance && amount.ExtraCropChance <= CropAmount.maxExtraCropChance
-    && CropAmount.minYield <= amount.MinCropYield && amount.MinCropYield <= amount.MaxCropYield)
+  gameData.Crops.Values |> Seq.forall (function
+    | FarmCrop crop ->
+      let amount = crop.Amount
+      CropAmount.minExtraCropChance <= amount.ExtraCropChance && amount.ExtraCropChance <= CropAmount.maxExtraCropChance
+      && CropAmount.minYield <= amount.MinCropYield && amount.MinCropYield <= amount.MaxCropYield
+    | ForageCrop _ -> true)
 
 assert // forage crops have a number of items in the supported range
-  gameData.ForageCrops.Values |> Seq.forall (fun crop ->
-    let len = nat crop.Foragables.Length
-    ForageCrop.minItems <= len && len <= ForageCrop.maxItems)
+  gameData.Crops.Values |> Seq.forall (function
+    | FarmCrop _ -> true
+    | ForageCrop crop ->
+      let len = nat crop.Foragables.Length
+      ForageCrop.minItems <= len && len <= ForageCrop.maxItems)
 
 assert // valid ratios (no zeros)
   gameData.Products.Values
