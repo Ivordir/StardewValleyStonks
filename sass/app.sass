@@ -731,7 +731,8 @@ details
 .recharts-bar-rectangle
   cursor: pointer
 
-  & > path
+  & > path,
+  & > .recharts-active-bar > path
     fill: common.$blue
 
 .recharts-cartesian-axis-tick-value
@@ -743,9 +744,11 @@ details
   stroke: black
   stroke-width: 1.5
 
-.recharts-bar-rectangles > path
-  cursor: pointer
-  fill: transparent
+.recharts-bar-rectangles,
+.recharts-active-bar
+  & > path
+    cursor: pointer
+    fill: transparent
 
 .recharts-brush > rect:first-child
   fill: common.$bg-light
