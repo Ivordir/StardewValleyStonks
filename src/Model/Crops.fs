@@ -20,8 +20,8 @@ type Season =
 module Seasons =
   let inline ofSeason (season: Season) = enum<Seasons> (1 <<< int season)
 
-  let inline intersect (a: Seasons) (b: Seasons) = a &&& b
-  let inline disjoint a b = intersect a b = Seasons.None
+  let inline intersection (a: Seasons) (b: Seasons) = a &&& b
+  let inline disjoint a b = intersection a b = Seasons.None
   let inline nonDisjoint a b = not (disjoint a b)
   let contains season seasons = nonDisjoint (ofSeason season) seasons
 
@@ -160,9 +160,9 @@ module CropAmount =
 
   Rand ~ U_[0, 1)
   That is, a continuous uniform variable whose cumulative distribution function is:
-          { 0                     for x < 0
+         { 0                     for x < 0
   F(x) = { (x - 0) / (1 - 0) = x for x in [0, 1)
-          { 1                     for x >= 1
+         { 1                     for x >= 1
   This is the random value generated every harvest to determine if a double harvest happens.
 
   P(DoubleHarvest)
@@ -345,19 +345,15 @@ module FarmCrop =
   let [<Literal>] minRegrowTime = 1u
   let [<Literal>] minExtraItemQuantity = 0.0
 
-  let regrowTime crop = crop.RegrowTime
-  let seed crop = crop.Seed
-  let seedItem crop = crop |> seed |> toItem
-  let item crop = crop.Item
-  let amount crop = crop.Amount
-  let extraItem crop = crop.ExtraItem
+  let seedItem crop = toItem crop.Seed
 
-  let seasons crop = crop.Seasons
+  let inline name item crop = crop.Item |> item |> _.Name
+
   let growsInSeason season crop = crop.Seasons |> Seasons.contains season
   let growsInSeasons seasons crop = crop.Seasons |> Seasons.nonDisjoint seasons
 
   let xpPerItem item crop =
-    let price = item crop.Item |> Item.sellPrice |> float
+    let price = item crop.Item |> _.SellPrice |> float
     (16.0 * log (0.018 * price + 1.0)) |> round |> nat
 
   let xpItemsPerHarvest giantCropProb crop =
@@ -370,8 +366,6 @@ module FarmCrop =
     match crop.ExtraItem with
     | Some (item, _) -> [| crop.Item; item |]
     | None -> [| crop.Item |]
-
-  let inline name item crop = crop.Item |> item |> Item.name
 
 
 type ForageCrop = {
@@ -389,10 +383,9 @@ module ForageCrop =
   let [<Literal>] minItems = 1u
   let [<Literal>] maxItems = forageSeedsPerCraft
 
-  let seed crop = crop.Seed
-  let seedItem crop = crop |> seed |> toItem
-  let foragables crop = crop.Foragables
-  let seedRecipeUnlockLevel crop = crop.SeedRecipeUnlockLevel
+  let seedItem crop = toItem crop.Seed
+
+  let name item crop = crop.Seed |> toItem |> item |> _.Name
 
   let seedRecipeUnlocked skills crop = skills.Foraging.Level >= crop.SeedRecipeUnlockLevel
 
@@ -407,8 +400,6 @@ module ForageCrop =
 
   let xpPerHarvest skills = float xpPerItem * xpItemsPerHarvest skills
 
-  let name item crop = item (toItem crop.Seed) |> Item.name
-
 
 type Crop =
   | FarmCrop of FarmCrop
@@ -421,7 +412,7 @@ module Crop =
     | ForageCrop crop -> ForageCrop.name item crop
 
   let seasons = function
-    | FarmCrop crop -> FarmCrop.seasons crop
+    | FarmCrop crop -> crop.Seasons
     | ForageCrop crop -> ForageCrop.seasons crop
 
   let growsInSeason season = function
@@ -444,7 +435,7 @@ module Crop =
 
   let giant = function
     | FarmCrop crop -> crop.Giant
-    | _ -> false
+    | ForageCrop _ -> false
 
   let mainItem = function
     | FarmCrop crop -> crop.Item
@@ -452,11 +443,11 @@ module Crop =
 
   let items = function
     | FarmCrop crop -> FarmCrop.items crop
-    | ForageCrop crop -> ForageCrop.foragables crop
+    | ForageCrop crop -> crop.Foragables
 
   let seed = function
-    | FarmCrop crop -> FarmCrop.seed crop
-    | ForageCrop crop -> ForageCrop.seed crop
+    | FarmCrop crop -> crop.Seed
+    | ForageCrop crop -> crop.Seed
 
   let seedItem = function
     | FarmCrop crop -> FarmCrop.seedItem crop

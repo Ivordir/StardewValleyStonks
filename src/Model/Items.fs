@@ -61,11 +61,6 @@ module Item =
   let [<Literal>] grape = 398u<ItemNum>
   let [<Literal>] coffee = 395u<ItemNum>
 
-  let id item = item.Id
-  let name item = item.Name
-  let sellPrice item = item.SellPrice
-  let category item = item.Category
-
   let foragedFruitTillerPossible = [| blackberry; grape |]
 
   let foragedFruitTillerActive multipliers item =
@@ -132,13 +127,6 @@ type ProcessedItem = {
   Ratio: (nat * nat) option
 }
 
-[<RequireQualifiedAccess>]
-module ProcessedItem =
-  let item processed = processed.Item
-  let processor processed = processed.Processor
-  let ratio processed = processed.Ratio
-
-
 type Product =
   | Jam of ItemId
   | Pickles of ItemId
@@ -158,7 +146,7 @@ module Product =
     | Processed { Item = item } -> item
 
   let name getItem product =
-    let item = product |> item |> getItem |> Item.name
+    let item = product |> item |> getItem |> _.Name
     match product with
     | Jam _ -> $"{item} Jam"
     | Pickles _ -> $"Pickled {item}"
@@ -178,7 +166,7 @@ module Product =
     | SeedsFromSeedMaker _ -> false
     | Processed p ->
       qualityArtisanProducts
-      && (p.Item |> getItem |> Item.category = ArtisanGood || p.Item = Item.coffee)
+      && (p.Item |> getItem |> _.Category = ArtisanGood || p.Item = Item.coffee)
 
   let outputQuality getItem qualityArtisanProducts quality product =
     if preservesQuality getItem qualityArtisanProducts product
@@ -199,7 +187,7 @@ module Product =
     match product with
     | Jam item | Pickles item | Wine item | Juice item ->
       Category.multiplier skills ArtisanGood * multipliers.ProfitMargin,
-      item |> getItem |> Item.sellPrice |> productPrice product
+      item |> getItem |> _.SellPrice |> productPrice product
 
     | SeedsFromSeedMaker itemId
     | Processed { Item = itemId } ->

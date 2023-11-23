@@ -29,7 +29,7 @@ module Encode =
   let seedId (seed: SeedId) = Encode.uint32 (nat seed)
   let itemId (item: ItemId) = Encode.uint32 (nat item)
 
-  let season (season: Season) = Season.name season |> Encode.string
+  let season season = season |> Season.name |> Encode.string
 
   let seasons seasons =
     Enum.values

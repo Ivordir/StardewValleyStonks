@@ -71,7 +71,7 @@ module GameData =
       |> Array.append implicit)
 
   let fromExtractedAndSupplementalData (extracted: ExtractedData) (supplemental: SupplementalData) =
-    let items = extracted.Items |> Table.ofValues Item.id
+    let items = extracted.Items |> Table.ofValues _.Id
 
     let crops =
       extracted.FarmCrops
@@ -107,19 +107,19 @@ module GameData =
     let products =
       extracted.Products
       |> Table.toSeq
-      |> Seq.map (fun (item, products) -> item, products |> Table.ofValues ProcessedItem.processor)
+      |> Seq.map (fun (item, products) -> item, products |> Table.ofValues _.Processor)
       |> Table.ofSeq
 
     {
-      Fertilizers = supplemental.Fertilizers |> Table.ofValues Fertilizer.name
+      Fertilizers = supplemental.Fertilizers |> Table.ofValues _.Name
       FertilizerPrices =
         supplemental.Fertilizers
-        |> Seq.map Fertilizer.name
+        |> Seq.map _.Name
         |> Table.ofKeys (supplemental.FertilizerPrices.TryFind >> Option.defaultWith Table.empty)
 
       Crops = crops |> Table.ofValues Crop.seed
-      FarmCrops = extracted.FarmCrops |> Table.ofValues FarmCrop.seed
-      ForageCrops = extracted.ForageCrops |> Table.ofValues ForageCrop.seed
+      FarmCrops = extracted.FarmCrops |> Table.ofValues _.Seed
+      ForageCrops = extracted.ForageCrops |> Table.ofValues _.Seed
       SeedPrices = seedPrices
 
       Seed = seeds
@@ -133,6 +133,16 @@ type Location =
   | Farm
   | Greenhouse
   | [<CompiledName ("Ginger Island")>] GingerIsland
+
+module Location =
+  let growsGiantCrops = function
+    | Farm -> true
+    | Greenhouse | GingerIsland -> false
+
+  let forageCropDestroyFertilizerProb = function
+    | GingerIsland -> Fertilizer.destroyProbability
+    | Farm | Greenhouse -> 0.0
+
 
 // Settings / parameters about the state of the (save) game.
 // Also includes other context such as the location to plant at and mod data.
@@ -182,38 +192,31 @@ module Game =
   let growthTimeAndStages vars fertilizer crop = Crop.growthStagesAndTime (growthSpeed vars fertilizer crop) crop
   let growthTime vars fertilizer crop = growthTimeAndStages vars fertilizer crop |> snd
 
-  let giantCropsPossible location = location = Farm
-
   let giantCropProb vars =
-    if giantCropsPossible vars.Location
+    if Location.growsGiantCrops vars.Location
     then CropAmount.giantCropProb vars.CropAmount
     else 0.0
 
   let farmCropDestroyFertilizerProb vars crop =
-    if crop.Giant && giantCropsPossible vars.Location
+    if crop.Giant && Location.growsGiantCrops vars.Location
     then Fertilizer.destroyProbability * CropAmount.giantCropProb vars.CropAmount
-    else 0.0
-
-  let forageCropDestroyFertilizerProb location =
-    if location = GingerIsland
-    then Fertilizer.destroyProbability
     else 0.0
 
   let destroyFertilizerProb vars = function
     | FarmCrop crop -> farmCropDestroyFertilizerProb vars crop
-    | ForageCrop _ -> forageCropDestroyFertilizerProb vars.Location
+    | ForageCrop _ -> Location.forageCropDestroyFertilizerProb vars.Location
 
   let forageCropSeedRecipeUnlocked vars crop =
     vars.Skills.IgnoreSkillLevelRequirements || ForageCrop.seedRecipeUnlocked vars.Skills crop
 
   let farmCropMainItemQuantity vars crop =
-    if crop.Giant && giantCropsPossible vars.Location
+    if crop.Giant && Location.growsGiantCrops vars.Location
     then CropAmount.expectedGiantQuantity vars.Skills vars.CropAmount crop.Amount
     else CropAmount.expectedQuantity vars.Skills vars.CropAmount crop.Amount
 
   let farmCropMainItemQuantityByQuality vars fertilizer crop =
     let qualities = Skills.farmCropQualitiesWith fertilizer vars.Skills
-    if crop.Giant && giantCropsPossible vars.Location
+    if crop.Giant && Location.growsGiantCrops vars.Location
     then CropAmount.expectedGiantQuantityByQuality vars.Skills vars.CropAmount crop.Amount qualities
     else CropAmount.expectedQuantityByQuality vars.Skills vars.CropAmount crop.Amount qualities
 

@@ -410,7 +410,7 @@ let main args =
 
   let items =
     [|
-      config.Products.Values |> Seq.collect (Seq.map ProcessedItem.item)
+      config.Products.Values |> Seq.collect (Seq.map _.Item)
       crops |> Seq.collect (snd >> Crop.items)
       crops |> Seq.map (snd >> Crop.seedItem)
     |]
@@ -418,7 +418,7 @@ let main args =
     |> Seq.distinct
     |> Seq.map (parseItem config.ItemOverrides itemData)
     |> Array.ofSeq
-  items |> Array.sortInPlaceBy Item.id
+  items |> Array.sortInPlaceBy _.Id
 
   printfn "Successfully parsed all crops and items. Press enter to output the data file and images."
   |> System.Console.ReadLine

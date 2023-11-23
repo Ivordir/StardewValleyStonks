@@ -74,15 +74,15 @@ module Icon =
     let processor = at "Processors"
     let vendor = at "Vendors"
 
-  let growthStage seed item (stage: int) =
+  let growthStage seed (item: Item) (stage: int) =
     img [
-      alt $"{Item.name item} Stage {stage}"
+      alt $"{item.Name} Stage {stage}"
       src (Path.crop seed (string stage))
     ]
 
-  let regrowStage seed item =
+  let regrowStage seed (item: Item) =
     img [
-      alt $"{Item.name item} Regrow Stage"
+      alt $"{item.Name} Regrow Stage"
       src (Path.crop seed "Regrow")
     ]
 
@@ -172,7 +172,7 @@ module Icon =
       |> withQuality quality (Product.name data.Items.Find product)
 
   let fertilizerName name = fromPathAndName (Path.fertilizer name) name
-  let fertilizer = Fertilizer.name >> fertilizerName
+  let fertilizer (fertilizer: Fertilizer) = fertilizerName fertilizer.Name
 
   let crop data = function
     | FarmCrop crop -> crop.Item |> itemId data

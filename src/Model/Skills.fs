@@ -21,14 +21,10 @@ module Fertilizer =
   let [<Literal>] destroyProbability = 0.1
   let [<Literal>] minSpeed = 0.0
 
-  let name fertilizer = fertilizer.Name
-  let quality fertilizer = fertilizer.Quality
-  let speed fertilizer = fertilizer.Speed
-
   module Opt =
-    let name = Option.map name
-    let quality = Option.defaultOrMap 0u quality
-    let speed = Option.defaultOrMap 0.0 speed
+    let name = Option.map _.Name
+    let quality = Option.defaultOrMap 0u _.Quality
+    let speed = Option.defaultOrMap 0.0 _.Speed
 
 
 module Multiplier =

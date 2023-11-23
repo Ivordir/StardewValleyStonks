@@ -29,7 +29,7 @@ assert // no missing item references
     gameData.Crops.Values |> Seq.map Crop.seedItem
     gameData.Products.Values
     |> Seq.collect Table.values
-    |> Seq.map ProcessedItem.item
+    |> Seq.map _.Item
   |]
   |> Seq.concat
   |> Seq.forall gameData.Items.ContainsKey
@@ -38,7 +38,7 @@ assert // no negative speeds
   gameData.Fertilizers.Values |> Seq.forall (fun fertilizer -> fertilizer.Speed >= Fertilizer.minSpeed)
 
 assert // all seed items have the Seeds category
-  gameData.Crops.Values |> Seq.forall (Crop.seedItem >> gameData.Items.Find >> Item.category >> (=) Seeds)
+  gameData.Crops.Values |> Seq.forall (Crop.seedItem >> gameData.Items.Find >> _.Category >> (=) Seeds)
 
 assert // non-zero growth stages
   gameData.Crops.Values |> Seq.forall (Crop.stages >> Array.contains 0u >> not)
@@ -47,7 +47,7 @@ assert // non-zero total growth times
   gameData.Crops.Values |> Seq.forall (Crop.growthTime >> (<>) 0u)
 
 assert // non-zero regrow times
-  gameData.FarmCrops.Values |> Seq.forall (FarmCrop.regrowTime >> Option.contains 0u >> not)
+  gameData.FarmCrops.Values |> Seq.forall (_.RegrowTime >> Option.contains 0u >> not)
 
 assert // supported/valid extra item quantities
   gameData.FarmCrops.Values |> Seq.forall (fun crop ->
@@ -70,7 +70,7 @@ assert // forage crops have a number of items in the supported range
 assert // valid ratios (no zeros)
   gameData.Products.Values
   |> Seq.collect Table.values
-  |> Seq.forall (ProcessedItem.ratio >> Option.forall (fun (i, o) -> i > 0u && o > 0u))
+  |> Seq.forall (_.Ratio >> Option.forall (fun (i, o) -> i > 0u && o > 0u))
 
 
 let private settingsCoders = Extra.empty |> Extra.withCustom Encode.date Decode.date
@@ -159,11 +159,12 @@ module Decode =
     })
 
 
-let defaultSettings = {
-  Selected = {
-    Selections.createAllSelected gameData with
-      CustomFertilizerPrices = {
-        Values = Map.ofArray [|
+let defaultSettings =
+  let selections = Selections.createAllSelected gameData
+  {
+    Selected = {
+      selections with
+        CustomFertilizerPrices.Values = Map.ofArray [|
           "Basic Fertilizer", 4u
           "Quality Fertilizer", 34u
           "Deluxe Fertilizer", 216u
@@ -171,35 +172,27 @@ let defaultSettings = {
           "Deluxe Speed-Gro", 46u
           "Hyper Speed-Gro", 376u
         |]
-        Selected = Set.empty
-      }
 
-      CustomSeedPrices = {
-        Values = Map.ofArray [|
+        CustomSeedPrices.Values = Map.ofArray [|
           831u<_>, 24u
           833u<_>, 400u
           885u<_>, 8u
         |]
-        Selected = Set.empty
-      }
 
-      CustomSellPrices = {
-        Values = Map.ofArray [|
+        CustomSellPrices.Values = Map.ofArray [|
           495u<_>, (240u, false)
           496u<_>, (240u, false)
           497u<_>, (240u, false)
           498u<_>, (240u, false)
         |]
-        Selected = Set.empty
-      }
+    }
+    Game = GameVariables.common
+    Profit = {
+      SeedStrategy = BuyFirstSeed
+      PayForFertilizer = true
+      PayForDestroyedFertilizer = true
+    }
   }
-  Game = GameVariables.common
-  Profit = {
-    SeedStrategy = BuyFirstSeed
-    PayForFertilizer = true
-    PayForDestroyedFertilizer = true
-  }
-}
 
 let defaultPresets = [
   {
@@ -207,17 +200,14 @@ let defaultPresets = [
     UniqueId = None
     Settings = {
       defaultSettings with
-        Selected = {
-          defaultSettings.Selected with
-            Crops =
-              defaultSettings.Selected.Crops - Set.ofArray [|
-                347u<_>; 476u<_>; 478u<_>; 485u<_>; 486u<_>; 489u<_>
-                494u<_>; 499u<_>; 802u<_>; 831u<_>; 833u<_>; 885u<_>
-              |]
-            Fertilizers = Set.ofArray [| "Basic Fertilizer"; "Speed-Gro" |]
-            Products = defaultSettings.Selected.Products |> Map.map (fun _ products ->
-              products |> Set.remove Processor.mill)
-        }
+        Selected.Crops =
+          defaultSettings.Selected.Crops - Set.ofArray [|
+            347u<_>; 476u<_>; 478u<_>; 485u<_>; 486u<_>; 489u<_>
+            494u<_>; 499u<_>; 802u<_>; 831u<_>; 833u<_>; 885u<_>
+          |]
+        Selected.Fertilizers = Set.ofArray [| "Basic Fertilizer"; "Speed-Gro" |]
+        Selected.Products = defaultSettings.Selected.Products |> Map.map (fun _ products ->
+          products |> Set.remove Processor.mill)
     }
   }
   {
@@ -225,18 +215,12 @@ let defaultPresets = [
     UniqueId = None
     Settings = {
       defaultSettings with
-        Game = {
-          GameVariables.common with
-            Skills = {
-              Skills.zero with
-                Farming = { Skill.zero with Level = Skill.maxLevel }
-                Foraging = { Skill.zero with Level = Skill.maxLevel }
-                Professions = Set.ofArray [| Tiller; Artisan; Gatherer; Botanist |]
-            }
-            Multipliers = { Multipliers.common with BearsKnowledge = true }
-            CropAmount = { CropAmountSettings.common with SpecialCharm = true }
-        }
-        Profit = { defaultSettings.Profit with SeedStrategy = StockpileSeeds }
+        Game.Skills.Farming.Level = Skill.maxLevel
+        Game.Skills.Foraging.Level = Skill.maxLevel
+        Game.Skills.Professions = Set.ofArray [| Tiller; Artisan; Gatherer; Botanist |]
+        Game.Multipliers.BearsKnowledge = true
+        Game.CropAmount.SpecialCharm = true
+        Profit.SeedStrategy = StockpileSeeds
     }
   }
 ]
@@ -493,27 +477,19 @@ let loadSaveGame xml =
         else None)
       |> Set.ofArray
 
-    let game = {
-      GameVariables.common with
-        Skills = {
-          Skills.zero with
-            Farming = { Skill.zero with Level = farmingLevel }
-            Foraging = { Skill.zero with Level = foragingLevel }
-            Professions = professions
-        }
-        Multipliers = {
-          Multipliers.common with
-            ProfitMargin = profitMargin
-            BearsKnowledge = eventsSeen |> Array.contains 2120303u
-        }
-        CropAmount = { CropAmountSettings.common with SpecialCharm = specialCharm }
-        StartDate = { Season = season; Day = day }
-        JojaMembership = mailReceived |> Array.contains "JojaMember"
-    }
-
     {
       Name = farmerName
       UniqueId = uniqueId
-      Settings = { defaultSettings with Game = game }
+      Settings = {
+        defaultSettings with
+          Game.Skills.Farming.Level = farmingLevel
+          Game.Skills.Foraging.Level = foragingLevel
+          Game.Skills.Professions = professions
+          Game.Multipliers.ProfitMargin = profitMargin
+          Game.Multipliers.BearsKnowledge = eventsSeen |> Array.contains 2120303u
+          Game.CropAmount.SpecialCharm = specialCharm
+          Game.StartDate = { Season = season; Day = day }
+          Game.JojaMembership = mailReceived |> Array.contains "JojaMember"
+      }
     },
     resizeToArray missing)

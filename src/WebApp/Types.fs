@@ -114,7 +114,7 @@ module Array =
 [<RequireQualifiedAccess>]
 module Fertilizer =
   module Opt =
-    let displayName = Option.defaultOrMap "No Fertilizer" Fertilizer.name
+    let displayName: Fertilizer option -> _ = Option.defaultOrMap "No Fertilizer" _.Name
 
 
 type CustomChoice<'a, 'b> =

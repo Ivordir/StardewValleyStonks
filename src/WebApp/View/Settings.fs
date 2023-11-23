@@ -166,10 +166,9 @@ module Crops =
   let table data settings cropSort crops dispatch =
     let selectDispatch = SelectCrops >> SetSelections >> SetSettings >> dispatch
 
-    tableFromColummsWithRowDisable
+    crops |> tableFromColummsWithRowDisable
       (fun crop -> not (Query.canMakeEnoughSeeds data settings crop && Game.cropIsInSeason settings.Game crop))
       Crop.seed
-      crops
       cropSort
       (SetCropSort >> SetCropTabState >> SetUI >> dispatch)
       [|
@@ -222,7 +221,7 @@ module Crops =
     let items =
       Array.append nonForageItems forageItems
       |> Array.distinct
-      |> Array.sortBy (data.Items.Find >> Item.name)
+      |> Array.sortBy (data.Items.Find >> _.Name)
 
     let nonForageItems = Set.ofArray nonForageItems
 
@@ -240,13 +239,12 @@ module Crops =
         then Game.productNormalizedPrice data settings.Game productQuality
         else Game.productPrice data settings.Game productQuality >> float
 
-      tableFromColumms
-        Item.id
-        (items |> Array.map data.Items.Find)
+      items |> Array.map data.Items.Find |> tableFromColumms
+        (_.Id)
         cropTab.ProductSort
         (SetProductSort >> cropTabDispatch)
         [|
-          Column.sortable (ofStr "Item") Icon.item Item.name |> Column.markAsKey
+          Column.sortable (ofStr "Item") Icon.item (_.Name) |> Column.markAsKey
 
           Column.valueSortable
             (ofStr "Raw")
@@ -260,7 +258,7 @@ module Crops =
           yield! processors data |> Array.map (fun processor ->
             Column.valueOptSortable
               (Icon.NoText.processor processor)
-              (Item.id >> GameData.product data processor >> Option.map price)
+              (_.Id >> GameData.product data processor >> Option.map price)
               (ofOption ofFloat)
             |> Column.withSelect
               (fun item ->
@@ -284,7 +282,7 @@ module Crops =
               ])
             (0u, false)
             (Icon.itemId data)
-            Item.id
+            (_.Id)
             settings.Selected.CustomSellPrices
             (SetCustomSellPrice >> selectDispatch)
         |]
@@ -308,13 +306,12 @@ module Crops =
           (SetJojaMembership >> SetGameVariables >> settingsDispatch)
       ]]
 
-      tableFromColumms
+      crops |> Array.map Crop.seed |> tableFromColumms
         id
-        (crops |> Array.map Crop.seed)
         seedSort
         (SetSeedSort >> SetCropTabState >> SetUI >> dispatch)
         [|
-          Column.sortable (ofStr "Seed") (Icon.seed data) (toItem >> data.Items.Find >> Item.name)
+          Column.sortable (ofStr "Seed") (Icon.seed data) (toItem >> data.Items.Find >> _.Name)
           |> Column.markAsKey
 
           yield!
@@ -369,8 +366,7 @@ module Crops =
     let nameFilter =
       if filters.ItemNameSearch = "" then None else
       let itemNameMatchesSearch name =
-        data.Items[name]
-        |> Item.name
+        data.Items[name].Name
         |> lowerCase
         |> strContains (lowerCase filters.ItemNameSearch)
 
@@ -490,7 +486,7 @@ module Crops =
 module Fertilizers =
   let fertilizerVendors = refMemo (fun (data: GameData) -> sortKeysByHighestCount data.FertilizerPrices)
 
-  let table data settings fertSort fertilizers dispatch =
+  let table data settings fertSort (fertilizers: Fertilizer array) dispatch =
     let uiDispatch = SetUI >> dispatch
     let selectDispatch = SetSelections >> SetSettings >> dispatch
 
@@ -502,16 +498,15 @@ module Fertilizers =
           (SelectNoFertilizer >> selectDispatch)
       ]]
 
-      tableFromColummsWithRowDisable
-        (Fertilizer.name >> Query.fertilizerCost data settings >> Option.isNone)
-        Fertilizer.name
-        fertilizers
+      fertilizers |> tableFromColummsWithRowDisable
+        (_.Name >> Query.fertilizerCost data settings >> Option.isNone)
+        (_.Name)
         fertSort
         (SetFertilizerSort >> uiDispatch)
         [|
           Column.valueSortable
             (ofStr "Fertilizer")
-            Fertilizer.name
+            (fun (fertilizer: Fertilizer) -> fertilizer.Name)
             Icon.fertilizerName
           |> Column.withSelect
             (settings.Selected.Fertilizers.Contains >> Some)
@@ -521,22 +516,22 @@ module Fertilizers =
 
           Column.sortableOpt
             (ofStr "Price")
-            (Fertilizer.name >> Query.Price.fertilizerMinVendorAndPrice data settings >> viewPrice)
-            (Fertilizer.name >> Query.Price.fertilizerMinPrice data settings)
+            (_.Name >> Query.Price.fertilizerMinVendorAndPrice data settings >> viewPrice)
+            (_.Name >> Query.Price.fertilizerMinPrice data settings)
 
-          Column.valueSortable (ofStr "Growth Rate") Fertilizer.speed (percent >> ofStr)
+          Column.valueSortable (ofStr "Growth Rate") (_.Speed) (percent >> ofStr)
 
-          Column.valueSortable (ofStr "Crop Qualities") Fertilizer.quality (fun fertQuality ->
+          Column.valueSortable (ofStr "Crop Qualities") (_.Quality) (fun fertQuality ->
             Skills.farmCropQualitiesFrom fertQuality settings.Game.Skills |> cropQualities)
         |]
     ]
 
-  let prices (data: GameData) settings fertPriceSort fertilizers dispatch =
+  let prices (data: GameData) settings fertPriceSort (fertilizers: Fertilizer array) dispatch =
     let uiDispatch = SetUI >> dispatch
     let dispatch = SetSettings >> dispatch
     let selectDispatch = SetSelections >> dispatch
 
-    let fertilizers = fertilizers |> Array.map Fertilizer.name
+    let fertilizers = fertilizers |> Array.map _.Name
 
     fragment [
       div [
@@ -544,9 +539,8 @@ module Fertilizers =
         children (payForFertilizerSettings settings.Profit (SetProfit >> dispatch))
       ]
 
-      tableFromColumms
+      fertilizers |> tableFromColumms
         id
-        fertilizers
         fertPriceSort
         (SetFertilizerPriceSort >> uiDispatch)
         [|
@@ -572,7 +566,7 @@ module Fertilizers =
     let settings, ui = app.State
     let uiDispatch = SetUI >> dispatch
 
-    let fertilizers = data.Fertilizers.Values |> Seq.sortBy Fertilizer.name |> Array.ofSeq
+    let fertilizers = data.Fertilizers.Values |> Seq.sortBy _.Name |> Array.ofSeq
 
     fragment [
       lazyDetails

@@ -723,7 +723,7 @@ module Ranker =
         svg.y (props.y + iconGap)
         svg.width iconSize
         svg.height iconSize
-        svg.children [ Svg.title (Item.name data.Items[item]) ]
+        svg.children [ Svg.title data.Items[item].Name ]
       ]
 
       fert |> ofOption (fun fert ->
@@ -932,7 +932,6 @@ module Ranker =
             Interop.mkBrushAttr "travellerWidth" (Values.fontPx / 2.0)
             Interop.mkBrushAttr "onChange" (fun i -> SetBrushSpan (i?startIndex, i?endIndex) |> dispatch)
           ]
-
         ]
       ])
     ]

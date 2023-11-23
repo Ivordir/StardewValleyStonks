@@ -282,13 +282,12 @@ let fertilizerCost data settings fertilizer =
 
 let fertilizerCostOpt data settings = Option.defaultOrMap (Some 0u) (fertilizerCost data settings)
 
-let private fertilizerRelevantVendorAndPrice data settings fertilizer =
+let private fertilizerRelevantVendorAndPrice data settings (fertilizer: Fertilizer option) =
   match fertilizer with
   | None -> None
   | Some _ when not settings.Profit.PayForFertilizer -> None
   | Some fertilizer ->
-    fertilizer
-    |> Fertilizer.name
+    fertilizer.Name
     |> Price.fertilizerMinVendorAndPrice data settings
     |> Some
 
