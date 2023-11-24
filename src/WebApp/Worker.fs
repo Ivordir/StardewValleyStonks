@@ -12,5 +12,13 @@ let [<Global>] mutable private onmessage: Browser.Types.MessageEvent -> unit = j
 
 onmessage <- fun message ->
   match message.data with
-  | :? Input as data -> postMessage (data |> Array.map Solver.solve)
+  | :? Input as data ->
+    #if DEBUG
+    console.time "solve"
+    #endif
+    let solutions = data |> Array.map Solver.solve
+    #if DEBUG
+    console.timeEnd "solve"
+    #endif
+    postMessage solutions
   | _ -> assert false
