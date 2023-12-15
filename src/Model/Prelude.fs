@@ -32,7 +32,7 @@ module Option =
 
 type Dictionary<'a, 'b> = System.Collections.Generic.Dictionary<'a, 'b>
 
-type Table<'a, 'b> = private ReadOnlyDictionary of Dictionary<'a, 'b>
+type Table<'a, 'b> = ReadOnlyDictionary of Dictionary<'a, 'b>
 
 [<RequireQualifiedAccess>]
 module Table =

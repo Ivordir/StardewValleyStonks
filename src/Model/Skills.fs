@@ -50,7 +50,7 @@ module Quality =
   let name (quality: Quality) = Enum.name quality
 
 
-type 'a Qualities = private ByQuality of 'a array
+type 'a Qualities = ByQuality of 'a array
 
 [<RequireQualifiedAccess>]
 module Qualities =
