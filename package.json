@@ -11,15 +11,18 @@
     "react/jsx-runtime": "preact/jsx-runtime"
   },
   "scripts": {
-    "postinstall": "dotnet tool restore && dotnet paket install",
+    "paket:restore": "dotnet paket restore",
+    "paket:install": "dotnet paket install",
+    "postinstall": "run-s paket:*",
     "watch:pandoc": "chokidar --initial src/WebApp/Info/* -c 'pnpm build:pandoc'",
     "watch:fable": "dotnet fable watch src/WebApp -s -o fable",
     "watch": "parcel",
     "build:pandoc": "pandoc -s --toc --section-divs -M title=Info --template=src/WebApp/Info/template.tpl -o public/info.html src/WebApp/Info/Info.md",
     "build:fable": "dotnet fable src/WebApp -s -o fable",
     "bundle": "parcel build --public-url './'",
-    "build": "pnpm build:pandoc && pnpm build:fable && pnpm bundle",
-    "bundle-report": "pnpm build:pandoc && pnpm build:fable && parcel build --public-url './' --reporter @parcel/reporter-bundle-analyzer"
+    "build": "run-s build:* bundle",
+    "bundle-report": "parcel build --public-url './' --reporter @parcel/reporter-bundle-analyzer",
+    "build-bundle-report": "run-s build:* bundle-report"
   },
   "dependencies": {
     "preact": "^10.19.2",
@@ -32,6 +35,7 @@
     "@parcel/reporter-bundle-analyzer": "^2.10.3",
     "@parcel/transformer-sass": "^2.10.3",
     "chokidar-cli": "^3.0.0",
+    "npm-run-all": "^4.1.5",
     "parcel": "^2.10.3",
     "parcel-reporter-static-files-copy": "^1.5.3",
     "process": "^0.11.10"
