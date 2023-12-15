@@ -150,7 +150,7 @@ let private tableBody key columns items rowDisabled =
     ]
   ))
 
-let tableFromColummsWithRowDisable rowDisabled key (sortCol: nat, ascending) sortDispatch columns items =
+let tableFromColumnsWithRowDisable rowDisabled key (sortCol: nat, ascending) sortDispatch columns items =
   let items =
     columns
     |> Array.tryItem (int sortCol)
@@ -162,8 +162,8 @@ let tableFromColummsWithRowDisable rowDisabled key (sortCol: nat, ascending) sor
     tableBody key columns items rowDisabled
   ]
 
-let tableFromColumms key sort sortDispatch columns items =
-  tableFromColummsWithRowDisable (konst false) key sort sortDispatch columns items
+let tableFromColumns key sort sortDispatch columns items =
+  tableFromColumnsWithRowDisable (konst false) key sort sortDispatch columns items
 
 
 let private collapseButton expandLabel collapseLabel collapsed setCollapsed =

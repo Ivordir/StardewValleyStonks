@@ -166,7 +166,7 @@ module Crops =
   let table data settings cropSort crops dispatch =
     let selectDispatch = SelectCrops >> SetSelections >> SetSettings >> dispatch
 
-    crops |> tableFromColummsWithRowDisable
+    crops |> tableFromColumnsWithRowDisable
       (fun crop -> not (Query.canMakeEnoughSeeds data settings crop && Game.cropIsInSeason settings.Game crop))
       Crop.seed
       cropSort
@@ -239,7 +239,7 @@ module Crops =
         then Game.productNormalizedPrice data settings.Game productQuality
         else Game.productPrice data settings.Game productQuality >> float
 
-      items |> Array.map data.Items.Find |> tableFromColumms
+      items |> Array.map data.Items.Find |> tableFromColumns
         (_.Id)
         cropTab.ProductSort
         (SetProductSort >> cropTabDispatch)
@@ -306,7 +306,7 @@ module Crops =
           (SetJojaMembership >> SetGameVariables >> settingsDispatch)
       ]]
 
-      crops |> Array.map Crop.seed |> tableFromColumms
+      crops |> Array.map Crop.seed |> tableFromColumns
         id
         seedSort
         (SetSeedSort >> SetCropTabState >> SetUI >> dispatch)
@@ -498,7 +498,7 @@ module Fertilizers =
           (SelectNoFertilizer >> selectDispatch)
       ]]
 
-      fertilizers |> tableFromColummsWithRowDisable
+      fertilizers |> tableFromColumnsWithRowDisable
         (_.Name >> Query.fertilizerCost data settings >> Option.isNone)
         (_.Name)
         fertSort
@@ -539,7 +539,7 @@ module Fertilizers =
         children (payForFertilizerSettings settings.Profit (SetProfit >> dispatch))
       ]
 
-      fertilizers |> tableFromColumms
+      fertilizers |> tableFromColumns
         id
         fertPriceSort
         (SetFertilizerPriceSort >> uiDispatch)

@@ -1066,7 +1066,7 @@ let [<ReactComponent>] CropAndFertilizerSummary (props: {|
 
   let fertilizerOptions =
     // array.sort moves undefined elements to the end of the array even with a compare function
-    // so we wrap with all elements with Some before sorting and then unwraping
+    // so we wrap with all elements with Some before sorting and then unwrapping
     pairData.Fertilizers
     |> Array.map Some
     |> Array.sortBy (Option.get >> Fertilizer.Opt.name)
