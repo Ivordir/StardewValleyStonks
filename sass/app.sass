@@ -127,6 +127,15 @@ $two-column-min-width: $visualization-min-width + $settings-min-width + 3 * $col
 $one-column-min-width: max($visualization-min-width, $settings-min-width) + 2 * $column-gap
 $one-column-min-height: calc((100vh - 3 * $column-gap) / 2)
 
+body > span // noscript
+  @extend %border-box
+  width: max-content
+  font-size: 1.5rem
+  padding: 1em
+  position: fixed
+  top: 50%,
+  transform: translateY(-50%)
+
 main
   scroll-snap-align: start
 
