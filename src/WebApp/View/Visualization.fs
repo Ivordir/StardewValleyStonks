@@ -355,12 +355,12 @@ module SummaryTable =
     let seed = Crop.seed crop
 
     [|
+      boughtRow true summary.SeedPrice summary.SeedsBought (Icon.seed data seed) |> Option.toArray
+
       if settings.Profit.SeedStrategy <> IgnoreSeeds then
         let seeds = -int (if Crop.regrows crop then 1u else summary.Harvests)
         let unit = "harvest" |> pluralizeTo summary.Harvests
         [| rowCells (ofStr $"{summary.Harvests} {unit}") none none none (ofInt seeds) |]
-
-      boughtRow true summary.SeedPrice summary.SeedsBought (Icon.seed data seed) |> Option.toArray
 
       summary.SeedsUsed |> Array.collect (fun (item, quantities) ->
         if item = Crop.seedItem crop then harvestedSeedsRows data item quantities
