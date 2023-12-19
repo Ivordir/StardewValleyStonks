@@ -1,4 +1,4 @@
-﻿module StardewValleyStonks.Extractor
+module StardewValleyStonks.Extractor
 
 open System.IO
 open Thoth.Json.Net
@@ -125,56 +125,42 @@ module Constants =
   let [<Literal>] itemSpriteSheetPath = "Content/Maps/springobjects"
 
 
+let parseCategory (itemId: ItemId) = function
+  | "Seeds -74" -> Seeds
+  | "Basic -75" -> Vegetable
+  | "Basic -79" -> Fruit
+  | "Basic -80" -> Flower
+  | "Basic -81" -> Forage
+  | "Basic -26" -> ArtisanGood
+  | "Basic -17" // sweet gem berry
+  | "Crafting" // (coffee)
+  | "Basic" // sugar, flour, etc
+  | "Basic -16" // building resources (fiber)
+    -> Other
+  | str -> failwith $"Unexpected item category for item {itemId}: {str}"
+
 let parseItem overrides itemData itemId =
   match itemData |> Table.tryFind itemId with
   | None -> failwith $"Could not find data for item with id: {itemId}"
   | Some (str: string) ->
     let split = str.Split '/'
     if split.Length < 5 then failwith $"Unexpected item data format for item {itemId}: {str}"
-
     let overrides = overrides |> Table.tryFind itemId |> Option.defaultValue ItemOverride.none
-
-    let sellPrice =
-      match overrides.SellPrice with
-      | Some price -> price
-      | None -> nat split[1]
-
-    let category =
-      match overrides.Category with
-      | Some category -> category
-      | None ->
-        match split[3] with
-        | "Seeds -74" -> Seeds
-        | "Basic -75" -> Vegetable
-        | "Basic -79" -> Fruit
-        | "Basic -80" -> Flower
-        | "Basic -81" -> Forage
-        | "Basic -26" -> ArtisanGood
-        | "Basic -17" // sweet gem berry
-        | "Crafting" // (coffee)
-        | "Basic" // sugar, flour, etc
-        | "Basic -16" // building resources (fiber)
-          -> Other
-        | str -> failwith $"Unexpected item category for item {itemId}: {str}"
-
     {
       Id = itemId
       Name = split[4]
-      SellPrice = sellPrice
-      Category = category
+      SellPrice = overrides.SellPrice |> Option.defaultWith (fun () -> nat split[1])
+      Category = overrides.Category |> Option.defaultWith (fun () -> parseCategory itemId split[3])
     }
 
 let parseCropAmount seed overrides scythe (cropAmount: string) =
   match cropAmount.Split ' ' with
   | [| "false" |] ->
-    match overrides with
-    | None -> CropAmount.singleAmount
-    | Some overrides ->
-      let amount = CropAmount.singleAmount
+    (CropAmount.singleAmount, overrides) ||> Option.fold (fun amount overrides ->
       { amount with
           CanDouble = overrides.CanDouble |> Option.defaultValue amount.CanDouble
           FarmingQualities = overrides.FarmingDistribution |> Option.defaultValue amount.FarmingQualities
-      }
+      })
 
   | [| "true"; minHarvest; maxHarvest; increasePerLevel; extraChance |] ->
     let overrides = overrides |> Option.defaultValue CropAmountOverride.none
@@ -216,10 +202,8 @@ let parseCrop farmCropOverrides forageCropData seed (data: string) =
       if stages |> Array.contains 0u then failwith $"The crop {seed} had a growth stage of 0."
       stages
 
-    let seasons =
-      seasons.Split ' ' |> Array.fold (fun seasons season ->
-        Seasons.Parse (season, true) ||| seasons)
-        Seasons.None
+    let seasons = (Seasons.None, seasons.Split ' ') ||> Array.fold (fun seasons season ->
+      Seasons.Parse (season, true) ||| seasons)
 
     let regrowTime =
       match regrowTime with
@@ -358,11 +342,11 @@ let main args =
   let config =
     let json =
       try File.ReadAllText configPath
-      with _ -> printfn "Error reading config file."; reraise ()
+      with _ -> eprintfn "Error reading config file."; reraise ()
 
     match Decode.fromString Decode.config json with
     | Ok config -> config
-    | Error e -> failwithf "Error parsing config file: %s" e
+    | Error e -> failwith $"Error parsing config file: {e}"
 
   printfn "Press enter to run the extractor..."
   |> System.Console.ReadLine
@@ -386,7 +370,7 @@ let main args =
 
   let tryLoad name path =
     try content.Load path
-    with _ -> printfn $"Error loading {name}."; reraise ()
+    with _ -> eprintfn $"Error loading {name}."; reraise ()
 
   let inline tryLoadData name path =
     (tryLoad $"{name} data" path: Dictionary<int,_>)
@@ -427,24 +411,24 @@ let main args =
   try
     Directory.CreateDirectory config.ItemImageOutputPath |> ignore
     items |> Array.iter (saveItemImage graphics config.ItemImageOutputPath itemSpriteSheet)
-  with _ -> printfn "Error writing the item images."; reraise ()
+  with _ -> eprintfn "Error writing the item images."; reraise ()
 
   try
     Directory.CreateDirectory config.CropImageOutputPath |> ignore
     crops |> Array.iter (fun (spriteSheetRow, crop) ->
       saveStageImages graphics config.CropImageOutputPath cropSpriteSheet spriteSheetRow crop)
-  with _ -> printfn "Error writing the crop images."; reraise ()
+  with _ -> eprintfn "Error writing the crop images."; reraise ()
 
-  let dataStr =
-    Encode.extractedData {
-      Items = items
-      Products = config.Products
-      FarmCrops = crops |> Array.choose (function | (_, FarmCrop crop) -> Some crop | _ -> None)
-      ForageCrops = crops |> Array.choose (function | (_, ForageCrop crop) -> Some crop | _ -> None)
-    }
-    |> Encode.toString 2
+  let data = {
+    Items = items
+    Products = config.Products
+    FarmCrops = crops |> Array.choose (function | (_, FarmCrop crop) -> Some crop | _ -> None)
+    ForageCrops = crops |> Array.choose (function | (_, ForageCrop crop) -> Some crop | _ -> None)
+  }
+
+  let dataStr = data |> Encode.extractedData |> Encode.toString 2
 
   try File.WriteAllText (config.DataOutputPath, dataStr)
-  with _ -> printfn "Error writing the data file."; reraise ()
+  with _ -> eprintfn "Error writing the data file."; reraise ()
 
   0
