@@ -10,7 +10,7 @@ This includes the start and end date, skills and professions, or enabling/disabl
 For more fine grained control, Stardew Valley Stonks also supports adding custom prices for fertilizers, seeds, and sold items.
 Finally, the current settings can be stored a preset for later use. You can even import Stardew Valley save games as a preset.
 
-View the live app at: https://ivordir.github.io/StardewValleyStonks/
+View the live app at: <https://ivordir.github.io/StardewValleyStonks/>
 
 The [info page](https://ivordir.github.io/StardewValleyStonks/info.html) explains the web app in more detail and lists limitations with the Ranker and Optimizer.
 
