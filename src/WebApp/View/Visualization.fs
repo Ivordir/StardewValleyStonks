@@ -2,6 +2,7 @@ module StardewValleyStonks.WebApp.View.Visualization
 
 open StardewValleyStonks
 open StardewValleyStonks.WebApp
+open StardewValleyStonks.WebApp.Query
 open StardewValleyStonks.WebApp.Update
 open StardewValleyStonks.WebApp.View
 
@@ -508,7 +509,7 @@ module SummaryTable =
     ]
 
   let private roiSummary settings timeNorm (profitSummary: Query.ProfitSummary) =
-    let investment, roi = profitSummary.InvestmentAndROI (settings.Profit.SeedStrategy = BuyFirstSeed)
+    let investment, roi = profitSummary |> ProfitSummary.investmentAndRoi (settings.Profit.SeedStrategy = BuyFirstSeed)
     dl [
       keyValue "Investment" (investment |> Option.defaultOrMap "???" gold |> ofStr)
       keyValue "ROI" (roi |> Option.defaultOrMap "???" percent2 |> ofStr)
@@ -639,7 +640,7 @@ module SummaryTable =
               td (ofNat summary.Harvests)
               td (summary.XpPerItem |> xp |> ofStr)
               td (summary.ItemQuantity |> round2 |> ofFloat)
-              td (xpSummary.Xp |> round2 |> xpFloat |> ofStr)
+              td (summary |> CropXpSummary.totalXp |> round2 |> xpFloat |> ofStr)
               td []
             ])
         ))

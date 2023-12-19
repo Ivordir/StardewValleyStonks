@@ -721,15 +721,17 @@ type ProfitSummary = {
   CropSummaries: CropProfitSummary array
   NetProfit: float option
   TimeNormalization: float
-} with
-  member inline this.InvestmentAndROI buyFirstSeed =
-    let fertPrice = this.FertilizerPrice |> Option.defaultOrMap (Some 0u) (Option.map snd)
+}
+
+module ProfitSummary =
+  let investmentAndRoi buyFirstSeed summary =
+    let fertPrice = summary.FertilizerPrice |> Option.defaultOrMap (Some 0u) (Option.map snd)
     let seedPrice =
       if buyFirstSeed
-      then this.CropSummaries[0].SeedPrice |> Option.map snd
+      then summary.CropSummaries[0].SeedPrice |> Option.map snd
       else Some 0u
 
-    match this.NetProfit, fertPrice, seedPrice with
+    match summary.NetProfit, fertPrice, seedPrice with
     | Some net, Some fertPrice, Some seedPrice ->
       let investment = fertPrice + seedPrice
       let roi =
@@ -741,7 +743,7 @@ type ProfitSummary = {
 
     | _ -> None, None
 
-module private ProfitSummary =
+module private ProfitSummaryCalc =
   open YALPS
   open Profit
 
@@ -1086,6 +1088,9 @@ type CropXpSummary = {
   ItemQuantity: float
 }
 
+module CropXpSummary =
+  let totalXp summary = float summary.XpPerItem * summary.ItemQuantity
+
 type XpSummary = {
   Fertilizer: Fertilizer option
   CropSummaries: CropXpSummary array
@@ -1135,9 +1140,9 @@ module Ranker =
 
       let summary =
         match settings.Profit.SeedStrategy with
-        | IgnoreSeeds -> ProfitSummary.ignoreSeeds data settings fertCost fertilizer true crop span.Harvests
-        | StockpileSeeds -> ProfitSummary.stockpileSeeds data settings fertCost fertilizer true crop span.Harvests
-        | BuyFirstSeed -> ProfitSummary.buyFirstSeed data settings fertCost fertilizer true crop span.Harvests
+        | IgnoreSeeds -> ProfitSummaryCalc.ignoreSeeds data settings fertCost fertilizer true crop span.Harvests
+        | StockpileSeeds -> ProfitSummaryCalc.stockpileSeeds data settings fertCost fertilizer true crop span.Harvests
+        | BuyFirstSeed -> ProfitSummaryCalc.buyFirstSeed data settings fertCost fertilizer true crop span.Harvests
 
       let net = (summary.NetProfit, fertCost) ||> Option.map2 (fun profit fertCost -> profit - float fertCost)
 
@@ -1178,11 +1183,11 @@ module Optimizer =
 
     let harvestSummary =
       match settings.Profit.SeedStrategy with
-      | IgnoreSeeds -> ProfitSummary.ignoreSeeds data settings fertCost fertilizer
-      | StockpileSeeds -> ProfitSummary.stockpileSeeds data settings fertCost fertilizer
+      | IgnoreSeeds -> ProfitSummaryCalc.ignoreSeeds data settings fertCost fertilizer
+      | StockpileSeeds -> ProfitSummaryCalc.stockpileSeeds data settings fertCost fertilizer
       | BuyFirstSeed ->
         fun lastCrop crop harvests ->
-          let summary = ProfitSummary.ignoreSeeds data settings fertCost fertilizer lastCrop crop harvests
+          let summary = ProfitSummaryCalc.ignoreSeeds data settings fertCost fertilizer lastCrop crop harvests
           let seedsBought = float (if Crop.regrows crop then 1u else harvests)
           { summary with
               SeedsBought = seedsBought
