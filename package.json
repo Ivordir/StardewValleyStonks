@@ -11,9 +11,9 @@
     "react/jsx-runtime": "preact/jsx-runtime"
   },
   "scripts": {
-    "paket:restore": "dotnet paket restore",
-    "paket:install": "dotnet paket install",
-    "postinstall": "run-s paket:*",
+    "postinstall:restore": "dotnet tool restore",
+    "postinstall:paket": "dotnet paket install",
+    "postinstall": "run-s postinstall:*",
     "watch:pandoc": "chokidar --initial src/WebApp/Info/* -c 'pnpm build:pandoc'",
     "watch:fable": "dotnet fable watch src/WebApp -s -o fable",
     "watch": "parcel",
