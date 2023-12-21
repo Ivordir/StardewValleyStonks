@@ -652,7 +652,7 @@ module Settings =
       skills
       skills.Farming
       Profession.farmingProfessions
-      Skills.farmCropQualities
+      Skills.farmCropProbs
       Icon.farming
       SetFarming
       dispatch
@@ -662,7 +662,7 @@ module Settings =
       skills
       skills.Foraging
       Profession.foragingProfessions
-      Skills.forageCropQualities
+      Skills.forageCropProbs
       Icon.foraging
       SetForaging
       dispatch

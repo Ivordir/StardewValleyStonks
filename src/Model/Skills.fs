@@ -207,11 +207,11 @@ module Skills =
       |]
     ifElseDistribution probabilities
 
-  let farmCropQualitiesWith fertilizer skills = farmCropQualitiesFrom (Fertilizer.Opt.quality fertilizer) skills
+  let farmCropProbsWith fertilizer skills = farmCropQualitiesFrom (Fertilizer.Opt.quality fertilizer) skills
 
-  let inline farmCropQualities skills = farmCropQualitiesWith None skills
+  let inline farmCropProbs skills = farmCropProbsWith None skills
 
-  let forageCropQualities skills =
+  let forageCropProbs skills =
     if skills |> professionActive Botanist then
       Qualities.wrap [| 0.0; 0.0; 0.0; 1.0 |]
     else
@@ -223,7 +223,7 @@ module Skills =
       |]
 
   let forageCropHarvestQuantities skills =
-    let qualities = forageCropQualities skills
+    let probs = forageCropProbs skills
     if skills |> professionActive Gatherer
-    then qualities |> Qualities.mult Multiplier.gatherer
-    else qualities
+    then probs |> Qualities.mult Multiplier.gatherer
+    else probs

@@ -211,7 +211,7 @@ module Game =
     else CropAmount.expectedQuantity vars.Skills vars.CropAmount crop.Amount
 
   let farmCropMainItemQuantityByQuality vars fertilizer crop =
-    let qualities = Skills.farmCropQualitiesWith fertilizer vars.Skills
+    let qualities = Skills.farmCropProbsWith fertilizer vars.Skills
     if crop.Giant && Location.growsGiantCrops vars.Location
     then CropAmount.expectedGiantQuantityByQuality vars.Skills vars.CropAmount crop.Amount qualities
     else CropAmount.expectedQuantityByQuality vars.Skills vars.CropAmount crop.Amount qualities
