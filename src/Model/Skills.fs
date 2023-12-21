@@ -3,9 +3,9 @@ namespace StardewValleyStonks
 type Vendor = string
 
 module Vendor =
-  let pierre = "Pierre"
-  let joja = "Joja"
-  let oasis = "Oasis"
+  let [<Literal>] pierre = "Pierre"
+  let [<Literal>] joja = "Joja"
+  let [<Literal>] oasis = "Oasis"
 
 
 type FertilizerName = string

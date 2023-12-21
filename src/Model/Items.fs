@@ -106,10 +106,10 @@ module Processor =
   let [<Literal>] seedMakerSeedProb = 0.975
   let [<Literal>] seedMakerAncientSeedProb = 0.005
 
-  let preservesJar = "Preserves Jar"
-  let keg = "Keg"
-  let seedMaker = "Seed Maker"
-  let mill = "Mill"
+  let [<Literal>] preservesJar = "Preserves Jar"
+  let [<Literal>] keg = "Keg"
+  let [<Literal>] seedMaker = "Seed Maker"
+  let [<Literal>] mill = "Mill"
 
   let seedMakerAccepts item =
     match item.Category with
