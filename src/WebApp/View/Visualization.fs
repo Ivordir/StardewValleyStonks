@@ -97,13 +97,14 @@ module GrowthCalendar =
         let harvestItem = [| div (Icon.NoText.itemId data (Crop.mainItem crop)) |]
         if bridgeCrop then
           let filler = max 0 (int remainingDays - int time)
+          let season = season - 1
           let days = int remainingDays + int days[season] - int time - filler
           let stageList =
             stageImages
             :: Array.create filler (stageImage seed item stages.Length)
             :: harvestItem
             :: stageList
-          season - 1, days, stageList
+          season, days, stageList
         else
           season,
           remainingDays - int (Growth.daysNeededFor None time harvests),
