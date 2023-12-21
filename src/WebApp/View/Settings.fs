@@ -17,12 +17,12 @@ open Core.Operators
 open Core.ExtraTopLevelOperators
 
 let cropQualities qualities =
-  let mapQualities (content: _ -> _ -> ReactElement) =
+  let mapQualities content =
     div (qualities |> Qualities.indexed |> Array.map (fun (quality, prob) ->
       div [
         className (quality |> Quality.name |> lowerCase)
         style [ style.custom ("flexGrow", prob) ]
-        children (content quality prob)
+        children (content quality prob: ReactElement)
       ]
     ))
 
@@ -75,9 +75,9 @@ let private sortKeysByHighestCount table =
 
 let private customColumn
   viewValue
-  (editValue: _ -> _ -> ReactElement)
+  editValue
   defaultValue
-  (viewKey: _ -> ReactElement)
+  viewKey
   key
   selection
   dispatch
@@ -93,13 +93,13 @@ let private customColumn
         Dialog.toggleEdit
           (fragment [
             ofStr "Custom Price For "
-            viewKey key
+            (viewKey key: ReactElement)
           ])
           (value |> Option.defaultValue defaultValue)
           (curry (if value.IsSome then EditCustom else AddCustom) key >> dispatch)
           (fun close v setValue ->
             div [
-              editValue v setValue
+              (editValue v setValue: ReactElement)
 
               if value.IsSome then
                 button [

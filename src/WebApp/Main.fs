@@ -18,7 +18,7 @@ open Core.Operators
 open Core.ExtraTopLevelOperators
 
 open StardewValleyStonks.WebApp
-open type StardewValleyStonks.WebApp.Update.AppMessage
+open StardewValleyStonks.WebApp.Update
 open StardewValleyStonks.WebApp.View
 
 let saveState = debouncer 100 Data.LocalStorage.saveState

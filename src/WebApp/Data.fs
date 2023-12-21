@@ -76,7 +76,7 @@ assert // forage crops have a number of items in the supported range
 assert // valid ratios (no zeros)
   gameData.Products.Values
   |> Seq.collect Table.values
-  |> Seq.forall (_.Ratio >> Option.forall (fun (i, o) -> i > 0u && o > 0u))
+  |> Seq.forall (_.Ratio >> Option.forall (fun (i, o) -> i <> 0u && o <> 0u))
 
 
 let private settingsCoders = Extra.empty |> Extra.withCustom Encode.date Decode.date

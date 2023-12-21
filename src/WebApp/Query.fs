@@ -146,11 +146,11 @@ module Selected =
 
 
 module Price =
-  let private minVendorAndPrice (selectedPrices: GameData -> Settings -> _ -> _) data settings customPrices key =
+  let private minVendorAndPrice selectedPrices data settings customPrices key =
     let price =
       let prices = selectedPrices data settings key |> Array.ofSeq
       if Array.isEmpty prices then None else
-      let vendor, price = Array.minBy snd prices
+      let vendor, price = prices |> Array.minBy snd
       Some (NonCustom vendor, price)
 
     let custom =
@@ -179,7 +179,7 @@ module Price =
   let seedMinPrice data settings seed =
     minPrice Selected.seedPriceValues data settings settings.Selected.CustomSeedPrices seed
 
-  let private itemMaxProductPriceBy projection data settings item (quality: Quality) =
+  let private itemMaxProductPriceBy projection data settings item quality =
     let products = Selected.unlockedProducts data settings item
     if Array.isEmpty products then None else
     products |> Array.mapReduce max (projection data settings.Game quality) |> Some
@@ -211,7 +211,7 @@ module Price =
     then Some (Game.itemPriceByQuality settings.Game (Crop.isForage data.Crops[seed]) data.Items[item])
     else None
 
-  let private selectedCustomSellPriceValue selected item (quality: Quality) =
+  let private selectedCustomSellPriceValue selected item quality =
     selected.CustomSellPrices
     |> Selection.selectedValue item
     |> Option.map (customSellPriceValue quality)
@@ -237,11 +237,11 @@ module Price =
 
   let private itemMaxProductAndPriceByQualityBy projection data settings item =
     let products = Selected.unlockedProducts data settings item |> Array.map (fun product ->
-      product, projection data settings.Game product)
+      product, (projection data settings.Game product: _ Qualities))
 
     if Array.isEmpty products then None else
     Qualities.init (fun quality ->
-      products |> Array.mapReduce (maxBy snd) (fun (product, prices: _ Qualities) -> product, prices[quality]))
+      products |> Array.mapReduce (maxBy snd) (fun (product, prices) -> product, prices[quality]))
     |> Some
 
   let itemMaxProductAndPriceByQuality data settings item =
@@ -802,7 +802,7 @@ module private ProfitSummaryCalc =
     |> Option.iter (fun i -> addCostAndQuantity i 1.0)
 
     let seedCostAndQuantity = resizeToArray seedCostAndQuantity
-    seedCostAndQuantity |> Array.sortInPlaceWith (compareBy (fun data -> data.OpportunityCostPerSeed))
+    seedCostAndQuantity |> Array.sortInPlaceWith (compareBy _.OpportunityCostPerSeed)
     seedCostAndQuantity
 
   let private partitionQuantitesForSeeds data settings crop seedPrice prices quantites harvests =

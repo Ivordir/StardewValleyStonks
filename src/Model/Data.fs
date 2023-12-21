@@ -207,18 +207,19 @@ module Decode =
   let cropAmount =
     let u = Unchecked.defaultof<CropAmount>
     Decode.object (fun get ->
+      let single = CropAmount.singleAmount
       let field name decoder defaultValue = get.Optional.Field name decoder |> Option.defaultValue defaultValue
       {
-        MinCropYield = field (nameof u.MinCropYield) Decode.uint32 CropAmount.singleAmount.MinCropYield
-        MaxCropYield = field (nameof u.MaxCropYield) Decode.uint32 CropAmount.singleAmount.MaxCropYield
+        MinCropYield = field (nameof u.MinCropYield) Decode.uint32 single.MinCropYield
+        MaxCropYield = field (nameof u.MaxCropYield) Decode.uint32 single.MaxCropYield
         FarmLevelsPerYieldIncrease =
           field
             (nameof u.FarmLevelsPerYieldIncrease)
             Decode.uint32
-            CropAmount.singleAmount.FarmLevelsPerYieldIncrease
-        ExtraCropChance = field (nameof u.ExtraCropChance) Decode.float CropAmount.singleAmount.ExtraCropChance
-        CanDouble = field (nameof u.CanDouble) Decode.bool CropAmount.singleAmount.CanDouble
-        FarmingQualities = field (nameof u.FarmingQualities) Decode.bool CropAmount.singleAmount.FarmingQualities
+            single.FarmLevelsPerYieldIncrease
+        ExtraCropChance = field (nameof u.ExtraCropChance) Decode.float single.ExtraCropChance
+        CanDouble = field (nameof u.CanDouble) Decode.bool single.CanDouble
+        FarmingQualities = field (nameof u.FarmingQualities) Decode.bool single.FarmingQualities
       })
 
   let farmCrop =

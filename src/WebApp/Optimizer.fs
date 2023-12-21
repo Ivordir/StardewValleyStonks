@@ -468,7 +468,7 @@ open Browser.Worker
 let [<Global>] private import: {| meta: {| url: string |} |} = jsNative
 
 let createWorker () =
-  let worker = Worker.Create (unbox<string> (URL.Create ("Worker.js", import.meta.url)), unbox {| ``type`` = Browser.Types.WorkerType.Module |})
+  let worker = Worker.Create (unbox (URL.Create ("Worker.js", import.meta.url)), unbox {| ``type`` = Browser.Types.WorkerType.Module |})
   let mutable inProgressRequest = None
   let mutable nextRequest = None
 

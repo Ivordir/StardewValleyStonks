@@ -249,11 +249,7 @@ module Game =
   let seedPrice data vars seed = function
     | FixedPrice (_, price) -> price
     | ScalingPrice (vendor, price) ->
-      let price =
-        match price with
-        | Some price -> price
-        | None -> 2u * data.Items[toItem seed].SellPrice
-
+      let price = price |> Option.defaultWith (fun () -> 2u * data.Items[toItem seed].SellPrice)
       if vendor = Vendor.joja
       then price |> withMultiplier (vars.Multipliers.ProfitMargin * if vars.JojaMembership then 1.0 else 1.25)
       else price |> withMultiplier vars.Multipliers.ProfitMargin |> max 1u

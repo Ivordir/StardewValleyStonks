@@ -28,7 +28,7 @@ module Seasons =
   let inline add season (seasons: Seasons) = seasons ||| ofSeason season
   let inline remove season (seasons: Seasons) = seasons &&& ~~~(ofSeason season)
 
-  let ofSeq seasons = seasons |> Seq.fold (fun seasons season -> seasons |> add season) Seasons.None
+  let ofSeq seasons = (Seasons.None, seasons) ||> Seq.fold (fun seasons season -> seasons |> add season)
 
   let setOrder (a: Seasons) (b: Seasons) = Enum.bitSetOrder (int a) (int b)
 
@@ -45,10 +45,10 @@ module Season =
 
   let private plusMod (i: int) (season: Season) = (int season + i) % count
 
-  let inline private plus i season = plusMod i season |> enum<Season>
+  let inline private plus i season = season |> plusMod i |> enum<Season>
 
   // truncated division/mod necessitates handling of negative remainder
-  let private minus i season = plusMod -i season |> wrapAroundNegative |> enum<Season>
+  let private minus i season = season |> plusMod -i |> wrapAroundNegative |> enum<Season>
 
   let next season = season |> plus 1
   let previous season = season |> minus 1
@@ -59,7 +59,7 @@ module Season =
     while season <> finish do
       seasons <- seasons |> Seasons.add season
       season <- next season
-    seasons |> Seasons.add season
+    seasons |> Seasons.add finish
 
   let distance (start: Season) (finish: Season) = wrapAroundNegative (int finish - int start)
 
