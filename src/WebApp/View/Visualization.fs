@@ -795,10 +795,10 @@ module Ranker =
   let private svgRectPath x y width height =
     $"M {x},{y} h {width} v {height} h -{width} Z"
 
-  let private barBackground gap selectPair props =
-    let x: float = props?x - gap / 2.0
+  let private barBackground selectPair props =
+    let x: float = props?x
     let y: float = props?y
-    let width: float = props?width + gap
+    let width: float = props?width
     let height: float = props?height
     let i: int = fst props?payload
 
@@ -907,7 +907,8 @@ module Ranker =
             bar.barSize (float iconSize * 1.5 |> round |> int)
             bar.onClick (fun props -> props?payload |> fst |> selectPair)
             Interop.mkBarAttr "shape" (errorBar data settings.Profit.SeedStrategy ranker.RankMetric pairs)
-            Interop.mkBarAttr "background" (barBackground barGap selectPair)
+            Interop.mkBarAttr "activeBar" (errorBar data settings.Profit.SeedStrategy ranker.RankMetric pairs)
+            Interop.mkBarAttr "background" (barBackground selectPair)
           ]
 
           Recharts.yAxis [

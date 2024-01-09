@@ -45,6 +45,7 @@ module Class =
 
   let [<Literal>] settingsColumns = "settings-columns"
   let [<Literal>] settingsColumn = "settings-column"
+  let [<Literal>] settingsBlock = "settings-block"
   let [<Literal>] settingsGroup = "settings-group"
   let [<Literal>] messages = "messages"
   let [<Literal>] messagesLarge = "messages-large"

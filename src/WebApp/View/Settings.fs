@@ -732,7 +732,7 @@ module Settings =
 
   let cropSettings irrigated settings settingsDispatch =
     let dispatch = SetCropAmount >> settingsDispatch
-    fragment [
+    div [ className Class.settingsBlock; children [
       Input.floatWithRange
         "Average Giant Crop Orientations Per Tile"
         (length.em 4)
@@ -750,16 +750,18 @@ module Settings =
         (SetShavingToolLevel >> dispatch)
       |> labeled "Shaving Enchantment"
 
-      Input.checkbox "Irrigated" irrigated (SetIrrigated >> settingsDispatch)
+      Input.natWith (length.em 2) None (Some CropAmount.maxLuckBuff) settings.LuckBuff (SetLuckBuff >> dispatch)
+      |> labelWith Class.labelText Icon.luckBuff
 
       Input.checkboxWith Icon.specialCharm settings.SpecialCharm (SetSpecialCharm >> dispatch)
 
-      Input.natWith (length.em 2) None (Some CropAmount.maxLuckBuff) settings.LuckBuff (SetLuckBuff >> dispatch)
-      |> labelWith Class.labelText Icon.luckBuff
-    ]
+      Input.checkbox "Irrigated" irrigated (SetIrrigated >> settingsDispatch)
+    ]]
 
   let mods qualityArtisanProducts dispatch =
-    Input.checkbox "Quality Artisan Products" qualityArtisanProducts (SetQualityArtisanProducts >> dispatch)
+    div [ className Class.settingsBlock; children [
+      Input.checkbox "Quality Artisan Products" qualityArtisanProducts (SetQualityArtisanProducts >> dispatch)
+    ]]
 
   let tab openDetails game profit dispatch =
     let uiDispatch = SetUI >> dispatch

@@ -290,7 +290,7 @@ details
     display: flex
     flex-direction: column
     row-gap: 0.5em
-    margin-block: 1em
+    padding-top: 1em
 
   &[open] > summary::before
     @extend %arrow-down
@@ -327,12 +327,9 @@ details
 
   & > div
     padding: 1.5em
-    height: 100%
-    box-sizing: border-box
     display: flex
     flex-direction: column
-    row-gap: 1em
-
+    row-gap: 2em
 
 @media (max-width: $two-column-min-width)
   html
@@ -574,16 +571,7 @@ details
       padding-left: 1em
       list-style: unset
 
-.settings-columns
-  display: flex
-  flex-wrap: wrap
-  gap: 0.5em 1em
 
-.settings-column
-  display: flex
-  flex-direction: column
-  row-gap: 0.5em
-  margin-right: auto
 
 #skills-details
   display: flex
@@ -699,11 +687,21 @@ details
         top: $counter-offset
         left: calc($counter-offset + 0.125rem)
 
+#visualization-ranker
+  height: 100%
+  box-sizing: border-box
+  padding: 1.5em 0.5em
+
+  &:has(details)
+    padding: 1.5em
+    height: unset
+    box-sizing: unset
+
+
 #chart
   flex-grow: 1
   min-height: 0
   overflow: hidden
-  margin-inline: -1em
 
   &-controls
     display: flex
@@ -779,6 +777,7 @@ details
   display: flex
   flex-direction: column
   row-gap: 1em
+  margin-top: -1em
 
   & > div
     display: flex
@@ -804,12 +803,31 @@ details
   &:hover::before
     @extend %hover-scale
 
+.settings-columns
+  display: flex
+  flex-wrap: wrap
+  gap: 0.5em 1.5em
+  padding-inline: 1.5em
+
+.settings-column
+  flex-grow: 1
+  flex-basis: 0
+  display: flex
+  flex-direction: column
+  row-gap: 0.5em
+
+.settings-block
+  display: flex
+  flex-direction: column
+  row-gap: 0.5em
+  padding-inline: 1.5em
+
 .settings-group
   display: flex
   flex-wrap: wrap
   align-items: center
   gap: 1em 2em
-  padding-inline: 0.5em
+  padding-inline: 1.5em
 
 .date > :last-child
   margin-left: 0.5em
@@ -868,7 +886,7 @@ details
   & > div:last-child
     display: flex
     flex-direction: column
-    row-gap: 1em
+    row-gap: 2em
 
     transition: opacity 0.25s
 

@@ -40,7 +40,7 @@ nav
 
   display: flex
   flex-flow: column
-  row-gap: 1em
+  row-gap: $gap
 
 section
   display: flex
@@ -135,13 +135,14 @@ table
   border: $border
   margin-block: 0.5em
 
+  & th
+    font-size: 1.125rem
+    font-weight: normal
+
+
   & td, & th
     border: $border
     padding: 0.375em 0.5em 0.25em 0.5em
-
-  & th
-    font-size: 1.125em
-    font-weight: normal
 
 #giant-crops > ul figure
   max-width: max-content
