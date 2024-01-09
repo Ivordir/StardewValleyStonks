@@ -178,7 +178,7 @@ module GrowthCalendar =
       ]
 
 let private fertilizerAndCrop data fertilizer crop =
-  div [
+  fragment [
     Icon.crop data crop
 
     fertilizer |> ofOption (fun fertilizer ->
@@ -235,18 +235,13 @@ module SummaryTable =
   let private unknownProfitRow seeds itemCell quantity =
     if quantity = 0.0 then None else
     let quantity = quantity |> toPrecision |> ofStr
-    rowCells
-      itemCell
-      (ofStr "???")
-      quantity
-      (ofStr "???")
-      (if seeds then quantity else none)
-    |> Some
+    let seeds = if seeds then quantity else none
+    rowCells itemCell (ofStr "???") quantity (ofStr "???") seeds |> Some
 
   let private boughtRow seeds priceAndVendor quantity (icon: ReactElement) =
     match priceAndVendor with
     | Some (vendor, price) ->
-      let itemCell = fragment [
+      let itemCell = Html.span [
         icon
         match vendor with
         | NonCustom vendor ->
@@ -257,7 +252,7 @@ module SummaryTable =
       significantRow seeds itemCell (Some (price, true)) quantity
 
     | None ->
-      let itemCell = fragment [
+      let itemCell = Html.span [
         icon
         ofStr " from ???"
       ]
@@ -297,7 +292,11 @@ module SummaryTable =
       quantities
       |> Qualities.indexed
       |> Array.map (fun (quality, quantity) -> (item, quality), quantity)
-      |> itemCellWithInputs data (Icon.seed data seed)
+      |> itemCellWithInputs data (Html.span [
+          Icon.seed data seed
+          ofStr " from "
+          Icon.processor Processor.seedMaker
+        ])
 
     let seedQuantity = Processor.seedMakerExpectedQuantity seed * Qualities.sum quantities
 
@@ -305,12 +304,14 @@ module SummaryTable =
 
   let private forageSeedsRows data settings items seed quantitySold quantityUsed =
     if quantitySold = 0.0 && quantityUsed = 0.0 then Array.empty else
-    let itemCell = Icon.seed data seed
     let inputsCell quantity =
       let quantity = quantity / float ForageCrop.forageSeedsPerCraft
       items
       |> Array.map (fun item -> (item, Quality.Normal), quantity)
-      |> itemCellWithInputs data itemCell
+      |> itemCellWithInputs data (Html.span [
+          Icon.seed data seed
+          ofStr " from Crafting"
+        ])
 
     let price = Game.seedItemSellPrice data settings.Game seed
     Array.collect Option.toArray [|
@@ -319,13 +320,13 @@ module SummaryTable =
     |]
 
   let private unsoldItemRow data (item, quantities) =
-    let itemCell =
+    // let itemCell =
       quantities
       |> Qualities.indexed
-      |> Array.map (fun (quality, quantity) -> (item, quality), quantity)
-      |> itemCellWithInputs data (ofStr "???")
-
-    rowCells itemCell none none none none
+      |> Array.choose (fun (quality, quantity) ->
+        if quantity = 0.0 then None else
+        let quantity = quantity |> toPrecision |> ofStr
+        rowCells (Icon.itemIdQuality data item quality) (ofStr "???") quantity none none |> Some)
 
   let private soldItemRow data (summary: Query.SoldItemSummary) =
     let itemCell = fragment [
@@ -369,7 +370,7 @@ module SummaryTable =
 
       forageSeedsRows data settings (Crop.items crop) seed summary.ForageSeedsSold summary.ForageSeedsUsed
 
-      summary.UnsoldItems |> Array.map (unsoldItemRow data)
+      summary.UnsoldItems |> Array.collect (unsoldItemRow data)
       summary.SoldItems |> Array.choose (soldItemRow data)
       summary.SoldProducts |> Array.choose (soldProductRow data)
 
@@ -467,7 +468,7 @@ module SummaryTable =
 
         let row =
           rowCells
-            (fertilizerAndCrop data profitSummary.Fertilizer summary.Crop)
+            (Html.span (fertilizerAndCrop data profitSummary.Fertilizer summary.Crop))
             none
             (ofNat summary.Harvests)
             (summary.NetProfit |> ofOption (gold2 >> ofStr))
@@ -636,7 +637,10 @@ module SummaryTable =
         tbody (summaries |> Array.collect (fun xpSummary ->
           xpSummary.CropSummaries |> Array.map (fun summary ->
             tr [
-              th [ scope "row"; children (fertilizerAndCrop data xpSummary.Fertilizer summary.Crop) ]
+              th [
+                scope "row"
+                children (Html.span (fertilizerAndCrop data xpSummary.Fertilizer summary.Crop))
+              ]
               td (ofNat summary.Harvests)
               td (summary.XpPerItem |> xp |> ofStr)
               td (summary.ItemQuantity |> round2 |> ofFloat)

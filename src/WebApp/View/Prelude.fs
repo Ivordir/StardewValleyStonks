@@ -180,6 +180,15 @@ module Icon =
 
   let vendor name = fromPathAndName (Path.vendor name) name
 
+  let processor processor =
+    fromImageAndText
+      (img [
+        className Class.iconProcessor
+        src (Path.processor processor)
+        alt ""
+      ])
+      processor
+
   module NoText =
     let season season =
       let name = Season.name season
