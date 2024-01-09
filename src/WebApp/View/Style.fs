@@ -39,6 +39,7 @@ module Class =
   let [<Literal>] labelHidden = "label-hidden"
 
   let [<Literal>] disabled = "disabled"
+  let [<Literal>] active = "active"
 
   let [<Literal>] seasons = "seasons"
   let [<Literal>] date = "date"

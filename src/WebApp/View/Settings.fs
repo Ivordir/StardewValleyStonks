@@ -464,21 +464,21 @@ module Crops =
         ui.OpenDetails
         OpenDetails.Crops
         (ofStr "Crops")
-        (lazyTable table data settings cropTab.CropSort crops dispatch)
+        (fun () -> lazyTable table data settings cropTab.CropSort crops dispatch)
         uiDispatch
 
       lazyDetails
         ui.OpenDetails
         OpenDetails.Products
         (ofStr "Products")
-        (lazyTable products data settings cropTab crops dispatch)
+        (fun () -> lazyTable products data settings cropTab crops dispatch)
         uiDispatch
 
       lazyDetails
         ui.OpenDetails
         OpenDetails.Seeds
         (ofStr "Seeds")
-        (lazyTable seeds data settings cropTab.SeedSort crops dispatch)
+        (fun () -> lazyTable seeds data settings cropTab.SeedSort crops dispatch)
         uiDispatch
     ]
 
@@ -573,14 +573,14 @@ module Fertilizers =
         ui.OpenDetails
         OpenDetails.Fertilizers
         (ofStr "Fertilizers")
-        (lazyTable table data settings ui.FertilizerSort fertilizers dispatch)
+        (fun () -> lazyTable table data settings ui.FertilizerSort fertilizers dispatch)
         uiDispatch
 
       lazyDetails
         ui.OpenDetails
         OpenDetails.FertilizerPrices
         (ofStr "Prices")
-        (lazyTable prices data settings ui.FertilizerPriceSort fertilizers dispatch)
+        (fun () -> lazyTable prices data settings ui.FertilizerPriceSort fertilizers dispatch)
         uiDispatch
     ]
 

@@ -210,6 +210,25 @@ let labeled label element = labelText Class.labelText label element
 let labeledHidden label element = labelText Class.labelHidden label element
 
 
+let [<ReactComponent>] private LazyInit (props: {|
+    Visible: bool
+    Content: unit -> ReactElement
+  |}) =
+  let openedOnce, setOpenedOnce = useState props.Visible
+
+  if props.Visible && not openedOnce then
+    setOpenedOnce true
+
+  if openedOnce
+  then props.Content ()
+  else none
+
+let lazyInit visible element = LazyInit {|
+  Visible = visible
+  Content = element
+|}
+
+
 // https://www.w3.org/TR/wai-aria-1.1/#tab
 
 let private tabId label tab = $"{lowerCase label}-tab-{tab |> Reflection.getCaseName |> lowerCase}"
@@ -256,12 +275,14 @@ let [<ReactComponent>] Tabs (props: {|
     div [
       role "tabpanel"
       ariaLabelledBy (tabId label current)
-      children [
+      children (tabs |> Array.map (fun tab ->
+        let active = tab = current
         div [
-          prop.id $"{lowerCase label}-{current |> Reflection.getCaseName |> lowerCase}"
-          children (props.Panel current)
+          prop.id $"{lowerCase label}-{tab |> Reflection.getCaseName |> lowerCase}"
+          if active then className Class.active
+          children (lazyInit active (fun _ -> props.Panel tab))
         ]
-      ]
+      ))
     ]
   ]
 
@@ -274,21 +295,7 @@ let inline tabs label current dispatch tabpanel =
     Panel = tabpanel
   |}
 
-let [<ReactComponent>] private LazyDetailsContent (props: {|
-    key: string
-    Open: bool
-    Content: ReactElement
-  |}) =
-  let openedOnce, setOpenedOnce = useState props.Open
-
-  if props.Open && not openedOnce then
-    setOpenedOnce true
-
-  if openedOnce
-  then props.Content
-  else none
-
-let private detailsSectionWith delayRender openDetails key (summaryContent: ReactElement) children dispatch =
+let private detailsSectionWith openDetails key (summaryContent: ReactElement) (children: ReactElement) dispatch =
   let open' = openDetails |> Set.contains key
   let id = $"{key |> Reflection.getCaseName |> lowerCase}-details"
   details [
@@ -296,23 +303,16 @@ let private detailsSectionWith delayRender openDetails key (summaryContent: Reac
     onToggle (curry SetDetailsOpen key >> dispatch)
     prop.children [
       summary summaryContent
-
-      div [ prop.id id; prop.children [
-        if delayRender then
-          LazyDetailsContent {|
-            key = id
-            Open = open'
-            Content = children
-          |}
-        else
-          children
-      ]]
+      div [
+        prop.id id
+        prop.children children
+      ]
     ]
   ]
 
 let detailsSection openDetails key summary children dispatch =
-  detailsSectionWith false openDetails key summary children dispatch
+  detailsSectionWith openDetails key summary children dispatch
 
 let lazyDetails openDetails key summary children dispatch =
-  detailsSectionWith true openDetails key summary children dispatch
+  detailsSectionWith openDetails key summary (lazyInit (openDetails |> Set.contains key) children) dispatch
 
