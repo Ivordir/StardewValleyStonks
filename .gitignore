@@ -1,35 +1,38 @@
 # Parcel folders
-.parcel-cache/
-parcel-bundle-reports/
+/.parcel-cache/
+/parcel-bundle-reports/
 
 # NPM modules
-node_modules/
+/node_modules/
 
 # Output from parcel
-dist/
+/dist/
 
 # Transpiled JS output
-fable/
+/fable/
 *.fs.js
 
 # Pandoc output
-public/info.html
+/public/info.html
 
 # Temporary files
-temp/
+/temp/
 
 # Paket dependency manager
-.paket/paket.exe
-paket-files/
+/.paket/paket.exe
+/paket-files/
+
+# Stardew Valley dlls
+/src/Extractor/lib/
 
 # VS Code files
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+/.vscode/*
+/!.vscode/settings.json
+/!.vscode/tasks.json
+/!.vscode/launch.json
+/!.vscode/extensions.json
 *.code-workspace
-.history/
+/.history/
 
 # Build results
 [Dd]ebug/

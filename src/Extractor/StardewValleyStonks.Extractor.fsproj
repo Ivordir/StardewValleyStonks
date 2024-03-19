@@ -2,9 +2,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
+
   <ItemGroup>
+    <Reference Include="lib\*.dll" />
     <ProjectReference Include="../Model/StardewValleyStonks.fsproj" />
     <Content Include="config.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
