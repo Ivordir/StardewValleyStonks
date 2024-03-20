@@ -1,4 +1,4 @@
-﻿module StardewValleyStonks.Extractor
+module StardewValleyStonks.Extractor
 
 open System.IO
 open Thoth.Json.Net
@@ -33,8 +33,6 @@ module CropAmountOverride =
 
 type FarmCropOverride = {
   Seasons: Seasons option
-  Paddy: bool option
-  Giant: bool option
   Amount: CropAmountOverride option
   ExtraItem: (ItemId * float) option
 }
@@ -43,8 +41,6 @@ type FarmCropOverride = {
 module FarmCropOverride =
   let none = {
     Seasons = None
-    Paddy = None
-    Giant = None
     Amount = None
     ExtraItem = None
   }
@@ -73,8 +69,6 @@ module Decode =
       let inline field name decoder = get.Optional.Field name decoder
       {
         Seasons = field (nameof u.Seasons) Decode.seasons
-        Paddy = field (nameof u.Paddy) Decode.bool
-        Giant = field (nameof u.Giant) Decode.bool
         Amount = field (nameof u.Amount) (Decode.Auto.generateDecoder ())
         ExtraItem = field (nameof u.ExtraItem) (Decode.tuple2 Decode.itemId Decode.float)
       })
@@ -121,6 +115,7 @@ module Constants =
 
   let [<Literal>] cropDataPath = "Data\\Crops"
   let [<Literal>] itemDataPath = "Data\\Objects"
+  let [<Literal>] giantCropDataPath = "Data\\GiantCrops"
   let [<Literal>] cropSpriteSheetPath = "TileSheets\\crops"
   let [<Literal>] itemSpriteSheetPath = "Maps\\springobjects"
 
@@ -164,7 +159,7 @@ let processItem overrides itemData strId itemId =
       Category = category
     }
 
-let processCrop farmCropOverrides forageCropData assignId strId seed (crop: StardewValley.GameData.Crops.CropData) =
+let processCrop farmCropOverrides forageCropData giantCrops assignId strId seed (crop: StardewValley.GameData.Crops.CropData) =
   // Some currently ignored fields that might be useful in the future:
   // crop.IsRaised
   // crop.NeedsWatering
@@ -224,6 +219,7 @@ let processCrop farmCropOverrides forageCropData assignId strId seed (crop: Star
     | method -> failwith $"Crop {strId} has an unknown harvest method: {method}"
 
   let paddy = crop.IsPaddyCrop
+  let giant = giantCrops |> Set.contains crop.HarvestItemId
 
   let spriteIndex =
     if crop.SpriteIndex < 0
@@ -241,8 +237,9 @@ let processCrop farmCropOverrides forageCropData assignId strId seed (crop: Star
       | seasons -> failwith $"Forage crop {strId} does not grow in a single season: {seasons}"
 
     if regrowTime.IsSome then failwith $"Forage crop {strId} regrows"
-    if paddy then failwith $"Forage crop {strId} is a paddy crop"
     if scythe then failwith $"Forage crop {strId} has the scythe harvest method"
+    if paddy then failwith $"Forage crop {strId} is a paddy crop"
+    if giant then failwith $"Forage crop {strId} is a giant crop"
 
     let data =
       match forageCropData |> Table.tryFind season with
@@ -273,14 +270,15 @@ let processCrop farmCropOverrides forageCropData assignId strId seed (crop: Star
     }
 
     let item = assignId crop.HarvestItemId
-    let extraItem = overrides.ExtraItem |> Option.map (fun (itemId, amount) -> itemId |> string |> assignId, amount)
+    let extraItem = overrides.ExtraItem |> Option.map (fun (itemId, amount) ->
+      itemId |> string |> assignId, amount)
 
     FarmCrop {
       Seasons = overrides.Seasons |> Option.defaultValue seasons
       Stages = growthStages
       RegrowTime = regrowTime
-      Paddy = overrides.Paddy |> Option.defaultValue paddy
-      Giant = overrides.Giant |> Option.defaultValue false
+      Paddy = paddy
+      Giant = giant
       Seed = seed
       Amount = cropAmount
       Item = item
@@ -321,7 +319,8 @@ let saveStageImages graphics outputPath cropSpriteSheet spriteIndex crop =
   if Crop.regrows crop then save "Regrow" (stages.Length + 2)
 
 let saveItemImage graphics outputPath spriteSheets (spriteIndex, spriteSheet) item =
-  let spriteSheet: Texture2D = spriteSheets |> Table.find (if spriteSheet = null then itemSpriteSheetPath else spriteSheet)
+  let spritesheet = if spriteSheet = null then itemSpriteSheetPath else spriteSheet
+  let spriteSheet: Texture2D = spriteSheets |> Table.find spritesheet
   saveSubTexture
     (Path.Combine (outputPath, string item.Id))
     graphics
@@ -389,6 +388,16 @@ let main args =
 
   let cropData: Dictionary<string, StardewValley.GameData.Crops.CropData> = tryLoad "crop data" cropDataPath
   let itemData: Dictionary<string, StardewValley.GameData.Objects.ObjectData> = tryLoad "item data" itemDataPath
+  let giantCrops: Dictionary<string, StardewValley.GameData.GiantCrops.GiantCropData> = tryLoad "giant crop data" giantCropDataPath
+
+  let giantCrops =
+    giantCrops.Values
+    |> Seq.map (fun data ->
+      let itemId = data.FromItemId
+      if itemId.StartsWith "(O)"
+      then itemId.Substring 3
+      else failwith $"Unsupported giant crop item: {itemId}")
+    |> Set.ofSeq
 
   let crops =
     cropData
@@ -396,7 +405,8 @@ let main args =
       if tryParseNat seed |> Option.exists (fun seed -> config.SkipCrops.Contains (seed * 1u<_>))
       then None
       else Some (assignId seed * 1u<_>, (seed, crop)))
-    |> Seq.map (fun (seed, (strId, data)) -> processCrop config.FarmCropOverrides config.ForageCropData assignId strId seed data)
+    |> Seq.map (fun (seed, (strId, data)) ->
+      processCrop config.FarmCropOverrides config.ForageCropData giantCrops assignId strId seed data)
     |> Array.ofSeq
   crops |> Array.sortInPlaceBy (snd >> Crop.seed)
 

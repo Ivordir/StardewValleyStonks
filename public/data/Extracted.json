@@ -1452,6 +1452,7 @@
     {
       "Seed": 4006,
       "Item": 4007,
+      "Giant": true,
       "Seasons": [
         "Winter"
       ],
