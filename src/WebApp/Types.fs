@@ -406,7 +406,7 @@ module App =
   //   new crops, fertilizers, or items on crops -> add entries on settings
   //   compatible schema change -> updated coders should be sufficient
   // Patch: no action needed
-  let version = Version.tryParse "0.1.3" |> Option.get
+  let version = Version.tryParse "0.1.4" |> Option.get
 
   let ensureEntries data app =
     let settings, ui = app.State
