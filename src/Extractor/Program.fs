@@ -1,4 +1,4 @@
-module StardewValleyStonks.Extractor
+﻿module StardewValleyStonks.Extractor
 
 open System.IO
 open Thoth.Json.Net
@@ -423,44 +423,48 @@ let main args =
     |> Array.ofSeq
   items |> Array.sortInPlaceBy (snd >> _.Id)
 
-  printfn "Successfully parsed all crops and items. Press enter to output the data file and images."
-  |> System.Console.ReadLine
-  |> ignore
+  printfn "Successfully parsed all crops and items. Proced to output the data file and images? [y/N] "
 
-  let itemSpriteSheets =
-    items
-    |> Seq.map (fst >> snd)
-    |> Seq.distinct
-    |> Seq.map (fun texture ->
-      if texture = null
-      then itemSpriteSheetPath, tryLoad $"item spritesheet" itemSpriteSheetPath
-      else texture, tryLoad $"item spritesheet: {texture}" texture)
-    |> Table.ofSeq
+  let writeImages =
+    match System.Console.ReadLine().ToLower() with
+    | "y" | "yes" -> true
+    | _ -> false
 
-  try
-    Directory.CreateDirectory config.ItemImageOutputPath |> ignore
-    items |> Array.iter (fun (spriteData, item) ->
-      saveItemImage graphics config.ItemImageOutputPath itemSpriteSheets spriteData item)
-  with _ -> eprintfn "Error writing the item images"; reraise ()
+  if writeImages then
+    let itemSpriteSheets =
+      items
+      |> Seq.map (fst >> snd)
+      |> Seq.distinct
+      |> Seq.map (fun texture ->
+        if texture = null
+        then itemSpriteSheetPath, tryLoad $"item spritesheet" itemSpriteSheetPath
+        else texture, tryLoad $"item spritesheet: {texture}" texture)
+      |> Table.ofSeq
 
-  let cropSpriteSheet = tryLoad "crop spritesheet" cropSpriteSheetPath
+    try
+      Directory.CreateDirectory config.ItemImageOutputPath |> ignore
+      items |> Array.iter (fun (spriteData, item) ->
+        saveItemImage graphics config.ItemImageOutputPath itemSpriteSheets spriteData item)
+    with _ -> eprintfn "Error writing the item images"; reraise ()
 
-  try
-    Directory.CreateDirectory config.CropImageOutputPath |> ignore
-    crops |> Array.iter (fun (spriteSheetRow, crop) ->
-      saveStageImages graphics config.CropImageOutputPath cropSpriteSheet spriteSheetRow crop)
-  with _ -> eprintfn "Error writing the crop images"; reraise ()
+    let cropSpriteSheet = tryLoad "crop spritesheet" cropSpriteSheetPath
 
-  let data = {
-    Items = items |> Array.map snd
-    Products = config.Products
-    FarmCrops = crops |> Array.choose (function | (_, FarmCrop crop) -> Some crop | _ -> None)
-    ForageCrops = crops |> Array.choose (function | (_, ForageCrop crop) -> Some crop | _ -> None)
-  }
+    try
+      Directory.CreateDirectory config.CropImageOutputPath |> ignore
+      crops |> Array.iter (fun (spriteSheetRow, crop) ->
+        saveStageImages graphics config.CropImageOutputPath cropSpriteSheet spriteSheetRow crop)
+    with _ -> eprintfn "Error writing the crop images"; reraise ()
 
-  let dataStr = data |> Encode.extractedData |> Encode.toString 2
+    let data = {
+      Items = items |> Array.map snd
+      Products = config.Products
+      FarmCrops = crops |> Array.choose (function | (_, FarmCrop crop) -> Some crop | _ -> None)
+      ForageCrops = crops |> Array.choose (function | (_, ForageCrop crop) -> Some crop | _ -> None)
+    }
 
-  try File.WriteAllText (config.DataOutputPath, dataStr)
-  with _ -> eprintfn "Error writing the data file"; reraise ()
+    let dataStr = data |> Encode.extractedData |> Encode.toString 2
+
+    try File.WriteAllText (config.DataOutputPath, dataStr)
+    with _ -> eprintfn "Error writing the data file"; reraise ()
 
   0
