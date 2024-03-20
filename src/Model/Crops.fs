@@ -303,10 +303,6 @@ module Growth =
         if stages[stage] > 0u then
           stages[stage] <- stages[stage] - 1u
           daysReduced <- daysReduced + 1u
-        else
-          // A reduction day was wasted reducing a stage below 0 days.
-          // Potentially possible?, as the game code does not prevent this from happening on stages except the first.
-          daysToReduce <- daysToReduce - 1u
         stage <- stage + 1
       traverses <- traverses + 1u
 
