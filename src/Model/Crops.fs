@@ -211,10 +211,12 @@ module CropAmount =
     else Qualities.zero |> Qualities.addNormal quantity
 
   let expectedQuantityFromGiantCropShaving (shavingToolLevel: ToolLevel) =
-    let damage = float (int shavingToolLevel / 2 + 1)
-    let numHits = ceil (3.0 / damage)
-    let shavingProb = damage / 5.0
-    shavingProb * numHits
+    let damage = int shavingToolLevel / 2 + 1
+    let numFullHits = 3 / damage
+    let lastHitDamage = 3 % damage
+    let shavingProb = float damage / 5.0
+    float numFullHits * shavingProb * float (2 * damage)
+    + shavingProb * float (2 * lastHitDamage)
 
   let expectedGiantCropYield settings =
     float giantYield + (settings.ShavingToolLevel |> Option.defaultOrMap 0.0 expectedQuantityFromGiantCropShaving)
