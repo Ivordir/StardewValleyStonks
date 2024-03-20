@@ -186,10 +186,10 @@ let defaultSettings =
         |]
 
         CustomSellPrices.Values = Map.ofArray [|
-          495u<_>, (240u, false)
-          496u<_>, (240u, false)
-          497u<_>, (240u, false)
-          498u<_>, (240u, false)
+          495u<_>, (115u, false)
+          496u<_>, (115u, false)
+          497u<_>, (115u, false)
+          498u<_>, (115u, false)
         |]
     }
     Game = GameVariables.common
