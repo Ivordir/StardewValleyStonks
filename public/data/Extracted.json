@@ -647,6 +647,54 @@
       "Name": "Fiber Seeds",
       "SellPrice": 5,
       "Category": "Seeds"
+    },
+    {
+      "Id": 4000,
+      "Name": "Carrot Seeds",
+      "SellPrice": 15,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 4001,
+      "Name": "Carrot",
+      "SellPrice": 35,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 4002,
+      "Name": "Summer Squash Seeds",
+      "SellPrice": 20,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 4003,
+      "Name": "Summer Squash",
+      "SellPrice": 45,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 4004,
+      "Name": "Broccoli Seeds",
+      "SellPrice": 40,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 4005,
+      "Name": "Broccoli",
+      "SellPrice": 70,
+      "Category": "Vegetable"
+    },
+    {
+      "Id": 4006,
+      "Name": "Powdermelon Seeds",
+      "SellPrice": 20,
+      "Category": "Seeds"
+    },
+    {
+      "Id": 4007,
+      "Name": "Powdermelon",
+      "SellPrice": 60,
+      "Category": "Fruit"
     }
   ],
   "Products": {
@@ -734,6 +782,9 @@
     {
       "Seed": 299,
       "Item": 300,
+      "Amount": {
+        "CanDouble": false
+      },
       "Seasons": [
         "Fall"
       ],
@@ -971,6 +1022,9 @@
     {
       "Seed": 477,
       "Item": 250,
+      "Amount": {
+        "CanDouble": false
+      },
       "Seasons": [
         "Spring"
       ],
@@ -1069,6 +1123,9 @@
     {
       "Seed": 483,
       "Item": 262,
+      "Amount": {
+        "CanDouble": false
+      },
       "ExtraItem": [
         178,
         0.4
@@ -1347,6 +1404,61 @@
       "Stages": [
         1,
         2,
+        2,
+        2
+      ]
+    },
+    {
+      "Seed": 4000,
+      "Item": 4001,
+      "Seasons": [
+        "Spring"
+      ],
+      "Stages": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "Seed": 4002,
+      "Item": 4003,
+      "Seasons": [
+        "Summer"
+      ],
+      "Stages": [
+        1,
+        1,
+        1,
+        1,
+        2
+      ],
+      "RegrowTime": 3
+    },
+    {
+      "Seed": 4004,
+      "Item": 4005,
+      "Seasons": [
+        "Fall"
+      ],
+      "Stages": [
+        1,
+        2,
+        2,
+        3
+      ],
+      "RegrowTime": 4
+    },
+    {
+      "Seed": 4006,
+      "Item": 4007,
+      "Seasons": [
+        "Winter"
+      ],
+      "Stages": [
+        1,
+        1,
+        1,
         2,
         2
       ]
