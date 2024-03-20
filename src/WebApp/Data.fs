@@ -414,10 +414,22 @@ module private XML =
     | true, value -> Some value
     | _ -> None
 
-  let boolValue = parseWith System.Boolean.TryParse
   let natValue = parseWith System.UInt32.TryParse
   let int64Value = parseWith System.Int64.TryParse
   let floatValue = parseWith System.Double.TryParse
+
+  let optionBoolValue doc node path =
+    doc?evaluate(path, node, null, firstNode, null)?singleNodeValue |> Option.bind (fun node ->
+      match node?attributes?("xsi:nil") with
+      | Some attr ->
+        attr?value |> Option.bind (fun (str: string) ->
+          match System.Boolean.TryParse str with
+          | true, true -> Some None
+          | _ -> None)
+      | None ->
+        match System.Boolean.TryParse (getString doc node ".") with
+        | true, value -> value |> Some |> Some
+        | _ -> None)
 
   let private array typePath parser (doc: Browser.Types.XMLDocument) (node: obj) path =
     doc?evaluate(path, node, null, firstNode, null)?singleNodeValue |> Option.map (fun arrNode ->
@@ -460,7 +472,10 @@ let loadSaveGame xml =
     let professions = tryGet "Professions" natArray "professions" [||]
     let eventsSeen = tryGet "Seen Events" natArray "eventsSeen" [||]
     let mailReceived = tryGet "Received Mail" stringArray "mailReceived" [||]
-    let specialCharm = tryGet "Special Charm" boolValue "hasSpecialCharm" CropAmountSettings.common.SpecialCharm
+    let specialCharm =
+      tryGet "Special Charm" optionBoolValue "hasSpecialCharm" (Some CropAmountSettings.common.SpecialCharm)
+      |> Option.defaultValue CropAmountSettings.common.SpecialCharm
+
     let farmingLevel = tryGet "Farming Level" natValue "farmingLevel" Skill.zero.Level |> min Skill.maxLevel
     let foragingLevel = tryGet "Foraging Level" natValue "foragingLevel" Skill.zero.Level |> min Skill.maxLevel
     let day = tryGet "Day" natValue "dayOfMonthForSaveGame" Date.firstDay |> max Date.firstDay |> min Date.lastDay
