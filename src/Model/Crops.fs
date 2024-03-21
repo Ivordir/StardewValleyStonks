@@ -377,7 +377,7 @@ type ForageCrop = {
 [<RequireQualifiedAccess>]
 module ForageCrop =
   let [<Literal>] forageSeedsPerCraft = 10u
-  let [<Literal>] xpPerItem = 7u
+  let [<Literal>] xpPerItem = 5u
   let [<Literal>] minItems = 1u
   let [<Literal>] maxItems = forageSeedsPerCraft
 
