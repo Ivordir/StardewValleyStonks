@@ -172,10 +172,10 @@ let defaultSettings =
       selections with
         CustomFertilizerPrices.Values = Map.ofArray [|
           "Basic Fertilizer", 4u
-          "Quality Fertilizer", 34u
+          "Quality Fertilizer", 19u
           "Deluxe Fertilizer", 216u
-          "Speed-Gro", 30u
-          "Deluxe Speed-Gro", 46u
+          "Speed-Gro", 25u
+          "Deluxe Speed-Gro", 42u
           "Hyper Speed-Gro", 376u
         |]
 
