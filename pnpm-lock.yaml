@@ -15,8 +15,8 @@ dependencies:
     specifier: ^2.10.3
     version: 2.10.3(prop-types@15.8.1)(react-dom@18.2.0)(react@18.2.0)
   yalps:
-    specifier: ^0.5.5
-    version: 0.5.5
+    specifier: ^0.5.6
+    version: 0.5.6
 
 devDependencies:
   '@parcel/config-default':
@@ -2458,9 +2458,6 @@ packages:
     resolution: {integrity: sha512-Ocx33N4ZVnotJTALhMZ0AqPIE9UN5uP6jjA+lYJ4FlEYuYYZsvOQXZQgeMa62pFj6jrOHWh7ho8uJhRdTNwVyg==}
     engines: {node: '>= 12.0.0'}
     hasBin: true
-    peerDependenciesMeta:
-      '@parcel/core':
-        optional: true
     dependencies:
       '@parcel/config-default': 2.10.3(@parcel/core@2.10.3)
       '@parcel/core': 2.10.3
@@ -3162,8 +3159,8 @@ packages:
     resolution: {integrity: sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==}
     dev: true
 
-  /yalps@0.5.5:
-    resolution: {integrity: sha512-b5uoTjroIL0Mrn3MInFgj1uZJbQzsJqWkC5FHMPlJc81pS3c0Hv3NGECV8QR0rbim77ZcX9SLHEncpSq7bFgsg==}
+  /yalps@0.5.6:
+    resolution: {integrity: sha512-pqjmZGtEBAYuTR03G8SWVvR9vAyBBfSKup82CEJRx2Bta5j/1fRT29kwYdL2NaensQ5ugrYGLdHupNsYWPKGQg==}
     dependencies:
       heap: 0.2.7
     dev: false
