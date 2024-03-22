@@ -14,7 +14,6 @@ Understanding the main limitations can help you judge whether recommendations fr
 are ideal for your specific situation or playstyle.
 
 # Settings
-
 If you are unsure about what certain settings do, notes and explanations for each are included below.
 
 Start and End Date
@@ -296,7 +295,6 @@ algorithm is used to piece together a sequence of non-overlapping subproblems th
 > but I stopped when a sufficient level of performance was achieved so that I could focus on Stardew Valley Stonks.
 
 # Limitations
-
 The Ranker and Optimizer have several main limitations that you may want to be aware of.
 In rough order of importance, these are:
 
