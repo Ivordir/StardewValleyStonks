@@ -167,7 +167,6 @@ So, you can choose to make a slightly lower estimate to compensate.
 - Fields of normal or quality sprinklers have no 3x3 open spaces and so cannot spawn giant crops.
 
 # Ranker
-
 The Ranker supports ranking three different set of items: crops, fertilizers, and "all pairs".
 
 - Ranking crops causes the Ranker to choose the fertilizer for each crop that gives the highest rank value.
